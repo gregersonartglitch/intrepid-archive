@@ -9,7 +9,7 @@ window.MAP_CONFIG = {
   height: 8192,
   password: 'hollowlands',
   minZoom: -5,
-  maxZoom: 5,
+  maxZoom: 1,
   ksLink: 'https://www.kickstarter.com/projects/intrepidduskvolume1/intrepid-graphic-novel-volume-1'
 };
 
@@ -521,7 +521,8 @@ window.LOCATIONS = [
     desc: 'A modest dwelling of woven branches and river clay, hidden in the borderland between Matgul and OG. Sabella\'s Hut is larger inside than outside — a trait its builder either could not or would not explain. Elena found traces of her grandmother here: a DOD field manual adapted into a gardening guide, star charts relabeled with Hollowlands constellations, and a letter, unfinished, addressed to someone named Nick.',
     lore: '"Sabella crossed from the Clockwork carrying only grief and a government-issued sidearm. She built a kingdom from one and buried the other. Which was which depends on who tells the story."',
     journeyStep: 4,
-    volume1: true
+    volume1: true,
+    art: 'sabellas-hut.jpg'
   },
   {
     id: 'monastery-wind',
@@ -533,7 +534,8 @@ window.LOCATIONS = [
     desc: 'A sanctuary carved into a windswept peak where the Oracle Isin Ada reads the future in the patterns of dust storms. The Monastery is accessible only by a path that the wind erases nightly — pilgrims must find a new route each dawn. Elena climbed to the Oracle seeking direction and received instead a prophecy she did not want: three will rise, and the world will be unmade or remade, and she will be present for both.',
     lore: '"Three will rise. One Dusk, One Dark, One Dawn destroying Stone. Ushering the end. Isin Ada spoke this once and then wept for six days."',
     journeyStep: 7,
-    volume1: true
+    volume1: true,
+    art: 'monastery-wind.jpg'
   },
   {
     id: 'moon-stronghold',
@@ -554,7 +556,7 @@ window.LOCATIONS = [
     type: 'story',
     lat: 4480,
     lng: 4091,
-    desc: 'The obsidian spire where the blood priests of Atrus Nul conduct the Red Moon Ceremony — the ritual designed to shatter the Maxim Stone and reunify the Clockwork and the Hollowlands under Titan dominion. The Tower rises nine stories, one for each underworld god, and its peak is stained permanently red from ceremonies that require a currency paid only in veins. Elena\'s journey brought her here, to the crux of everything.',
+    desc: 'An ancient ruined tower, built as a monument to the Nine sage gods whom the Tetrad cast into the deepest reaches of Kur, the underworld. The Tower rises nine stories, one for each banished god, and the blood priests of Atrus Nul now conduct the Red Moon Ceremony here — a ritual designed to shatter the Maxim Stone and reunify the Clockwork and the Hollowlands under Titan dominion. Its peak is stained permanently red from ceremonies that require a currency paid only in veins. Elena\'s journey brought her here, to the crux of everything.',
     lore: '"The Tower was not built to honor the Nine. It was built to cage them. The ceremonies are not worship. They are lockpicking."',
     journeyStep: 10,
     volume1: true,

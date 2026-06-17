@@ -1743,7 +1743,7 @@ input { font-family: inherit; }
     map = L.map('map', {
       crs: L.CRS.Simple,
       minZoom: dynamicMin,
-      maxZoom: 4,
+      maxZoom: cfg.maxZoom,
       zoomSnap: 0.25,
       zoomDelta: 0.5,
       wheelPxPerZoomLevel: 80,
@@ -2086,7 +2086,9 @@ input { font-family: inherit; }
      Images in landmarks/ folder for easy swap with pro art.
      ═══════════════════════════════════════════ */
   const LANDMARK_ART = {
-    'tower-nine':      'landmarks/tower_of_nine.png',
+    'tower-nine':      'tower-nine.jpg',
+    'sabellas-hut':    'sabellas-hut.jpg',
+    'monastery-wind':  'monastery-wind.jpg',
     'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
     'hollowgate':      'landmarks/hollowgate.png',
     'belu':            'landmarks/belu_dragon_head.png'
