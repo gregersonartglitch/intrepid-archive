@@ -1,0 +1,1220 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "hollowlands-south",
+        "name": "The Southern Approach",
+        "subtitle": "Where the Threshold Opens",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "hollowgate",
+          "crossing-pool",
+          "dawn-spear",
+          "sabellas-hut"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1364,
+              1598
+            ],
+            [
+              1794,
+              1574
+            ],
+            [
+              2220,
+              1712
+            ],
+            [
+              2236,
+              2172
+            ],
+            [
+              2134,
+              2742
+            ],
+            [
+              1748,
+              2766
+            ],
+            [
+              1384,
+              2628
+            ],
+            [
+              1348,
+              2056
+            ],
+            [
+              1364,
+              1598
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "hope-rebellands",
+        "name": "The Hope Rebellands",
+        "subtitle": "Contested Frontier Below Mish",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "hope-rebellands",
+          "dilmun-ruins"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1708,
+              2514
+            ],
+            [
+              2134,
+              2490
+            ],
+            [
+              2560,
+              2628
+            ],
+            [
+              2602,
+              3086
+            ],
+            [
+              2474,
+              3430
+            ],
+            [
+              2048,
+              3406
+            ],
+            [
+              1724,
+              3200
+            ],
+            [
+              1692,
+              2858
+            ],
+            [
+              1708,
+              2514
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "atras-heartland",
+        "name": "The Atras Heartland",
+        "subtitle": "Iron-Clad Heart of Empire",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "atras-empire",
+          "nin",
+          "mish",
+          "brea",
+          "atras-lin",
+          "ddr",
+          "fenxi"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2388,
+              2742
+            ],
+            [
+              2900,
+              2720
+            ],
+            [
+              3412,
+              2858
+            ],
+            [
+              3756,
+              3200
+            ],
+            [
+              3772,
+              3658
+            ],
+            [
+              3670,
+              4112
+            ],
+            [
+              3072,
+              4134
+            ],
+            [
+              2474,
+              4002
+            ],
+            [
+              2372,
+              3430
+            ],
+            [
+              2388,
+              2742
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "atras-upper",
+        "name": "Upper Atras",
+        "subtitle": "The Empire's Northern Reach",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "erra",
+          "atras-un",
+          "awan",
+          "uduna"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2220,
+              3888
+            ],
+            [
+              2560,
+              3866
+            ],
+            [
+              3072,
+              4002
+            ],
+            [
+              3088,
+              4570
+            ],
+            [
+              2986,
+              5028
+            ],
+            [
+              2560,
+              5050
+            ],
+            [
+              2236,
+              4800
+            ],
+            [
+              2204,
+              4340
+            ],
+            [
+              2220,
+              3888
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "moon-queen-realm",
+        "name": "Kingdom of the Moon Queen",
+        "subtitle": "The Last Sovereign Territory",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "moon-queen-kingdom",
+          "moon-stronghold",
+          "sinn",
+          "indras-na"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              684,
+              3200
+            ],
+            [
+              1196,
+              3178
+            ],
+            [
+              1708,
+              3314
+            ],
+            [
+              1724,
+              3888
+            ],
+            [
+              1622,
+              4570
+            ],
+            [
+              1196,
+              4592
+            ],
+            [
+              724,
+              4340
+            ],
+            [
+              668,
+              3658
+            ],
+            [
+              684,
+              3200
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "monastery-heights",
+        "name": "The Monastery Heights",
+        "subtitle": "Where the Wind Reads Prophecy",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "monastery-wind",
+          "kur-border",
+          "gates-ningal"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2048,
+              4800
+            ],
+            [
+              2388,
+              4776
+            ],
+            [
+              2732,
+              4914
+            ],
+            [
+              2748,
+              5372
+            ],
+            [
+              2646,
+              5716
+            ],
+            [
+              2220,
+              5738
+            ],
+            [
+              2064,
+              5486
+            ],
+            [
+              2032,
+              5142
+            ],
+            [
+              2048,
+              4800
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "tower-region",
+        "name": "The Tower Reaches",
+        "subtitle": "Where the Red Moon Rises",
+        "volume": 1,
+        "claimable": false,
+        "veil_style": "stone",
+        "lore_ids": [
+          "tower-nine",
+          "maxim-stone",
+          "lunar-clock",
+          "gal"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2560,
+              5716
+            ],
+            [
+              2900,
+              5692
+            ],
+            [
+              3244,
+              5830
+            ],
+            [
+              3260,
+              6286
+            ],
+            [
+              3158,
+              6630
+            ],
+            [
+              2732,
+              6654
+            ],
+            [
+              2576,
+              6402
+            ],
+            [
+              2544,
+              6058
+            ],
+            [
+              2560,
+              5716
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "kur-north",
+        "name": "Kur Deadlands — Northern Reach",
+        "subtitle": "Where the Underworld Exhales",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "kur",
+        "lore_ids": [
+          "kur-north"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              512,
+              6172
+            ],
+            [
+              1024,
+              6150
+            ],
+            [
+              1708,
+              6286
+            ],
+            [
+              1724,
+              7084
+            ],
+            [
+              1536,
+              7770
+            ],
+            [
+              852,
+              7792
+            ],
+            [
+              528,
+              7312
+            ],
+            [
+              496,
+              6630
+            ],
+            [
+              512,
+              6172
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "kur-south",
+        "name": "Kur Deadlands — Southern Reach",
+        "subtitle": "The Whispering Lowlands",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "kur",
+        "lore_ids": [
+          "kur-south",
+          "og",
+          "og-council",
+          "matgul",
+          "matgul-city",
+          "reok"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              684,
+              686
+            ],
+            [
+              1364,
+              664
+            ],
+            [
+              2388,
+              802
+            ],
+            [
+              2408,
+              1368
+            ],
+            [
+              2306,
+              1828
+            ],
+            [
+              1708,
+              1850
+            ],
+            [
+              852,
+              1712
+            ],
+            [
+              700,
+              1260
+            ],
+            [
+              684,
+              686
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "northern-territories",
+        "name": "The Northern Territories",
+        "subtitle": "Where the Emperor's Writ Gutters",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "northern-utu",
+          "southern-utu",
+          "caeth-nul"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2560,
+              5716
+            ],
+            [
+              3244,
+              5692
+            ],
+            [
+              4268,
+              5942
+            ],
+            [
+              4284,
+              6630
+            ],
+            [
+              4096,
+              7312
+            ],
+            [
+              3072,
+              7336
+            ],
+            [
+              2576,
+              6854
+            ],
+            [
+              2544,
+              6286
+            ],
+            [
+              2560,
+              5716
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "elil-domain",
+        "name": "The Domain of Elil",
+        "subtitle": "Perpetual Twilight",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "elil",
+          "skull-city",
+          "tal",
+          "tish",
+          "mari"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              3756,
+              4112
+            ],
+            [
+              4182,
+              4094
+            ],
+            [
+              4780,
+              4340
+            ],
+            [
+              4796,
+              5256
+            ],
+            [
+              4608,
+              5942
+            ],
+            [
+              4096,
+              5966
+            ],
+            [
+              3772,
+              5486
+            ],
+            [
+              3740,
+              4800
+            ],
+            [
+              3756,
+              4112
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "sham-mash",
+        "name": "The Territories of Sham & Mash",
+        "subtitle": "Twilight Commerce and Cold Justice",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "sham-territory",
+          "mash",
+          "port-sham"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              4436,
+              5028
+            ],
+            [
+              4780,
+              5006
+            ],
+            [
+              5632,
+              5256
+            ],
+            [
+              5648,
+              5942
+            ],
+            [
+              5460,
+              6630
+            ],
+            [
+              4948,
+              6654
+            ],
+            [
+              4456,
+              6172
+            ],
+            [
+              4420,
+              5600
+            ],
+            [
+              4436,
+              5028
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "eastern-empire",
+        "name": "The Eastern Empire",
+        "subtitle": "Atras-Dur and the Iron Gates",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "atras-dur",
+          "armatu",
+          "mirilis",
+          "the-gates",
+          "irridari-citadel",
+          "tihr"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              3244,
+              3200
+            ],
+            [
+              3756,
+              3178
+            ],
+            [
+              4436,
+              3430
+            ],
+            [
+              4456,
+              4112
+            ],
+            [
+              4268,
+              4800
+            ],
+            [
+              3756,
+              4822
+            ],
+            [
+              3260,
+              4340
+            ],
+            [
+              3228,
+              3774
+            ],
+            [
+              3244,
+              3200
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "western-azu",
+        "name": "Western Azu",
+        "subtitle": "The Dragon's Coastal Dominion",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "western-azu",
+          "caeti",
+          "caeti-bay",
+          "temple-ae",
+          "tiegates",
+          "sea-niads",
+          "maji"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              4608,
+              2056
+            ],
+            [
+              4948,
+              2034
+            ],
+            [
+              5632,
+              2284
+            ],
+            [
+              5648,
+              2972
+            ],
+            [
+              5546,
+              4112
+            ],
+            [
+              5120,
+              4134
+            ],
+            [
+              4624,
+              3658
+            ],
+            [
+              4592,
+              2858
+            ],
+            [
+              4608,
+              2056
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "belu-frontier",
+        "name": "The Belu Frontier",
+        "subtitle": "Dragon Head and the Gates of Ningal",
+        "volume": null,
+        "claimable": true,
+        "veil_style": "stone",
+        "lore_ids": [
+          "belu",
+          "kori",
+          "dragon-head"
+        ],
+        "horizon_text": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1196,
+              5256
+            ],
+            [
+              1708,
+              5234
+            ],
+            [
+              2388,
+              5486
+            ],
+            [
+              2408,
+              5942
+            ],
+            [
+              2220,
+              6402
+            ],
+            [
+              1708,
+              6424
+            ],
+            [
+              1212,
+              6058
+            ],
+            [
+              1180,
+              5600
+            ],
+            [
+              1196,
+              5256
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "eastern-azu",
+        "name": "Eastern Azu",
+        "subtitle": "Beyond the Dragon's Reach",
+        "volume": 2,
+        "claimable": false,
+        "veil_style": "horizon",
+        "lore_ids": [
+          "eastern-azu",
+          "dragons-tail",
+          "azu-ran",
+          "the-pillars"
+        ],
+        "horizon_text": "The Eastern Azu — beyond the Veil — awaits Volume 2. The Dragon's Tail curves into waters no cartographer has charted and returned whole."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5292,
+              1598
+            ],
+            [
+              5804,
+              1574
+            ],
+            [
+              6484,
+              1828
+            ],
+            [
+              6504,
+              2742
+            ],
+            [
+              6316,
+              3658
+            ],
+            [
+              5804,
+              3682
+            ],
+            [
+              5308,
+              3200
+            ],
+            [
+              5276,
+              2284
+            ],
+            [
+              5292,
+              1598
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "golden-wastes",
+        "name": "Golden Wastes of Utu-Raman",
+        "subtitle": "Where the Sun Pressed Too Long",
+        "volume": 2,
+        "claimable": false,
+        "veil_style": "horizon",
+        "lore_ids": [
+          "golden-wastes"
+        ],
+        "horizon_text": "The Golden Wastes of Utu-Raman — beyond the Veil — awaits Volume 2. The sun-scorched silence holds secrets the cartographers dared not transcribe."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              172,
+              3200
+            ],
+            [
+              512,
+              3178
+            ],
+            [
+              1024,
+              3430
+            ],
+            [
+              1040,
+              4112
+            ],
+            [
+              938,
+              5028
+            ],
+            [
+              512,
+              5050
+            ],
+            [
+              188,
+              4570
+            ],
+            [
+              156,
+              3888
+            ],
+            [
+              172,
+              3200
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "isle-of-dawn",
+        "name": "The Isle of Dawn",
+        "subtitle": "Where Morning Is Manufactured",
+        "volume": 2,
+        "claimable": false,
+        "veil_style": "horizon",
+        "lore_ids": [
+          "isle-of-dawn"
+        ],
+        "horizon_text": "The Isle of Dawn — beyond the Veil — awaits Volume 2. It drifts on a calendar the cartographers have not yet deciphered."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              6484,
+              4800
+            ],
+            [
+              6914,
+              4776
+            ],
+            [
+              7508,
+              5028
+            ],
+            [
+              7528,
+              5600
+            ],
+            [
+              7340,
+              6402
+            ],
+            [
+              6828,
+              6424
+            ],
+            [
+              6504,
+              5942
+            ],
+            [
+              6468,
+              5372
+            ],
+            [
+              6484,
+              4800
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "sea-of-frost",
+        "name": "The Sea of Frost",
+        "subtitle": "Frozen Time, Northern Boundary",
+        "volume": 2,
+        "claimable": false,
+        "veil_style": "horizon",
+        "lore_ids": [
+          "sea-frost",
+          "sacred-mountains"
+        ],
+        "horizon_text": "The Sea of Frost — beyond the Veil — awaits Volume 2. Beneath the ice, yesterday is still happening."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              4948,
+              6402
+            ],
+            [
+              5632,
+              6378
+            ],
+            [
+              7508,
+              6630
+            ],
+            [
+              7528,
+              7084
+            ],
+            [
+              7340,
+              7770
+            ],
+            [
+              5292,
+              7792
+            ],
+            [
+              4968,
+              7312
+            ],
+            [
+              4932,
+              6854
+            ],
+            [
+              4948,
+              6402
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "region_id": "pillars-of-dusk",
+        "name": "The Pillars of Dusk",
+        "subtitle": "The Edge of the Known World",
+        "volume": 2,
+        "claimable": false,
+        "veil_style": "horizon",
+        "lore_ids": [
+          "pillars-of-dusk"
+        ],
+        "horizon_text": "The Pillars of Dusk — beyond the Veil — awaits Volume 2. Beyond them, the world continues. It simply stops being known."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              172,
+              6630
+            ],
+            [
+              512,
+              6608
+            ],
+            [
+              852,
+              6746
+            ],
+            [
+              872,
+              7198
+            ],
+            [
+              770,
+              7770
+            ],
+            [
+              426,
+              7792
+            ],
+            [
+              188,
+              7428
+            ],
+            [
+              156,
+              6968
+            ],
+            [
+              172,
+              6630
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

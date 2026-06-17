@@ -1,0 +1,169 @@
+{
+  "regions": {
+    "hollowlands-south": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "hope-rebellands": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "atras-heartland": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "atras-upper": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "moon-queen-realm": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "monastery-heights": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "tower-region": {
+      "state": "clear",
+      "unlocked_at": "2026-06-14",
+      "trigger": "launch",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "kur-north": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "kur-south": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "northern-territories": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "elil-domain": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "sham-mash": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "eastern-empire": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "western-azu": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "belu-frontier": {
+      "state": "silhouette",
+      "unlocked_at": null,
+      "trigger": "cartographer",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "eastern-azu": {
+      "state": "veiled",
+      "unlocked_at": null,
+      "trigger": "volume2",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "golden-wastes": {
+      "state": "veiled",
+      "unlocked_at": null,
+      "trigger": "volume2",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "isle-of-dawn": {
+      "state": "veiled",
+      "unlocked_at": null,
+      "trigger": "volume2",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "sea-of-frost": {
+      "state": "veiled",
+      "unlocked_at": null,
+      "trigger": "volume2",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    },
+    "pillars-of-dusk": {
+      "state": "veiled",
+      "unlocked_at": null,
+      "trigger": "volume2",
+      "charted_by": null,
+      "preview_until": null,
+      "named_feature": null
+    }
+  },
+  "meta": {
+    "last_updated": "2026-06-14",
+    "version": "1.0",
+    "next_reveal_hint": "The cartographers sense movement at the Northern Reach — the Kur border has shifted three inches southward since the last survey. Something stirs in the twilight beyond Elil's domain, and the merchants of Sham report fog thicker than any season prior. The silhouettes wait for those bold enough to chart them."
+  }
+}

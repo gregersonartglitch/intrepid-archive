@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Hollowlands — Intrepid Dusk</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Montserrat:wght@400;600;700&family=Crimson+Text:ital@1&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#0d0d12;font-family:'Montserrat',sans-serif;color:#fff}
+#gate{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d0d12,#1a0e0a 50%,#0d1218);transition:opacity .8s}
+#gate.fade{opacity:0;pointer-events:none}
+.gb{width:90%;max-width:480px;background:linear-gradient(160deg,#18120e,#0d0d12);border:1px solid #e67e22;box-shadow:0 0 60px rgba(230,126,34,.15),0 0 120px rgba(0,0,0,.8);padding:52px 60px;text-align:center;position:relative}
+.gb::before,.gb::after{content:'◆';position:absolute;color:#e67e22;font-size:14px;opacity:.5}
+.gb::before{top:16px;left:20px}.gb::after{bottom:16px;right:20px}
+.ge{font-size:10px;font-weight:700;letter-spacing:4px;color:#e67e22;text-transform:uppercase;margin-bottom:12px}
+.gt{font-family:'Cinzel',serif;font-size:32px;font-weight:700;color:#fff;margin-bottom:8px;text-shadow:0 0 40px rgba(230,126,34,.4)}
+.gr{width:60px;height:2px;background:linear-gradient(to right,transparent,#e67e22,transparent);margin:18px auto}
+.gs{font-family:'Crimson Text',serif;font-style:italic;font-size:16px;color:#8a7060;margin-bottom:36px;line-height:1.5}
+.gi{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(230,126,34,.3);border-bottom:2px solid #e67e22;color:#fff;padding:16px 20px;font-family:'Montserrat',sans-serif;font-size:13px;letter-spacing:6px;text-align:center;outline:none;transition:all .3s;margin-bottom:14px}
+.gi::placeholder{color:rgba(255,255,255,.25);font-size:11px;letter-spacing:3px}
+.gi:focus{background:rgba(230,126,34,.06);border-color:rgba(230,126,34,.6)}
+.gbtn{width:100%;padding:15px;background:linear-gradient(135deg,#e67e22,#c0612a);border:none;color:#fff;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(230,126,34,.3)}
+.gbtn:hover{background:linear-gradient(135deg,#f08c32,#d06828);transform:translateY(-1px)}
+.gerr{color:#e05050;font-size:12px;margin-top:10px;min-height:18px;letter-spacing:.5px}
+#app{position:fixed;inset:0;display:none}
+#map{width:100%;height:100%;background:radial-gradient(ellipse at 40% 45%,#1a1528,#0d0d12 60%,#080810)}
+.leaflet-container{background:transparent!important}
+.leaflet-map-pane{will-change:transform;transform:translateZ(0)}
+#hdr{position:absolute;top:0;left:0;z-index:700;padding:20px 24px;pointer-events:none;background:linear-gradient(to bottom,rgba(13,13,18,.92),transparent)}
+#hdr h1{font-family:'Cinzel',serif;font-size:16px;font-weight:600;color:#fff;letter-spacing:2px}
+#hdr p{font-size:10px;font-weight:700;letter-spacing:2px;color:#e67e22;margin-top:4px;text-transform:uppercase}
+#compass{position:absolute;top:20px;right:20px;z-index:700;width:88px;height:88px}
+.cr{width:88px;height:88px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#1e1a14,#0d0d12);border:1px solid rgba(230,126,34,.25);box-shadow:0 2px 20px rgba(0,0,0,.6);position:relative}
+.cd{position:absolute;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,.2);transition:all .2s;letter-spacing:1px}
+.cd.lit{color:#e67e22;text-shadow:0 0 10px rgba(230,126,34,.8)}
+#cn{top:7px;left:50%;transform:translateX(-50%)}
+#cs{bottom:7px;left:50%;transform:translateX(-50%)}
+#ce{right:8px;top:50%;transform:translateY(-50%)}
+#cw{left:8px;top:50%;transform:translateY(-50%)}
+.cpip{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:6px;height:6px;border-radius:50%;background:rgba(230,126,34,.3);transition:all .2s}
+.cpip.lit{background:#e67e22;box-shadow:0 0 8px rgba(230,126,34,.6)}
+#layers{position:absolute;top:122px;right:20px;z-index:700;background:rgba(13,13,18,.92);border:1px solid rgba(230,126,34,.2);padding:14px 16px;min-width:150px;backdrop-filter:blur(8px)}
+#layers h3{font-size:9px;font-weight:700;letter-spacing:3px;color:#e67e22;text-transform:uppercase;margin-bottom:12px}
+.lr{display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;user-select:none}
+.lr:last-child{margin-bottom:0}
+.lc{width:16px;height:16px;border:1px solid rgba(230,126,34,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.lc.on{border-color:#e67e22;background:rgba(230,126,34,.15)}
+.lc.on::after{content:'✓';font-size:9px;color:#e67e22;font-weight:700}
+.ll{font-size:11px;font-weight:600;color:rgba(255,255,255,.4);transition:color .2s;letter-spacing:.5px}
+.lr:hover .ll{color:#fff}
+#zctl{position:absolute;bottom:32px;right:20px;z-index:700;display:flex;flex-direction:column;gap:4px}
+.zbtn{width:36px;height:36px;background:rgba(13,13,18,.9);border:1px solid rgba(230,126,34,.2);color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:monospace;backdrop-filter:blur(8px)}
+.zbtn:hover{border-color:#e67e22;color:#e67e22;background:rgba(230,126,34,.08)}
+#panel{position:absolute;right:0;top:0;bottom:0;width:310px;background:linear-gradient(180deg,rgba(13,13,18,.97),rgba(8,8,14,.97));border-left:2px solid #e67e22;z-index:600;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);backdrop-filter:blur(12px)}
+#panel.open{transform:translateX(0)}
+.ph{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
+.peye{font-size:9px;font-weight:700;letter-spacing:3px;color:#e67e22;text-transform:uppercase;margin-bottom:8px}
+.pname{font-family:'Cinzel',serif;font-size:22px;font-weight:600;color:#fff;line-height:1.25}
+.psub{font-size:12px;color:rgba(255,255,255,.35);margin-top:6px;letter-spacing:.5px}
+.pclose{position:absolute;top:16px;right:16px;background:none;border:none;color:rgba(255,255,255,.2);font-size:18px;cursor:pointer;padding:4px 8px;transition:color .2s;z-index:1}
+.pclose:hover{color:#e67e22}
+.pb{padding:24px;overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(230,126,34,.3) transparent}
+.pb p{font-size:15px;line-height:1.7;color:rgba(255,255,255,.6);margin-bottom:16px}
+.plore{padding:14px 16px;background:rgba(230,126,34,.05);border-left:3px solid #e67e22;font-family:'Crimson Text',serif;font-style:italic;font-size:16px;color:rgba(255,255,255,.45);line-height:1.65}
+.rm{width:32px!important;height:32px!important;background:radial-gradient(circle,rgba(230,126,34,.18),transparent 70%);border:1px solid rgba(230,126,34,.25);border-radius:50%;cursor:pointer;transition:all .25s;margin-left:-16px!important;margin-top:-16px!important}
+.rm:hover,.rm.act{background:radial-gradient(circle,rgba(230,126,34,.4),transparent 70%);border-color:#e67e22;box-shadow:0 0 20px rgba(230,126,34,.3)}
+.cdot{width:8px!important;height:8px!important;background:#8a5030;border-radius:50%;border:1px solid #e67e22;margin-left:-4px!important;margin-top:-4px!important;cursor:pointer;transition:all .2s}
+.cdot:hover,.cdot.cap{background:#e67e22;box-shadow:0 0 12px rgba(230,126,34,.5)}
+.rl,.cl{background:none!important;border:none!important;box-shadow:none!important;white-space:nowrap;pointer-events:none;padding:0!important}
+.rl span{font-family:'Cinzel',serif;font-size:11px;font-weight:600;color:#fff;text-shadow:0 0 8px #000,1px 1px 0 #000,-1px -1px 0 #000,0 0 20px rgba(0,0,0,.9);letter-spacing:.5px}
+.cl span{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;color:rgba(255,255,255,.8);text-shadow:0 0 6px #000,1px 1px 0 rgba(0,0,0,.9)}
+#clouds{position:absolute;inset:0;pointer-events:none;z-index:400;overflow:hidden}
+.cloud{position:absolute;will-change:transform;animation:drift linear infinite}
+@keyframes drift{0%{transform:translateX(-350px) translateZ(0);opacity:0}5%{opacity:1}90%{opacity:.85}100%{transform:translateX(110vw) translateZ(0);opacity:0}}
+#zlvl{position:absolute;bottom:28px;left:20px;z-index:700;font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.15);pointer-events:none}
+/* ── FRAME OVERLAY ─────────────────────────────────────── */
+#frame{position:absolute;inset:0;z-index:500;pointer-events:none}
+/* Heavy stone border bars */
+#frame-top{position:absolute;top:0;left:0;right:0;height:72px;background:#06050b;border-bottom:2px solid rgba(200,164,80,.4);z-index:2}
+#frame-bot{position:absolute;bottom:0;left:0;right:0;height:72px;background:#06050b;border-top:2px solid rgba(200,164,80,.4);z-index:2}
+#frame-l{position:absolute;top:0;bottom:0;left:0;width:72px;background:#06050b;border-right:2px solid rgba(200,164,80,.4);z-index:2}
+#frame-r{position:absolute;top:0;bottom:0;right:0;width:72px;background:#06050b;border-left:2px solid rgba(200,164,80,.4);z-index:2}
+/* Fade transitions inward from each bar */
+#frame-top::after{content:'';position:absolute;left:0;right:0;top:100%;height:40px;background:linear-gradient(to bottom,rgba(6,5,11,.6),transparent)}
+#frame-bot::after{content:'';position:absolute;left:0;right:0;bottom:100%;height:40px;background:linear-gradient(to top,rgba(6,5,11,.6),transparent)}
+#frame-l::after{content:'';position:absolute;top:0;bottom:0;left:100%;width:40px;background:linear-gradient(to right,rgba(6,5,11,.6),transparent)}
+#frame-r::after{content:'';position:absolute;top:0;bottom:0;right:100%;width:40px;background:linear-gradient(to left,rgba(6,5,11,.6),transparent)}
+/* Corner medallions — large */
+.medal{position:absolute;z-index:3;width:110px;height:110px}
+.medal.tl{top:9px;left:9px}
+.medal.tr{top:9px;right:9px}
+.medal.bl{bottom:9px;left:9px}
+.medal.br{bottom:9px;right:9px}
+/* Gold cuneiform strip markings */
+.fstrip{position:absolute;z-index:3;display:flex;align-items:center;gap:12px;color:rgba(200,164,80,.3);font-size:16px;letter-spacing:4px;font-family:serif}
+.fstrip.top{top:24px;left:130px;right:130px;justify-content:center}
+.fstrip.bot{bottom:24px;left:130px;right:130px;justify-content:center}
+.fstrip.lft{top:130px;bottom:130px;left:12px;flex-direction:column;justify-content:center;width:48px}
+.fstrip.rgt{top:130px;bottom:130px;right:12px;flex-direction:column;justify-content:center;width:48px;align-items:center}
+/* Frame image override */
+#frame-img{position:absolute;inset:0;z-index:4;background:url('frame.png') center/100% 100% no-repeat;pointer-events:none;display:block}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gb">
+    <div class="ge">Intrepid Dusk — Cartographer Archive</div>
+    <div class="gt">The Hollowlands</div>
+    <div class="gr"></div>
+    <div class="gs">This record is sealed.<br>Entry by knowledge only.</div>
+    <input class="gi" id="pw" type="password" placeholder="ENTER ACCESS WORD" maxlength="32" autocomplete="off"/>
+    <button class="gbtn" id="gbtn">Enter the Archive</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="map"></div>
+  <div id="clouds"></div>
+  <!-- FRAME: sits above map & clouds, below UI controls -->
+  <div id="frame">
+    <div id="frame-top"></div>
+    <div id="frame-bot"></div>
+    <div id="frame-l"></div>
+    <div id="frame-r"></div>
+    <!-- Cuneiform decoration strips -->
+    <div class="fstrip top">𒀭 𒂗 𒆳 𒁹 𒆳 𒂗 𒀭</div>
+    <div class="fstrip bot">𒀭 𒂗 𒆳 𒁹 𒆳 𒂗 𒀭</div>
+    <div class="fstrip lft"><span>𒀭</span><span>𒁹</span><span>𒂗</span><span>𒁹</span><span>𒀭</span></div>
+    <div class="fstrip rgt"><span>𒀭</span><span>𒁹</span><span>𒂗</span><span>𒁹</span><span>𒀭</span></div>
+    <!-- Corner medallions -->
+    <svg class="medal tl" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#08070e" stroke="rgba(200,164,80,.5)" stroke-width="2"/>
+      <circle cx="55" cy="55" r="38" fill="none" stroke="rgba(200,164,80,.25)" stroke-width="1" stroke-dasharray="4 4"/>
+      <circle cx="55" cy="55" r="26" fill="rgba(200,164,80,.06)" stroke="rgba(200,164,80,.3)" stroke-width="1"/>
+      <text x="55" y="64" text-anchor="middle" font-size="28" fill="rgba(200,164,80,.7)">𒀭</text>
+    </svg>
+    <svg class="medal tr" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#08070e" stroke="rgba(200,164,80,.5)" stroke-width="2"/>
+      <circle cx="55" cy="55" r="38" fill="none" stroke="rgba(200,164,80,.25)" stroke-width="1" stroke-dasharray="4 4"/>
+      <circle cx="55" cy="55" r="26" fill="rgba(200,164,80,.06)" stroke="rgba(200,164,80,.3)" stroke-width="1"/>
+      <text x="55" y="64" text-anchor="middle" font-size="28" fill="rgba(200,164,80,.7)">𒁹</text>
+    </svg>
+    <svg class="medal bl" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#08070e" stroke="rgba(200,164,80,.5)" stroke-width="2"/>
+      <circle cx="55" cy="55" r="38" fill="none" stroke="rgba(200,164,80,.25)" stroke-width="1" stroke-dasharray="4 4"/>
+      <circle cx="55" cy="55" r="26" fill="rgba(200,164,80,.06)" stroke="rgba(200,164,80,.3)" stroke-width="1"/>
+      <text x="55" y="64" text-anchor="middle" font-size="28" fill="rgba(200,164,80,.7)">𒂗</text>
+    </svg>
+    <svg class="medal br" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="55" cy="55" r="50" fill="#08070e" stroke="rgba(200,164,80,.5)" stroke-width="2"/>
+      <circle cx="55" cy="55" r="38" fill="none" stroke="rgba(200,164,80,.25)" stroke-width="1" stroke-dasharray="4 4"/>
+      <circle cx="55" cy="55" r="26" fill="rgba(200,164,80,.06)" stroke="rgba(200,164,80,.3)" stroke-width="1"/>
+      <text x="55" y="64" text-anchor="middle" font-size="28" fill="rgba(200,164,80,.7)">𒆳</text>
+    </svg>
+    <div id="frame-img"></div>
+  </div>
+  <div id="hdr"><h1>The Hollowlands</h1><p>Cartographer Archive — Restricted</p></div>
+  <div id="compass"><div class="cr">
+    <div class="cd" id="cn">N</div><div class="cd" id="cs">S</div>
+    <div class="cd" id="ce">E</div><div class="cd" id="cw">W</div>
+    <div class="cpip" id="cpip"></div>
+  </div></div>
+  <div id="layers"><h3>Layers</h3></div>
+  <div id="zctl">
+    <button class="zbtn" id="zin">+</button>
+    <button class="zbtn" id="zfit" style="font-size:13px">⊡</button>
+    <button class="zbtn" id="zout">−</button>
+  </div>
+  <div id="zlvl"></div>
+  <div id="panel">
+    <button class="pclose" id="pclose">✕</button>
+    <div class="ph">
+      <div class="peye" id="peye">Region</div>
+      <div class="pname" id="pname">—</div>
+      <div class="psub" id="psub"></div>
+    </div>
+    <div class="pb">
+      <p id="pdesc"></p>
+      <div class="plore" id="plore" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────
+var CFG = { password:'hollowlands', image:'map.png', width:9600, height:7168, minZoom:-5, maxZoom:5 };
+
+// ── REGIONS ───────────────────────────────────────────────────
+var REGIONS = [
+  {name:'Atras Empire',sub:'Capital: Nin',lat:3010,lng:4320,desc:'The dominant empire of the known world. Commands the psychic warfare division that first cracked open the Hollowlands.',lore:'"They did not discover the door. They were the door."'},
+  {name:'Kur Deadlands',sub:'Northern Reach',lat:5375,lng:1440,desc:'In the oldest cosmology, Kur is the underworld itself. Here the boundary between the living world and the Hollowlands has already failed.',lore:'"Before the Atras Empire had a name, Kur had a border. That border is moving."'},
+  {name:'Kur Deadlands',sub:'Southern Reach',lat:1003,lng:1478,desc:'The southern arm of Kur. The soil produces nothing. Even light seems reluctant.',lore:'"The scouts who entered did not return. The ones who did were not scouts anymore."'},
+  {name:'Golden Wastes of Utu-Raman',sub:'Far West',lat:3727,lng:768,desc:'An ancient desert kingdom predating the Atras Empire. They know something about the Hollowlands the Empire does not.',lore:'"Utu saw what was coming. He built a wall instead."'},
+  {name:'Kingdom of the Moon Queen',sub:'Western Territories',lat:3583,lng:1210,desc:'A matriarchal kingdom on a lunar cosmological system. Has documented Hollowlands incursions for generations.',lore:'"She has seen this before. Not in this life."'},
+  {name:'Mash',sub:'Eastern Highlands',lat:4301,lng:6240,desc:'Maintains uneasy independence from Atras. Scholars here preserved pre-Empire cosmological records the Empire tried to destroy.',lore:'"The oldest library in the known world is in Mash. One room has not been opened in four hundred years."'},
+  {name:'Northern Utu',sub:'Northern Frontier',lat:5590,lng:4512,desc:'The contested northern frontier. Soldiers report strange lights. Command has stopped filing the reports.',lore:'"Posted to Northern Utu for insubordination. Did not return unchanged."'},
+  {name:'Southern Utu',sub:'Central Corridor',lat:4157,lng:4032,desc:'The agricultural belt feeding the empire. Site of three unreported Hollowlands incursions in the past decade.',lore:'The harvest reports from Southern Utu no longer match the census.'},
+  {name:'Sham',sub:'Northern Trade Hub',lat:5017,lng:5760,desc:'The most cosmopolitan city in the known world. Where the first public Hollowlands incursion was reported — then classified within six hours.',lore:'"Four witnesses were relocated. No one asked where."'},
+  {name:'Western Azu',sub:'Southern Coast',lat:3225,lng:5952,desc:'Deep maritime traditions. Navigates by stars that appear in no Atras chart.',lore:'"The sailors of Western Azu do not fear the Sea of Niads. The Niads fear them."'},
+  {name:'Eastern Azu',sub:'Far Eastern Coast',lat:3082,lng:6912,desc:'The eastern edge of the mapped world. The oldest maps carry a notation: "here the water remembers."',lore:'"No Atras vessel has returned from that bearing."'},
+  {name:'OG',sub:'Southern Lowlands',lat:1433,lng:2112,desc:'Operates under a council of memory-keepers whose oral tradition stretches back to the First Fracture. Deliberately unwritten so it cannot be confiscated.',lore:'"What they know cannot be seized. That was the decision."'},
+  {name:'Sea of Niads',sub:'Central Sea',lat:3727,lng:6931,desc:'The great central sea. The Niads — semi-divine water-beings — are said to still surface in certain seasons.',lore:'"Leave an offering at Tiegates harbor before crossing. This is not tradition. This is instruction."'},
+];
+
+// ── CITIES ─────────────────────────────────────────────────────
+var CITIES = [
+  {name:'Nin',lat:3010,lng:4320,capital:true,desc:'Capital of the Atras Empire. The psychic warfare program operated from a facility beneath the administrative quarter.'},
+  {name:'Atras-Un',lat:4157,lng:4320,capital:false,desc:'Northern administrative center of the Empire.'},
+  {name:'Atras-Dur',lat:3942,lng:4838,capital:false,desc:'Eastern gateway city and military staging post.'},
+  {name:'Erra',lat:3799,lng:4570,capital:false,desc:'Named for the ancient god of plague and war. The name is older than the city.'},
+  {name:'Mish',lat:3297,lng:4032,capital:false,desc:'Trade junction between the western kingdoms and the Empire heartland.'},
+  {name:'Belu',lat:4587,lng:3744,capital:false,desc:'A fortified northern outpost. Also called Dragon Head for its profile from above.'},
+  {name:'Kori',lat:5017,lng:2822,capital:false,desc:'Last Atras garrison before the Kur Deadlands boundary.'},
+  {name:'Caeth Nul',lat:5447,lng:4032,capital:false,desc:'Abandoned and resettled four times. The current population does not ask why.'},
+  {name:'Caeti',lat:3010,lng:5760,capital:false,desc:'Western Azu primary port. Harbor pilots navigate without instruments.'},
+  {name:'Tish',lat:4085,lng:5645,capital:false,desc:'Manages trade flow between Mash and the coastal territories.'},
+];
+
+// ── LAYERS ──────────────────────────────────────────────────────
+var LAYER_DEFS = [
+  {id:'regions',label:'Regions',def:true},
+  {id:'cities',label:'Cities',def:true},
+  {id:'lore',label:'Lore Markers',def:false},
+];
+
+// ── APP ─────────────────────────────────────────────────────────
+var map, bounds, groups={}, activeMark=null;
+
+// Auth
+function tryPass(){
+  var v=document.getElementById('pw').value.trim().toLowerCase();
+  if(v===CFG.password){
+    localStorage.setItem('idm',btoa(CFG.password));
+    var g=document.getElementById('gate');
+    g.classList.add('fade');
+    setTimeout(function(){g.style.display='none';launch();},820);
+  } else {
+    var e=document.getElementById('gerr');
+    e.textContent='The archive does not recognize that word.';
+    document.getElementById('pw').value='';
+    setTimeout(function(){e.textContent='';},3000);
+  }
+}
+document.getElementById('gbtn').onclick=tryPass;
+document.getElementById('pw').onkeydown=function(e){if(e.key==='Enter')tryPass();};
+if(localStorage.getItem('idm')===btoa(CFG.password)){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  setTimeout(launch,50);
+}
+
+function launch(){
+  document.getElementById('app').style.display='block';
+  bounds=[[0,0],[CFG.height,CFG.width]];
+  var maxB=[[-CFG.height*0.1,-CFG.width*0.1],[CFG.height*1.1,CFG.width*1.1]];
+  map=L.map('map',{crs:L.CRS.Simple,minZoom:CFG.minZoom,maxZoom:CFG.maxZoom,zoomSnap:.25,zoomDelta:.5,wheelPxPerZoomLevel:80,zoomControl:false,attributionControl:false,preferCanvas:true,maxBounds:maxB,maxBoundsViscosity:0.85});
+  L.imageOverlay(CFG.image,bounds,{interactive:false}).addTo(map);
+  // Start slightly zoomed in from full-fit so users can pan to any edge
+  var centerLat = CFG.height / 2;
+  var centerLng = CFG.width / 2;
+  map.fitBounds(bounds, {padding:[180,180]});
+  setTimeout(function(){ map.zoomIn(1, {animate:false}); }, 50);
+
+  LAYER_DEFS.forEach(function(d){
+    groups[d.id]=L.layerGroup();
+    if(d.def)groups[d.id].addTo(map);
+  });
+
+  buildRegions(); buildCities(); buildLayerUI();
+  initClouds(); initCompass();
+
+  document.getElementById('zin').onclick=function(){map.zoomIn(.5);};
+  document.getElementById('zout').onclick=function(){map.zoomOut(.5);};
+  document.getElementById('zfit').onclick=function(){map.fitBounds(bounds,{animate:true,duration:.6});};
+  document.getElementById('pclose').onclick=closePanel;
+  map.on('click',closePanel);
+  map.on('zoomend',function(){document.getElementById('zlvl').textContent='Z '+map.getZoom().toFixed(1);});
+}
+
+function buildRegions(){
+  REGIONS.forEach(function(r){
+    var icon=L.divIcon({className:'rm',iconSize:[32,32]});
+    var m=L.marker([r.lat,r.lng],{icon:icon,zIndexOffset:100});
+    m.on('click',function(e){L.DomEvent.stopPropagation(e);openPanel(r,'Region',m._icon);});
+    m.addTo(groups['regions']);
+    var li=L.divIcon({className:'rl',html:'<span>'+r.name+'</span>',iconAnchor:[0,22]});
+    L.marker([r.lat,r.lng],{icon:li,interactive:false}).addTo(groups['regions']);
+  });
+}
+
+function buildCities(){
+  CITIES.forEach(function(c){
+    var cls='cdot'+(c.capital?' cap':'');
+    var icon=L.divIcon({className:cls,iconSize:[8,8]});
+    var m=L.marker([c.lat,c.lng],{icon:icon,zIndexOffset:200});
+    m.on('click',function(e){L.DomEvent.stopPropagation(e);openPanel({name:c.name,sub:c.capital?'Imperial Capital':'City',desc:c.desc,lore:''},'City',m._icon);});
+    m.addTo(groups['cities']);
+    var li=L.divIcon({className:'cl',html:'<span>'+c.name+'</span>',iconAnchor:[-10,0]});
+    L.marker([c.lat,c.lng],{icon:li,interactive:false}).addTo(groups['cities']);
+  });
+}
+
+function buildLayerUI(){
+  var el=document.getElementById('layers');
+  LAYER_DEFS.forEach(function(d){
+    var row=document.createElement('div');
+    row.className='lr';
+    row.innerHTML='<div class="lc'+(d.def?' on':'')+'" data-id="'+d.id+'"></div><span class="ll">'+d.label+'</span>';
+    row.onclick=function(){
+      var chk=row.querySelector('.lc'),g=groups[d.id];
+      if(!g)return;
+      if(map.hasLayer(g)){map.removeLayer(g);chk.classList.remove('on');}
+      else{map.addLayer(g);chk.classList.add('on');}
+    };
+    el.appendChild(row);
+  });
+}
+
+function openPanel(data,type,el){
+  if(activeMark)activeMark.classList.remove('act');
+  if(el){el.classList.add('act');activeMark=el;}
+  document.getElementById('peye').textContent=type||'Region';
+  document.getElementById('pname').textContent=data.name;
+  document.getElementById('psub').textContent=data.sub||'';
+  document.getElementById('pdesc').textContent=data.desc||'';
+  var l=document.getElementById('plore');
+  l.textContent=data.lore||'';l.style.display=data.lore?'':'none';
+  document.getElementById('panel').classList.add('open');
+}
+
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  if(activeMark){activeMark.classList.remove('act');activeMark=null;}
+}
+
+function initCompass(){
+  var last=null,timer=null;
+  var d={n:document.getElementById('cn'),s:document.getElementById('cs'),e:document.getElementById('ce'),w:document.getElementById('cw')};
+  var pip=document.getElementById('cpip');
+  function clear(){Object.values(d).forEach(function(x){x.classList.remove('lit');});pip.classList.remove('lit');}
+  map.on('move',function(){
+    var c=map.getCenter();
+    if(last){
+      var dlat=c.lat-last.lat,dlng=c.lng-last.lng,th=0.3;
+      clear();
+      if(Math.abs(dlat)>Math.abs(dlng)){
+        if(dlat>th){d.n.classList.add('lit');pip.classList.add('lit');}
+        if(dlat<-th){d.s.classList.add('lit');pip.classList.add('lit');}
+      } else {
+        if(dlng>th){d.e.classList.add('lit');pip.classList.add('lit');}
+        if(dlng<-th){d.w.classList.add('lit');pip.classList.add('lit');}
+      }
+      clearTimeout(timer);timer=setTimeout(clear,700);
+    }
+    last=c;
+  });
+}
+
+function initClouds(){
+  var layer=document.getElementById('clouds');
+  [{top:'8%',s:200,spd:130,del:0,op:.14},{top:'25%',s:260,spd:185,del:32,op:.09},
+   {top:'42%',s:170,spd:108,del:58,op:.17},{top:'60%',s:220,spd:155,del:20,op:.11},
+   {top:'76%',s:150,spd:98,del:72,op:.15}].forEach(function(c){
+    var el=document.createElement('div');
+    el.className='cloud';
+    el.style.cssText='top:'+c.top+';left:-'+(c.s+20)+'px;animation-duration:'+c.spd+'s;animation-delay:-'+c.del+'s';
+    el.innerHTML='<svg width="'+c.s+'" height="'+Math.round(c.s*.52)+'" viewBox="0 0 200 104" xmlns="http://www.w3.org/2000/svg" style="opacity:'+c.op+';display:block"><ellipse cx="58" cy="72" rx="50" ry="36" fill="rgba(200,210,255,.5)"/><ellipse cx="102" cy="58" rx="46" ry="34" fill="rgba(200,210,255,.5)"/><ellipse cx="148" cy="68" rx="42" ry="32" fill="rgba(200,210,255,.5)"/><ellipse cx="78" cy="52" rx="38" ry="28" fill="rgba(210,220,255,.6)"/><ellipse cx="124" cy="48" rx="36" ry="26" fill="rgba(210,220,255,.6)"/></svg>';
+    layer.appendChild(el);
+  });
+}
+</script>
+</body>
+</html>

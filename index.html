@@ -1,0 +1,2468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Hollowlands — Intrepid Dusk Cartographer Archive</title>
+<meta name="description" content="Explore the ancient world of the Hollowlands. An interactive cartographer's archive for Intrepid Dusk Volume 1 patrons.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════ */
+:root {
+  --stone-dark: #0d0d12;
+  --stone-mid: #1a1612;
+  --stone-warm: #2a231c;
+  --amber: #c68d55;
+  --amber-glow: #e8a96a;
+  --amber-dim: rgba(198,141,85,0.3);
+  --ember: #b24a2f;
+  --bone: #efe7d2;
+  --bone-dim: #bfb299;
+  --copper: #9b7040;
+  --gold: #d4a843;
+  --panel-bg: rgba(13,13,18,0.96);
+  --frame-gold: rgba(200,164,80,0.4);
+  --font-display: 'Cinzel Decorative', serif;
+  --font-heading: 'Cinzel', serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-ui: 'Montserrat', sans-serif;
+}
+
+/* ═══════════════════════════════════════════
+   RESET & BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--stone-dark); color: var(--bone); }
+body { font-family: var(--font-body); }
+button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
+input { font-family: inherit; }
+
+/* ═══════════════════════════════════════════
+   PASSWORD GATE
+   ═══════════════════════════════════════════ */
+#gate {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 55%, rgba(42,35,28,0.55) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 30% 40%, rgba(58,42,24,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 35% 45% at 75% 60%, rgba(50,36,22,0.2) 0%, transparent 55%),
+    linear-gradient(175deg, #0a090e 0%, #0d0d12 40%, #12100e 100%);
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+#gate.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+.gate-card {
+  position: relative;
+  width: 400px; max-width: 90vw;
+  padding: 52px 44px 44px;
+  background: rgba(13,13,18,0.82);
+  border: 1px solid rgba(198,141,85,0.18);
+  border-radius: 6px;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 0 80px rgba(198,141,85,0.07),
+    0 0 2px rgba(198,141,85,0.15),
+    0 30px 60px rgba(0,0,0,0.5);
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Cuneiform corner gems */
+.gate-card::before {
+  content: '◆';
+  position: absolute; top: 12px; left: 14px;
+  font-size: 7px; color: var(--amber-dim);
+}
+.gate-card::after {
+  content: '◆';
+  position: absolute; bottom: 12px; right: 14px;
+  font-size: 7px; color: var(--amber-dim);
+}
+
+.gate-corner-tr, .gate-corner-bl {
+  position: absolute; font-size: 7px; color: var(--amber-dim);
+}
+.gate-corner-tr { top: 12px; right: 14px; }
+.gate-corner-bl { bottom: 12px; left: 14px; }
+
+.gate-cuneiform-strip {
+  position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: rgba(198,141,85,0.12); letter-spacing: 8px;
+  white-space: nowrap;
+}
+
+/* Sequential fade-in */
+.gate-fade { opacity: 0; transform: translateY(10px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.gate-fade.vis { opacity: 1; transform: translateY(0); }
+
+.gate-eyebrow {
+  font-family: var(--font-heading); font-size: 10px;
+  color: var(--amber); letter-spacing: 4px;
+  margin-bottom: 20px;
+}
+.gate-title {
+  font-family: var(--font-display); font-size: 36px;
+  color: var(--bone); font-weight: 400;
+  text-shadow: 0 0 30px rgba(198,141,85,0.2), 0 0 60px rgba(198,141,85,0.08);
+  margin-bottom: 20px; line-height: 1.2;
+}
+.gate-rule {
+  width: 60px; height: 1px; margin: 0 auto 22px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+}
+.gate-subtitle {
+  font-family: var(--font-body); font-style: italic; font-size: 16px;
+  color: var(--bone-dim); line-height: 1.6;
+  margin-bottom: 30px;
+}
+
+.gate-input-wrap {
+  position: relative; margin-bottom: 22px;
+}
+.gate-input {
+  display: block; width: 100%;
+  padding: 14px 40px 14px 16px;
+  background: rgba(10,9,14,0.7);
+  border: none; border-bottom: 2px solid var(--amber-dim);
+  color: var(--bone); font-family: var(--font-ui); font-size: 13px;
+  text-align: center; letter-spacing: 6px;
+  outline: none; transition: border-color 0.3s ease;
+}
+.gate-input::placeholder { color: rgba(191,178,153,0.3); letter-spacing: 4px; font-size: 11px; }
+.gate-input:focus { border-bottom-color: var(--amber); }
+.gate-toggle {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  color: rgba(191,178,153,0.3); font-size: 15px; border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease; cursor: pointer;
+}
+.gate-toggle:hover { color: var(--amber); background: rgba(198,141,85,0.08); }
+.gate-toggle.showing { color: var(--amber-glow); }
+
+.gate-btn {
+  display: inline-block;
+  padding: 13px 36px;
+  background: linear-gradient(135deg, var(--amber) 0%, var(--copper) 100%);
+  color: var(--stone-dark); font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  border-radius: 3px;
+  transition: box-shadow 0.3s ease, transform 0.15s ease;
+}
+.gate-btn:hover { box-shadow: 0 0 24px rgba(198,141,85,0.35); transform: translateY(-1px); }
+.gate-btn:active { transform: translateY(0); }
+
+.gate-error {
+  margin-top: 16px; font-family: var(--font-body); font-size: 14px;
+  color: var(--ember); opacity: 0; transition: opacity 0.3s ease;
+  min-height: 20px;
+}
+.gate-error.show { opacity: 1; }
+
+@keyframes gate-shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-8px); }
+  40%     { transform: translateX(8px); }
+  60%     { transform: translateX(-5px); }
+  80%     { transform: translateX(5px); }
+}
+.shake { animation: gate-shake 0.45s ease; }
+
+/* ═══════════════════════════════════════════
+   LOADING STATE
+   ═══════════════════════════════════════════ */
+#loader {
+  position: fixed; inset: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--stone-dark);
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#loader.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loader-text {
+  font-family: var(--font-body); font-style: italic; font-size: 17px;
+  color: var(--bone-dim); letter-spacing: 0.5px;
+  animation: loader-pulse 2s ease-in-out infinite;
+}
+@keyframes loader-pulse {
+  0%,100% { opacity: 0.4; }
+  50%     { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════
+   APP SHELL
+   ═══════════════════════════════════════════ */
+#app { display: none; width: 100%; height: 100%; position: relative; }
+#app.show { display: block; }
+
+/* ═══════════════════════════════════════════
+   LEAFLET MAP
+   ═══════════════════════════════════════════ */
+#map {
+  position: absolute; inset: 0; z-index: 1;
+  overflow: hidden; /* Safety net — never show anything beyond map edge */
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 45%, #2a6b8f 0%, #1d4f6e 35%, #153d58 60%, #0e2a3e 100%);
+}
+.leaflet-container {
+  background: radial-gradient(ellipse 80% 70% at 50% 45%, #2a6b8f 0%, #1d4f6e 35%, #153d58 60%, #0e2a3e 100%) !important;
+  overflow: hidden !important;
+}
+.leaflet-control-attribution { display: none !important; }
+.leaflet-control-zoom { display: none !important; }
+
+/* Better rendering quality for zoomed map image */
+.leaflet-image-layer {
+  image-rendering: auto;
+  image-rendering: -webkit-optimize-contrast;
+}
+/* Suppress Leaflet tile grid lines */
+.leaflet-tile {
+  outline: none !important;
+  border: none !important;
+}
+.leaflet-tile-pane {
+  outline: none !important;
+}
+.leaflet-overlay-pane svg {
+  outline: none !important;
+}
+/* Hide any region polygon strokes that could look like a grid */
+.leaflet-overlay-pane path {
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
+
+/* Landmark illustration overlays — Mesopotamian vignettes */
+.landmark-overlay {
+  mix-blend-mode: luminosity;
+  filter: sepia(0.3) contrast(1.1);
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════
+   WATER SHIMMER EFFECT
+   ═══════════════════════════════════════════ */
+#water-shimmer {
+  display: none; /* TEMP: disabled — was causing diagonal grid pattern */
+  position: absolute; inset: 0; z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+.shimmer-layer {
+  position: absolute;
+  inset: -30%; width: 160%; height: 160%;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+.shimmer-1 {
+  background:
+    radial-gradient(ellipse 40% 30% at 20% 65%, rgba(100,195,240,0.35) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 40% at 75% 25%, rgba(80,175,220,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 25% at 55% 80%, rgba(90,185,230,0.25) 0%, transparent 50%);
+  animation: shimmer-drift-1 14s ease-in-out infinite alternate;
+}
+.shimmer-2 {
+  background:
+    radial-gradient(ellipse 35% 35% at 65% 60%, rgba(110,200,245,0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 25% 45% at 30% 35%, rgba(70,165,210,0.25) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 80% 75%, rgba(95,190,235,0.20) 0%, transparent 60%);
+  animation: shimmer-drift-2 11s ease-in-out infinite alternate;
+}
+.shimmer-3 {
+  background:
+    radial-gradient(ellipse 50% 20% at 40% 50%, rgba(120,210,250,0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 20% 50% at 60% 40%, rgba(85,180,225,0.18) 0%, transparent 50%);
+  animation: shimmer-drift-3 17s ease-in-out infinite alternate;
+}
+/* Warm light highlights — soft golden shimmer on water surface */
+.shimmer-warm {
+  position: absolute;
+  inset: -20%; width: 140%; height: 140%;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  background:
+    radial-gradient(ellipse 30% 20% at 45% 35%, rgba(230,200,140,0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 25% 30% at 70% 70%, rgba(220,180,120,0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 35% 15% at 25% 55%, rgba(240,210,150,0.12) 0%, transparent 60%);
+  animation: shimmer-warm 20s ease-in-out infinite alternate;
+}
+/* Caustic light lines — refracted light patterns on water */
+.shimmer-caustic {
+  position: absolute; inset: -10%; width: 120%; height: 120%;
+  pointer-events: none;
+  opacity: 0.12;
+  background:
+    repeating-linear-gradient(
+      35deg,
+      transparent 0px, transparent 50px,
+      rgba(160,220,245,0.5) 51px, rgba(140,210,240,0.3) 53px, transparent 55px
+    ),
+    repeating-linear-gradient(
+      -25deg,
+      transparent 0px, transparent 65px,
+      rgba(140,215,240,0.4) 66px, rgba(120,200,235,0.2) 68px, transparent 70px
+    ),
+    repeating-linear-gradient(
+      70deg,
+      transparent 0px, transparent 90px,
+      rgba(130,205,240,0.3) 91px, transparent 93px
+    );
+  animation: caustic-shift 8s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+@keyframes shimmer-drift-1 {
+  0%   { transform: translate(-5%, -4%) scale(1); opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { transform: translate(5%, 4%) scale(1.05); opacity: 0.7; }
+}
+@keyframes shimmer-drift-2 {
+  0%   { transform: translate(4%, -5%) scale(1.03); opacity: 0.7; }
+  50%  { opacity: 0.5; }
+  100% { transform: translate(-4%, 6%) scale(1); opacity: 1; }
+}
+@keyframes shimmer-drift-3 {
+  0%   { transform: translate(-3%, 5%) rotate(0.8deg); opacity: 0.5; }
+  50%  { opacity: 0.9; }
+  100% { transform: translate(4%, -3%) rotate(-0.8deg); opacity: 0.6; }
+}
+@keyframes shimmer-warm {
+  0%   { transform: translate(-3%, -2%) scale(1); opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { transform: translate(3%, 3%) scale(1.04); opacity: 0.7; }
+}
+@keyframes caustic-shift {
+  0%   { transform: translate(-4%, -3%) rotate(0deg); }
+  100% { transform: translate(4%, 3%) rotate(2deg); }
+}
+
+/* ═══════════════════════════════════════════
+   ORNAMENTAL FRAME
+   ═══════════════════════════════════════════ */
+#frame { position: fixed; inset: 0; z-index: 500; pointer-events: none; }
+
+.frame-bar {
+  position: absolute; background: #06050b;
+}
+.frame-bar.top    { top: 0; left: 0; right: 0; height: 72px; border-bottom: 2px solid var(--frame-gold); }
+.frame-bar.bottom { bottom: 0; left: 0; right: 0; height: 72px; border-top: 2px solid var(--frame-gold); }
+.frame-bar.left   { top: 0; bottom: 0; left: 0; width: 72px; border-right: 2px solid var(--frame-gold); }
+.frame-bar.right  { top: 0; bottom: 0; right: 0; width: 72px; border-left: 2px solid var(--frame-gold); }
+
+.frame-bar.top::after {
+  content: ''; position: absolute; bottom: -42px; left: 0; right: 0; height: 40px;
+  background: linear-gradient(to bottom, rgba(6,5,11,0.65), transparent);
+}
+.frame-bar.bottom::after {
+  content: ''; position: absolute; top: -42px; left: 0; right: 0; height: 40px;
+  background: linear-gradient(to top, rgba(6,5,11,0.65), transparent);
+}
+.frame-bar.left::after {
+  content: ''; position: absolute; right: -42px; top: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to right, rgba(6,5,11,0.65), transparent);
+}
+.frame-bar.right::after {
+  content: ''; position: absolute; left: -42px; top: 0; bottom: 0; width: 40px;
+  background: linear-gradient(to left, rgba(6,5,11,0.65), transparent);
+}
+
+/* Corner medallions */
+.frame-corner {
+  position: absolute; width: 110px; height: 110px; z-index: 502;
+}
+.frame-corner.tl { top: 17px; left: 17px; }
+.frame-corner.tr { top: 17px; right: 17px; }
+.frame-corner.bl { bottom: 17px; left: 17px; }
+.frame-corner.br { bottom: 17px; right: 17px; }
+
+.frame-corner svg { width: 100%; height: 100%; }
+
+/* Cuneiform decoration strips */
+.frame-cune {
+  position: absolute; z-index: 501;
+  font-size: 11px; color: rgba(200,164,80,0.14);
+  letter-spacing: 12px; white-space: nowrap;
+  overflow: hidden;
+}
+.frame-cune.top {
+  top: 28px; left: 130px; right: 130px;
+  text-align: center;
+}
+.frame-cune.bottom {
+  bottom: 28px; left: 130px; right: 130px;
+  text-align: center;
+}
+.frame-cune.left {
+  top: 130px; bottom: 130px; left: 22px; width: 30px;
+  writing-mode: vertical-rl; text-orientation: upright;
+  letter-spacing: 10px; text-align: center;
+}
+.frame-cune.right {
+  top: 130px; bottom: 130px; right: 22px; width: 30px;
+  writing-mode: vertical-rl; text-orientation: upright;
+  letter-spacing: 10px; text-align: center;
+}
+
+/* Frame image overlay */
+#frame-img {
+  position: fixed; inset: 0; z-index: 510; pointer-events: none;
+  background: url('frame.png?v=4') center/cover no-repeat;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+#frame-img.loaded { opacity: 1; }
+
+/* ═══════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════ */
+#hdr {
+  position: fixed; top: 0; left: 0; z-index: 700;
+  padding: 20px 24px 30px 96px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(13,13,18,0.92) 0%, rgba(13,13,18,0.6) 60%, transparent 100%);
+  min-width: 320px;
+}
+.hdr-title {
+  font-family: var(--font-heading); font-size: 16px; font-weight: 600;
+  color: #fff; letter-spacing: 1.5px;
+  margin-bottom: 3px;
+}
+.hdr-sub {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  color: var(--amber); letter-spacing: 2px; text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   COMPASS ROSE
+   ═══════════════════════════════════════════ */
+#compass {
+  display: none; /* Removed — duplicates cardinal direction guardians */
+  position: fixed; top: 82px; right: 82px; z-index: 700;
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(26,22,18,0.95), rgba(13,13,18,0.95));
+  border: 1px solid var(--amber-dim);
+  box-shadow: 0 0 20px rgba(0,0,0,0.4);
+}
+.compass-letter {
+  position: absolute; font-family: var(--font-heading); font-size: 11px; font-weight: 600;
+  color: rgba(191,178,153,0.35);
+  transition: color 0.25s ease, text-shadow 0.25s ease;
+}
+.compass-letter.lit { color: var(--amber); text-shadow: 0 0 8px rgba(198,141,85,0.6); }
+.compass-n { top: 6px; left: 50%; transform: translateX(-50%); }
+.compass-s { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.compass-e { right: 8px; top: 50%; transform: translateY(-50%); }
+.compass-w { left: 8px; top: 50%; transform: translateY(-50%); }
+.compass-pip {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(191,178,153,0.2);
+  transition: background 0.25s ease, box-shadow 0.25s ease;
+}
+.compass-pip.lit { background: var(--amber); box-shadow: 0 0 8px rgba(198,141,85,0.5); }
+
+/* ═══════════════════════════════════════════
+   LAYER TOGGLE
+   ═══════════════════════════════════════════ */
+#layers {
+  position: fixed; top: 82px; left: 82px; z-index: 700;
+  width: 166px;
+  background: rgba(13,13,18,0.88);
+  border: 1px solid var(--amber-dim);
+  border-radius: 4px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 14px 16px 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+.layers-hdr {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  color: var(--amber); letter-spacing: 3px;
+  margin-bottom: 10px; padding-bottom: 8px;
+  border-bottom: 1px solid rgba(198,141,85,0.12);
+}
+.layer-row {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 0; cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.layer-row:hover { opacity: 0.85; }
+.layer-chk {
+  width: 14px; height: 14px; border-radius: 3px;
+  border: 1.5px solid rgba(191,178,153,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: transparent;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+.layer-chk.on {
+  border-color: var(--amber); color: var(--amber);
+  background: rgba(198,141,85,0.08);
+}
+.layer-lbl {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  color: var(--bone-dim); letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════
+   ZOOM CONTROLS
+   ═══════════════════════════════════════════ */
+#zctl {
+  position: fixed; bottom: 92px; right: 86px; z-index: 700;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.zctl-btn {
+  width: 36px; height: 36px;
+  background: rgba(13,13,18,0.8);
+  border: 1px solid rgba(198,141,85,0.15);
+  border-radius: 4px; color: var(--bone-dim);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+.zctl-btn:hover { border-color: var(--amber); color: var(--amber); background: rgba(13,13,18,0.95); }
+
+/* ═══════════════════════════════════════════
+   ZOOM LEVEL INDICATOR
+   ═══════════════════════════════════════════ */
+#zlvl {
+  position: fixed; bottom: 82px; left: 84px; z-index: 700;
+  font-family: var(--font-ui); font-size: 9px; font-weight: 600;
+  color: rgba(191,178,153,0.2); letter-spacing: 1px;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATED CLOUDS
+   ═══════════════════════════════════════════ */
+#clouds { position: fixed; inset: 0; z-index: 400; pointer-events: none; overflow: hidden; }
+.cloud {
+  position: absolute;
+  opacity: 0.12;
+  filter: blur(1.5px);
+  animation: drift linear infinite;
+}
+@keyframes drift {
+  from { transform: translateX(-350px); }
+  to   { transform: translateX(110vw); }
+}
+
+/* ═══════════════════════════════════════════
+   MARKERS — zoom-responsive labels via --label-scale
+   ═══════════════════════════════════════════ */
+#map { --label-scale: 1; }
+
+/* Region */
+.mk-region {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(198,141,85,0.35) 0%, rgba(198,141,85,0.08) 60%, transparent 100%);
+}
+/* Labels hidden — map art has its own labels */
+.mk-region-lbl {
+  font-family: var(--font-heading); font-size: calc(36px * var(--label-scale)); font-weight: 700; color: #fff;
+  text-shadow: 0 2px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5);
+  white-space: nowrap; text-align: left;
+  letter-spacing: 4px;
+  transition: font-size 0.2s ease;
+  opacity: 1;
+}
+
+/* Capital */
+.mk-capital {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--amber); border: 2px solid var(--amber-glow);
+  box-shadow: 0 0 10px rgba(198,141,85,0.5);
+  animation: capital-pulse 2.8s ease-in-out infinite;
+}
+@keyframes capital-pulse {
+  0%,100% { box-shadow: 0 0 10px rgba(198,141,85,0.5); }
+  50%     { box-shadow: 0 0 20px rgba(198,141,85,0.7), 0 0 40px rgba(198,141,85,0.2); }
+}
+.mk-capital-lbl {
+  font-family: var(--font-heading); font-size: calc(22px * var(--label-scale)); font-weight: 700; color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 14px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* City */
+.mk-city {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #8a5030; border: 1.5px solid var(--amber);
+  transition: box-shadow 0.25s ease;
+}
+.mk-city:hover { box-shadow: 0 0 12px rgba(198,141,85,0.5); }
+.mk-city-lbl {
+  font-family: var(--font-ui); font-size: calc(16px * var(--label-scale)); font-weight: 700; color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* Town */
+.mk-town {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #6a4a30; border: 1px solid var(--copper);
+}
+.mk-town-lbl {
+  font-family: var(--font-ui); font-size: calc(14px * var(--label-scale)); font-weight: 600; color: rgba(255,255,255,0.75);
+  text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* Story */
+.mk-story {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--gold); border: 2px solid var(--gold);
+  animation: story-pulse 2.4s ease-in-out infinite;
+}
+@keyframes story-pulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 8px rgba(212,168,67,0.4); }
+  50%     { transform: scale(1.3); box-shadow: 0 0 20px rgba(212,168,67,0.6), 0 0 40px rgba(212,168,67,0.15); }
+}
+.mk-story-lbl {
+  font-family: var(--font-heading); font-size: calc(18px * var(--label-scale)); font-weight: 700; color: var(--gold);
+  text-shadow: 0 0 6px rgba(0,0,0,1), 0 0 14px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* Sacred */
+.mk-sacred {
+  width: 10px; height: 10px;
+  background: rgba(198,141,85,0.15); border: 1.5px solid var(--amber);
+  transform: rotate(45deg);
+  box-shadow: 0 0 10px rgba(198,141,85,0.25);
+}
+.mk-sacred-lbl {
+  font-family: var(--font-heading); font-size: calc(16px * var(--label-scale)); font-weight: 600; font-style: italic;
+  color: var(--amber); text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* Water */
+.mk-water-lbl {
+  font-family: var(--font-body); font-size: calc(20px * var(--label-scale)); font-weight: 500; font-style: italic;
+  color: rgba(150,180,210,0.7);
+  text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
+  white-space: nowrap;
+  transition: font-size 0.2s ease;
+
+}
+
+/* Journey number */
+.journey-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(13,13,18,0.9); border: 1.5px solid var(--amber);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  color: var(--amber);
+}
+
+/* Active marker highlight */
+.mk-active {
+  filter: brightness(1.5);
+  z-index: 800 !important;
+}
+
+/* ═══════════════════════════════════════════
+   THE VEIL — Atmospheric overlays
+   ═══════════════════════════════════════════ */
+
+/* Stone bas-relief (default) */
+.veil-stone {
+  fill-opacity: 0.75;
+  stroke-dasharray: 4 2;
+  transition: fill-opacity 1.2s ease;
+}
+
+/* Kur storm clouds */
+.veil-kur {
+  fill-opacity: 0.85;
+  stroke-dasharray: 2 3;
+  animation: kur-pulse 6s ease-in-out infinite alternate;
+}
+@keyframes kur-pulse {
+  0%   { fill-opacity: 0.75; }
+  100% { fill-opacity: 0.9; }
+}
+
+/* Horizon — unwritten regions (Vol 2+) */
+.veil-horizon {
+  fill-opacity: 0.7;
+  stroke-dasharray: 8 4;
+}
+
+/* Veil labels */
+.veil-label {
+  font-family: var(--font-heading);
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7);
+}
+.veil-label-silhouette {
+  font-size: calc(14px * var(--label-scale, 1));
+  font-weight: 600;
+  color: rgba(191,178,153,0.5);
+  letter-spacing: 2px;
+  transition: font-size 0.2s ease;
+}
+.veil-label-veiled {
+  font-size: calc(12px * var(--label-scale, 1));
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(150,180,210,0.4);
+  letter-spacing: 1px;
+  transition: font-size 0.2s ease;
+}
+.veil-horizon-text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(150,180,210,0.3);
+  display: block;
+  margin-top: 4px;
+}
+
+/* Reveal animation — plays when Veil parts */
+.veil-revealing {
+  animation: veil-part 1.5s ease-out forwards;
+}
+@keyframes veil-part {
+  0%   { opacity: 1; }
+  30%  { opacity: 0.8; filter: brightness(1.3); }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   DETAIL PANEL
+   ═══════════════════════════════════════════ */
+#panel {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 900;
+  width: 340px;
+  background: var(--panel-bg);
+  border-left: 2px solid var(--amber-dim);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+  overflow-y: auto; overflow-x: hidden;
+  box-shadow: -10px 0 40px rgba(0,0,0,0.4);
+}
+#panel.open { transform: translateX(0); }
+#panel::-webkit-scrollbar { width: 4px; }
+#panel::-webkit-scrollbar-track { background: transparent; }
+#panel::-webkit-scrollbar-thumb { background: var(--amber-dim); border-radius: 4px; }
+
+.panel-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 32px; height: 32px;
+  font-size: 18px; color: var(--bone-dim);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
+  z-index: 10;
+}
+.panel-close:hover { color: var(--amber); background: rgba(198,141,85,0.1); }
+
+.panel-body { padding: 40px 30px 50px; }
+
+/* Landmark art in panel */
+.panel-art {
+  margin: -8px -8px 18px -8px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--amber-dim);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.panel-art img {
+  width: 100%; height: auto; display: block;
+  object-fit: cover; max-height: 200px;
+}
+
+.panel-eyebrow {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  color: var(--amber); letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.panel-name {
+  font-family: var(--font-heading); font-size: 22px; font-weight: 600;
+  color: var(--bone); line-height: 1.3;
+  margin-bottom: 8px;
+}
+.panel-sub {
+  font-family: var(--font-ui); font-size: 12px;
+  color: var(--bone-dim); letter-spacing: 0.5px;
+  margin-bottom: 20px;
+}
+.panel-desc {
+  font-family: var(--font-body); font-size: 15px;
+  color: rgba(191,178,153,0.6); line-height: 1.7;
+  margin-bottom: 22px;
+}
+.panel-lore {
+  font-family: var(--font-body); font-style: italic; font-size: 16px;
+  color: var(--bone-dim); line-height: 1.65;
+  padding: 16px 18px;
+  border-left: 3px solid var(--amber);
+  background: rgba(198,141,85,0.04);
+  border-radius: 0 4px 4px 0;
+  margin-bottom: 22px;
+}
+
+.panel-journey-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: rgba(198,141,85,0.08);
+  border: 1px solid var(--amber-dim);
+  border-radius: 20px;
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  color: var(--amber); letter-spacing: 0.5px;
+  margin-bottom: 22px;
+}
+.panel-journey-badge .step-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--amber); color: var(--stone-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700;
+}
+
+.panel-v1-section {
+  margin-top: 8px; padding-top: 20px;
+  border-top: 1px solid rgba(198,141,85,0.12);
+}
+.panel-v1-eyebrow {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  color: var(--gold); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+}
+.panel-v1-eyebrow::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold);
+}
+.panel-v1-text {
+  font-family: var(--font-body); font-size: 14px;
+  color: var(--bone-dim); margin-bottom: 14px;
+}
+.panel-v1-btn {
+  display: inline-block;
+  padding: 11px 24px;
+  border: 1px solid var(--gold);
+  border-image: linear-gradient(135deg, var(--gold), var(--amber)) 1;
+  background: transparent;
+  font-family: var(--font-heading); font-size: 12px;
+  color: var(--gold); letter-spacing: 1px;
+  text-decoration: none;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+.panel-v1-btn:hover {
+  box-shadow: 0 0 20px rgba(212,168,67,0.25);
+  background: rgba(212,168,67,0.06);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 767px) {
+  .frame-bar.top, .frame-bar.bottom { height: 40px; }
+  .frame-bar.left, .frame-bar.right { width: 40px; }
+  .frame-corner { width: 70px; height: 70px; }
+  .frame-corner.tl { top: 5px; left: 5px; }
+  .frame-corner.tr { top: 5px; right: 5px; }
+  .frame-corner.bl { bottom: 5px; left: 5px; }
+  .frame-corner.br { bottom: 5px; right: 5px; }
+  .frame-cune { display: none; }
+
+  #hdr { padding: 10px 14px 20px 52px; }
+  .hdr-title { font-size: 13px; }
+  .hdr-sub { font-size: 8px; }
+
+  #compass { top: 48px; right: 48px; width: 60px; height: 60px; }
+  .compass-letter { font-size: 9px; }
+  .compass-n { top: 3px; }
+  .compass-s { bottom: 3px; }
+  .compass-e { right: 5px; }
+  .compass-w { left: 5px; }
+
+  #layers { top: 60px; left: 48px; width: 140px; padding: 10px 12px 8px; }
+  .layers-hdr { font-size: 8px; }
+  .layer-lbl { font-size: 9px; }
+
+  #zctl { bottom: 52px; right: 48px; }
+  #zlvl { bottom: 48px; left: 48px; font-size: 8px; }
+
+  #panel {
+    width: 100%; top: auto; bottom: 0; height: 50vh;
+    transform: translateY(100%);
+    border-left: none; border-top: 2px solid var(--amber-dim);
+  }
+  #panel.open { transform: translateY(0); }
+  .panel-body { padding: 30px 24px 40px; }
+  .panel-name { font-size: 19px; }
+
+  .gate-title { font-size: 26px; }
+  .gate-subtitle { font-size: 14px; }
+  .gate-card { padding: 36px 28px 32px; }
+
+  .welcome-title { font-size: 28px !important; }
+  .journey-fab { bottom: 52px; left: 48px; }
+  .journey-toast { left: 48px; right: 48px; bottom: 52px; max-width: none; }
+}
+
+/* ═══════════════════════════════════════════
+   VIP WELCOME CINEMATIC
+   ═══════════════════════════════════════════ */
+.welcome-overlay {
+  position: fixed; inset: 0; z-index: 7500;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,9,14,0.92);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+.welcome-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.welcome-inner { text-align: center; max-width: 460px; padding: 40px; }
+.welcome-fade { opacity: 0; transform: translateY(12px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.welcome-fade.vis { opacity: 1; transform: translateY(0); }
+.welcome-line {
+  font-family: var(--font-body); font-style: italic; font-size: 16px;
+  color: var(--bone-dim); letter-spacing: 1px; margin-bottom: 12px;
+}
+.welcome-title {
+  font-family: var(--font-display); font-size: 42px; font-weight: 400;
+  color: var(--bone);
+  text-shadow: 0 0 40px rgba(198,141,85,0.25), 0 0 80px rgba(198,141,85,0.1);
+  margin-bottom: 16px; line-height: 1.2;
+}
+.welcome-rule {
+  width: 80px; height: 1px; margin: 0 auto 24px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+}
+.welcome-sub {
+  font-family: var(--font-body); font-size: 15px;
+  color: rgba(191,178,153,0.6); line-height: 1.7; margin-bottom: 32px;
+}
+.welcome-btn {
+  display: block; width: 100%; max-width: 260px; margin: 0 auto 12px;
+  padding: 14px 28px;
+  background: linear-gradient(135deg, var(--amber) 0%, var(--copper) 100%);
+  color: var(--stone-dark); font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase; border-radius: 3px;
+  transition: box-shadow 0.3s ease, transform 0.15s ease;
+}
+.welcome-btn:hover { box-shadow: 0 0 24px rgba(198,141,85,0.35); transform: translateY(-1px); }
+.welcome-btn-alt {
+  display: block; width: 100%; max-width: 260px; margin: 0 auto;
+  padding: 12px 28px;
+  background: transparent;
+  border: 1px solid var(--amber-dim);
+  color: var(--bone-dim); font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  letter-spacing: 2px; text-transform: uppercase; border-radius: 3px;
+  transition: color 0.3s ease, border-color 0.3s ease;
+}
+.welcome-btn-alt:hover { color: var(--amber); border-color: var(--amber); }
+
+/* ═══════════════════════════════════════════
+   GUIDED JOURNEY CONTROLS
+   ═══════════════════════════════════════════ */
+.journey-fab {
+  position: fixed; bottom: 24px; left: 24px; z-index: 850;
+  display: none; /* hidden until welcome dismissed */
+  align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--panel-bg);
+  border: 1px solid var(--amber-dim);
+  border-radius: 20px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  color: var(--bone-dim); font-family: var(--font-ui); font-size: 10px;
+  letter-spacing: 1px; text-transform: uppercase;
+  transition: border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+.journey-fab:hover { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 20px rgba(198,141,85,0.15); }
+.journey-fab.visible { display: flex; }
+.journey-fab-icon { font-size: 14px; }
+
+.journey-toast {
+  position: fixed; bottom: 24px; left: 24px; z-index: 860;
+  max-width: 380px; padding: 20px 24px;
+  background: var(--panel-bg);
+  border: 1px solid var(--amber-dim);
+  border-radius: 8px;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  transform: translateY(120%); opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.4s ease;
+}
+.journey-toast.active { transform: translateY(0); opacity: 1; }
+.journey-toast-step {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  color: var(--amber); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.journey-toast-name {
+  font-family: var(--font-heading); font-size: 18px; font-weight: 600;
+  color: var(--bone); margin-bottom: 6px;
+}
+.journey-toast-desc {
+  font-family: var(--font-body); font-size: 14px;
+  color: rgba(191,178,153,0.55); line-height: 1.6; margin-bottom: 14px;
+}
+.journey-toast-nav { display: flex; gap: 8px; }
+.jt-btn {
+  padding: 7px 14px;
+  font-family: var(--font-ui); font-size: 9px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  border-radius: 3px; color: var(--bone-dim);
+  border: 1px solid rgba(191,178,153,0.15);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.jt-btn:hover { color: var(--amber); border-color: var(--amber-dim); }
+.jt-btn-primary {
+  background: linear-gradient(135deg, var(--amber) 0%, var(--copper) 100%);
+  color: var(--stone-dark); border: none;
+}
+.jt-btn-primary:hover { box-shadow: 0 0 12px rgba(198,141,85,0.3); }
+.jt-btn-close { margin-left: auto; border: none; color: rgba(191,178,153,0.3); }
+.jt-btn-close:hover { color: var(--ember); }
+
+/* ═══════════════════════════════════════════
+   FIRST-TIME HINT
+   ═══════════════════════════════════════════ */
+.hint-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+  z-index: 840;
+  display: none; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  background: var(--panel-bg);
+  border: 1px solid var(--amber-dim);
+  border-radius: 20px;
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-family: var(--font-body); font-size: 14px; color: var(--bone-dim);
+  opacity: 0; transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.hint-toast.visible { display: flex; opacity: 1; }
+.hint-toast.fading { opacity: 0; transform: translateX(-50%) translateY(10px); }
+.hint-icon { font-size: 16px; }
+
+/* ── Edit / Dev Mode ── */
+#edit-panel {
+  display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+  z-index: 9999; background: rgba(15,12,8,0.95); border: 1px solid var(--amber);
+  border-radius: 8px; padding: 12px 20px; font-family: var(--font-ui);
+  color: var(--bone); font-size: 13px; text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+#edit-panel.active { display: block; }
+#edit-panel h3 { margin: 0 0 8px; color: var(--amber); font-size: 14px; letter-spacing: 2px; text-transform: uppercase; }
+#edit-coords { color: var(--gold); font-family: monospace; font-size: 14px; margin: 6px 0; min-height: 20px; }
+#edit-export {
+  background: var(--amber); color: #0f0c08; border: none; padding: 6px 16px;
+  border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 12px;
+  letter-spacing: 1px; text-transform: uppercase; margin-top: 6px;
+}
+#edit-export:hover { background: var(--gold); }
+#edit-count { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 4px; }
+
+/* ═══════════════════════════════════════════
+   FOG SYSTEM
+   ═══════════════════════════════════════════ */
+.fog-canvas {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 450;
+  pointer-events: none;
+}
+
+/* Markers hidden behind fog */
+.fog-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.6s ease;
+}
+.fog-revealed {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: opacity 0.8s ease;
+}
+
+/* ── Discovery Card ─────────────────────── */
+#discovery-card {
+  position: fixed;
+  top: 50%; right: -420px;
+  transform: translateY(-50%);
+  width: 340px; max-width: 85vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: linear-gradient(160deg, #1a1612 0%, #12100e 60%, #0d0a08 100%);
+  border: 1px solid rgba(198, 141, 85, 0.35);
+  border-radius: 12px;
+  padding: 28px 24px 22px;
+  z-index: 600;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.7), 0 0 60px rgba(198,141,85,0.08);
+  transition: right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-family: var(--font-body);
+}
+#discovery-card.visible {
+  right: 24px;
+}
+.dc-art {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+.dc-type {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+  margin-bottom: 6px;
+}
+.dc-name {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  color: var(--bone);
+  margin-bottom: 4px;
+}
+.dc-sub {
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--bone-dim);
+  margin-bottom: 14px;
+}
+.dc-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--bone);
+  margin-bottom: 12px;
+}
+.dc-lore {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--bone-dim);
+  font-style: italic;
+  border-top: 1px solid rgba(198,141,85,0.15);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.dc-close {
+  position: absolute; top: 12px; right: 14px;
+  font-size: 18px; color: var(--bone-dim);
+  background: none; border: none; cursor: pointer;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.dc-close:hover { background: rgba(255,255,255,0.08); color: var(--bone); }
+.dc-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
+  margin: 10px 0;
+}
+
+/* ── Celebration Particles ──────────────── */
+.celebration-burst {
+  position: absolute;
+  width: 0; height: 0;
+  z-index: 500;
+  pointer-events: none;
+}
+.celebration-ring {
+  position: absolute;
+  left: -30px; top: -30px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--amber-glow);
+  animation: ring-expand 0.8s ease-out forwards;
+  opacity: 0.8;
+}
+@keyframes ring-expand {
+  0%   { transform: scale(0.3); opacity: 0.9; }
+  100% { transform: scale(3); opacity: 0; }
+}
+.celebration-particle {
+  position: absolute;
+  width: 5px; height: 5px;
+  background: var(--gold);
+  border-radius: 50%;
+  animation: particle-fly 0.9s ease-out forwards;
+  box-shadow: 0 0 6px var(--amber-glow);
+}
+@keyframes particle-fly {
+  0%   { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
+}
+
+/* ── Progress Bar ───────────────────────── */
+#progress-container {
+  position: fixed;
+  bottom: 12px; left: 12px;
+  z-index: 520;
+  font-family: var(--font-ui);
+  background: rgba(13, 13, 18, 0.85);
+  border: 1px solid rgba(198,141,85,0.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  backdrop-filter: blur(4px);
+}
+#progress-title {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  color: var(--amber);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+#progress-track {
+  width: 100%; height: 4px;
+  background: rgba(198,141,85,0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--amber), var(--gold));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+#progress-label {
+  font-size: 10px;
+  color: var(--bone-dim);
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 767px) {
+  #discovery-card { width: 90vw; right: -95vw; padding: 20px 16px 16px; top: auto; bottom: -400px; transform: none; }
+  #discovery-card.visible { right: auto; bottom: 16px; left: 50%; transform: translateX(-50%); }
+  .dc-name { font-size: 18px; }
+  .dc-desc { font-size: 15px; }
+  #progress-container { bottom: 8px; left: 8px; padding: 8px 10px; min-width: 140px; }
+}
+
+/* ── Tutorial Hint ──────────────────────── */
+#fog-tutorial {
+  position: fixed;
+  z-index: 700;
+  pointer-events: none;
+  transform: translateX(-50%);
+  text-align: center;
+  animation: tutorial-bob 2s ease-in-out infinite;
+  transition: opacity 0.4s ease;
+}
+.fog-tutorial-arrow {
+  font-size: 28px;
+  color: var(--gold);
+  animation: tutorial-pulse 1.5s ease-in-out infinite;
+  text-shadow: 0 0 20px rgba(212, 168, 67, 0.9);
+  line-height: 1;
+}
+.fog-tutorial-text {
+  font-family: var(--font-heading);
+  font-size: 15px;
+  color: var(--bone);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: rgba(10, 12, 16, 0.92);
+  border: 1px solid rgba(198, 141, 85, 0.5);
+  border-radius: 6px;
+  padding: 8px 16px;
+  margin-top: 4px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+@keyframes tutorial-bob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%      { transform: translateX(-50%) translateY(-8px); }
+}
+@keyframes tutorial-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">The Hollowlands — Intrepid Dusk Cartographer Archive</h1>
+
+<!-- ═══════════ PASSWORD GATE ═══════════ -->
+<div id="gate">
+  <div class="gate-card">
+    <span class="gate-corner-tr">◆</span>
+    <span class="gate-corner-bl">◆</span>
+    <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
+    <div class="gate-eyebrow gate-fade" data-delay="0">INTREPID DUSK — PATRON ARCHIVE</div>
+    <div class="gate-title gate-fade" data-delay="200">The Hollowlands</div>
+    <div class="gate-rule gate-fade" data-delay="400"></div>
+    <div class="gate-subtitle gate-fade" data-delay="600">This cartographer's archive has been sealed for the Council of Patrons.<br>Your word grants passage.</div>
+    <div class="gate-input-wrap gate-fade" data-delay="800">
+      <input id="gate-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false">
+      <button type="button" id="gate-eye" class="gate-toggle" title="Show password">&#9673;</button>
+    </div>
+    <button id="gate-btn" class="gate-btn gate-fade" data-delay="1000">Enter the Archive</button>
+    <div id="gate-err" class="gate-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════ LOADING STATE ═══════════ -->
+<div id="loader" class="hidden">
+  <span class="loader-text">Unrolling the cartographer's archive…</span>
+</div>
+
+<!-- ═══════════ APP ═══════════ -->
+<div id="app">
+  <div id="map"></div>
+
+  <!-- Edit Mode Panel (add ?edit to URL to activate) -->
+  <div id="edit-panel">
+    <h3>📍 Marker Editor</h3>
+    <div id="edit-coords">Drag any marker to reposition</div>
+    <button id="edit-export" onclick="exportCoords()">Export All Coordinates</button>
+    <div id="edit-count"></div>
+  </div>
+
+  <!-- Water shimmer overlay -->
+  <div id="water-shimmer">
+    <div class="shimmer-layer shimmer-1"></div>
+    <div class="shimmer-layer shimmer-2"></div>
+    <div class="shimmer-layer shimmer-3"></div>
+    <div class="shimmer-warm"></div>
+    <div class="shimmer-caustic"></div>
+  </div>
+
+  <!-- Ornamental Frame -->
+  <div id="frame">
+    <div class="frame-bar top"></div>
+    <div class="frame-bar bottom"></div>
+    <div class="frame-bar left"></div>
+    <div class="frame-bar right"></div>
+
+    <div class="frame-corner tl">
+      <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="50" stroke="rgba(200,164,80,0.2)" stroke-width="1"/>
+        <circle cx="55" cy="55" r="38" stroke="rgba(200,164,80,0.12)" stroke-width="0.7"/>
+        <circle cx="55" cy="55" r="26" stroke="rgba(200,164,80,0.08)" stroke-width="0.5"/>
+        <circle cx="55" cy="55" r="4" fill="rgba(200,164,80,0.25)"/>
+        <text x="55" y="44" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒀭</text>
+        <text x="55" y="74" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒁹</text>
+        <text x="36" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒂗</text>
+        <text x="74" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒆳</text>
+      </svg>
+    </div>
+    <div class="frame-corner tr">
+      <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="50" stroke="rgba(200,164,80,0.2)" stroke-width="1"/>
+        <circle cx="55" cy="55" r="38" stroke="rgba(200,164,80,0.12)" stroke-width="0.7"/>
+        <circle cx="55" cy="55" r="26" stroke="rgba(200,164,80,0.08)" stroke-width="0.5"/>
+        <circle cx="55" cy="55" r="4" fill="rgba(200,164,80,0.25)"/>
+        <text x="55" y="44" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒀭</text>
+        <text x="55" y="74" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒁹</text>
+        <text x="36" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒂗</text>
+        <text x="74" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒆳</text>
+      </svg>
+    </div>
+    <div class="frame-corner bl">
+      <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="50" stroke="rgba(200,164,80,0.2)" stroke-width="1"/>
+        <circle cx="55" cy="55" r="38" stroke="rgba(200,164,80,0.12)" stroke-width="0.7"/>
+        <circle cx="55" cy="55" r="26" stroke="rgba(200,164,80,0.08)" stroke-width="0.5"/>
+        <circle cx="55" cy="55" r="4" fill="rgba(200,164,80,0.25)"/>
+        <text x="55" y="44" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒀭</text>
+        <text x="55" y="74" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒁹</text>
+        <text x="36" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒂗</text>
+        <text x="74" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒆳</text>
+      </svg>
+    </div>
+    <div class="frame-corner br">
+      <svg viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="55" cy="55" r="50" stroke="rgba(200,164,80,0.2)" stroke-width="1"/>
+        <circle cx="55" cy="55" r="38" stroke="rgba(200,164,80,0.12)" stroke-width="0.7"/>
+        <circle cx="55" cy="55" r="26" stroke="rgba(200,164,80,0.08)" stroke-width="0.5"/>
+        <circle cx="55" cy="55" r="4" fill="rgba(200,164,80,0.25)"/>
+        <text x="55" y="44" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒀭</text>
+        <text x="55" y="74" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒁹</text>
+        <text x="36" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒂗</text>
+        <text x="74" y="59" text-anchor="middle" fill="rgba(200,164,80,0.18)" font-size="8" font-family="serif">𒆳</text>
+      </svg>
+    </div>
+
+    <div class="frame-cune top">𒀭 𒁹 𒂗 𒆳 𒀭 𒁹 𒂗 𒆳 𒀭 𒁹 𒂗 𒆳 𒀭 𒁹 𒂗 𒆳</div>
+    <div class="frame-cune bottom">𒆳 𒂗 𒁹 𒀭 𒆳 𒂗 𒁹 𒀭 𒆳 𒂗 𒁹 𒀭 𒆳 𒂗 𒁹 𒀭</div>
+    <div class="frame-cune left">𒀭𒁹𒂗𒆳𒀭𒁹𒂗𒆳</div>
+    <div class="frame-cune right">𒆳𒂗𒁹𒀭𒆳𒂗𒁹𒀭</div>
+  </div>
+
+  <!-- Frame image overlay -->
+  <div id="frame-img"></div>
+
+  <!-- Header -->
+  <div id="hdr">
+    <div class="hdr-title">The Hollowlands</div>
+    <div class="hdr-sub">Cartographer Archive — Patron Access</div>
+  </div>
+
+  <!-- Compass Rose -->
+  <div id="compass">
+    <span class="compass-letter compass-n">N</span>
+    <span class="compass-letter compass-s">S</span>
+    <span class="compass-letter compass-e">E</span>
+    <span class="compass-letter compass-w">W</span>
+    <span class="compass-pip"></span>
+  </div>
+
+  <!-- Layer Toggle -->
+  <div id="layers">
+    <div class="layers-hdr">LAYERS</div>
+    <div id="layers-list"></div>
+  </div>
+
+  <!-- Zoom Controls -->
+  <div id="zctl">
+    <button class="zctl-btn" id="z-in" title="Zoom in">+</button>
+    <button class="zctl-btn" id="z-fit" title="Fit map">⊡</button>
+    <button class="zctl-btn" id="z-out" title="Zoom out">−</button>
+  </div>
+
+  <!-- Zoom Level -->
+  <div id="zlvl">Z 0</div>
+
+  <!-- Clouds -->
+  <div id="clouds"></div>
+
+  <!-- Detail Panel -->
+  <div id="panel">
+    <button class="panel-close" id="panel-close">✕</button>
+    <div class="panel-body" id="panel-body"></div>
+  </div>
+
+  <!-- VIP Welcome Cinematic (plays once after gate) -->
+  <div id="welcome" class="welcome-overlay">
+    <div class="welcome-inner">
+      <div class="welcome-line welcome-fade" data-delay="0">You have entered</div>
+      <div class="welcome-title welcome-fade" data-delay="600">The Hollowlands</div>
+      <div class="welcome-rule welcome-fade" data-delay="1200"></div>
+      <div class="welcome-sub welcome-fade" data-delay="1600">A living atlas, charted for the Council of Patrons.<br>Explore freely. Tap any landmark to uncover its story.</div>
+      <button id="welcome-explore" class="welcome-btn welcome-fade" data-delay="2200">Explore the Map</button>
+      <button id="welcome-journey" class="welcome-btn-alt welcome-fade" data-delay="2400">Follow Elena's Journey</button>
+    </div>
+  </div>
+
+  <!-- Guided Journey FAB (always visible after welcome) -->
+  <button id="journey-fab" class="journey-fab" title="Follow Elena's journey through Volume 1">
+    <span class="journey-fab-icon">📖</span>
+    <span class="journey-fab-text">Elena's Journey</span>
+  </button>
+
+  <!-- Journey Narration Toast -->
+  <div id="journey-toast" class="journey-toast">
+    <div class="journey-toast-step"><span id="jt-step">1</span> of <span id="jt-total">11</span></div>
+    <div class="journey-toast-name" id="jt-name"></div>
+    <div class="journey-toast-desc" id="jt-desc"></div>
+    <div class="journey-toast-nav">
+      <button id="jt-prev" class="jt-btn">← Previous</button>
+      <button id="jt-next" class="jt-btn jt-btn-primary">Next →</button>
+      <button id="jt-close" class="jt-btn jt-btn-close">✕ Exit Tour</button>
+    </div>
+  </div>
+
+  <!-- First-time hint (shows briefly, then fades) -->
+  <div id="hint" class="hint-toast">
+    <span class="hint-icon">👆</span>
+    <span class="hint-text">Tap any glowing marker to learn its story</span>
+  </div>
+</div>
+
+<!-- Discovery Card (fog system) -->
+<div id="discovery-card">
+  <button class="dc-close" aria-label="Close">✕</button>
+  <img class="dc-art" style="display:none" />
+  <div class="dc-type"></div>
+  <div class="dc-name"></div>
+  <div class="dc-sub"></div>
+  <div class="dc-divider"></div>
+  <div class="dc-desc"></div>
+  <div class="dc-lore" style="display:none"></div>
+</div>
+
+<!-- Progress Bar (fog system) -->
+<div id="progress-container">
+  <div id="progress-title">Wanderer</div>
+  <div id="progress-track"><div id="progress-fill"></div></div>
+  <div id="progress-label">0 / 0 charted</div>
+</div>
+
+<script src="data.js?v=5"></script>
+<script>
+// Auto-clear old fog state (inline — not affected by fog.js caching)
+(function() {
+  var CURRENT_VERSION = 14;
+  var vKey = 'intrepid_atlas_discovered_v';
+  var dKey = 'intrepid_atlas_discovered';
+  var stored = parseInt(localStorage.getItem(vKey) || '0');
+  if (stored !== CURRENT_VERSION || location.search.indexOf('reset') > -1) {
+    localStorage.removeItem(dKey);
+    localStorage.setItem(vKey, CURRENT_VERSION);
+    console.log('[INIT] Cleared fog state (v' + stored + ' → v' + CURRENT_VERSION + ')');
+  }
+})();
+</script>
+<script src="fog.js?v=14"></script>
+<script>
+(function() {
+  'use strict';
+
+  /* ═══════════════════════════════════════════
+     CONSTANTS & STATE
+     ═══════════════════════════════════════════ */
+  // Tier-aware access codes
+  const ACCESS_CODES = {
+    'hollowlands': { tier: 'A', label: 'Patron' },         // Legacy — full access
+    'cartographer': { tier: 'A', label: 'Cartographer' },   // Map tier
+    'explorer': { tier: 'A', label: 'Explorer' },           // Map tier
+    'patron': { tier: 'A', label: 'Patron' }                // Map tier
+  };
+  const LS_KEY = 'intrepid_atlas_auth';
+  const LS_TIER_KEY = 'intrepid_atlas_tier';
+  const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
+
+  let map, imageBounds, layerGroups = {}, activeMarkerEl = null;
+  let currentTier = 'C';  // Default: public (most restricted)
+  let regionsData = null; // GeoJSON FeatureCollection
+  let revealsData = null; // World state from reveals.json
+  let veilLayers = {};    // region_id -> L.polygon overlay
+
+  /* ═══════════════════════════════════════════
+     PASSWORD GATE
+     ═══════════════════════════════════════════ */
+  const gate     = document.getElementById('gate');
+  const gateBtn  = document.getElementById('gate-btn');
+  const gatePw   = document.getElementById('gate-pw');
+  const gateErr  = document.getElementById('gate-err');
+
+  // Sequential fade-in of gate elements
+  function animateGateIn() {
+    const els = gate.querySelectorAll('.gate-fade');
+    els.forEach(el => {
+      const delay = parseInt(el.dataset.delay, 10) || 0;
+      setTimeout(() => el.classList.add('vis'), 100 + delay);
+    });
+  }
+
+  function checkGate() {
+    // Check URL for key param (Cartographer private links)
+    const params = new URLSearchParams(window.location.search);
+    const urlKey = params.get('key');
+    const scanCode = params.get('scan');
+
+    if (urlKey && urlKey.startsWith('CART-')) {
+      // Cartographer direct link
+      setTier('A', 'Cartographer');
+      gate.style.display = 'none';
+      launch(scanCode);
+      return;
+    }
+
+    // Check localStorage for existing session
+    const storedTier = localStorage.getItem(LS_TIER_KEY);
+    if (storedTier && localStorage.getItem(LS_KEY) === 'granted') {
+      currentTier = storedTier;
+      gate.style.display = 'none';
+      launch(scanCode);
+      return;
+    }
+
+    // If there's a scan code but no auth, the user needs to enter a sigil first
+    animateGateIn();
+  }
+
+  function setTier(tier, label) {
+    currentTier = tier;
+    localStorage.setItem(LS_KEY, 'granted');
+    localStorage.setItem(LS_TIER_KEY, tier);
+    if (label) localStorage.setItem('intrepid_atlas_label', label);
+  }
+
+  function submitPassword() {
+    const val = gatePw.value.trim().toLowerCase();
+    const access = ACCESS_CODES[val];
+
+    if (access) {
+      setTier(access.tier, access.label);
+      gate.classList.add('hidden');
+      const scanCode = new URLSearchParams(window.location.search).get('scan');
+      setTimeout(() => launch(scanCode), 850);
+    } else {
+      gateErr.textContent = 'The archive does not recognize that word.';
+      gateErr.classList.add('show');
+      const card = gate.querySelector('.gate-card');
+      card.classList.remove('shake');
+      void card.offsetWidth; // force reflow
+      card.classList.add('shake');
+      setTimeout(() => gateErr.classList.remove('show'), 3000);
+    }
+  }
+
+  gateBtn.addEventListener('click', submitPassword);
+  gatePw.addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
+
+  // Show/hide password toggle
+  const gateEye = document.getElementById('gate-eye');
+  gateEye.addEventListener('click', () => {
+    const isPassword = gatePw.type === 'password';
+    gatePw.type = isPassword ? 'text' : 'password';
+    gateEye.classList.toggle('showing', isPassword);
+    gateEye.title = isPassword ? 'Hide password' : 'Show password';
+    gatePw.focus();
+  });
+
+  /* ═══════════════════════════════════════════
+     LAUNCH
+     ═══════════════════════════════════════════ */
+  function launch(scanCode) {
+    const app    = document.getElementById('app');
+    const loader = document.getElementById('loader');
+
+    app.classList.add('show');
+    loader.classList.remove('hidden');
+
+    // Load region + reveal data, then init map
+    Promise.all([
+      fetch('regions.json').then(r => r.json()).catch(() => null),
+      fetch('reveals.json').then(r => r.json()).catch(() => null)
+    ]).then(([regions, reveals]) => {
+      regionsData = regions;
+      revealsData = reveals;
+
+      // If scan code in URL, apply it (Tier B reveal)
+      if (scanCode && revealsData && revealsData.regions[scanCode]) {
+        applyReveal(scanCode);
+      }
+
+      initMap(() => {
+        loader.classList.add('hidden');
+        showWelcome();
+      });
+    });
+
+    initClouds();
+    tryLoadFrameImage();
+  }
+
+  /* ═══════════════════════════════════════════
+     REVEAL LOGIC
+     ═══════════════════════════════════════════ */
+  function applyReveal(regionId) {
+    if (!revealsData || !revealsData.regions[regionId]) return;
+    const region = revealsData.regions[regionId];
+    if (region.state === 'clear') return; // already revealed
+
+    // For Tier A: scans add bonus content (future), region already clear
+    // For Tier B: scan reveals the region
+    if (currentTier === 'B' || region.state !== 'clear') {
+      region.state = 'clear';
+      region.unlocked_at = new Date().toISOString().split('T')[0];
+      region.trigger = 'scan';
+
+      // Persist to localStorage
+      const localReveals = JSON.parse(localStorage.getItem(LS_REVEALS_KEY) || '{}');
+      localReveals[regionId] = 'clear';
+      localStorage.setItem(LS_REVEALS_KEY, JSON.stringify(localReveals));
+    }
+  }
+
+  function getRegionState(regionId) {
+    // Tier A (VIP backers) sees everything — no Veil at all
+    if (currentTier === 'A') return 'clear';
+
+    // Check local overrides first (scan reveals persist)
+    const localReveals = JSON.parse(localStorage.getItem(LS_REVEALS_KEY) || '{}');
+    if (localReveals[regionId] === 'clear') return 'clear';
+
+    // Then check reveals.json
+    if (revealsData && revealsData.regions[regionId]) {
+      return revealsData.regions[regionId].state;
+    }
+    return 'veiled'; // default
+  }
+
+  function isLocationVisible(locId) {
+    if (!regionsData) return true; // no regions data = show everything
+    // Find which region contains this location
+    const feature = regionsData.features.find(f =>
+      f.properties.lore_ids && f.properties.lore_ids.includes(locId)
+    );
+    if (!feature) return true; // location not in any region = always visible
+    return getRegionState(feature.properties.region_id) === 'clear';
+  }
+
+  /* ═══════════════════════════════════════════
+     MAP INITIALIZATION
+     ═══════════════════════════════════════════ */
+  function initMap(onReady) {
+    const cfg = window.MAP_CONFIG;
+    imageBounds = [[0, 0], [cfg.height, cfg.width]];
+
+    // Dynamically compute the minimum zoom that ensures the map image
+    // ALWAYS fills the entire viewport — no blue edges ever visible.
+    function calcMinZoom() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const needW = Math.log2(vw / cfg.width);
+      const needH = Math.log2(vh / cfg.height);
+      // Lower buffer allows more zoom-out; maxBounds prevents showing edges
+      const raw = Math.max(needW, needH) + 0.3;
+      return Math.ceil(raw * 4) / 4;
+    }
+
+    const dynamicMin = calcMinZoom();
+
+    // Pad bounds — more horizontal room for left/right panning
+    const padLat = cfg.height * 0.05;
+    const padLng = cfg.width * 0.25;
+    const paddedBounds = L.latLngBounds(
+      [-padLat, -padLng],
+      [cfg.height + padLat, cfg.width + padLng]
+    );
+
+    map = L.map('map', {
+      crs: L.CRS.Simple,
+      minZoom: dynamicMin,
+      maxZoom: 4,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 80,
+      zoomControl: false,
+      attributionControl: false,
+      maxBounds: paddedBounds,
+      maxBoundsViscosity: 1.0,
+      bounceAtZoomLimits: false,
+      preferCanvas: true
+    });
+
+    // Recalculate minZoom when window is resized
+    window.addEventListener('resize', function() {
+      const newMin = calcMinZoom();
+      map.setMinZoom(newMin);
+      // If current zoom is now below the new minimum, zoom in
+      if (map.getZoom() < newMin) {
+        map.setZoom(newMin);
+      }
+    });
+
+    const img = L.imageOverlay(cfg.image, imageBounds);
+    img.addTo(map);
+
+    // Wait for map image to load
+    const imgEl = new Image();
+    imgEl.onload = function() {
+      if (onReady) onReady();
+    };
+    imgEl.onerror = function() {
+      if (onReady) onReady();
+    };
+    imgEl.src = cfg.image;  // cfg.image already includes cache-bust param
+
+    // Start centered on the map, at the minimum zoom (fills viewport exactly)
+    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin + 0.5);
+
+    // Create layer groups
+    const defs = window.LAYER_DEFS || [];
+    defs.forEach(ld => {
+      layerGroups[ld.id] = L.layerGroup().addTo(map);
+    });
+    // Veil layer sits on top of everything
+    layerGroups['veil'] = L.layerGroup().addTo(map);
+
+    buildMarkers();
+    buildJourneyLine();
+    buildLandmarks();
+    buildVeil();
+    buildLayerUI();
+    bindZoomControls();
+    initCompass();
+    bindPanel();
+    updateZoomLevel();
+    updateLabelScale();
+    map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
+
+    // Initialize fog system (after markers are built)
+    if (window.FogSystem && !EDIT_MODE) {
+      window.FogSystem.init(map, cfg);
+      window.FogSystem.startDrift(); // subtle animated fog glow
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     LABEL SCALE — grows labels as you zoom in, capped at 2.2x
+     ═══════════════════════════════════════════ */
+  function updateLabelScale() {
+    const z = map.getZoom();
+    const minZ = map.getMinZoom();
+    const maxZ = map.getMaxZoom();
+    // Scale from 1.0 at min zoom to 1.5 at max zoom (base sizes are already large)
+    const t = (z - minZ) / (maxZ - minZ); // 0 → 1
+    const scale = Math.min(1.5, 1 + t * 0.5);
+    document.getElementById('map').style.setProperty('--label-scale', scale.toFixed(2));
+  }
+
+  /* ═══════════════════════════════════════════
+     MARKERS — only rendered for visible (clear) locations
+     ═══════════════════════════════════════════ */
+  // ── Edit Mode ──
+  const EDIT_MODE = window.location.search.includes('edit');
+  const editedCoords = {}; // { locationId: { lat, lng } }
+
+  if (EDIT_MODE) {
+    document.getElementById('edit-panel').classList.add('active');
+    // Hide the frame in edit mode for clearer positioning
+    const frameEl = document.getElementById('frame-img');
+    if (frameEl) frameEl.style.display = 'none';
+  }
+
+  window.exportCoords = function() {
+    const locs = window.LOCATIONS || [];
+    const output = {};
+    locs.forEach(loc => {
+      if (editedCoords[loc.id]) {
+        output[loc.id] = editedCoords[loc.id];
+      } else {
+        output[loc.id] = { lat: loc.lat, lng: loc.lng };
+      }
+    });
+    const text = JSON.stringify(output, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      document.getElementById('edit-coords').textContent = '✅ Copied to clipboard!';
+      setTimeout(() => {
+        document.getElementById('edit-coords').textContent = 'Drag any marker to reposition';
+      }, 2000);
+    });
+    console.log('=== EXPORTED COORDINATES ===');
+    console.log(text);
+  };
+
+  function buildMarkers() {
+    const locs = window.LOCATIONS || [];
+
+    // Map location types to layer group IDs
+    function layerFor(type) {
+      if (type === 'region' || type === 'water') return 'regions';
+      if (type === 'capital' || type === 'city' || type === 'town') return 'cities';
+      if (type === 'story') return 'story';
+      if (type === 'sacred') return 'sacred';
+      return 'cities';
+    }
+
+    let editCount = 0;
+
+    locs.forEach(loc => {
+      // In fog mode, render all markers but hide undiscovered ones
+      const isFogDiscovered = window.FogSystem && window.FogSystem.isDiscovered(loc.id);
+      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered) ? ' fog-hidden' : '';
+      const t = loc.type || 'city';
+      const pos = [loc.lat, loc.lng];
+      const groupId = layerFor(t);
+      const group = layerGroups[groupId];
+      if (!group && t !== 'water') return;
+
+      let marker = null; // hoisted so label can reference it in edit mode
+
+      // ── Dot marker (except water) ──
+      if (t !== 'water') {
+        const dotSize = { region: [32,32], capital: [12,12], city: [8,8], town: [6,6], story: [12,12], sacred: [10,10] }[t] || [8,8];
+
+        // In edit mode, use bigger dots for easier grabbing
+        const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 20), Math.max(dotSize[1], 20)] : dotSize;
+
+        const dotIcon = L.divIcon({
+          className: '' + fogHiddenClass,
+          html: '<div class="mk-' + t + '"' + (EDIT_MODE ? ' style="min-width:20px;min-height:20px;border:2px solid gold;cursor:grab;"' : '') + '></div>',
+          iconSize: editDotSize,
+          iconAnchor: [editDotSize[0]/2, editDotSize[1]/2]
+        });
+
+        marker = L.marker(pos, {
+          icon: dotIcon,
+          interactive: true,
+          draggable: EDIT_MODE
+        });
+        marker.locationData = loc;
+
+        if (EDIT_MODE) {
+          marker.on('dragstart', function() {
+            this._icon.style.cursor = 'grabbing';
+          });
+          marker.on('drag', function(e) {
+            const p = e.target.getLatLng();
+            document.getElementById('edit-coords').textContent =
+              loc.name + ' → lat: ' + Math.round(p.lat) + ', lng: ' + Math.round(p.lng);
+          });
+          marker.on('dragend', function(e) {
+            const p = e.target.getLatLng();
+            editedCoords[loc.id] = { lat: Math.round(p.lat), lng: Math.round(p.lng) };
+            editCount = Object.keys(editedCoords).length;
+            document.getElementById('edit-count').textContent = editCount + ' marker(s) repositioned';
+            this._icon.style.cursor = 'grab';
+          });
+        }
+
+        marker.on('click', function(e) {
+          if (!EDIT_MODE) {
+            // Only open panel if location is discovered (or fog system not active)
+            if (!window.FogSystem || window.FogSystem.isDiscovered(loc.id)) {
+              L.DomEvent.stopPropagation(e);
+              openPanel(loc, this);
+            }
+          }
+        });
+        if (group) marker.addTo(group);
+        // Register with fog system
+        if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'dot', marker);
+      }
+
+      // ── Label ──
+      const lblClass = 'mk-' + t + '-lbl';
+      const lblIcon = L.divIcon({
+        className: '' + fogHiddenClass,
+        html: '<div class="' + lblClass + '" style="white-space:nowrap;">' + loc.name + '</div>',
+        iconSize: [0, 0],
+        iconAnchor: [-12, 6]
+      });
+      const lbl = L.marker(pos, { icon: lblIcon, interactive: false });
+      const lblGroup = (t === 'water') ? layerGroups['regions'] : group;
+      if (lblGroup) lbl.addTo(lblGroup);
+      // Register label with fog system
+      if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'label', lbl);
+
+      // In edit mode, link the label to the dot so it follows during drag
+      if (EDIT_MODE && t !== 'water' && marker) {
+        marker.on('drag', function(e) {
+          lbl.setLatLng(e.target.getLatLng());
+        });
+      }
+
+      // ── Journey step number (disabled with journey lines) ──
+      if (false && loc.journeyStep != null && layerGroups['journey']) {
+        const jIcon = L.divIcon({
+          className: '',
+          html: '<div class="journey-num">' + loc.journeyStep + '</div>',
+          iconSize: [22, 22],
+          iconAnchor: [-8, 11]
+        });
+        const jMarker = L.marker(pos, { icon: jIcon, interactive: false }).addTo(layerGroups['journey']);
+
+        // Journey number also follows in edit mode
+        if (EDIT_MODE && marker) {
+          marker.on('drag', function(e) {
+            jMarker.setLatLng(e.target.getLatLng());
+          });
+        }
+      }
+    });
+  }
+
+  function buildJourneyLine() {
+    return; // TEMP: disabled — dotted lines are confusing at this stage
+    const locs = (window.LOCATIONS || [])
+      .filter(l => l.journeyStep != null)
+      .sort((a, b) => a.journeyStep - b.journeyStep);
+    if (locs.length < 2) return;
+    const pts = locs.map(l => [l.lat, l.lng]);
+    const line = L.polyline(pts, {
+      color: '#d4a843',
+      weight: 2,
+      opacity: 0.5,
+      dashArray: '8 6'
+    });
+    if (layerGroups['journey']) line.addTo(layerGroups['journey']);
+  }
+
+  /* ═══════════════════════════════════════════
+     THE VEIL — Region overlays based on world state
+     veiled → silhouette → clear
+     ═══════════════════════════════════════════ */
+  function buildVeil() {
+    return; // TEMP: veil disabled for development
+    if (!regionsData || !regionsData.features) return;
+    const veilGroup = layerGroups['veil'];
+    if (!veilGroup) return;
+
+    regionsData.features.forEach(feature => {
+      const props = feature.properties;
+      const regionId = props.region_id;
+      const state = getRegionState(regionId);
+
+      // Clear regions get no overlay
+      if (state === 'clear') return;
+
+      // Convert GeoJSON coordinates [lng, lat] to Leaflet [lat, lng]
+      const coords = feature.geometry.coordinates[0].map(c => [c[1], c[0]]);
+
+      // Style based on veil_style and state
+      const veilStyle = props.veil_style || 'stone';
+      let style;
+
+      if (veilStyle === 'kur') {
+        // Kur storm clouds — dark blue-purple, atmospheric
+        style = {
+          fillColor: '#1a1a3e',
+          fillOpacity: state === 'veiled' ? 0.6 : 0.35,
+          color: 'rgba(100,140,220,0.2)',
+          weight: 1,
+          className: 'veil-kur'
+        };
+      } else if (veilStyle === 'horizon') {
+        // Horizon — future content, light misty
+        style = {
+          fillColor: '#1a2a3a',
+          fillOpacity: state === 'veiled' ? 0.5 : 0.3,
+          color: 'rgba(100,160,200,0.1)',
+          weight: 0.5,
+          className: 'veil-horizon'
+        };
+      } else {
+        // Stone bas-relief — warm fog
+        style = {
+          fillColor: '#8a7048',
+          fillOpacity: state === 'veiled' ? 0.55 : 0.3,
+          color: 'rgba(198,141,85,0.15)',
+          weight: 1,
+          className: 'veil-stone'
+        };
+      }
+
+      const polygon = L.polygon(coords, style);
+
+      // Add region name label in center
+      const center = polygon.getBounds().getCenter();
+      const labelHtml = state === 'silhouette'
+        ? '<div class="veil-label veil-label-silhouette">' + props.name + '</div>'
+        : '<div class="veil-label veil-label-veiled">'
+          + props.name
+          + (props.horizon_text ? '<br><span class="veil-horizon-text">' + props.horizon_text + '</span>' : '')
+          + '</div>';
+
+      const labelIcon = L.divIcon({
+        className: '',
+        html: labelHtml,
+        iconSize: [0, 0]
+      });
+      const label = L.marker(center, { icon: labelIcon, interactive: false });
+
+      polygon.addTo(veilGroup);
+      label.addTo(veilGroup);
+
+      // Store for potential reveal animation later
+      veilLayers[regionId] = { polygon, label };
+
+      // Attribution overlay for Cartographer-revealed regions
+      if (revealsData && revealsData.regions[regionId]) {
+        const reveal = revealsData.regions[regionId];
+        if (reveal.charted_by && state === 'clear') {
+          // This would show on clear regions — but we skip clear above
+          // So this is for future when we animate from silhouette → clear
+        }
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     LANDMARK ART — shown in lore panel, not on map
+     Images in landmarks/ folder for easy swap with pro art.
+     ═══════════════════════════════════════════ */
+  const LANDMARK_ART = {
+    'tower-nine':      'landmarks/tower_of_nine.png',
+    'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
+    'hollowgate':      'landmarks/hollowgate.png',
+    'belu':            'landmarks/belu_dragon_head.png'
+  };
+
+  function buildLandmarks() {
+    // No-op — landmarks are now rendered inside the panel via openPanel()
+  }
+
+  /* ═══════════════════════════════════════════
+     LAYER UI
+     ═══════════════════════════════════════════ */
+  function buildLayerUI() {
+    const list = document.getElementById('layers-list');
+    const defs = window.LAYER_DEFS || [];
+    list.innerHTML = '';
+    defs.forEach(ld => {
+      const row = document.createElement('div');
+      row.className = 'layer-row';
+      const chk = document.createElement('span');
+      chk.className = 'layer-chk on';
+      chk.textContent = '✓';
+      const lbl = document.createElement('span');
+      lbl.className = 'layer-lbl';
+      lbl.textContent = ld.label;
+      row.appendChild(chk);
+      row.appendChild(lbl);
+
+      let visible = true;
+      row.addEventListener('click', () => {
+        visible = !visible;
+        if (visible) {
+          chk.classList.add('on');
+          map.addLayer(layerGroups[ld.id]);
+        } else {
+          chk.classList.remove('on');
+          map.removeLayer(layerGroups[ld.id]);
+        }
+      });
+      list.appendChild(row);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     ZOOM CONTROLS
+     ═══════════════════════════════════════════ */
+  function bindZoomControls() {
+    document.getElementById('z-in').addEventListener('click', () => map.zoomIn(0.5));
+    document.getElementById('z-out').addEventListener('click', () => map.zoomOut(0.5));
+    document.getElementById('z-fit').addEventListener('click', () => {
+      const cfg = window.MAP_CONFIG;
+      map.setView([cfg.height / 2, cfg.width / 2], map.getMinZoom() + 0.5);
+    });
+  }
+
+  function updateZoomLevel() {
+    document.getElementById('zlvl').textContent = 'Z ' + map.getZoom().toFixed(1);
+  }
+
+  /* ═══════════════════════════════════════════
+     COMPASS
+     ═══════════════════════════════════════════ */
+  function initCompass() {
+    let lastCenter = map.getCenter();
+    let clearTimer = null;
+
+    const n = document.querySelector('.compass-n');
+    const s = document.querySelector('.compass-s');
+    const e = document.querySelector('.compass-e');
+    const w = document.querySelector('.compass-w');
+    const pip = document.querySelector('.compass-pip');
+    const letters = [n, s, e, w];
+
+    function clearAll() {
+      letters.forEach(l => l.classList.remove('lit'));
+      pip.classList.remove('lit');
+    }
+
+    map.on('move', () => {
+      const c = map.getCenter();
+      const dy = c.lat - lastCenter.lat;
+      const dx = c.lng - lastCenter.lng;
+      lastCenter = c;
+
+      clearAll();
+      pip.classList.add('lit');
+      if (dy > 0) n.classList.add('lit');
+      if (dy < 0) s.classList.add('lit');
+      if (dx > 0) e.classList.add('lit');
+      if (dx < 0) w.classList.add('lit');
+
+      clearTimeout(clearTimer);
+      clearTimer = setTimeout(clearAll, 700);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     DETAIL PANEL
+     ═══════════════════════════════════════════ */
+  const panel     = document.getElementById('panel');
+  const panelBody = document.getElementById('panel-body');
+
+  function openPanel(loc, marker) {
+    // Clear previous active
+    if (activeMarkerEl) {
+      const prev = activeMarkerEl.getElement();
+      if (prev) prev.classList.remove('mk-active');
+    }
+
+    // Mark active
+    activeMarkerEl = marker;
+    const el = marker.getElement();
+    if (el) el.classList.add('mk-active');
+
+    // Type labels
+    const typeLabels = {
+      region: 'Region', capital: 'Capital', city: 'City', town: 'Town',
+      story: 'Story Location', sacred: 'Sacred Site', water: 'Body of Water'
+    };
+
+    let html = '';
+
+    // Landmark art — show as a clean image at top of panel
+    const artPath = LANDMARK_ART[loc.id];
+    if (artPath) {
+      html += '<div class="panel-art"><img src="' + artPath + '" alt="' + (loc.name || '') + '"></div>';
+    }
+
+    html += '<div class="panel-eyebrow">' + (typeLabels[loc.type] || loc.type) + '</div>';
+    html += '<div class="panel-name">' + (loc.name || '') + '</div>';
+    if (loc.sub) html += '<div class="panel-sub">' + loc.sub + '</div>';
+    if (loc.desc) html += '<div class="panel-desc">' + loc.desc + '</div>';
+    if (loc.lore) html += '<div class="panel-lore">' + loc.lore + '</div>';
+
+    if (loc.journeyStep != null) {
+      html += '<div class="panel-journey-badge">'
+        + '<span class="step-num">' + loc.journeyStep + '</span>'
+        + "Elena\u2019s Journey \u2014 Step " + loc.journeyStep
+        + '</div>';
+    }
+
+    if (loc.volume1) {
+      const ksLink = (window.MAP_CONFIG && window.MAP_CONFIG.ksLink) || '#';
+      html += '<div class="panel-v1-section">';
+      html += '<div class="panel-v1-eyebrow">STORY CONNECTION</div>';
+      html += '<div class="panel-v1-text">This location appears in Intrepid Dusk Volume 1.</div>';
+      html += '<a class="panel-v1-btn" href="' + ksLink + '" target="_blank" rel="noopener">📖 Get Volume 1</a>';
+      html += '</div>';
+    }
+
+    panelBody.innerHTML = html;
+    panel.classList.add('open');
+  }
+
+  function closePanel() {
+    panel.classList.remove('open');
+    if (activeMarkerEl) {
+      const el = activeMarkerEl.getElement();
+      if (el) el.classList.remove('mk-active');
+      activeMarkerEl = null;
+    }
+  }
+
+  function bindPanel() {
+    document.getElementById('panel-close').addEventListener('click', e => {
+      e.stopPropagation();
+      closePanel();
+    });
+    map.on('click', closePanel);
+  }
+
+  /* ═══════════════════════════════════════════
+     CLOUDS
+     ═══════════════════════════════════════════ */
+  function initClouds() {
+    const container = document.getElementById('clouds');
+    const configs = [
+      { top: '12%', dur: 128, w: 260, h: 50, op: 0.09 },
+      { top: '28%', dur: 98,  w: 320, h: 60, op: 0.14 },
+      { top: '48%', dur: 155, w: 280, h: 45, op: 0.11 },
+      { top: '66%', dur: 185, w: 340, h: 55, op: 0.17 },
+      { top: '82%', dur: 112, w: 240, h: 40, op: 0.10 }
+    ];
+    configs.forEach((c, i) => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 ' + c.w + ' ' + c.h);
+      svg.setAttribute('width', c.w);
+      svg.setAttribute('height', c.h);
+      svg.classList.add('cloud');
+      svg.style.top = c.top;
+      svg.style.opacity = c.op;
+      svg.style.animationDuration = c.dur + 's';
+      svg.style.animationDelay = -(Math.random() * c.dur) + 's';
+
+      const ellipse = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      ellipse.setAttribute('cx', c.w / 2);
+      ellipse.setAttribute('cy', c.h / 2);
+      ellipse.setAttribute('rx', c.w * 0.42);
+      ellipse.setAttribute('ry', c.h * 0.42);
+      ellipse.setAttribute('fill', 'rgba(191,178,153,0.25)');
+      svg.appendChild(ellipse);
+
+      // Second ellipse for organic shape
+      const e2 = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+      e2.setAttribute('cx', c.w * 0.35);
+      e2.setAttribute('cy', c.h * 0.55);
+      e2.setAttribute('rx', c.w * 0.28);
+      e2.setAttribute('ry', c.h * 0.35);
+      e2.setAttribute('fill', 'rgba(191,178,153,0.18)');
+      svg.appendChild(e2);
+
+      container.appendChild(svg);
+    });
+  }
+
+  /* ═══════════════════════════════════════════
+     FRAME IMAGE
+     ═══════════════════════════════════════════ */
+  function tryLoadFrameImage() {
+    const fi = document.getElementById('frame-img');
+    const img = new Image();
+    img.onload = () => fi.classList.add('loaded');
+    img.src = 'frame.png?v=4';
+  }
+
+  /* ═══════════════════════════════════════════
+     VIP WELCOME OVERLAY
+     ═══════════════════════════════════════════ */
+  const LS_WELCOMED = 'intrepid_atlas_welcomed';
+  let welcomeDismissed = false;
+
+  function showWelcome() {
+    const welcome = document.getElementById('welcome');
+    if (!welcome) return;
+
+    // If already welcomed before, skip the cinematic
+    if (localStorage.getItem(LS_WELCOMED) === 'yes') {
+      welcome.style.display = 'none';
+      welcomeDismissed = true;
+      showJourneyFab();
+      showHint();
+      return;
+    }
+
+    // Animate in
+    const els = welcome.querySelectorAll('.welcome-fade');
+    els.forEach(el => {
+      const delay = parseInt(el.dataset.delay, 10) || 0;
+      setTimeout(() => el.classList.add('vis'), 300 + delay);
+    });
+
+    // Button handlers
+    document.getElementById('welcome-explore').addEventListener('click', () => {
+      dismissWelcome();
+      showHint();
+    });
+    document.getElementById('welcome-journey').addEventListener('click', () => {
+      dismissWelcome();
+      setTimeout(startJourney, 600);
+    });
+  }
+
+  function dismissWelcome() {
+    const welcome = document.getElementById('welcome');
+    welcome.classList.add('hidden');
+    welcomeDismissed = true;
+    localStorage.setItem(LS_WELCOMED, 'yes');
+    showJourneyFab();
+  }
+
+  function showJourneyFab() {
+    const fab = document.getElementById('journey-fab');
+    if (fab) fab.classList.add('visible');
+  }
+
+  /* ═══════════════════════════════════════════
+     GUIDED JOURNEY — Fly through Elena's path
+     ═══════════════════════════════════════════ */
+  let journeyActive = false;
+  let journeyStep = 0;
+
+  function getJourneyStops() {
+    const path = window.JOURNEY_PATH || [];
+    const locs = window.LOCATIONS || [];
+    return path.map(p => {
+      const loc = locs.find(l => l.id === p.locationId);
+      return loc ? { ...p, loc } : null;
+    }).filter(Boolean);
+  }
+
+  function startJourney() {
+    const stops = getJourneyStops();
+    if (stops.length === 0) return;
+
+    journeyActive = true;
+    journeyStep = 0;
+    const fab = document.getElementById('journey-fab');
+    if (fab) fab.classList.remove('visible');
+    showJourneyStep(stops, 0);
+  }
+
+  function showJourneyStep(stops, idx) {
+    if (idx < 0 || idx >= stops.length) return;
+    journeyStep = idx;
+    const stop = stops[idx];
+    const loc = stop.loc;
+
+    // Fly camera to location
+    map.flyTo([loc.lat, loc.lng], map.getMaxZoom() - 2, { duration: 1.5 });
+
+    // Update toast
+    const toast = document.getElementById('journey-toast');
+    document.getElementById('jt-step').textContent = idx + 1;
+    document.getElementById('jt-total').textContent = stops.length;
+    document.getElementById('jt-name').textContent = loc.name;
+    document.getElementById('jt-desc').textContent = loc.desc || loc.sub || '';
+    toast.classList.add('active');
+
+    // Prev/next state
+    document.getElementById('jt-prev').style.visibility = idx === 0 ? 'hidden' : 'visible';
+    document.getElementById('jt-next').textContent = idx === stops.length - 1 ? 'Finish' : 'Next →';
+  }
+
+  function endJourney() {
+    journeyActive = false;
+    const toast = document.getElementById('journey-toast');
+    toast.classList.remove('active');
+    showJourneyFab();
+    // Fly back to overview
+    const cfg = window.MAP_CONFIG;
+    map.flyTo([cfg.height / 2, cfg.width / 2], map.getMinZoom() + 0.5, { duration: 1.2 });
+  }
+
+  function bindJourneyControls() {
+    const fab = document.getElementById('journey-fab');
+    if (fab) fab.addEventListener('click', startJourney);
+
+    document.getElementById('jt-prev').addEventListener('click', () => {
+      const stops = getJourneyStops();
+      if (journeyStep > 0) showJourneyStep(stops, journeyStep - 1);
+    });
+    document.getElementById('jt-next').addEventListener('click', () => {
+      const stops = getJourneyStops();
+      if (journeyStep < stops.length - 1) {
+        showJourneyStep(stops, journeyStep + 1);
+      } else {
+        endJourney();
+      }
+    });
+    document.getElementById('jt-close').addEventListener('click', endJourney);
+  }
+
+  /* ═══════════════════════════════════════════
+     FIRST-TIME HINT
+     ═══════════════════════════════════════════ */
+  function showHint() {
+    const hint = document.getElementById('hint');
+    if (!hint) return;
+    // Only show once
+    if (localStorage.getItem('intrepid_atlas_hinted') === 'yes') return;
+    localStorage.setItem('intrepid_atlas_hinted', 'yes');
+    setTimeout(() => {
+      hint.classList.add('visible');
+      setTimeout(() => {
+        hint.classList.add('fading');
+        setTimeout(() => hint.classList.remove('visible', 'fading'), 600);
+      }, 4000);
+    }, 2000);
+  }
+
+  /* ═══════════════════════════════════════════
+     INIT
+     ═══════════════════════════════════════════ */
+  bindJourneyControls();
+  checkGate();
+})();
+</script>
+</body>
+</html>

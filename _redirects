@@ -1,0 +1,28 @@
+# ═══════════════════════════════════════════════════════════
+# INTREPID DUSK — Scan Code Redirects
+# Print QR codes pointing at these slugs (on YOUR domain).
+# The destination stays editable after print — critical per spec.
+# ═══════════════════════════════════════════════════════════
+
+# Volume 1 Scan Codes — one per region/chapter
+# Elena's journey through the Hollowlands
+/sigil/threshold      /?scan=hollowlands-south    302
+/sigil/crossing       /?scan=hollowlands-south    302
+/sigil/dawn-spear     /?scan=hope-rebellands      302
+/sigil/grandmother    /?scan=hope-rebellands      302
+/sigil/mish           /?scan=atras-heartland      302
+/sigil/scribes        /?scan=atras-heartland      302
+/sigil/oracle         /?scan=monastery-heights    302
+/sigil/moon-queen     /?scan=moon-queen-realm     302
+/sigil/erra           /?scan=atras-upper          302
+/sigil/tower          /?scan=tower-region         302
+/sigil/breaking       /?scan=tower-region         302
+
+# Placeholder redirects for future content
+# These exist now so QR codes can be printed pointing here
+/sigil/vol2-north     /?scan=northern-territories 302
+/sigil/vol2-east      /?scan=elil-domain          302
+/sigil/vol2-kur       /?scan=kur-north            302
+
+# Catch-all for unknown sigils → landing page
+/sigil/*              /                           302
