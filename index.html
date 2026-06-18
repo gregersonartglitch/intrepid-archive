@@ -1779,7 +1779,7 @@ input { font-family: inherit; }
     imgEl.src = cfg.image;  // cfg.image already includes cache-bust param
 
     // Start centered on the map, at the minimum zoom (fills viewport exactly)
-    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin + 0.5);
+    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
 
     // Create layer groups
     const defs = window.LAYER_DEFS || [];
@@ -1872,8 +1872,10 @@ input { font-family: inherit; }
 
     locs.forEach(loc => {
       // In fog mode, render all markers but hide undiscovered ones
+      // Regions and water are geography — always visible
       const isFogDiscovered = window.FogSystem && window.FogSystem.isDiscovered(loc.id);
-      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered) ? ' fog-hidden' : '';
+      const alwaysVisible = (loc.type === 'region' || loc.type === 'water');
+      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered && !alwaysVisible) ? ' fog-hidden' : '';
       const t = loc.type || 'city';
       const pos = [loc.lat, loc.lng];
       const groupId = layerFor(t);
@@ -2140,7 +2142,7 @@ input { font-family: inherit; }
     document.getElementById('z-out').addEventListener('click', () => map.zoomOut(0.5));
     document.getElementById('z-fit').addEventListener('click', () => {
       const cfg = window.MAP_CONFIG;
-      map.setView([cfg.height / 2, cfg.width / 2], map.getMinZoom() + 0.5);
+      map.setView([cfg.height / 2, cfg.width / 2], map.getMinZoom());
     });
   }
 
@@ -2419,7 +2421,7 @@ input { font-family: inherit; }
     showJourneyFab();
     // Fly back to overview
     const cfg = window.MAP_CONFIG;
-    map.flyTo([cfg.height / 2, cfg.width / 2], map.getMinZoom() + 0.5, { duration: 1.2 });
+    map.flyTo([cfg.height / 2, cfg.width / 2], map.getMinZoom(), { duration: 1.2 });
   }
 
   function bindJourneyControls() {

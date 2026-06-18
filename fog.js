@@ -266,6 +266,11 @@
 
   function isClickable(locId) {
     if (discovered[locId]) return false;
+    // Regions are always clickable — they're geography
+    var locs = window.LOCATIONS || [];
+    var loc = locs.find(function(l) { return l.id === locId; });
+    if (loc && (loc.type === 'region' || loc.type === 'water')) return true;
+    // Story locations follow the journey path
     var next = getNextPathLocation();
     if (next) return locId === next;
     return true; // path done, everything clickable
@@ -353,10 +358,31 @@
           ctx.fill();
         }
       }
-    } else if (isPathComplete()) {
-      // After path is done, show faint glows on all remaining undiscovered
+    }
+
+    // ── 3b. Faint glows for undiscovered regions (always visible) ──
+    locs.forEach(function(loc) {
+      if (discovered[loc.id]) return;
+      if (loc.type !== 'region') return;
+      var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+      if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
+      var p = 0.12 + Math.sin(time * 1.2 + loc.lat * 0.02) * 0.06;
+      var rGlow = 25 + Math.sin(time * 0.8 + loc.lng * 0.01) * 5;
+      var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
+      g.addColorStop(0, 'rgba(198, 141, 85, ' + (p + 0.1) + ')');
+      g.addColorStop(0.5, 'rgba(198, 141, 85, ' + p + ')');
+      g.addColorStop(1, 'rgba(198, 141, 85, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, rGlow, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    if (!nextId && isPathComplete()) {
+      // After path is done, show faint glows on all remaining undiscovered (non-region)
       locs.forEach(function(loc) {
         if (discovered[loc.id]) return;
+        if (loc.type === 'region') return; // already handled above
         var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
         if (pt.x < -40 || pt.x > w + 40 || pt.y < -40 || pt.y > h + 40) return;
         var p = 0.08 + Math.sin(time * 1.5 + loc.lat * 0.01) * 0.04;
@@ -461,10 +487,45 @@
     showCelebration(loc);
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
+    showDiscoveryToast(loc);
 
     if (tutorialStep < TUTORIAL_STEPS) {
       advanceTutorial();
     }
+  }
+
+  function showDiscoveryToast(loc) {
+    var total = (window.LOCATIONS || []).length;
+    var found = Object.keys(discovered).length;
+
+    // Remove existing toast
+    var old = document.getElementById('discovery-toast');
+    if (old) old.remove();
+
+    var toast = document.createElement('div');
+    toast.id = 'discovery-toast';
+    toast.style.cssText =
+      'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:900;' +
+      'background:rgba(10,12,16,0.92);border:1px solid rgba(198,141,85,0.4);' +
+      'border-radius:8px;padding:12px 24px;text-align:center;' +
+      'font-family:"Cinzel",serif;color:#efe7d2;pointer-events:none;' +
+      'opacity:0;transition:opacity 0.5s ease;';
+
+    toast.innerHTML =
+      '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c68d55;margin-bottom:4px;">Location Discovered</div>' +
+      '<div style="font-size:15px;font-weight:600;">' + loc.name + '</div>' +
+      '<div style="font-size:12px;color:#bfb299;margin-top:6px;">' + found + ' of ' + total + ' locations charted</div>';
+
+    document.body.appendChild(toast);
+    // Trigger fade in
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    // Fade out and remove
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 600);
+    }, 3000);
   }
 
   /* ════════════════════════════════════════════════
