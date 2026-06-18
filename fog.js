@@ -1,16 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
    FOG SYSTEM — The Hollowlands Atlas
-   Responsibilities: fog canvas rendering, click handling,
-   reveal animation, tutorial flow, celebration particles.
-   State is managed by StateManager. Cards by CardSystem.
+   Clean implementation: textured fog, simple radial clearing,
+   3-step guided tutorial, document-level click handling.
    ═══════════════════════════════════════════════════════════════ */
 (function() {
   'use strict';
 
+  var LS_KEY = 'intrepid_atlas_discovered';
   var CLICK_RADIUS = 80;   // how close (px) user must click to the glow
   var TUTORIAL_STEPS = 3;  // guided hand-holding for first 3 discoveries
 
-  // Rendering state (fog-specific, not persisted)
+  // State
+  var discovered = {};
   var markerRefs = {};
   var fogCanvas = null;
   var fogCtx = null;
@@ -18,10 +19,12 @@
   var cfg = null;
   var animatingReveal = null;
   var revealProgress = 0;
+  var journeyPath = [];
   var fogTexture = null;
   var textureReady = false;
   var tutorialStep = 0;
   var tutorialHintLoc = null;
+  var tutorialHint = null;
 
   /* ════════════════════════════════════════════════
      INIT
@@ -29,6 +32,20 @@
   function init(leafletMap, mapConfig) {
     map = leafletMap;
     cfg = mapConfig;
+    journeyPath = window.JOURNEY_PATH || [];
+
+    // Auto-clear stale localStorage when fog system version changes
+    var FOG_VERSION = 13;
+    var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
+    if (storedVersion !== FOG_VERSION) {
+      localStorage.removeItem(LS_KEY);
+      localStorage.setItem(LS_KEY + '_v', FOG_VERSION);
+      console.log('[FOG] Cleared old state (v' + storedVersion + ' → v' + FOG_VERSION + ')');
+    }
+
+    // Load saved state
+    try { discovered = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+    catch(e) { discovered = {}; }
 
     // Load fog texture
     fogTexture = new Image();
@@ -57,15 +74,11 @@
     var closeBtn = document.querySelector('#discovery-card .dc-close');
     if (closeBtn) closeBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (window.CardSystem) window.CardSystem.close();
+      closeDiscoveryCard();
     });
 
     // Tutorial
-    var SM = window.StateManager;
-    if (SM) {
-      var discoveredCount = SM.getProgress().journeyDone;
-      tutorialStep = discoveredCount;
-    }
+    tutorialStep = Object.keys(discovered).length;
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
     }
@@ -73,6 +86,7 @@
 
   /* ════════════════════════════════════════════════
      CLICK HANDLER — document capture phase
+     Fires before ALL other click handlers on the page.
      ════════════════════════════════════════════════ */
   function setupClickHandler() {
     var mouseDownX = 0, mouseDownY = 0;
@@ -86,8 +100,11 @@
       if (window.EDIT_MODE) return;
       if (!map) return;
 
+      // Only clicks inside the map
       var container = map.getContainer();
       if (!container.contains(e.target)) return;
+
+      // Skip UI elements
       if (e.target.closest('#layers, #discovery-card, #progress-container, .leaflet-control-zoom, #fog-reset-btn')) return;
 
       // Skip drags
@@ -98,16 +115,16 @@
       // Close card if open
       var card = document.getElementById('discovery-card');
       if (card && card.classList.contains('visible')) {
-        if (window.CardSystem) window.CardSystem.close();
+        card.classList.remove('visible');
         return;
       }
 
-      // Where did user click?
+      // Where did user click (container-relative)?
       var rect = container.getBoundingClientRect();
       var x = e.clientX - rect.left;
       var y = e.clientY - rect.top;
 
-      // Check proximity to clickable locations
+      // Check proximity to the next clickable location
       var locs = window.LOCATIONS || [];
       var closest = null;
       var closestDist = Infinity;
@@ -123,21 +140,26 @@
       });
 
       if (closest) {
-        var state = window.StateManager ? window.StateManager.getState(closest.id) : 'fogged';
-        if (state === 'dormant') {
-          // Dormant click — show sealed card, don't discover
-          e.stopPropagation();
-          e.preventDefault();
-          if (window.CardSystem) window.CardSystem.showDormant(closest);
-        } else {
-          // Fogged click — discover
-          console.log('[FOG] ✓ Discovering:', closest.id);
-          e.stopPropagation();
-          e.preventDefault();
-          discoverLocation(closest);
+        console.log('[FOG] ✓ Discovering:', closest.id);
+        e.stopPropagation();
+        e.preventDefault();
+        discoverLocation(closest);
+      } else {
+        // Debug: log why it missed
+        var nextId = getNextPathLocation();
+        if (nextId) {
+          var nl = locs.find(function(l) { return l.id === nextId; });
+          if (nl) {
+            var npt = map.latLngToContainerPoint([nl.lat, nl.lng]);
+            console.log('[FOG] ✗ Missed. Target:', nextId,
+              'at (' + npt.x.toFixed(0) + ',' + npt.y.toFixed(0) + ')',
+              'click (' + x.toFixed(0) + ',' + y.toFixed(0) + ')',
+              'dist:', Math.sqrt(Math.pow(x-npt.x,2)+Math.pow(y-npt.y,2)).toFixed(0) + 'px',
+              '(need <' + CLICK_RADIUS + ')');
+          }
         }
       }
-    }, true);
+    }, true); // CAPTURE PHASE
 
     // Touch support
     var touchStartX = 0, touchStartY = 0;
@@ -156,10 +178,7 @@
       if (Math.sqrt(Math.pow(touch.clientX-touchStartX,2)+Math.pow(touch.clientY-touchStartY,2)) > 15) return;
 
       var card = document.getElementById('discovery-card');
-      if (card && card.classList.contains('visible')) {
-        if (window.CardSystem) window.CardSystem.close();
-        return;
-      }
+      if (card && card.classList.contains('visible')) { card.classList.remove('visible'); return; }
 
       var rect = container.getBoundingClientRect();
       var x = touch.clientX - rect.left;
@@ -172,16 +191,7 @@
         var d = Math.sqrt(Math.pow(x-pt.x,2)+Math.pow(y-pt.y,2));
         if (d < CLICK_RADIUS && d < closestDist) { closest = loc; closestDist = d; }
       });
-      if (closest) {
-        var state = window.StateManager ? window.StateManager.getState(closest.id) : 'fogged';
-        if (state === 'dormant') {
-          e.preventDefault();
-          if (window.CardSystem) window.CardSystem.showDormant(closest);
-        } else {
-          e.preventDefault();
-          discoverLocation(closest);
-        }
-      }
+      if (closest) { e.preventDefault(); discoverLocation(closest); }
     }, true);
   }
 
@@ -195,8 +205,7 @@
   ];
 
   function startTutorial() {
-    var SM = window.StateManager;
-    var nextId = SM ? SM.getNextJourneyLocation() : null;
+    var nextId = getNextPathLocation();
     if (!nextId) return;
     var locs = window.LOCATIONS || [];
     var loc = locs.find(function(l) { return l.id === nextId; });
@@ -211,7 +220,12 @@
   function showTutorialHint(loc) {
     removeTutorialHint();
     tutorialHintLoc = loc;
+    // The canvas draw() function reads tutorialHintLoc and draws the hint
     console.log('[FOG] Tutorial hint for:', loc.id, 'step:', tutorialStep);
+  }
+
+  function positionHint() {
+    // No-op: canvas handles positioning in draw()
   }
 
   function removeTutorialHint() {
@@ -224,13 +238,13 @@
       removeTutorialHint();
       return;
     }
-    var SM = window.StateManager;
-    var nextId = SM ? SM.getNextJourneyLocation() : null;
+    var nextId = getNextPathLocation();
     if (!nextId) { removeTutorialHint(); return; }
     var locs = window.LOCATIONS || [];
     var nextLoc = locs.find(function(l) { return l.id === nextId; });
     if (!nextLoc) { removeTutorialHint(); return; }
 
+    // Wait for card to be seen, then fly to next
     setTimeout(function() {
       map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 3, { duration: 1.5 });
       setTimeout(function() { showTutorialHint(nextLoc); }, 2000);
@@ -238,40 +252,38 @@
   }
 
   /* ════════════════════════════════════════════════
-     PATH LOGIC — delegates to StateManager
+     PATH LOGIC
      ════════════════════════════════════════════════ */
   function getNextPathLocation() {
-    var SM = window.StateManager;
-    return SM ? SM.getNextJourneyLocation() : null;
+    for (var i = 0; i < journeyPath.length; i++) {
+      if (!discovered[journeyPath[i].locationId]) {
+        return journeyPath[i].locationId;
+      }
+    }
+    return null;
+  }
+
+  function isOnPath(locId) {
+    return journeyPath.some(function(s) { return s.locationId === locId; });
+  }
+
+  function isPathComplete() {
+    return journeyPath.every(function(s) { return !!discovered[s.locationId]; });
   }
 
   function isClickable(locId) {
-    var SM = window.StateManager;
-    if (!SM) return false;
-
-    // Already discovered → not clickable for fog discovery
-    if (SM.isDiscovered(locId)) return false;
-
-    var state = SM.getState(locId);
-
-    // Dormant locations are always clickable (show sealed card)
-    if (state === 'dormant') return true;
-
-    // Fogged journey locations — only next in sequence
-    var next = SM.getNextJourneyLocation();
+    if (discovered[locId]) return false;
+    var next = getNextPathLocation();
     if (next) return locId === next;
-
-    // Journey complete — all fogged locations become clickable
-    return state === 'fogged';
+    return true; // path done, everything clickable
   }
 
   /* ════════════════════════════════════════════════
-     DRAW FOG — pure rendering, reads state from StateManager
+     DRAW FOG
      ════════════════════════════════════════════════ */
   function draw() {
     if (!map || !fogCtx) return;
 
-    var SM = window.StateManager;
     var container = map.getContainer();
     var w = container.clientWidth;
     var h = container.clientHeight;
@@ -286,91 +298,107 @@
     ctx.fillStyle = '#141820';
     ctx.fillRect(0, 0, w, h);
 
-    // ── 2. Animated fog texture layer ──
-    if (textureReady && fogTexture.width > 0) {
-      ctx.globalAlpha = 0.10;
-      var ox1 = (time * 8) % fogTexture.width;
-      var oy1 = (time * 4) % fogTexture.height;
-      for (var tx = -fogTexture.width + ox1; tx < w + fogTexture.width; tx += fogTexture.width) {
-        for (var ty = -fogTexture.height + oy1; ty < h + fogTexture.height; ty += fogTexture.height) {
-          ctx.drawImage(fogTexture, tx, ty);
+    // ── 2. Fog texture overlay ──
+    if (textureReady && fogTexture) {
+      // Layer 1 — primary drift
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      var tSize = 512;
+      var originPt = map.latLngToContainerPoint([0, 0]);
+      var ox = (originPt.x + time * 8) % tSize;
+      var oy = (originPt.y + time * 3) % tSize;
+      for (var tx = -tSize + ox; tx < w + tSize; tx += tSize) {
+        for (var ty = -tSize + oy; ty < h + tSize; ty += tSize) {
+          ctx.drawImage(fogTexture, tx, ty, tSize, tSize);
         }
       }
-      ctx.globalAlpha = 0.06;
-      var ox2 = -(time * 5) % fogTexture.width;
-      var oy2 = -(time * 3) % fogTexture.height;
-      for (tx = -fogTexture.width + ox2; tx < w + fogTexture.width; tx += fogTexture.width) {
-        for (ty = -fogTexture.height + oy2; ty < h + fogTexture.height; ty += fogTexture.height) {
-          ctx.drawImage(fogTexture, tx, ty);
+      ctx.restore();
+
+      // Layer 2 — slower counter-drift
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      var tSize2 = 768;
+      var ox2 = (originPt.x + time * -5) % tSize2;
+      var oy2 = (originPt.y + time * 6) % tSize2;
+      for (var tx2 = -tSize2 + ox2; tx2 < w + tSize2; tx2 += tSize2) {
+        for (var ty2 = -tSize2 + oy2; ty2 < h + tSize2; ty2 += tSize2) {
+          ctx.drawImage(fogTexture, tx2, ty2, tSize2, tSize2);
         }
       }
-      ctx.globalAlpha = 1.0;
+      ctx.restore();
     }
 
-    // ── 3. Golden glow on clickable locations ──
-    var locs = window.LOCATIONS || [];
+    // ── 3. Golden glow on next clickable location ──
     var nextId = getNextPathLocation();
+    var locs = window.LOCATIONS || [];
 
     if (nextId) {
-      // Journey mode: glow on next target only
-      var nextLoc = locs.find(function(l) { return l.id === nextId; });
-      if (nextLoc) {
-        var npt = map.latLngToContainerPoint([nextLoc.lat, nextLoc.lng]);
-        var pulse = 0.4 + 0.3 * Math.sin(time * 2.5);
-        var gR = 60 * Math.pow(2, zoom * 0.3);
-        var glow = ctx.createRadialGradient(npt.x, npt.y, 0, npt.x, npt.y, gR);
-        glow.addColorStop(0, 'rgba(212,168,67,' + pulse + ')');
-        glow.addColorStop(0.4, 'rgba(212,168,67,' + (pulse * 0.4) + ')');
-        glow.addColorStop(1, 'rgba(212,168,67,0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(npt.x, npt.y, gR, 0, Math.PI * 2);
-        ctx.fill();
+      var glowLoc = locs.find(function(l) { return l.id === nextId; });
+      if (glowLoc) {
+        var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
+        if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
+          // Outer glow
+          var pulse = 0.3 + Math.sin(time * 2) * 0.15;
+          var outerR = 50 + Math.sin(time * 1.5) * 12;
+          var glow = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
+          glow.addColorStop(0, 'rgba(239, 231, 210, ' + (pulse + 0.25) + ')');
+          glow.addColorStop(0.25, 'rgba(212, 168, 67, ' + (pulse + 0.1) + ')');
+          glow.addColorStop(0.6, 'rgba(198, 141, 85, ' + pulse + ')');
+          glow.addColorStop(1, 'rgba(198, 141, 85, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Bright core
+          var core = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, 10);
+          core.addColorStop(0, 'rgba(255, 248, 230, 0.9)');
+          core.addColorStop(1, 'rgba(212, 168, 67, 0)');
+          ctx.fillStyle = core;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
-    } else {
-      // Post-journey: faint glows on all undiscovered locations
+    } else if (isPathComplete()) {
+      // After path is done, show faint glows on all remaining undiscovered
       locs.forEach(function(loc) {
-        if (SM && SM.isDiscovered(loc.id)) return;
-        if (SM && SM.getState(loc.id) === 'dormant') return; // dormant has own markers
+        if (discovered[loc.id]) return;
         var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-        var gR = 30 * Math.pow(2, zoom * 0.3);
-        var faintPulse = 0.12 + 0.08 * Math.sin(time * 1.5 + loc.lat * 0.01);
-        var glow = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, gR);
-        glow.addColorStop(0, 'rgba(212,168,67,' + faintPulse + ')');
-        glow.addColorStop(1, 'rgba(212,168,67,0)');
-        ctx.fillStyle = glow;
+        if (pt.x < -40 || pt.x > w + 40 || pt.y < -40 || pt.y > h + 40) return;
+        var p = 0.08 + Math.sin(time * 1.5 + loc.lat * 0.01) * 0.04;
+        var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 15);
+        g.addColorStop(0, 'rgba(198, 141, 85, ' + p + ')');
+        g.addColorStop(1, 'rgba(198, 141, 85, 0)');
+        ctx.fillStyle = g;
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, gR, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, 15, 0, Math.PI * 2);
         ctx.fill();
       });
     }
 
-    // ── 4. Punch clear holes for discovered locations ──
+    // ── 4. Clear holes for discovered locations ──
+    // Simple radial gradient: fully clear center → soft translucent edge → fog
     ctx.globalCompositeOperation = 'destination-out';
-
-    // Get discovered IDs from StateManager
-    var discoveredIds = [];
-    if (SM) {
-      locs.forEach(function(loc) {
-        if (SM.isDiscovered(loc.id)) discoveredIds.push(loc);
-      });
-    }
-
-    discoveredIds.forEach(function(loc) {
+    locs.forEach(function(loc) {
+      if (!discovered[loc.id]) return;
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+
+      // Base radius scaled by zoom
       var baseR = 180;
       var r = baseR * Math.pow(2, zoom);
+      if (r < 30) r = 30;
 
-      // If this is the currently-animating reveal, scale by progress
       var alpha = 1;
       if (animatingReveal === loc.id) alpha = revealProgress;
 
+      // One simple radial gradient: clear center → translucent → opaque edge
       var grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-      grad.addColorStop(0,    'rgba(0,0,0,' + alpha + ')');
-      grad.addColorStop(0.5,  'rgba(0,0,0,' + alpha + ')');
-      grad.addColorStop(0.75, 'rgba(0,0,0,' + (alpha * 0.6) + ')');
-      grad.addColorStop(0.9,  'rgba(0,0,0,' + (alpha * 0.15) + ')');
-      grad.addColorStop(1,    'rgba(0,0,0,0)');
+      grad.addColorStop(0,    'rgba(0,0,0,' + alpha + ')');       // fully clear
+      grad.addColorStop(0.5,  'rgba(0,0,0,' + (alpha * 0.95) + ')');  // still clear
+      grad.addColorStop(0.75, 'rgba(0,0,0,' + (alpha * 0.5) + ')');   // translucent
+      grad.addColorStop(0.9,  'rgba(0,0,0,' + (alpha * 0.15) + ')');  // mostly fog
+      grad.addColorStop(1,    'rgba(0,0,0,0)');                       // full fog
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
@@ -378,13 +406,14 @@
     });
     ctx.globalCompositeOperation = 'source-over';
 
-    // ── 5. Tutorial hint (drawn on canvas) ──
+    // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
       var hpt = map.latLngToContainerPoint([tutorialHintLoc.lat, tutorialHintLoc.lng]);
       var hx = hpt.x;
       var hy = hpt.y;
-      var bob = Math.sin(time * 3) * 6;
+      var bob = Math.sin(time * 3) * 6; // bobbing animation
 
+      // Arrow ▼
       ctx.save();
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'center';
@@ -394,48 +423,50 @@
       ctx.fillText('▼', hx, hy - 30 + bob);
       ctx.restore();
 
+      // Text background pill
       var msg = tutorialMessages[Math.min(tutorialStep, tutorialMessages.length - 1)];
       ctx.save();
       ctx.font = '600 14px "Cinzel", "Cormorant Garamond", serif';
       var tw = ctx.measureText(msg.toUpperCase()).width + 32;
       var th = 32;
-      var ttx = hx - tw / 2;
-      var tty = hy - 70 + bob;
+      var tx = hx - tw / 2;
+      var ty = hy - 70 + bob;
 
+      // Dark background
       ctx.fillStyle = 'rgba(10, 12, 16, 0.92)';
       ctx.beginPath();
-      ctx.roundRect(ttx, tty, tw, th, 6);
+      ctx.roundRect(tx, ty, tw, th, 6);
       ctx.fill();
 
+      // Golden border
       ctx.strokeStyle = 'rgba(198, 141, 85, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(ttx, tty, tw, th, 6);
+      ctx.roundRect(tx, ty, tw, th, 6);
       ctx.stroke();
 
+      // Text
       ctx.fillStyle = '#efe7d2';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.letterSpacing = '2px';
-      ctx.fillText(msg.toUpperCase(), hx, tty + th / 2);
+      ctx.fillText(msg.toUpperCase(), hx, ty + th / 2);
       ctx.restore();
     }
   }
 
   /* ════════════════════════════════════════════════
-     DISCOVER — delegates state to StateManager, cards to CardSystem
+     DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
-    var SM = window.StateManager;
-    if (SM) SM.discover(loc.id);
+    discovered[loc.id] = { at: Date.now() };
+    localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
     removeTutorialHint();
     revealMarker(loc.id);
     animateReveal(loc);
     showCelebration(loc);
-    setTimeout(function() {
-      if (window.CardSystem) window.CardSystem.showRevealed(loc);
-    }, 600);
+    setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
 
     if (tutorialStep < TUTORIAL_STEPS) {
@@ -454,7 +485,7 @@
 
     function frame(now) {
       revealProgress = Math.min(1, (now - start) / dur);
-      revealProgress = 1 - Math.pow(1 - revealProgress, 3);
+      revealProgress = 1 - Math.pow(1 - revealProgress, 3); // ease-out
       draw();
       if (revealProgress < 1) requestAnimationFrame(frame);
       else animatingReveal = null;
@@ -482,6 +513,8 @@
     if (!markerRefs[locId]) markerRefs[locId] = {};
     markerRefs[locId][type] = marker;
   }
+
+  function isDiscovered(locId) { return !!discovered[locId]; }
 
   /* ════════════════════════════════════════════════
      CELEBRATION
@@ -515,19 +548,58 @@
   }
 
   /* ════════════════════════════════════════════════
-     PROGRESS BAR — reads from StateManager
+     DISCOVERY CARD
+     ════════════════════════════════════════════════ */
+  function showDiscoveryCard(loc) {
+    var card = document.getElementById('discovery-card');
+    if (!card) return;
+
+    var step = journeyPath.find(function(s) { return s.locationId === loc.id; });
+    card.querySelector('.dc-name').textContent = loc.name;
+    card.querySelector('.dc-sub').textContent = loc.sub || (step ? step.label : '');
+    card.querySelector('.dc-desc').textContent = loc.desc || 'This location awaits further charting...';
+
+    var typeLabel = { region: 'Region', capital: 'Capital City', city: 'City', town: 'Settlement',
+                      story: 'Story Location', sacred: 'Sacred Site', water: 'Body of Water' }[loc.type] || 'Location';
+    card.querySelector('.dc-type').textContent = step ? 'Step ' + step.step + ' · ' + typeLabel : typeLabel;
+
+    var loreEl = card.querySelector('.dc-lore');
+    if (loc.lore && loreEl) { loreEl.textContent = loc.lore; loreEl.style.display = 'block'; }
+    else if (loreEl) { loreEl.style.display = 'none'; }
+    // Art image
+    var artEl = card.querySelector('.dc-art');
+    if (loc.art && artEl) { artEl.src = loc.art; artEl.style.display = 'block'; }
+    else if (artEl) { artEl.style.display = 'none'; }
+
+    card.classList.add('visible');
+  }
+
+  function closeDiscoveryCard() {
+    var card = document.getElementById('discovery-card');
+    if (card) card.classList.remove('visible');
+  }
+
+  /* ════════════════════════════════════════════════
+     PROGRESS BAR
      ════════════════════════════════════════════════ */
   function updateProgress() {
-    var SM = window.StateManager;
-    var progress = SM ? SM.getProgress() : { journeyDone: 0, journeyTotal: 0, rank: 'Wanderer', pct: 0 };
+    var total = journeyPath.length;
+    var found = journeyPath.filter(function(s) { return !!discovered[s.locationId]; }).length;
+    var pct = total > 0 ? found / total : 0;
 
     var fill = document.getElementById('progress-fill');
     var label = document.getElementById('progress-label');
     var title = document.getElementById('progress-title');
 
-    if (fill) fill.style.width = (progress.pct * 100) + '%';
-    if (label) label.textContent = progress.journeyDone + ' / ' + progress.journeyTotal + ' charted';
-    if (title) title.textContent = progress.rank;
+    if (fill) fill.style.width = (pct * 100) + '%';
+    if (label) label.textContent = found + ' / ' + total + ' charted';
+
+    var rank = 'Wanderer';
+    if (pct > 0.15) rank = 'Pathfinder';
+    if (pct > 0.4) rank = 'Surveyor';
+    if (pct > 0.65) rank = 'Cartographer';
+    if (pct > 0.85) rank = 'Master Cartographer';
+    if (title) title.textContent = rank;
   }
 
   /* ════════════════════════════════════════════════
@@ -544,8 +616,7 @@
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (confirm('Reset all discoveries and start over?')) {
-        var SM = window.StateManager;
-        if (SM) SM.reset();
+        localStorage.removeItem(LS_KEY);
         location.reload();
       }
     });
@@ -569,26 +640,14 @@
     init: init,
     draw: draw,
     registerMarker: registerMarker,
-    isDiscovered: function(locId) {
-      var SM = window.StateManager;
-      return SM ? SM.isDiscovered(locId) : false;
-    },
+    isDiscovered: isDiscovered,
     discover: discoverLocation,
-    closeCard: function() {
-      if (window.CardSystem) window.CardSystem.close();
-    },
+    closeCard: closeDiscoveryCard,
     updateProgress: updateProgress,
     startDrift: startDrift,
     stopDrift: stopDrift,
-    getDiscovered: function() {
-      var SM = window.StateManager;
-      return SM ? SM.getLocationsByState('revealed') : [];
-    },
+    getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
-    reset: function() {
-      var SM = window.StateManager;
-      if (SM) SM.reset();
-      location.reload();
-    }
+    reset: function() { localStorage.removeItem(LS_KEY); location.reload(); }
   };
 })();
