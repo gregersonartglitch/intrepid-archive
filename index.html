@@ -225,6 +225,7 @@
 
 <script src="data.js?v=5"></script>
 <script src="state.js"></script>
+<script src="cards.js"></script>
 <script src="fog.js?v=14"></script>
 <script>
 (function() {
@@ -499,7 +500,7 @@
     buildLayerUI();
     bindZoomControls();
     initCompass();
-    bindPanel();
+    // Card system self-initializes via cards.js
     updateZoomLevel();
     updateLabelScale();
     map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
@@ -634,7 +635,7 @@
             // Only open panel if location is discovered (or fog system not active)
             if (!window.FogSystem || window.FogSystem.isDiscovered(loc.id)) {
               L.DomEvent.stopPropagation(e);
-              openPanel(loc, this);
+              CardSystem.showRevealed(loc);
             }
           }
         });
@@ -789,22 +790,8 @@
     });
   }
 
-  /* ═══════════════════════════════════════════
-     LANDMARK ART — shown in lore panel, not on map
-     Images in landmarks/ folder for easy swap with pro art.
-     ═══════════════════════════════════════════ */
-  const LANDMARK_ART = {
-    'tower-nine':      'tower-nine.jpg',
-    'sabellas-hut':    'sabellas-hut.jpg',
-    'monastery-wind':  'monastery-wind.jpg',
-    'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
-    'hollowgate':      'landmarks/hollowgate.png',
-    'belu':            'landmarks/belu_dragon_head.png'
-  };
-
-  function buildLandmarks() {
-    // No-op — landmarks are now rendered inside the panel via openPanel()
-  }
+  // LANDMARK_ART and buildLandmarks() moved to cards.js
+  function buildLandmarks() { /* no-op — art handled by CardSystem */ }
 
   /* ═══════════════════════════════════════════
      LAYER UI
@@ -894,79 +881,10 @@
   }
 
   /* ═══════════════════════════════════════════
-     DETAIL PANEL
+     DETAIL PANEL — now handled by CardSystem (cards.js)
+     Close on map click for backwards compat.
      ═══════════════════════════════════════════ */
-  const panel     = document.getElementById('panel');
-  const panelBody = document.getElementById('panel-body');
-
-  function openPanel(loc, marker) {
-    // Clear previous active
-    if (activeMarkerEl) {
-      const prev = activeMarkerEl.getElement();
-      if (prev) prev.classList.remove('mk-active');
-    }
-
-    // Mark active
-    activeMarkerEl = marker;
-    const el = marker.getElement();
-    if (el) el.classList.add('mk-active');
-
-    // Type labels
-    const typeLabels = {
-      region: 'Region', capital: 'Capital', city: 'City', town: 'Town',
-      story: 'Story Location', sacred: 'Sacred Site', water: 'Body of Water'
-    };
-
-    let html = '';
-
-    // Landmark art — show as a clean image at top of panel
-    const artPath = LANDMARK_ART[loc.id];
-    if (artPath) {
-      html += '<div class="panel-art"><img src="' + artPath + '" alt="' + (loc.name || '') + '"></div>';
-    }
-
-    html += '<div class="panel-eyebrow">' + (typeLabels[loc.type] || loc.type) + '</div>';
-    html += '<div class="panel-name">' + (loc.name || '') + '</div>';
-    if (loc.sub) html += '<div class="panel-sub">' + loc.sub + '</div>';
-    if (loc.desc) html += '<div class="panel-desc">' + loc.desc + '</div>';
-    if (loc.lore) html += '<div class="panel-lore">' + loc.lore + '</div>';
-
-    if (loc.journeyStep != null) {
-      html += '<div class="panel-journey-badge">'
-        + '<span class="step-num">' + loc.journeyStep + '</span>'
-        + "Elena\u2019s Journey \u2014 Step " + loc.journeyStep
-        + '</div>';
-    }
-
-    if (loc.volume1) {
-      const ksLink = (window.MAP_CONFIG && window.MAP_CONFIG.ksLink) || '#';
-      html += '<div class="panel-v1-section">';
-      html += '<div class="panel-v1-eyebrow">STORY CONNECTION</div>';
-      html += '<div class="panel-v1-text">This location appears in Intrepid Dusk Volume 1.</div>';
-      html += '<a class="panel-v1-btn" href="' + ksLink + '" target="_blank" rel="noopener">📖 Get Volume 1</a>';
-      html += '</div>';
-    }
-
-    panelBody.innerHTML = html;
-    panel.classList.add('open');
-  }
-
-  function closePanel() {
-    panel.classList.remove('open');
-    if (activeMarkerEl) {
-      const el = activeMarkerEl.getElement();
-      if (el) el.classList.remove('mk-active');
-      activeMarkerEl = null;
-    }
-  }
-
-  function bindPanel() {
-    document.getElementById('panel-close').addEventListener('click', e => {
-      e.stopPropagation();
-      closePanel();
-    });
-    map.on('click', closePanel);
-  }
+  map.on('click', function() { if (window.CardSystem) CardSystem.close(); });
 
   /* ═══════════════════════════════════════════
      CLOUDS
