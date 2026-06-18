@@ -224,20 +224,7 @@
 </div>
 
 <script src="data.js?v=5"></script>
-<script>
-// Auto-clear old fog state (inline — not affected by fog.js caching)
-(function() {
-  var CURRENT_VERSION = 14;
-  var vKey = 'intrepid_atlas_discovered_v';
-  var dKey = 'intrepid_atlas_discovered';
-  var stored = parseInt(localStorage.getItem(vKey) || '0');
-  if (stored !== CURRENT_VERSION || location.search.indexOf('reset') > -1) {
-    localStorage.removeItem(dKey);
-    localStorage.setItem(vKey, CURRENT_VERSION);
-    console.log('[INIT] Cleared fog state (v' + stored + ' → v' + CURRENT_VERSION + ')');
-  }
-})();
-</script>
+<script src="state.js"></script>
 <script src="fog.js?v=14"></script>
 <script>
 (function() {
@@ -516,6 +503,11 @@
     updateZoomLevel();
     updateLabelScale();
     map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
+
+    // Initialize state manager (before fog system)
+    if (window.StateManager) {
+      window.StateManager.init();
+    }
 
     // Initialize fog system (after markers are built)
     if (window.FogSystem && !EDIT_MODE) {
