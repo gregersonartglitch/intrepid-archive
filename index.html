@@ -413,7 +413,7 @@ input { font-family: inherit; }
 /* Frame image overlay */
 #frame-img {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame.png?v=4') center/cover no-repeat;
+  background: url('frame.png?v=7') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-img.loaded { opacity: 1; }
@@ -2311,7 +2311,7 @@ input { font-family: inherit; }
     const fi = document.getElementById('frame-img');
     const img = new Image();
     img.onload = () => fi.classList.add('loaded');
-    img.src = 'frame.png?v=4';
+    img.src = 'frame.png?v=7';
   }
 
   /* ═══════════════════════════════════════════

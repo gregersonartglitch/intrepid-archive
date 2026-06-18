@@ -70,6 +70,13 @@
     updateProgress();
     addResetButton();
 
+    // Close button on discovery card
+    var closeBtn = document.querySelector('#discovery-card .dc-close');
+    if (closeBtn) closeBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeDiscoveryCard();
+    });
+
     // Tutorial
     tutorialStep = Object.keys(discovered).length;
     if (tutorialStep < TUTORIAL_STEPS) {
