@@ -413,7 +413,7 @@ input { font-family: inherit; }
 /* Frame image overlay */
 #frame-img {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame.png?v=7') center/cover no-repeat;
+  background: url('frame.png?v=4') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-img.loaded { opacity: 1; }
@@ -1565,12 +1565,30 @@ input { font-family: inherit; }
   }
 
   function checkGate() {
+    // Check URL for key param (Cartographer private links)
     const params = new URLSearchParams(window.location.search);
+    const urlKey = params.get('key');
     const scanCode = params.get('scan');
-    // Gate disabled — auto-launch as Patron
-    setTier('A', 'Patron');
-    gate.style.display = 'none';
-    launch(scanCode);
+
+    if (urlKey && urlKey.startsWith('CART-')) {
+      // Cartographer direct link
+      setTier('A', 'Cartographer');
+      gate.style.display = 'none';
+      launch(scanCode);
+      return;
+    }
+
+    // Check localStorage for existing session
+    const storedTier = localStorage.getItem(LS_TIER_KEY);
+    if (storedTier && localStorage.getItem(LS_KEY) === 'granted') {
+      currentTier = storedTier;
+      gate.style.display = 'none';
+      launch(scanCode);
+      return;
+    }
+
+    // If there's a scan code but no auth, the user needs to enter a sigil first
+    animateGateIn();
   }
 
   function setTier(tier, label) {
@@ -2293,7 +2311,7 @@ input { font-family: inherit; }
     const fi = document.getElementById('frame-img');
     const img = new Image();
     img.onload = () => fi.classList.add('loaded');
-    img.src = 'frame.png?v=7';
+    img.src = 'frame.png?v=4';
   }
 
   /* ═══════════════════════════════════════════
