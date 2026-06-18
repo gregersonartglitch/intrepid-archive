@@ -580,22 +580,56 @@
     let editCount = 0;
 
     locs.forEach(loc => {
-      // In fog mode, render all markers but hide undiscovered ones
-      const isFogDiscovered = window.FogSystem && window.FogSystem.isDiscovered(loc.id);
-      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered) ? ' fog-hidden' : '';
+      const SM = window.StateManager;
+      const locState = SM ? SM.getState(loc.id) : 'fogged';
       const t = loc.type || 'city';
       const pos = [loc.lat, loc.lng];
       const groupId = layerFor(t);
       const group = layerGroups[groupId];
       if (!group && t !== 'water') return;
 
-      let marker = null; // hoisted so label can reference it in edit mode
+      let marker = null;
+
+      // ── DORMANT MARKERS — sigil + epithet ──
+      if (locState === 'dormant' && !EDIT_MODE) {
+        const quadrant = loc.quadrant || 'center';
+        const dotIcon = L.divIcon({
+          className: '',
+          html: '<div class="mk-dormant" data-quadrant="' + quadrant + '"><div class="mk-dormant-glow"></div></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+        marker = L.marker(pos, { icon: dotIcon, interactive: true });
+        marker.locationData = loc;
+        marker.on('click', function(e) {
+          L.DomEvent.stopPropagation(e);
+          if (window.CardSystem) window.CardSystem.showDormant(loc);
+        });
+        if (group) marker.addTo(group);
+        if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'dot', marker);
+
+        // Dormant label (epithet, not true name)
+        const epithet = loc.epithet || loc.name;
+        const lblIcon = L.divIcon({
+          className: '',
+          html: '<div class="mk-dormant-lbl" style="white-space:nowrap;">' + epithet + '</div>',
+          iconSize: [0, 0],
+          iconAnchor: [-12, 6]
+        });
+        const lbl = L.marker(pos, { icon: lblIcon, interactive: false });
+        if (group) lbl.addTo(group);
+        if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'label', lbl);
+        return; // skip normal marker creation
+      }
+
+      // ── Normal markers (fogged + revealed) ──
+      const isFogDiscovered = SM ? SM.isDiscovered(loc.id) : false;
+      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered && locState !== 'revealed') ? ' fog-hidden' : '';
 
       // ── Dot marker (except water) ──
       if (t !== 'water') {
-        const dotSize = { region: [32,32], capital: [12,12], city: [8,8], town: [6,6], story: [12,12], sacred: [10,10] }[t] || [8,8];
+        const dotSize = { region: [32,32], capital: [18,18], city: [10,10], town: [7,7], story: [12,12], sacred: [14,14] }[t] || [8,8];
 
-        // In edit mode, use bigger dots for easier grabbing
         const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 20), Math.max(dotSize[1], 20)] : dotSize;
 
         const dotIcon = L.divIcon({
@@ -632,15 +666,13 @@
 
         marker.on('click', function(e) {
           if (!EDIT_MODE) {
-            // Only open panel if location is discovered (or fog system not active)
-            if (!window.FogSystem || window.FogSystem.isDiscovered(loc.id)) {
+            if (!window.FogSystem || (SM && SM.isDiscovered(loc.id))) {
               L.DomEvent.stopPropagation(e);
-              CardSystem.showRevealed(loc);
+              if (window.CardSystem) window.CardSystem.showRevealed(loc);
             }
           }
         });
         if (group) marker.addTo(group);
-        // Register with fog system
         if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'dot', marker);
       }
 
@@ -655,17 +687,15 @@
       const lbl = L.marker(pos, { icon: lblIcon, interactive: false });
       const lblGroup = (t === 'water') ? layerGroups['regions'] : group;
       if (lblGroup) lbl.addTo(lblGroup);
-      // Register label with fog system
       if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'label', lbl);
 
-      // In edit mode, link the label to the dot so it follows during drag
       if (EDIT_MODE && t !== 'water' && marker) {
         marker.on('drag', function(e) {
           lbl.setLatLng(e.target.getLatLng());
         });
       }
 
-      // ── Journey step number (disabled with journey lines) ──
+      // ── Journey step number (disabled) ──
       if (false && loc.journeyStep != null && layerGroups['journey']) {
         const jIcon = L.divIcon({
           className: '',
@@ -675,7 +705,6 @@
         });
         const jMarker = L.marker(pos, { icon: jIcon, interactive: false }).addTo(layerGroups['journey']);
 
-        // Journey number also follows in edit mode
         if (EDIT_MODE && marker) {
           marker.on('drag', function(e) {
             jMarker.setLatLng(e.target.getLatLng());

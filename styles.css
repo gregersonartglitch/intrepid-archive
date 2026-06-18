@@ -547,7 +547,6 @@ input { font-family: inherit; }
   width: 32px; height: 32px; border-radius: 50%;
   background: radial-gradient(circle, rgba(198,141,85,0.35) 0%, rgba(198,141,85,0.08) 60%, transparent 100%);
 }
-/* Labels hidden — map art has its own labels */
 .mk-region-lbl {
   font-family: var(--font-heading); font-size: calc(36px * var(--label-scale)); font-weight: 700; color: #fff;
   text-shadow: 0 2px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5);
@@ -557,30 +556,51 @@ input { font-family: inherit; }
   opacity: 1;
 }
 
-/* Capital */
+/* Capital — ⊛ star-burst with inner dot */
 .mk-capital {
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--amber); border: 2px solid var(--amber-glow);
-  box-shadow: 0 0 10px rgba(198,141,85,0.5);
+  width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; border: 2px solid var(--amber-glow);
+  box-shadow: 0 0 10px rgba(198,141,85,0.5), inset 0 0 6px rgba(198,141,85,0.3);
+  position: relative;
   animation: capital-pulse 2.8s ease-in-out infinite;
 }
+.mk-capital::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--amber);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px var(--amber-glow);
+}
+.mk-capital::before {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px;
+  border: 1px solid rgba(198,141,85,0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
 @keyframes capital-pulse {
-  0%,100% { box-shadow: 0 0 10px rgba(198,141,85,0.5); }
-  50%     { box-shadow: 0 0 20px rgba(198,141,85,0.7), 0 0 40px rgba(198,141,85,0.2); }
+  0%,100% { box-shadow: 0 0 10px rgba(198,141,85,0.5), inset 0 0 6px rgba(198,141,85,0.3); }
+  50%     { box-shadow: 0 0 20px rgba(198,141,85,0.7), 0 0 40px rgba(198,141,85,0.2), inset 0 0 8px rgba(198,141,85,0.5); }
 }
 .mk-capital-lbl {
   font-family: var(--font-heading); font-size: calc(22px * var(--label-scale)); font-weight: 700; color: #fff;
   text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 14px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.5);
   white-space: nowrap;
   transition: font-size 0.2s ease;
-
 }
 
-/* City */
+/* City — ⊙ circle with center point */
 .mk-city {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: #8a5030; border: 1.5px solid var(--amber);
+  width: 10px; height: 10px; border-radius: 50%;
+  background: transparent; border: 1.5px solid var(--amber);
+  position: relative;
   transition: box-shadow 0.25s ease;
+}
+.mk-city::after {
+  content: ''; position: absolute; top: 50%; left: 50%;
+  width: 3px; height: 3px; border-radius: 50%;
+  background: var(--amber);
+  transform: translate(-50%, -50%);
 }
 .mk-city:hover { box-shadow: 0 0 12px rgba(198,141,85,0.5); }
 .mk-city-lbl {
@@ -588,53 +608,67 @@ input { font-family: inherit; }
   text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
-
 }
 
-/* Town */
+/* Town — ○ open circle */
 .mk-town {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #6a4a30; border: 1px solid var(--copper);
+  width: 7px; height: 7px; border-radius: 50%;
+  background: transparent; border: 1px solid var(--copper);
+  transition: box-shadow 0.25s ease;
 }
+.mk-town:hover { box-shadow: 0 0 8px rgba(198,141,85,0.4); }
 .mk-town-lbl {
   font-family: var(--font-ui); font-size: calc(14px * var(--label-scale)); font-weight: 600; color: rgba(255,255,255,0.75);
   text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
-
 }
 
-/* Story */
+/* Story — ◆ diamond with glow */
 .mk-story {
-  width: 12px; height: 12px; border-radius: 50%;
-  background: var(--gold); border: 2px solid var(--gold);
+  width: 12px; height: 12px;
+  background: var(--gold); border: 1.5px solid var(--gold);
+  transform: rotate(45deg);
   animation: story-pulse 2.4s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(212,168,67,0.4);
 }
 @keyframes story-pulse {
-  0%,100% { transform: scale(1); box-shadow: 0 0 8px rgba(212,168,67,0.4); }
-  50%     { transform: scale(1.3); box-shadow: 0 0 20px rgba(212,168,67,0.6), 0 0 40px rgba(212,168,67,0.15); }
+  0%,100% { box-shadow: 0 0 8px rgba(212,168,67,0.4); }
+  50%     { box-shadow: 0 0 20px rgba(212,168,67,0.6), 0 0 40px rgba(212,168,67,0.15); }
 }
 .mk-story-lbl {
   font-family: var(--font-heading); font-size: calc(18px * var(--label-scale)); font-weight: 700; color: var(--gold);
   text-shadow: 0 0 6px rgba(0,0,0,1), 0 0 14px rgba(0,0,0,0.9), 0 0 24px rgba(0,0,0,0.5);
   white-space: nowrap;
   transition: font-size 0.2s ease;
-
 }
 
-/* Sacred */
+/* Sacred — ✦ four-pointed star */
 .mk-sacred {
-  width: 10px; height: 10px;
-  background: rgba(198,141,85,0.15); border: 1.5px solid var(--amber);
-  transform: rotate(45deg);
-  box-shadow: 0 0 10px rgba(198,141,85,0.25);
+  width: 14px; height: 14px;
+  background: transparent;
+  position: relative;
+}
+.mk-sacred::before, .mk-sacred::after {
+  content: ''; position: absolute;
+  background: var(--amber);
+  box-shadow: 0 0 6px rgba(198,141,85,0.4);
+}
+.mk-sacred::before {
+  width: 3px; height: 14px; top: 0; left: 50%;
+  transform: translateX(-50%);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.mk-sacred::after {
+  width: 14px; height: 3px; top: 50%; left: 0;
+  transform: translateY(-50%);
+  clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
 }
 .mk-sacred-lbl {
   font-family: var(--font-heading); font-size: calc(16px * var(--label-scale)); font-weight: 600; font-style: italic;
   color: var(--amber); text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
-
 }
 
 /* Water */
@@ -644,7 +678,102 @@ input { font-family: inherit; }
   text-shadow: 0 0 6px rgba(0,0,0,0.9), 0 0 14px rgba(0,0,0,0.7);
   white-space: nowrap;
   transition: font-size 0.2s ease;
+}
 
+/* ═══════════════════════════════════════════
+   DORMANT MARKERS — sealed mysteries
+   ═══════════════════════════════════════════ */
+
+/* Base dormant marker */
+.mk-dormant {
+  width: 20px; height: 20px;
+  position: relative;
+  animation: dormant-pulse 3s ease-in-out infinite;
+  cursor: pointer;
+  transition: filter 0.3s ease;
+}
+.mk-dormant:hover {
+  filter: brightness(1.4);
+}
+
+@keyframes dormant-pulse {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mk-dormant { animation: none; opacity: 0.65; }
+}
+
+/* Sigil variants by quadrant */
+/* North — △ upward chevron */
+.mk-dormant[data-quadrant="north"]::before {
+  content: ''; position: absolute; inset: 0;
+  clip-path: polygon(50% 0%, 100% 70%, 80% 100%, 50% 60%, 20% 100%, 0% 70%);
+  background: linear-gradient(180deg, var(--amber) 0%, rgba(198,141,85,0.3) 100%);
+}
+
+/* South — ◡ inverted arch */
+.mk-dormant[data-quadrant="south"]::before {
+  content: ''; position: absolute; inset: 0;
+  clip-path: polygon(10% 0%, 90% 0%, 100% 40%, 80% 80%, 50% 100%, 20% 80%, 0% 40%);
+  background: linear-gradient(0deg, var(--amber) 0%, rgba(198,141,85,0.3) 100%);
+}
+
+/* East — ✦ sunrise rays */
+.mk-dormant[data-quadrant="east"]::before {
+  content: ''; position: absolute; inset: 0;
+  clip-path: polygon(50% 0%, 65% 35%, 100% 50%, 65% 65%, 50% 100%, 35% 65%, 0% 50%, 35% 35%);
+  background: radial-gradient(circle, var(--amber) 20%, rgba(198,141,85,0.3) 100%);
+}
+
+/* West — ☽ crescent */
+.mk-dormant[data-quadrant="west"]::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 50%;
+  background: var(--amber);
+  clip-path: circle(50% at 60% 50%);
+  mask: radial-gradient(circle at 70% 50%, transparent 40%, black 41%);
+  -webkit-mask: radial-gradient(circle at 70% 50%, transparent 40%, black 41%);
+}
+
+/* Center — ◇ nested diamond */
+.mk-dormant[data-quadrant="center"]::before {
+  content: ''; position: absolute; inset: 2px;
+  transform: rotate(45deg);
+  border: 2px solid var(--amber);
+  background: rgba(198,141,85,0.15);
+}
+.mk-dormant[data-quadrant="center"]::after {
+  content: ''; position: absolute; inset: 6px;
+  transform: rotate(45deg);
+  background: var(--amber);
+  opacity: 0.4;
+}
+
+/* Dormant glow ring */
+.mk-dormant-glow {
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(198,141,85,0.15);
+  animation: dormant-ring 4s ease-in-out infinite;
+}
+@keyframes dormant-ring {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50%      { transform: scale(1.3); opacity: 0; }
+}
+
+/* Dormant label (epithet) */
+.mk-dormant-lbl {
+  font-family: var(--font-heading); font-size: calc(13px * var(--label-scale));
+  font-weight: 400; font-style: italic;
+  color: rgba(198,141,85,0.55);
+  text-shadow: 0 2px 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  transition: font-size 0.2s ease, color 0.3s ease;
+  cursor: pointer;
+}
+.mk-dormant-lbl:hover {
+  color: rgba(198,141,85,0.8);
 }
 
 /* Journey number */
