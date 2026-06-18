@@ -493,6 +493,11 @@
     // Veil layer sits on top of everything
     layerGroups['veil'] = L.layerGroup().addTo(map);
 
+    // Initialize state manager FIRST (markers read state)
+    if (window.StateManager) {
+      window.StateManager.init();
+    }
+
     buildMarkers();
     buildJourneyLine();
     buildLandmarks();
@@ -505,15 +510,10 @@
     updateLabelScale();
     map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
 
-    // Initialize state manager (before fog system)
-    if (window.StateManager) {
-      window.StateManager.init();
-    }
-
     // Initialize fog system (after markers are built)
     if (window.FogSystem && !EDIT_MODE) {
       window.FogSystem.init(map, cfg);
-      window.FogSystem.startDrift(); // subtle animated fog glow
+      window.FogSystem.startDrift();
     }
   }
 
