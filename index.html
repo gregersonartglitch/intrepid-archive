@@ -418,6 +418,44 @@ input { font-family: inherit; }
 }
 #frame-img.loaded { opacity: 1; }
 
+/* Medallion Hotspots */
+#medallion-hotspots {
+  position: fixed; inset: 0; z-index: 515; pointer-events: none;
+}
+.medallion-hot {
+  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  pointer-events: auto; cursor: pointer;
+  /* Debug: uncomment to see hotspots */
+  /* background: rgba(255,0,0,0.15); */
+}
+.medallion-hot:hover {
+  background: rgba(212, 168, 67, 0.08);
+}
+
+/* Tooltip */
+.medallion-tip {
+  position: fixed; z-index: 920; pointer-events: none;
+  background: rgba(10, 12, 16, 0.95);
+  border: 1px solid rgba(198, 141, 85, 0.5);
+  border-radius: 8px; padding: 12px 16px;
+  max-width: 260px; min-width: 160px;
+  opacity: 0; transition: opacity 0.3s ease;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+.medallion-tip.visible { opacity: 1; }
+.medallion-tip .tip-name {
+  font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700;
+  color: #d4a843; letter-spacing: 1px; margin-bottom: 2px;
+}
+.medallion-tip .tip-role {
+  font-size: 11px; color: #c68d55; text-transform: uppercase;
+  letter-spacing: 2px; margin-bottom: 8px;
+}
+.medallion-tip .tip-lore {
+  font-size: 13px; color: #bfb299; line-height: 1.5;
+  font-style: italic;
+}
+
 /* ═══════════════════════════════════════════
    HEADER
    ═══════════════════════════════════════════ */
@@ -1411,6 +1449,59 @@ input { font-family: inherit; }
   <!-- Frame image overlay -->
   <div id="frame-img"></div>
 
+  <!-- Medallion Hotspots (positioned over frame.png medallions) -->
+  <div id="medallion-hotspots">
+    <!-- Tetrad (4 cardinal guardians) -->
+    <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
+         data-name="Belu" data-role="Guardian of the North"
+         data-lore="The Eternal Watcher. First of the Tetrad. Her wings hold the boundary between the mortal world and the void."></div>
+
+    <div class="medallion-hot" style="top:50%;right:6%;transform:translateY(-50%)"
+         data-name="Shedu" data-role="Guardian of the East"
+         data-lore="The Silent Sentinel. He guards the passage where the sun first breaks the horizon."></div>
+
+    <div class="medallion-hot" style="bottom:5%;left:50%;transform:translateX(-50%)"
+         data-name="Ninurta" data-role="Guardian of the South"
+         data-lore="The Arrow of Heaven. His bow holds the southern storms at bay."></div>
+
+    <div class="medallion-hot" style="top:50%;left:6%;transform:translateY(-50%)"
+         data-name="Nammu" data-role="Guardian of the West"
+         data-lore="She who sleeps beneath the Abyssal Sea. Her dreaming shapes the tides."></div>
+
+    <!-- The Nine (arranged around the rim) -->
+    <div class="medallion-hot" style="top:14%;left:22%"
+         data-name="The Tribunal" data-role="Judges of the Nine"
+         data-lore="Three who pass judgment when the others cannot agree."></div>
+
+    <div class="medallion-hot" style="top:14%;right:22%"
+         data-name="Enkidu" data-role="The Wild"
+         data-lore="Untamed and unbroken. He walked with beasts before the Nine called him."></div>
+
+    <div class="medallion-hot" style="top:30%;left:10%"
+         data-name="Lamassu" data-role="Shield of the Dawn"
+         data-lore="His hooves split the earth to seal the gates against what stirs beyond."></div>
+
+    <div class="medallion-hot" style="top:30%;right:10%"
+         data-name="Sin" data-role="The Moon"
+         data-lore="Whose face changes but whose nature does not. He counts the days until the reckoning."></div>
+
+    <div class="medallion-hot" style="bottom:30%;left:10%"
+         data-name="Girtab" data-role="The Sting"
+         data-lore="Keeper of the Threshold. None pass the gates of twilight without her mark."></div>
+
+    <div class="medallion-hot" style="bottom:30%;right:10%"
+         data-name="Shamash" data-role="Justice"
+         data-lore="He weighs all things. His scales cannot be deceived."></div>
+
+    <div class="medallion-hot" style="bottom:14%;left:22%"
+         data-name="Ensi" data-role="Voice of the Nine"
+         data-lore="He speaks the words that bind and unbind."></div>
+
+    <div class="medallion-hot" style="bottom:14%;right:22%"
+         data-name="Nergal" data-role="Lord of the Burning Gate"
+         data-lore="Where he walks, the ground remembers."></div>
+  </div>
+
   <!-- Header -->
   <div id="hdr">
     <div class="hdr-title">The Hollowlands</div>
@@ -1662,6 +1753,7 @@ input { font-family: inherit; }
 
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
+    initMedallionTooltips();
   }
 
   /* ═══════════════════════════════════════════
@@ -2314,6 +2406,72 @@ input { font-family: inherit; }
     const img = new Image();
     img.onload = () => fi.classList.add('loaded');
     img.src = 'frame.png?v=4';
+  }
+
+  /* ═══════════════════════════════════════════
+     MEDALLION TOOLTIPS
+     ═══════════════════════════════════════════ */
+  function initMedallionTooltips() {
+    const hotspots = document.querySelectorAll('.medallion-hot');
+    if (!hotspots.length) return;
+
+    // Create single tooltip element
+    const tip = document.createElement('div');
+    tip.className = 'medallion-tip';
+    tip.innerHTML = '<div class="tip-name"></div><div class="tip-role"></div><div class="tip-lore"></div>';
+    document.body.appendChild(tip);
+
+    let activeHot = null;
+
+    function showTip(hot) {
+      const name = hot.dataset.name || '';
+      const role = hot.dataset.role || '';
+      const lore = hot.dataset.lore || '';
+      tip.querySelector('.tip-name').textContent = name;
+      tip.querySelector('.tip-role').textContent = role;
+      tip.querySelector('.tip-lore').textContent = lore;
+
+      // Position near the hotspot
+      const rect = hot.getBoundingClientRect();
+      let tx = rect.left + rect.width / 2;
+      let ty = rect.bottom + 8;
+
+      // If too close to bottom, show above
+      if (ty + 120 > window.innerHeight) {
+        ty = rect.top - 8;
+        tip.style.transform = 'translate(-50%, -100%)';
+      } else {
+        tip.style.transform = 'translate(-50%, 0)';
+      }
+      // Clamp horizontal
+      tx = Math.max(140, Math.min(window.innerWidth - 140, tx));
+
+      tip.style.left = tx + 'px';
+      tip.style.top = ty + 'px';
+      tip.classList.add('visible');
+      activeHot = hot;
+    }
+
+    function hideTip() {
+      tip.classList.remove('visible');
+      activeHot = null;
+    }
+
+    hotspots.forEach(function(hot) {
+      hot.addEventListener('mouseenter', function() { showTip(hot); });
+      hot.addEventListener('mouseleave', hideTip);
+      // Touch support: tap to toggle
+      hot.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (activeHot === hot) { hideTip(); }
+        else { showTip(hot); }
+      });
+    });
+
+    // Tap elsewhere dismisses tooltip on mobile
+    document.addEventListener('click', function() {
+      if (activeHot) hideTip();
+    });
   }
 
   /* ═══════════════════════════════════════════
