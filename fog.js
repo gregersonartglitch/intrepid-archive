@@ -8,7 +8,7 @@
 
   var LS_KEY = 'intrepid_atlas_discovered';
   var CLICK_RADIUS = 80;   // how close (px) user must click to the glow
-  var TUTORIAL_STEPS = 3;  // guided hand-holding for first 3 discoveries
+  var TUTORIAL_STEPS = 6;  // 6-step guided walkthrough
   var SPOTLIGHT_RADIUS = 40; // px — size of the mouse lantern
   var KEY_FIND_RADIUS = 30;  // px — how close to key to reveal it
   var KEY_CLICK_RADIUS = 35; // px — how close to key to click it
@@ -44,7 +44,7 @@
     journeyPath = window.JOURNEY_PATH || [];
 
     // Auto-clear stale localStorage when fog system version changes
-    var FOG_VERSION = 14;
+    var FOG_VERSION = 15;
     var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
     if (storedVersion !== FOG_VERSION) {
       localStorage.removeItem(LS_KEY);
@@ -207,13 +207,27 @@
   }
 
   /* ════════════════════════════════════════════════
-     TUTORIAL — 3-step guided flow
+     TUTORIAL — 6-step guided walkthrough
+     Step 0: Click a glow (instant reveal)
+     Step 1: Read the card (wait for card close)
+     Step 2: Follow the path (instant reveal)
+     Step 3: Spotlight search intro (first pinhole)
+     Step 4: Find the key (wait for key click)
+     Step 5: Free exploration (brief encouragement)
      ════════════════════════════════════════════════ */
-  var tutorialMessages = [
-    'Touch the light',
-    'Follow the path',
-    'One more'
+  var TUTORIAL_DEFS = [
+    { msg: 'A light stirs in the mist. Touch it.', action: 'click' },
+    { msg: 'Scroll to read, then close the card.', action: 'close-card' },
+    { msg: 'The path leads on. Follow the light.', action: 'click' },
+    { msg: 'The mist thickens. Move your cursor to search.', action: 'search' },
+    { msg: 'A sigil glimmers. Find it and touch it.', action: 'find-key' },
+    { msg: 'You know the way now. Explore.', action: 'auto' }
   ];
+
+  // Which tutorial steps use instant reveal (no spotlight search)
+  var TUTORIAL_INSTANT_STEPS = [0, 1, 2];
+  // Step that waits for card close (doesn't advance on discover)
+  var TUTORIAL_CARD_STEP = 1;
 
   function startTutorial() {
     var nextId = getNextPathLocation();
@@ -231,8 +245,26 @@
   function showTutorialHint(loc) {
     removeTutorialHint();
     tutorialHintLoc = loc;
-    // The canvas draw() function reads tutorialHintLoc and draws the hint
-    console.log('[FOG] Tutorial hint for:', loc.id, 'step:', tutorialStep);
+    console.log('[TUTORIAL] Step', tutorialStep, ':', TUTORIAL_DEFS[tutorialStep].msg);
+
+    // Step 1 (card reading) — listen for card close
+    if (tutorialStep === TUTORIAL_CARD_STEP) {
+      waitForCardClose();
+    }
+  }
+
+  function waitForCardClose() {
+    var card = document.getElementById('discovery-card');
+    if (!card) return;
+    var observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.attributeName === 'class' && !card.classList.contains('visible')) {
+          observer.disconnect();
+          advanceTutorial();
+        }
+      });
+    });
+    observer.observe(card, { attributes: true });
   }
 
   function positionHint() {
@@ -245,21 +277,72 @@
 
   function advanceTutorial() {
     tutorialStep++;
+    console.log('[TUTORIAL] Advanced to step', tutorialStep);
+
     if (tutorialStep >= TUTORIAL_STEPS) {
       removeTutorialHint();
+      console.log('[TUTORIAL] Complete!');
       return;
     }
+
+    var def = TUTORIAL_DEFS[tutorialStep];
+
+    // Auto-dismiss steps (like step 5 encouragement)
+    if (def.action === 'auto') {
+      removeTutorialHint();
+      // Show a brief toast instead of a hint arrow
+      showTutorialToast(def.msg);
+      setTimeout(function() { advanceTutorial(); }, 4000);
+      return;
+    }
+
+    // Card-close step doesn't need to fly anywhere — hint shows next to card
+    if (def.action === 'close-card') {
+      // Hint loc stays the same (show near the card)
+      tutorialHintLoc = tutorialHintLoc; // keep current
+      return;
+    }
+
+    // Search + find-key steps don't fly — they happen at the current location
+    if (def.action === 'search' || def.action === 'find-key') {
+      // Keep current hint location
+      return;
+    }
+
+    // Click steps — fly to next location
     var nextId = getNextPathLocation();
     if (!nextId) { removeTutorialHint(); return; }
     var locs = window.LOCATIONS || [];
     var nextLoc = locs.find(function(l) { return l.id === nextId; });
     if (!nextLoc) { removeTutorialHint(); return; }
 
-    // Wait for card to be seen, then fly to next
     setTimeout(function() {
       map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 3, { duration: 1.5 });
       setTimeout(function() { showTutorialHint(nextLoc); }, 2000);
     }, 2500);
+  }
+
+  function showTutorialToast(msg) {
+    var old = document.getElementById('tutorial-toast');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.id = 'tutorial-toast';
+    toast.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:900;' +
+      'background:rgba(10,12,16,0.92);border:1px solid rgba(198,141,85,0.4);' +
+      'border-radius:8px;padding:16px 32px;text-align:center;' +
+      'font-family:"Cinzel",serif;color:#efe7d2;pointer-events:none;' +
+      'font-size:16px;font-style:italic;letter-spacing:1px;' +
+      'opacity:0;transition:opacity 0.8s ease;';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    setTimeout(function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 800);
+    }, 3500);
   }
 
   /* ════════════════════════════════════════════════
@@ -502,49 +585,65 @@
 
     // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
+      var def = TUTORIAL_DEFS[tutorialStep];
+      var msg = def ? def.msg : '';
       var hpt = map.latLngToContainerPoint([tutorialHintLoc.lat, tutorialHintLoc.lng]);
       var hx = hpt.x;
       var hy = hpt.y;
-      var bob = Math.sin(time * 3) * 6; // bobbing animation
+      var bob = Math.sin(time * 3) * 6;
 
-      // Arrow ▼
-      ctx.save();
-      ctx.font = '28px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#d4a843';
-      ctx.shadowColor = 'rgba(212, 168, 67, 0.9)';
-      ctx.shadowBlur = 20;
-      ctx.fillText('▼', hx, hy - 30 + bob);
-      ctx.restore();
+      // For card-close step, position hint near the card (right side)
+      if (def && def.action === 'close-card') {
+        var card = document.getElementById('discovery-card');
+        if (card && card.classList.contains('visible')) {
+          var cr = card.getBoundingClientRect();
+          var container = map.getContainer();
+          var containerRect = container.getBoundingClientRect();
+          hx = cr.left - containerRect.left + cr.width / 2;
+          hy = cr.top - containerRect.top - 30;
+        }
+      }
+
+      // Arrow ▼ (skip for card-close step)
+      if (!def || def.action !== 'close-card') {
+        ctx.save();
+        ctx.font = '28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#d4a843';
+        ctx.shadowColor = 'rgba(212, 168, 67, 0.9)';
+        ctx.shadowBlur = 20;
+        ctx.fillText('▼', hx, hy - 30 + bob);
+        ctx.restore();
+      }
 
       // Text background pill
-      var msg = tutorialMessages[Math.min(tutorialStep, tutorialMessages.length - 1)];
       ctx.save();
-      ctx.font = '600 14px "Cinzel", "Cormorant Garamond", serif';
-      var tw = ctx.measureText(msg.toUpperCase()).width + 32;
+      ctx.font = 'italic 600 13px "Cinzel", "Cormorant Garamond", serif';
+      var tw = ctx.measureText(msg).width + 32;
       var th = 32;
       var tx = hx - tw / 2;
       var ty = hy - 70 + bob;
 
-      // Dark background
+      // Clamp to viewport
+      if (tx < 10) tx = 10;
+      if (tx + tw > w - 10) tx = w - tw - 10;
+      if (ty < 10) ty = 10;
+
       ctx.fillStyle = 'rgba(10, 12, 16, 0.92)';
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, th, 6);
       ctx.fill();
 
-      // Golden border
       ctx.strokeStyle = 'rgba(198, 141, 85, 0.5)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, th, 6);
       ctx.stroke();
 
-      // Text
       ctx.fillStyle = '#efe7d2';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.letterSpacing = '2px';
-      ctx.fillText(msg.toUpperCase(), hx, ty + th / 2);
+      ctx.fillText(msg, hx, ty + th / 2);
       ctx.restore();
     }
   }
@@ -553,8 +652,11 @@
      DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
-    // Tutorial steps (first 3) use instant reveal — no search
-    if (tutorialStep < TUTORIAL_STEPS) {
+    // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
+    var isTutorial = tutorialStep < TUTORIAL_STEPS;
+    var useInstant = isTutorial && TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep) > -1;
+
+    if (useInstant) {
       instantDiscover(loc);
       return;
     }
@@ -564,12 +666,20 @@
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
     removeTutorialHint();
-    animateReveal(loc); // small pinhole animation
+    animateReveal(loc);
     enterSearchMode(loc);
     updateProgress();
+
+    // During tutorial, show the search hint after pinhole opens
+    if (isTutorial && TUTORIAL_DEFS[tutorialStep] && TUTORIAL_DEFS[tutorialStep].action === 'search') {
+      // Show search tooltip, then advance to find-key step
+      setTimeout(function() {
+        tutorialHintLoc = loc;
+        advanceTutorial(); // moves to step 4 (find-key)
+      }, 800);
+    }
   }
 
-  // Instant discover (used by tutorial and fallback)
   function instantDiscover(loc) {
     discovered[loc.id] = { at: Date.now(), phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
@@ -583,7 +693,14 @@
     showDiscoveryToast(loc);
 
     if (tutorialStep < TUTORIAL_STEPS) {
-      advanceTutorial();
+      // Step 1 (card step): advance happens when card is closed via MutationObserver
+      if (tutorialStep === TUTORIAL_CARD_STEP - 1) {
+        // We just completed step 0 click — advance to step 1 (card reading)
+        advanceTutorial();
+      } else if (tutorialStep !== TUTORIAL_CARD_STEP) {
+        // Normal advance for click steps
+        advanceTutorial();
+      }
     }
   }
 
@@ -603,13 +720,11 @@
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
 
-  // Complete the discovery — key was found!
   function completeDiscovery(loc) {
     console.log('[FOG] ✓ Key found! Full reveal:', loc.name);
     searchMode = null;
     spotlightPos = null;
 
-    // Upgrade to full reveal
     discovered[loc.id] = { at: discovered[loc.id].at, phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
@@ -619,6 +734,11 @@
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
     showDiscoveryToast(loc);
+
+    // Advance tutorial if in search steps
+    if (tutorialStep < TUTORIAL_STEPS) {
+      advanceTutorial();
+    }
   }
 
   // Mouse/touch tracking for spotlight
