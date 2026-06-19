@@ -9,11 +9,11 @@
   var LS_KEY = 'intrepid_atlas_discovered';
   var CLICK_RADIUS = 80;   // how close (px) user must click to the glow
   var TUTORIAL_STEPS = 6;  // 6-step guided walkthrough
-  var SPOTLIGHT_RADIUS = 40; // px — size of the mouse lantern
-  var KEY_FIND_RADIUS = 30;  // px — how close to key to reveal it
-  var KEY_CLICK_RADIUS = 35; // px — how close to key to click it
-  var PINHOLE_SCALE = 0.15;  // fraction of full reveal radius for pinhole
-  var HINT_DELAY = 10000;    // ms before key starts hinting
+  var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
+  var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
+  var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
+  var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
+  var HINT_DELAY = 5000;     // ms before key starts hinting
 
   // State
   var discovered = {};
@@ -539,48 +539,49 @@
     }
     ctx.globalCompositeOperation = 'source-over';
 
-    // ── 4c. Draw key glyph (if spotlight is near it) ──
-    if (searchMode && spotlightPos) {
+    // ── 4c. Draw key glyph ──
+    if (searchMode) {
       var kpt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
-      var kDist = Math.sqrt(Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2));
+      var kDist = spotlightPos ?
+        Math.sqrt(Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2)) : 9999;
       var elapsed = Date.now() - searchMode.startTime;
 
-      // Hint: after HINT_DELAY, key pulses even without spotlight
-      var hintAlpha = 0;
+      // Always show a faint pulse so key is findable
+      var basePulse = 0.12 + 0.08 * Math.sin(time * 2.5);
+
+      // After HINT_DELAY, pulse gets much stronger
+      var hintAlpha = basePulse;
       if (elapsed > HINT_DELAY) {
-        hintAlpha = Math.min(0.6, (elapsed - HINT_DELAY) / 10000) * (0.5 + 0.5 * Math.sin(time * 3));
+        hintAlpha = Math.min(0.7, basePulse + (elapsed - HINT_DELAY) / 8000) * (0.5 + 0.5 * Math.sin(time * 3));
       }
 
-      if (kDist < KEY_FIND_RADIUS * 2 || hintAlpha > 0) {
-        var keyVisible = kDist < KEY_FIND_RADIUS;
-        var keyNear = kDist < KEY_FIND_RADIUS * 2;
-        var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.3 : hintAlpha);
+      var keyVisible = kDist < KEY_FIND_RADIUS;
+      var keyNear = kDist < KEY_FIND_RADIUS * 2;
+      var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.4 : hintAlpha);
+      var kSize = keyVisible ? 10 : (keyNear ? 7 : 5);
 
-        ctx.save();
-        // Outer glow
-        ctx.shadowColor = 'rgba(212, 168, 67, 0.8)';
-        ctx.shadowBlur = keyVisible ? 20 : 10;
+      ctx.save();
+      ctx.shadowColor = 'rgba(212, 168, 67, 0.8)';
+      ctx.shadowBlur = keyVisible ? 25 : 12;
 
-        // Draw sigil — a small diamond with inner dot
-        var kSize = keyVisible ? 8 : 5;
-        ctx.fillStyle = 'rgba(212, 168, 67, ' + kAlpha + ')';
+      // Draw sigil — diamond with inner dot
+      ctx.fillStyle = 'rgba(212, 168, 67, ' + kAlpha + ')';
+      ctx.beginPath();
+      ctx.moveTo(kpt.x, kpt.y - kSize);
+      ctx.lineTo(kpt.x + kSize, kpt.y);
+      ctx.lineTo(kpt.x, kpt.y + kSize);
+      ctx.lineTo(kpt.x - kSize, kpt.y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner dot
+      if (keyVisible || keyNear) {
+        ctx.fillStyle = 'rgba(255, 248, 230, ' + (keyVisible ? 0.9 : 0.4) + ')';
         ctx.beginPath();
-        ctx.moveTo(kpt.x, kpt.y - kSize);
-        ctx.lineTo(kpt.x + kSize, kpt.y);
-        ctx.lineTo(kpt.x, kpt.y + kSize);
-        ctx.lineTo(kpt.x - kSize, kpt.y);
-        ctx.closePath();
+        ctx.arc(kpt.x, kpt.y, keyVisible ? 3 : 2, 0, Math.PI * 2);
         ctx.fill();
-
-        // Inner dot
-        if (keyVisible) {
-          ctx.fillStyle = 'rgba(255, 248, 230, 0.9)';
-          ctx.beginPath();
-          ctx.arc(kpt.x, kpt.y, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        ctx.restore();
       }
+      ctx.restore();
     }
 
     // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
@@ -592,7 +593,14 @@
       var hy = hpt.y;
       var bob = Math.sin(time * 3) * 6;
 
-      // For card-close step, position hint near the card (right side)
+      // For find-key/search steps, point arrow at the KEY location
+      if (searchMode && def && (def.action === 'find-key' || def.action === 'search')) {
+        var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+        hx = keyPt.x;
+        hy = keyPt.y;
+      }
+
+      // For card-close step, position hint near the card
       if (def && def.action === 'close-card') {
         var card = document.getElementById('discovery-card');
         if (card && card.classList.contains('visible')) {
@@ -708,7 +716,7 @@
   function enterSearchMode(loc) {
     // Random angle and distance for the key
     var angle = Math.random() * Math.PI * 2;
-    var dist = 60 + Math.random() * 80; // world units from loc center
+    var dist = 30 + Math.random() * 30; // world units from loc center (closer = findable)
 
     searchMode = {
       locId: loc.id,
@@ -717,6 +725,11 @@
       keyLng: loc.lng + Math.cos(angle) * dist,
       startTime: Date.now()
     };
+
+    // Initialize spotlight at the pinhole center so it works immediately
+    var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+    spotlightPos = { x: pt.x, y: pt.y };
+
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
 
