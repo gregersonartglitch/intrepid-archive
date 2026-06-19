@@ -1725,9 +1725,9 @@ input { font-family: inherit; }
       const vh = window.innerHeight;
       const needW = Math.log2(vw / cfg.width);
       const needH = Math.log2(vh / cfg.height);
-      // Lower buffer allows more zoom-out; maxBounds prevents showing edges
-      const raw = Math.max(needW, needH) + 0.3;
-      return Math.ceil(raw * 4) / 4;
+      // Minimal buffer — maxBounds prevents showing edges
+      const raw = Math.max(needW, needH) + 0.05;
+      return Math.floor(raw * 4) / 4;
     }
 
     const dynamicMin = calcMinZoom();
@@ -1779,7 +1779,7 @@ input { font-family: inherit; }
     imgEl.src = cfg.image;  // cfg.image already includes cache-bust param
 
     // Start centered on the map, at the minimum zoom (fills viewport exactly)
-    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
+    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin - 0.3);
 
     // Create layer groups
     const defs = window.LAYER_DEFS || [];
