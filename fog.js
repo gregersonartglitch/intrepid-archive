@@ -9,6 +9,11 @@
   var LS_KEY = 'intrepid_atlas_discovered';
   var CLICK_RADIUS = 80;   // how close (px) user must click to the glow
   var TUTORIAL_STEPS = 3;  // guided hand-holding for first 3 discoveries
+  var SPOTLIGHT_RADIUS = 40; // px — size of the mouse lantern
+  var KEY_FIND_RADIUS = 30;  // px — how close to key to reveal it
+  var KEY_CLICK_RADIUS = 35; // px — how close to key to click it
+  var PINHOLE_SCALE = 0.15;  // fraction of full reveal radius for pinhole
+  var HINT_DELAY = 10000;    // ms before key starts hinting
 
   // State
   var discovered = {};
@@ -26,6 +31,10 @@
   var tutorialHintLoc = null;
   var tutorialHint = null;
 
+  // Spotlight search state
+  var searchMode = null;  // { locId, loc, keyLat, keyLng, startTime }
+  var spotlightPos = null; // { x, y } container coords (null = no spotlight)
+
   /* ════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════ */
@@ -35,7 +44,7 @@
     journeyPath = window.JOURNEY_PATH || [];
 
     // Auto-clear stale localStorage when fog system version changes
-    var FOG_VERSION = 13;
+    var FOG_VERSION = 14;
     var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
     if (storedVersion !== FOG_VERSION) {
       localStorage.removeItem(LS_KEY);
@@ -60,6 +69,7 @@
 
     // Setup click handling on document (capture phase — unfailable)
     setupClickHandler();
+    setupSpotlightTracking();
 
     // Redraw on map events
     map.on('move zoom viewreset resize zoomend', draw);
@@ -132,25 +142,23 @@
         }
       });
 
+      // During search mode: check for key click
+      if (searchMode) {
+        var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+        var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
+        if (keyDist < KEY_CLICK_RADIUS) {
+          e.stopPropagation();
+          e.preventDefault();
+          completeDiscovery(searchMode.loc);
+        }
+        return; // during search, no other clicks
+      }
+
       if (closest) {
         console.log('[FOG] ✓ Discovering:', closest.id);
         e.stopPropagation();
         e.preventDefault();
         discoverLocation(closest);
-      } else {
-        // Debug: log why it missed
-        var nextId = getNextPathLocation();
-        if (nextId) {
-          var nl = locs.find(function(l) { return l.id === nextId; });
-          if (nl) {
-            var npt = map.latLngToContainerPoint([nl.lat, nl.lng]);
-            console.log('[FOG] ✗ Missed. Target:', nextId,
-              'at (' + npt.x.toFixed(0) + ',' + npt.y.toFixed(0) + ')',
-              'click (' + x.toFixed(0) + ',' + y.toFixed(0) + ')',
-              'dist:', Math.sqrt(Math.pow(x-npt.x,2)+Math.pow(y-npt.y,2)).toFixed(0) + 'px',
-              '(need <' + CLICK_RADIUS + ')');
-          }
-        }
       }
     }, true); // CAPTURE PHASE
 
@@ -184,6 +192,16 @@
         var d = Math.sqrt(Math.pow(x-pt.x,2)+Math.pow(y-pt.y,2));
         if (d < CLICK_RADIUS && d < closestDist) { closest = loc; closestDist = d; }
       });
+      // During search mode: check for key click (touch)
+      if (searchMode) {
+        var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+        var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
+        if (keyDist < KEY_CLICK_RADIUS + 10) { // slightly larger for touch
+          e.preventDefault();
+          completeDiscovery(searchMode.loc);
+        }
+        return;
+      }
       if (closest) { e.preventDefault(); discoverLocation(closest); }
     }, true);
   }
@@ -397,33 +415,90 @@
     }
 
     // ── 4. Clear holes for discovered locations ──
-    // Simple radial gradient: fully clear center → soft translucent edge → fog
     ctx.globalCompositeOperation = 'destination-out';
     locs.forEach(function(loc) {
       if (!discovered[loc.id]) return;
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+      var disc = discovered[loc.id];
 
-      // Base radius scaled by zoom
+      // Base radius scaled by zoom — pinhole if searching, full if complete
       var baseR = 180;
-      var r = baseR * Math.pow(2, zoom);
-      if (r < 30) r = 30;
+      var scale = (disc.phase === 'searching') ? PINHOLE_SCALE : 1;
+      var r = baseR * scale * Math.pow(2, zoom);
+      if (r < 20) r = 20;
 
       var alpha = 1;
       if (animatingReveal === loc.id) alpha = revealProgress;
 
-      // One simple radial gradient: clear center → translucent → opaque edge
       var grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, r);
-      grad.addColorStop(0,    'rgba(0,0,0,' + alpha + ')');       // fully clear
-      grad.addColorStop(0.5,  'rgba(0,0,0,' + (alpha * 0.95) + ')');  // still clear
-      grad.addColorStop(0.75, 'rgba(0,0,0,' + (alpha * 0.5) + ')');   // translucent
-      grad.addColorStop(0.9,  'rgba(0,0,0,' + (alpha * 0.15) + ')');  // mostly fog
-      grad.addColorStop(1,    'rgba(0,0,0,0)');                       // full fog
+      grad.addColorStop(0,    'rgba(0,0,0,' + alpha + ')');
+      grad.addColorStop(0.5,  'rgba(0,0,0,' + (alpha * 0.95) + ')');
+      grad.addColorStop(0.75, 'rgba(0,0,0,' + (alpha * 0.5) + ')');
+      grad.addColorStop(0.9,  'rgba(0,0,0,' + (alpha * 0.15) + ')');
+      grad.addColorStop(1,    'rgba(0,0,0,0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
       ctx.fill();
     });
+
+    // ── 4b. Spotlight (mouse lantern during search) ──
+    if (searchMode && spotlightPos) {
+      var sR = SPOTLIGHT_RADIUS * Math.pow(2, Math.max(0, zoom * 0.3));
+      var sGrad = ctx.createRadialGradient(spotlightPos.x, spotlightPos.y, 0, spotlightPos.x, spotlightPos.y, sR);
+      sGrad.addColorStop(0,   'rgba(0,0,0,0.7)');
+      sGrad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
+      sGrad.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = sGrad;
+      ctx.beginPath();
+      ctx.arc(spotlightPos.x, spotlightPos.y, sR, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.globalCompositeOperation = 'source-over';
+
+    // ── 4c. Draw key glyph (if spotlight is near it) ──
+    if (searchMode && spotlightPos) {
+      var kpt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+      var kDist = Math.sqrt(Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2));
+      var elapsed = Date.now() - searchMode.startTime;
+
+      // Hint: after HINT_DELAY, key pulses even without spotlight
+      var hintAlpha = 0;
+      if (elapsed > HINT_DELAY) {
+        hintAlpha = Math.min(0.6, (elapsed - HINT_DELAY) / 10000) * (0.5 + 0.5 * Math.sin(time * 3));
+      }
+
+      if (kDist < KEY_FIND_RADIUS * 2 || hintAlpha > 0) {
+        var keyVisible = kDist < KEY_FIND_RADIUS;
+        var keyNear = kDist < KEY_FIND_RADIUS * 2;
+        var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.3 : hintAlpha);
+
+        ctx.save();
+        // Outer glow
+        ctx.shadowColor = 'rgba(212, 168, 67, 0.8)';
+        ctx.shadowBlur = keyVisible ? 20 : 10;
+
+        // Draw sigil — a small diamond with inner dot
+        var kSize = keyVisible ? 8 : 5;
+        ctx.fillStyle = 'rgba(212, 168, 67, ' + kAlpha + ')';
+        ctx.beginPath();
+        ctx.moveTo(kpt.x, kpt.y - kSize);
+        ctx.lineTo(kpt.x + kSize, kpt.y);
+        ctx.lineTo(kpt.x, kpt.y + kSize);
+        ctx.lineTo(kpt.x - kSize, kpt.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // Inner dot
+        if (keyVisible) {
+          ctx.fillStyle = 'rgba(255, 248, 230, 0.9)';
+          ctx.beginPath();
+          ctx.arc(kpt.x, kpt.y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
 
     // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
@@ -478,7 +553,25 @@
      DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
-    discovered[loc.id] = { at: Date.now() };
+    // Tutorial steps (first 3) use instant reveal — no search
+    if (tutorialStep < TUTORIAL_STEPS) {
+      instantDiscover(loc);
+      return;
+    }
+
+    // Phase 1: pinhole + enter search mode
+    discovered[loc.id] = { at: Date.now(), phase: 'searching' };
+    localStorage.setItem(LS_KEY, JSON.stringify(discovered));
+
+    removeTutorialHint();
+    animateReveal(loc); // small pinhole animation
+    enterSearchMode(loc);
+    updateProgress();
+  }
+
+  // Instant discover (used by tutorial and fallback)
+  function instantDiscover(loc) {
+    discovered[loc.id] = { at: Date.now(), phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
     removeTutorialHint();
@@ -494,11 +587,65 @@
     }
   }
 
+  // Enter search mode — place a hidden key in the fog ring
+  function enterSearchMode(loc) {
+    // Random angle and distance for the key
+    var angle = Math.random() * Math.PI * 2;
+    var dist = 60 + Math.random() * 80; // world units from loc center
+
+    searchMode = {
+      locId: loc.id,
+      loc: loc,
+      keyLat: loc.lat + Math.sin(angle) * dist,
+      keyLng: loc.lng + Math.cos(angle) * dist,
+      startTime: Date.now()
+    };
+    console.log('[FOG] Search mode: find the key for', loc.name);
+  }
+
+  // Complete the discovery — key was found!
+  function completeDiscovery(loc) {
+    console.log('[FOG] ✓ Key found! Full reveal:', loc.name);
+    searchMode = null;
+    spotlightPos = null;
+
+    // Upgrade to full reveal
+    discovered[loc.id] = { at: discovered[loc.id].at, phase: 'complete' };
+    localStorage.setItem(LS_KEY, JSON.stringify(discovered));
+
+    revealMarker(loc.id);
+    animateReveal(loc);
+    showCelebration(loc);
+    setTimeout(function() { showDiscoveryCard(loc); }, 600);
+    updateProgress();
+    showDiscoveryToast(loc);
+  }
+
+  // Mouse/touch tracking for spotlight
+  function setupSpotlightTracking() {
+    document.addEventListener('mousemove', function(e) {
+      if (!searchMode || !map) return;
+      var container = map.getContainer();
+      var rect = container.getBoundingClientRect();
+      spotlightPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    });
+
+    document.addEventListener('touchmove', function(e) {
+      if (!searchMode || !map) return;
+      var touch = e.touches[0];
+      if (!touch) return;
+      var container = map.getContainer();
+      var rect = container.getBoundingClientRect();
+      spotlightPos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }, { passive: true });
+  }
+
   function showDiscoveryToast(loc) {
     var total = (window.LOCATIONS || []).length;
-    var found = Object.keys(discovered).length;
+    var found = Object.keys(discovered).filter(function(id) {
+      return discovered[id].phase === 'complete';
+    }).length;
 
-    // Remove existing toast
     var old = document.getElementById('discovery-toast');
     if (old) old.remove();
 
@@ -517,11 +664,9 @@
       '<div style="font-size:12px;color:#bfb299;margin-top:6px;">' + found + ' of ' + total + ' locations charted</div>';
 
     document.body.appendChild(toast);
-    // Trigger fade in
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });
-    // Fade out and remove
     setTimeout(function() {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 600);
