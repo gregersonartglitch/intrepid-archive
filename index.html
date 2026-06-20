@@ -475,6 +475,18 @@ input { font-family: inherit; }
   font-family: var(--font-ui); font-size: 10px; font-weight: 700;
   color: var(--amber); letter-spacing: 2px; text-transform: uppercase;
 }
+.hdr-v1-btn {
+  display: inline-block; margin-top: 10px; pointer-events: auto;
+  padding: 6px 14px; border-radius: 4px;
+  background: rgba(198,141,85,0.15); border: 1px solid rgba(198,141,85,0.4);
+  color: #d4a843; font-family: var(--font-heading); font-size: 11px;
+  font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  text-decoration: none; transition: all 0.2s ease;
+}
+.hdr-v1-btn:hover {
+  background: rgba(198,141,85,0.3); border-color: var(--amber);
+  color: #fff;
+}
 
 /* ═══════════════════════════════════════════
    COMPASS ROSE
@@ -1506,6 +1518,7 @@ input { font-family: inherit; }
   <div id="hdr">
     <div class="hdr-title">The Hollowlands</div>
     <div class="hdr-sub">Cartographer Archive — Patron Access</div>
+    <a class="hdr-v1-btn" id="hdr-v1-btn" href="#" target="_blank" rel="noopener">📖 Get Volume 1</a>
   </div>
 
   <!-- Compass Rose -->
@@ -1754,6 +1767,10 @@ input { font-family: inherit; }
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
     initMedallionTooltips();
+
+    // Wire Get Volume 1 button
+    var v1Btn = document.getElementById('hdr-v1-btn');
+    if (v1Btn && cfg.ksLink) v1Btn.href = cfg.ksLink;
   }
 
   /* ═══════════════════════════════════════════
