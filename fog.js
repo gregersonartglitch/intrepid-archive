@@ -525,17 +525,59 @@
       ctx.fill();
     });
 
-    // ── 4b. Spotlight (mouse lantern during search) ──
+    // ── 4b. Spotlight with divining rod effect ──
     if (searchMode && spotlightPos) {
-      var sR = SPOTLIGHT_RADIUS * Math.pow(2, Math.max(0, zoom * 0.3));
+      var kpt2 = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+      var distToKey = Math.sqrt(Math.pow(spotlightPos.x - kpt2.x, 2) + Math.pow(spotlightPos.y - kpt2.y, 2));
+
+      // Proximity: 0 = far, 1 = on top of key
+      var maxDist = 300;
+      var proximity = Math.max(0, 1 - distToKey / maxDist);
+
+      // Divining rod: spotlight grows and pulses faster when closer
+      var pulseSpeed = 2 + proximity * 6; // 2Hz far → 8Hz close
+      var pulseAmp = 0.05 + proximity * 0.2;
+      var pulse = 1 + Math.sin(time * pulseSpeed) * pulseAmp;
+
+      var sR = (SPOTLIGHT_RADIUS + proximity * 25) * pulse * Math.pow(2, Math.max(0, zoom * 0.3));
+
+      // Color shifts warm as you get closer
+      var warmR = Math.floor(30 * proximity);
+      var warmG = Math.floor(15 * proximity);
+      var clearAlpha = 0.7 + proximity * 0.25;
+
       var sGrad = ctx.createRadialGradient(spotlightPos.x, spotlightPos.y, 0, spotlightPos.x, spotlightPos.y, sR);
-      sGrad.addColorStop(0,   'rgba(0,0,0,0.7)');
-      sGrad.addColorStop(0.6, 'rgba(0,0,0,0.3)');
+      sGrad.addColorStop(0,   'rgba(' + warmR + ',' + warmG + ',0,' + clearAlpha + ')');
+      sGrad.addColorStop(0.6, 'rgba(0,0,0,' + (0.3 + proximity * 0.1) + ')');
       sGrad.addColorStop(1,   'rgba(0,0,0,0)');
       ctx.fillStyle = sGrad;
       ctx.beginPath();
       ctx.arc(spotlightPos.x, spotlightPos.y, sR, 0, Math.PI * 2);
       ctx.fill();
+
+      // Directional pull arrow (small triangle pointing toward key)
+      if (distToKey > KEY_FIND_RADIUS && distToKey < maxDist) {
+        var angle = Math.atan2(kpt2.y - spotlightPos.y, kpt2.x - spotlightPos.x);
+        var arrowDist = sR * 0.4;
+        var ax = spotlightPos.x + Math.cos(angle) * arrowDist;
+        var ay = spotlightPos.y + Math.sin(angle) * arrowDist;
+        var arrowSize = 4 + proximity * 4;
+        var arrowAlpha = 0.15 + proximity * 0.5;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(212, 168, 67, ' + arrowAlpha + ')';
+        ctx.shadowColor = 'rgba(212, 168, 67, 0.5)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(ax + Math.cos(angle) * arrowSize, ay + Math.sin(angle) * arrowSize);
+        ctx.lineTo(ax + Math.cos(angle + 2.3) * arrowSize, ay + Math.sin(angle + 2.3) * arrowSize);
+        ctx.lineTo(ax + Math.cos(angle - 2.3) * arrowSize, ay + Math.sin(angle - 2.3) * arrowSize);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        ctx.globalCompositeOperation = 'destination-out';
+      }
     }
     ctx.globalCompositeOperation = 'source-over';
 
@@ -653,6 +695,58 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(msg, hx, ty + th / 2);
       ctx.restore();
+    }
+
+    // ── 6. Navigation beacon — arrow pointing to next journey step ──
+    if (!searchMode) {
+      var navId = getNextPathLocation();
+      if (navId) {
+        var navLoc = locs.find(function(l) { return l.id === navId; });
+        if (navLoc) {
+          var npt = map.latLngToContainerPoint([navLoc.lat, navLoc.lng]);
+          var margin = 80;
+          var isOffscreen = npt.x < margin || npt.x > w - margin || npt.y < margin || npt.y > h - margin;
+
+          if (isOffscreen) {
+            // Draw arrow at edge of screen pointing toward next location
+            var cx = w / 2, cy = h / 2;
+            var navAngle = Math.atan2(npt.y - cy, npt.x - cx);
+            var edgeX = cx + Math.cos(navAngle) * (w / 2 - margin);
+            var edgeY = cy + Math.sin(navAngle) * (h / 2 - margin);
+
+            // Clamp to viewport edges
+            edgeX = Math.max(margin, Math.min(w - margin, edgeX));
+            edgeY = Math.max(margin, Math.min(h - margin, edgeY));
+
+            var navPulse = 0.3 + 0.2 * Math.sin(time * 2);
+            var aSize = 10;
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(198, 141, 85, ' + navPulse + ')';
+            ctx.shadowColor = 'rgba(198, 141, 85, 0.6)';
+            ctx.shadowBlur = 15;
+
+            // Triangle arrow
+            ctx.beginPath();
+            ctx.moveTo(edgeX + Math.cos(navAngle) * aSize * 1.5, edgeY + Math.sin(navAngle) * aSize * 1.5);
+            ctx.lineTo(edgeX + Math.cos(navAngle + 2.5) * aSize, edgeY + Math.sin(navAngle + 2.5) * aSize);
+            ctx.lineTo(edgeX + Math.cos(navAngle - 2.5) * aSize, edgeY + Math.sin(navAngle - 2.5) * aSize);
+            ctx.closePath();
+            ctx.fill();
+
+            // Small dot trail
+            for (var di = 1; di <= 3; di++) {
+              var dx = edgeX - Math.cos(navAngle) * di * 12;
+              var dy = edgeY - Math.sin(navAngle) * di * 12;
+              ctx.beginPath();
+              ctx.arc(dx, dy, 2.5 - di * 0.5, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(198, 141, 85, ' + (navPulse * (1 - di * 0.25)) + ')';
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        }
+      }
     }
   }
 
