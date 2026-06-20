@@ -298,8 +298,8 @@
 
     // Card-close step doesn't need to fly anywhere — hint shows next to card
     if (def.action === 'close-card') {
-      // Hint loc stays the same (show near the card)
-      tutorialHintLoc = tutorialHintLoc; // keep current
+      // tutorialHintLoc was set by instantDiscover before advancing
+      waitForCardClose();
       return;
     }
 
@@ -701,9 +701,10 @@
     showDiscoveryToast(loc);
 
     if (tutorialStep < TUTORIAL_STEPS) {
-      // Step 1 (card step): advance happens when card is closed via MutationObserver
+      // Restore hint loc so the next step has a position to anchor to
+      tutorialHintLoc = loc;
       if (tutorialStep === TUTORIAL_CARD_STEP - 1) {
-        // We just completed step 0 click — advance to step 1 (card reading)
+        // Step 0 done → advance to step 1 (card reading)
         advanceTutorial();
       } else if (tutorialStep !== TUTORIAL_CARD_STEP) {
         // Normal advance for click steps
