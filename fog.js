@@ -35,6 +35,65 @@
   var searchMode = null;  // { locId, loc, keyLat, keyLng, startTime }
   var spotlightPos = null; // { x, y } container coords (null = no spotlight)
 
+  // Audio — divining rod pings
+  var audioCtx = null;
+  var lastPingTime = 0;
+  var audioUnlocked = false;
+
+  function ensureAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioUnlocked = true;
+    } catch(e) { /* no audio support */ }
+  }
+
+  function playPing(frequency, duration, volume) {
+    if (!audioCtx || audioCtx.state === 'suspended') {
+      if (audioCtx) audioCtx.resume();
+      return;
+    }
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(volume || 0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function playDiscoveryChime() {
+    if (!audioCtx) return;
+    // Three-note ascending chime
+    var notes = [523, 659, 784]; // C5, E5, G5
+    notes.forEach(function(freq, i) {
+      setTimeout(function() {
+        playPing(freq, 0.4, 0.1);
+      }, i * 120);
+    });
+  }
+
+  // Called from draw() during search mode — pings based on proximity
+  function updateDiviningAudio(proximity) {
+    if (!audioCtx || !searchMode) return;
+    var now = Date.now();
+
+    // Ping interval: 800ms when far → 100ms when close
+    var interval = 800 - proximity * 700;
+    if (interval < 100) interval = 100;
+
+    // Pitch: 300Hz far → 900Hz close
+    var freq = 300 + proximity * 600;
+
+    if (now - lastPingTime > interval) {
+      playPing(freq, 0.08 + proximity * 0.1, 0.04 + proximity * 0.08);
+      lastPingTime = now;
+    }
+  }
+
   /* ════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════ */
@@ -44,7 +103,7 @@
     journeyPath = window.JOURNEY_PATH || [];
 
     // Auto-clear stale localStorage when fog system version changes
-    var FOG_VERSION = 15;
+    var FOG_VERSION = 16;
     var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
     if (storedVersion !== FOG_VERSION) {
       localStorage.removeItem(LS_KEY);
@@ -102,6 +161,7 @@
     document.addEventListener('click', function(e) {
       if (window.EDIT_MODE) return;
       if (!map) return;
+      ensureAudio(); // Initialize audio on first user interaction
 
       // Only clicks inside the map
       var container = map.getContainer();
@@ -534,6 +594,9 @@
       var maxDist = 300;
       var proximity = Math.max(0, 1 - distToKey / maxDist);
 
+      // Audio: divining rod pings accelerate near key
+      updateDiviningAudio(proximity);
+
       // Divining rod: spotlight grows and pulses faster when closer
       var pulseSpeed = 2 + proximity * 6; // 2Hz far → 8Hz close
       var pulseAmp = 0.05 + proximity * 0.2;
@@ -790,6 +853,7 @@
     revealMarker(loc.id);
     animateReveal(loc);
     showCelebration(loc);
+    playDiscoveryChime();
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
     showDiscoveryToast(loc);
@@ -839,6 +903,7 @@
     revealMarker(loc.id);
     animateReveal(loc);
     showCelebration(loc);
+    playDiscoveryChime();
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
     showDiscoveryToast(loc);
@@ -960,18 +1025,37 @@
     ring.className = 'celebration-ring';
     burst.appendChild(ring);
 
-    var count = 14;
+    // Primary burst — golden dust
+    var count = 20;
     for (var i = 0; i < count; i++) {
       var p = document.createElement('div');
       p.className = 'celebration-particle';
       var a = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-      var d = 40 + Math.random() * 60;
+      var d = 50 + Math.random() * 80;
       p.style.setProperty('--tx', Math.cos(a) * d + 'px');
       p.style.setProperty('--ty', Math.sin(a) * d + 'px');
       p.style.animationDelay = (Math.random() * 0.15) + 's';
       burst.appendChild(p);
     }
-    setTimeout(function() { burst.remove(); }, 1500);
+
+    // Secondary wave — smaller, slower particles
+    setTimeout(function() {
+      for (var j = 0; j < 8; j++) {
+        var p2 = document.createElement('div');
+        p2.className = 'celebration-particle';
+        p2.style.width = '3px';
+        p2.style.height = '3px';
+        var a2 = Math.random() * Math.PI * 2;
+        var d2 = 30 + Math.random() * 50;
+        p2.style.setProperty('--tx', Math.cos(a2) * d2 + 'px');
+        p2.style.setProperty('--ty', Math.sin(a2) * d2 + 'px');
+        p2.style.animationDelay = (Math.random() * 0.2) + 's';
+        p2.style.animationDuration = '1.2s';
+        burst.appendChild(p2);
+      }
+    }, 200);
+
+    setTimeout(function() { burst.remove(); }, 2000);
   }
 
   /* ════════════════════════════════════════════════
