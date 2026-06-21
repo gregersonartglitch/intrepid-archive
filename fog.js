@@ -1442,6 +1442,75 @@
     if (pct > 0.65) rank = 'Cartographer';
     if (pct > 0.85) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
+
+    // Check god reveals — count ALL completed discoveries
+    var totalDiscovered = Object.keys(discovered).filter(function(id) {
+      return discovered[id].phase === 'complete';
+    }).length;
+    checkGodReveals(totalDiscovered);
+  }
+
+  function checkGodReveals(count) {
+    var gods = document.querySelectorAll('.medallion-hot.god-locked');
+    gods.forEach(function(god) {
+      var threshold = parseInt(god.getAttribute('data-unlock') || '999');
+      if (count >= threshold) {
+        revealGod(god);
+      }
+    });
+  }
+
+  function revealGod(el) {
+    el.classList.remove('god-locked');
+    el.classList.add('god-revealing');
+    var name = el.getAttribute('data-name') || 'Unknown';
+
+    // Play a deep chime for god reveal
+    if (audioCtx) {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 130; // low C
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 2);
+    }
+
+    // Show toast
+    showGodRevealToast(name);
+
+    // After animation, mark as unlocked
+    setTimeout(function() {
+      el.classList.remove('god-revealing');
+      el.classList.add('god-unlocked');
+    }, 1500);
+  }
+
+  function showGodRevealToast(name) {
+    var old = document.getElementById('god-toast');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.id = 'god-toast';
+    toast.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:950;' +
+      'background:rgba(10,12,16,0.95);border:1px solid rgba(212,168,67,0.6);' +
+      'border-radius:10px;padding:20px 40px;text-align:center;pointer-events:none;' +
+      'opacity:0;transition:opacity 1s ease;';
+    toast.innerHTML =
+      '<div style="font-family:Cinzel,serif;font-size:11px;color:#c68d55;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">A god stirs</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:22px;color:#d4a843;letter-spacing:2px;">' + name + '</div>' +
+      '<div style="font-family:EB Garamond,serif;font-size:13px;color:#bfb299;font-style:italic;margin-top:8px;">has awakened on the frame</div>';
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+      toast.style.opacity = '1';
+      setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.remove(); }, 1000);
+      }, 3000);
+    });
   }
 
   /* ════════════════════════════════════════════════

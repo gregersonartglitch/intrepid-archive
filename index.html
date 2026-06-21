@@ -425,11 +425,44 @@ input { font-family: inherit; }
 .medallion-hot {
   position: absolute; width: 60px; height: 60px; border-radius: 50%;
   pointer-events: auto; cursor: pointer;
-  /* Debug: uncomment to see hotspots */
-  /* background: rgba(255,0,0,0.15); */
+  transition: all 0.8s ease;
 }
 .medallion-hot:hover {
   background: rgba(212, 168, 67, 0.08);
+}
+
+/* Locked gods — dark shroud with subtle pulse */
+.medallion-hot.god-locked {
+  pointer-events: none; cursor: default;
+}
+.medallion-hot.god-locked::after {
+  content: '';
+  position: absolute; inset: -8px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(10,12,16,0.95) 40%, rgba(10,12,16,0.7) 70%, transparent 100%);
+  pointer-events: none;
+  animation: god-dormant 4s ease-in-out infinite;
+}
+@keyframes god-dormant {
+  0%,100% { opacity: 0.9; }
+  50%     { opacity: 0.75; }
+}
+
+/* Reveal animation */
+.medallion-hot.god-revealing::after {
+  animation: god-awaken 1.5s ease-out forwards;
+}
+@keyframes god-awaken {
+  0%   { opacity: 0.9; box-shadow: none; }
+  40%  { opacity: 0.5; box-shadow: 0 0 30px rgba(212,168,67,0.6); }
+  100% { opacity: 0; box-shadow: 0 0 60px rgba(212,168,67,0); }
+}
+
+/* Unlocked god — subtle golden aura */
+.medallion-hot.god-unlocked::after {
+  content: ''; display: none;
+}
+.medallion-hot.god-unlocked {
+  pointer-events: auto; cursor: pointer;
 }
 
 /* Tooltip */
@@ -1493,36 +1526,36 @@ input { font-family: inherit; }
          data-name="Nammu" data-role="Guardian of the West"
          data-lore="She who sleeps beneath the Abyssal Sea. Her dreaming shapes the tides."></div>
 
-    <!-- The Nine (arranged around the rim) -->
-    <div class="medallion-hot" style="top:14%;left:22%"
+    <!-- The Nine (hidden until discoveries unlock them) -->
+    <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="3"
          data-name="The Tribunal" data-role="Judges of the Nine"
          data-lore="Three who pass judgment when the others cannot agree."></div>
 
-    <div class="medallion-hot" style="top:14%;right:22%"
+    <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="5"
          data-name="Enkidu" data-role="The Wild"
          data-lore="Untamed and unbroken. He walked with beasts before the Nine called him."></div>
 
-    <div class="medallion-hot" style="top:30%;left:10%"
+    <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="7"
          data-name="Lamassu" data-role="Shield of the Dawn"
          data-lore="His hooves split the earth to seal the gates against what stirs beyond."></div>
 
-    <div class="medallion-hot" style="top:30%;right:10%"
+    <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="10"
          data-name="Sin" data-role="The Moon"
          data-lore="Whose face changes but whose nature does not. He counts the days until the reckoning."></div>
 
-    <div class="medallion-hot" style="bottom:30%;left:10%"
+    <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="14"
          data-name="Girtab" data-role="The Sting"
          data-lore="Keeper of the Threshold. None pass the gates of twilight without her mark."></div>
 
-    <div class="medallion-hot" style="bottom:30%;right:10%"
+    <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="18"
          data-name="Shamash" data-role="Justice"
          data-lore="He weighs all things. His scales cannot be deceived."></div>
 
-    <div class="medallion-hot" style="bottom:14%;left:22%"
+    <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="22"
          data-name="Ensi" data-role="Voice of the Nine"
          data-lore="He speaks the words that bind and unbind."></div>
 
-    <div class="medallion-hot" style="bottom:14%;right:22%"
+    <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="27"
          data-name="Nergal" data-role="Lord of the Burning Gate"
          data-lore="Where he walks, the ground remembers."></div>
   </div>
