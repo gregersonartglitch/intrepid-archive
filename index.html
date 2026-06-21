@@ -2569,6 +2569,77 @@ input { font-family: inherit; }
     document.addEventListener('click', function() {
       if (activeHot) hideTip();
     });
+
+    // ── Medallion position editor (add ?editMedallions to URL) ──
+    if (location.search.indexOf('editMedallions') > -1) {
+      var posLabel = document.createElement('div');
+      posLabel.id = 'medallion-edit-label';
+      posLabel.style.cssText = 'position:fixed;top:10px;right:10px;z-index:9999;' +
+        'background:rgba(0,0,0,0.9);color:#d4a843;padding:12px 16px;border-radius:8px;' +
+        'font-family:monospace;font-size:12px;max-width:400px;white-space:pre-wrap;' +
+        'border:1px solid rgba(198,141,85,0.5);';
+      posLabel.textContent = 'Drag medallions to position them. Click "Copy" when done.';
+      document.body.appendChild(posLabel);
+
+      var copyBtn = document.createElement('button');
+      copyBtn.textContent = '📋 Copy Positions';
+      copyBtn.style.cssText = 'display:block;margin-top:8px;padding:6px 14px;cursor:pointer;' +
+        'background:#d4a843;color:#111;border:none;border-radius:4px;font-weight:bold;';
+      posLabel.appendChild(copyBtn);
+
+      hotspots.forEach(function(hot) {
+        // Make visible and draggable
+        hot.style.background = 'rgba(255,0,0,0.3)';
+        hot.style.border = '2px solid red';
+        hot.style.zIndex = '9998';
+        hot.style.cursor = 'grab';
+        hot.classList.remove('god-locked'); // unlock for dragging
+
+        var dragging = false, startX, startY, origLeft, origTop;
+
+        hot.addEventListener('mousedown', function(e) {
+          e.preventDefault(); e.stopPropagation();
+          dragging = true;
+          hot.style.cursor = 'grabbing';
+          startX = e.clientX; startY = e.clientY;
+          var rect = hot.getBoundingClientRect();
+          origLeft = rect.left; origTop = rect.top;
+          // Remove percentage positioning, use px
+          hot.style.position = 'fixed';
+          hot.style.left = origLeft + 'px';
+          hot.style.top = origTop + 'px';
+          hot.style.right = 'auto'; hot.style.bottom = 'auto';
+          hot.style.transform = 'none';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+          if (!dragging) return;
+          var dx = e.clientX - startX, dy = e.clientY - startY;
+          hot.style.left = (origLeft + dx) + 'px';
+          hot.style.top = (origTop + dy) + 'px';
+          posLabel.firstChild.textContent = (hot.dataset.name || '?') +
+            ' → top:' + ((origTop + dy) / window.innerHeight * 100).toFixed(1) + '%' +
+            ' left:' + ((origLeft + dx) / window.innerWidth * 100).toFixed(1) + '%';
+        });
+
+        document.addEventListener('mouseup', function() {
+          if (dragging) { dragging = false; hot.style.cursor = 'grab'; }
+        });
+      });
+
+      copyBtn.addEventListener('click', function() {
+        var output = '';
+        hotspots.forEach(function(hot) {
+          var rect = hot.getBoundingClientRect();
+          var topPct = (rect.top / window.innerHeight * 100).toFixed(1);
+          var leftPct = (rect.left / window.innerWidth * 100).toFixed(1);
+          output += (hot.dataset.name || '?') + ': top:' + topPct + '%; left:' + leftPct + '%\n';
+        });
+        navigator.clipboard.writeText(output).then(function() {
+          posLabel.firstChild.textContent = 'Copied!\n\n' + output;
+        });
+      });
+    }
   }
 
   /* ═══════════════════════════════════════════
