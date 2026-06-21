@@ -435,7 +435,7 @@
     { msg: 'The path leads on. Follow the light.', action: 'click' },
     { msg: 'The mist thickens. Move your cursor to search.', action: 'search' },
     { msg: 'A sigil glimmers. Find it and touch it.', action: 'find-key' },
-    { msg: 'You know the way now. Explore.', action: 'auto' }
+    { msg: 'The archive is yours, Cartographer. Chart the unknown.', action: 'auto' }
   ];
 
   // Which tutorial steps use instant reveal (no spotlight search)
@@ -1436,10 +1436,10 @@
     if (fill) fill.style.width = (pct * 100) + '%';
     if (label) label.textContent = found + ' / ' + total + ' charted';
 
-    var rank = 'Wanderer';
-    if (pct > 0.15) rank = 'Pathfinder';
-    if (pct > 0.4) rank = 'Surveyor';
-    if (pct > 0.65) rank = 'Cartographer';
+    var rank = 'Apprentice Scribe';
+    if (pct > 0.15) rank = 'Cartographer';
+    if (pct > 0.4) rank = 'Senior Cartographer';
+    if (pct > 0.65) rank = 'Magus Scribe';
     if (pct > 0.85) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
 
@@ -1500,9 +1500,9 @@
       'border-radius:10px;padding:20px 40px;text-align:center;pointer-events:none;' +
       'opacity:0;transition:opacity 1s ease;';
     toast.innerHTML =
-      '<div style="font-family:Cinzel,serif;font-size:11px;color:#c68d55;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">A god stirs</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:11px;color:#c68d55;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">The frame stirs</div>' +
       '<div style="font-family:Cinzel,serif;font-size:22px;color:#d4a843;letter-spacing:2px;">' + name + '</div>' +
-      '<div style="font-family:EB Garamond,serif;font-size:13px;color:#bfb299;font-style:italic;margin-top:8px;">has awakened on the frame</div>';
+      '<div style="font-family:EB Garamond,serif;font-size:13px;color:#bfb299;font-style:italic;margin-top:8px;">has awakened</div>';
     document.body.appendChild(toast);
     requestAnimationFrame(function() {
       toast.style.opacity = '1';
