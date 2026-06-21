@@ -1060,15 +1060,20 @@
   }
 
   function completeDiscovery(loc) {
-    console.log('[FOG] ✓ Key found! Full reveal:', loc.name);
-    searchMode = null;
-    spotlightPos = null;
+    console.log('[FOG] \u2713 Key found! Full reveal:', loc.name);
+
+    // Keep spotlight visible during reveal animation — don't snap away
+    // searchMode and spotlightPos stay alive until animation ends
 
     discovered[loc.id] = { at: discovered[loc.id].at, phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
     revealMarker(loc.id);
-    animateReveal(loc);
+    animateReveal(loc, PINHOLE_SCALE, function() {
+      // Clear search mode AFTER the reveal animation completes
+      searchMode = null;
+      spotlightPos = null;
+    });
     showCelebration(loc);
     playDiscoveryChime();
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
@@ -1136,18 +1141,24 @@
   /* ════════════════════════════════════════════════
      REVEAL ANIMATION
      ════════════════════════════════════════════════ */
-  function animateReveal(loc) {
+  function animateReveal(loc, startFrom, onComplete) {
     animatingReveal = loc.id;
-    revealProgress = 0;
+    var fromVal = startFrom || 0;
+    revealProgress = fromVal;
     var start = performance.now();
     var dur = 900;
 
     function frame(now) {
-      revealProgress = Math.min(1, (now - start) / dur);
-      revealProgress = 1 - Math.pow(1 - revealProgress, 3); // ease-out
+      var t = Math.min(1, (now - start) / dur);
+      t = 1 - Math.pow(1 - t, 3); // ease-out
+      revealProgress = fromVal + (1 - fromVal) * t; // lerp from startFrom to 1
       draw();
-      if (revealProgress < 1) requestAnimationFrame(frame);
-      else animatingReveal = null;
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        animatingReveal = null;
+        if (onComplete) onComplete();
+      }
     }
     requestAnimationFrame(frame);
   }
