@@ -953,8 +953,8 @@
       ctx.font = '32px sans-serif';
       ctx.textAlign = 'center';
       var arrowPulse = 0.7 + 0.3 * Math.sin(time * 4);
-      ctx.fillStyle = 'rgba(212, 168, 67, ' + arrowPulse + ')';
-      ctx.shadowColor = 'rgba(212, 168, 67, 0.9)';
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + arrowPulse + ')';
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.9)';
       ctx.shadowBlur = 25;
       if (arrowAbove) {
         ctx.fillText('\u25BC', hx, hy - 25 + bob);
@@ -989,7 +989,7 @@
       ctx.roundRect(tx, ty, tw, th, 8);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(198, 141, 85, 0.6)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.roundRect(tx, ty, tw, th, 8);
