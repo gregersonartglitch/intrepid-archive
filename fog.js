@@ -469,16 +469,33 @@
 
   function waitForCardClose() {
     var card = document.getElementById('discovery-card');
-    if (!card) return;
-    var observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(m) {
-        if (m.attributeName === 'class' && !card.classList.contains('visible')) {
-          observer.disconnect();
-          advanceTutorial();
-        }
+    var panelEl = document.getElementById('panel');
+
+    // Watch discovery-card for class change
+    if (card) {
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          if (m.attributeName === 'class' && !card.classList.contains('visible')) {
+            observer.disconnect();
+            advanceTutorial();
+          }
+        });
       });
-    });
-    observer.observe(card, { attributes: true });
+      observer.observe(card, { attributes: true });
+    }
+
+    // Also watch panel close as fallback
+    if (panelEl) {
+      var panelObs = new MutationObserver(function(mutations) {
+        mutations.forEach(function(m) {
+          if (m.attributeName === 'class' && !panelEl.classList.contains('open')) {
+            panelObs.disconnect();
+            advanceTutorial();
+          }
+        });
+      });
+      panelObs.observe(panelEl, { attributes: true });
+    }
   }
 
   function positionHint() {
@@ -531,9 +548,9 @@
     if (!nextLoc) { removeTutorialHint(); return; }
 
     setTimeout(function() {
-      map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 3, { duration: 1.5 });
-      setTimeout(function() { showTutorialHint(nextLoc); }, 2000);
-    }, 2500);
+      map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 3, { duration: 1.2 });
+      setTimeout(function() { showTutorialHint(nextLoc); }, 1500);
+    }, 800);
   }
 
   function showTutorialToast(msg) {
@@ -902,58 +919,76 @@
         hy = keyPt.y;
       }
 
-      // For card-close step, position hint near the card
+      // For card-close step, point arrow at the card's close button
+      var arrowAbove = true;
       if (def && def.action === 'close-card') {
         var card = document.getElementById('discovery-card');
         if (card && card.classList.contains('visible')) {
-          var cr = card.getBoundingClientRect();
-          var container = map.getContainer();
-          var containerRect = container.getBoundingClientRect();
-          hx = cr.left - containerRect.left + cr.width / 2;
-          hy = cr.top - containerRect.top - 30;
+          var closeBtn = card.querySelector('.dc-close');
+          if (closeBtn) {
+            var cbr = closeBtn.getBoundingClientRect();
+            var container = map.getContainer();
+            var containerRect = container.getBoundingClientRect();
+            hx = cbr.left - containerRect.left + cbr.width / 2;
+            hy = cbr.top - containerRect.top + cbr.height / 2;
+            arrowAbove = false; // arrow points from left
+          }
         }
       }
 
-      // Arrow ▼ (skip for card-close step)
-      if (!def || def.action !== 'close-card') {
-        ctx.save();
-        ctx.font = '28px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#d4a843';
-        ctx.shadowColor = 'rgba(212, 168, 67, 0.9)';
-        ctx.shadowBlur = 20;
-        ctx.fillText('▼', hx, hy - 30 + bob);
-        ctx.restore();
-      }
+      ctx.globalCompositeOperation = 'source-over';
 
-      // Text background pill
+      // Pulsing golden arrow ▼ (always shown, including for close-card)
       ctx.save();
-      ctx.font = 'italic 600 13px "Cinzel", "Cormorant Garamond", serif';
-      var tw = ctx.measureText(msg).width + 32;
-      var th = 32;
-      var tx = hx - tw / 2;
-      var ty = hy - 70 + bob;
+      ctx.font = '32px sans-serif';
+      ctx.textAlign = 'center';
+      var arrowPulse = 0.7 + 0.3 * Math.sin(time * 4);
+      ctx.fillStyle = 'rgba(212, 168, 67, ' + arrowPulse + ')';
+      ctx.shadowColor = 'rgba(212, 168, 67, 0.9)';
+      ctx.shadowBlur = 25;
+      if (arrowAbove) {
+        ctx.fillText('\u25BC', hx, hy - 25 + bob);
+      } else {
+        // Arrow points right ▶ toward the close button
+        ctx.fillText('\u25B6', hx - 35 + bob, hy + 4);
+      }
+      ctx.restore();
+
+      // Text background pill — bigger and more prominent
+      ctx.save();
+      ctx.font = 'italic 600 15px "Cinzel", "Cormorant Garamond", serif';
+      var tw = ctx.measureText(msg).width + 40;
+      var th = 36;
+      var tx, ty;
+      if (arrowAbove) {
+        tx = hx - tw / 2;
+        ty = hy - 80 + bob;
+      } else {
+        // Position tooltip to the left of the close button
+        tx = hx - tw - 50;
+        ty = hy - th / 2;
+      }
 
       // Clamp to viewport
       if (tx < 10) tx = 10;
       if (tx + tw > w - 10) tx = w - tw - 10;
       if (ty < 10) ty = 10;
 
-      ctx.fillStyle = 'rgba(10, 12, 16, 0.92)';
+      ctx.fillStyle = 'rgba(10, 12, 16, 0.95)';
       ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, th, 6);
+      ctx.roundRect(tx, ty, tw, th, 8);
       ctx.fill();
 
-      ctx.strokeStyle = 'rgba(198, 141, 85, 0.5)';
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(198, 141, 85, 0.6)';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, th, 6);
+      ctx.roundRect(tx, ty, tw, th, 8);
       ctx.stroke();
 
       ctx.fillStyle = '#efe7d2';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(msg, hx, ty + th / 2);
+      ctx.fillText(msg, tx + tw / 2, ty + th / 2);
       ctx.restore();
     }
 
