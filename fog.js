@@ -717,8 +717,8 @@
 
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
 
-      // Base radius scaled by zoom — pinhole if searching, full if complete
-      var baseR = 180;
+      // Base radius scaled by zoom — pinhole if searching, generous if complete
+      var baseR = (disc.phase === 'searching') ? 180 : 250;
       var scale = (disc.phase === 'searching') ? PINHOLE_SCALE : 1;
       var r = baseR * scale * Math.pow(2, zoom);
       if (r < 20) r = 20;
@@ -1146,16 +1146,23 @@
     var fromVal = startFrom || 0;
     revealProgress = fromVal;
     var start = performance.now();
-    var dur = 900;
+    var dur = 1100; // slightly longer for drama
+
+    // Elastic ease-out: overshoots to ~115% then settles
+    function elasticOut(t) {
+      if (t === 0 || t === 1) return t;
+      return Math.pow(2, -8 * t) * Math.sin((t - 0.075) * (2 * Math.PI) / 0.3) + 1;
+    }
 
     function frame(now) {
       var t = Math.min(1, (now - start) / dur);
-      t = 1 - Math.pow(1 - t, 3); // ease-out
-      revealProgress = fromVal + (1 - fromVal) * t; // lerp from startFrom to 1
+      var eased = elasticOut(t);
+      revealProgress = fromVal + (1 - fromVal) * eased;
       draw();
       if (t < 1) {
         requestAnimationFrame(frame);
       } else {
+        revealProgress = 1; // settle exactly at 1
         animatingReveal = null;
         if (onComplete) onComplete();
       }
