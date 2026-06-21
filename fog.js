@@ -470,6 +470,13 @@
   function waitForCardClose() {
     var card = document.getElementById('discovery-card');
     var panelEl = document.getElementById('panel');
+    var advanced = false; // guard against double-fire
+
+    function onClose() {
+      if (advanced) return;
+      advanced = true;
+      advanceTutorial();
+    }
 
     // Watch discovery-card for class change
     if (card) {
@@ -477,7 +484,7 @@
         mutations.forEach(function(m) {
           if (m.attributeName === 'class' && !card.classList.contains('visible')) {
             observer.disconnect();
-            advanceTutorial();
+            onClose();
           }
         });
       });
@@ -490,7 +497,7 @@
         mutations.forEach(function(m) {
           if (m.attributeName === 'class' && !panelEl.classList.contains('open')) {
             panelObs.disconnect();
-            advanceTutorial();
+            onClose();
           }
         });
       });
@@ -540,17 +547,20 @@
       return;
     }
 
-    // Click steps — fly to next location
+    // Click steps — show hint immediately, then fly to next location
     var nextId = getNextPathLocation();
     if (!nextId) { removeTutorialHint(); return; }
     var locs = window.LOCATIONS || [];
     var nextLoc = locs.find(function(l) { return l.id === nextId; });
     if (!nextLoc) { removeTutorialHint(); return; }
 
+    // Show hint RIGHT AWAY at the next location (even before camera arrives)
+    showTutorialHint(nextLoc);
+
+    // Fly camera to the next location
     setTimeout(function() {
       map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 3, { duration: 1.2 });
-      setTimeout(function() { showTutorialHint(nextLoc); }, 1500);
-    }, 800);
+    }, 300);
   }
 
   function showTutorialToast(msg) {
