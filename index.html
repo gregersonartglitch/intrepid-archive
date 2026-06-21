@@ -1933,16 +1933,22 @@ input { font-family: inherit; }
   }
 
   /* ═══════════════════════════════════════════
-     LABEL SCALE — grows labels as you zoom in, capped at 2.2x
+     LABEL SCALE — counteracts Leaflet's zoom transform to keep
+     labels at a consistent readable size across all zoom levels.
      ═══════════════════════════════════════════ */
   function updateLabelScale() {
     const z = map.getZoom();
     const minZ = map.getMinZoom();
     const maxZ = map.getMaxZoom();
-    // Scale from 1.0 at min zoom to 1.5 at max zoom (base sizes are already large)
-    const t = (z - minZ) / (maxZ - minZ); // 0 → 1
-    const scale = Math.min(1.5, 1 + t * 0.5);
-    document.getElementById('map').style.setProperty('--label-scale', scale.toFixed(2));
+    // Leaflet scales tiles by pow(2, zoom). We want labels to stay
+    // roughly the same screen size, so we divide by the zoom factor.
+    // At minZoom: scale = 1.0 (labels at base size)
+    // At maxZoom: scale shrinks to counteract tile scaling
+    const zoomRange = maxZ - minZ;
+    const zDelta = z - minZ;
+    // Scale inversely with zoom, but clamp so labels don't vanish
+    const scale = Math.max(0.3, 1.0 / Math.pow(1.4, zDelta));
+    document.getElementById('map').style.setProperty('--label-scale', scale.toFixed(3));
   }
 
   /* ═══════════════════════════════════════════
