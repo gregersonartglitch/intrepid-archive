@@ -14,6 +14,36 @@
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 5000;     // ms before key starts hinting
+  var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
+  var BREATH_AMP = 0.06;     // how much the edges expand/contract (fraction)
+
+  // Proximity whispers — incomplete cartographer's notes at the fog edge
+  var WHISPERS = {
+    'tower-of-nine':    'Nine windows. Only three face —',
+    'crossing-pool':    'The water remembers every face that —',
+    'sabellas-hut':     'Larger inside. She warned me not to measure —',
+    'monastery':        'The monks stopped writing three days before —',
+    'star-clearing':    'The constellations here do not match any —',
+    'dawn':             'Light arrives before the sun. I cannot explain —',
+    'atras-empire':     'Every road leads to Nin. No road leads —',
+    'kur-north':        'The border moved south again. On the fourth expedition we —',
+    'kur-south':        'The ground is warm. Bones surface without —',
+    'golden-wastes':    'The sand sings at dusk. I recorded the pitch but my —',
+    'western-expanse':  'The cartographers who mapped this did not come back the same —',
+    'emerald-coast':    'The tides follow a calendar we haven\u2019t —',
+    'nin':              'The capital does not expand. It remembers territory it has not yet —',
+    'azu':              'Port city. Ships arrive from directions that should be —',
+    'ddr':              'The silence here is not absence. It is —',
+    'wellspring':       'The water rises but the source is below the underworld\u2019s —',
+    'ironhearth':       'I heard the forges before I saw them. Three days before —',
+    'vael':             'A city that insists it was never —',
+    'tidemark':         'The high-water line changes with the moon but also with —',
+    'broken-gate':      'The gate was not broken from outside. Something inside —',
+    'obsidian-spire':   'The stone absorbs light. I lit a torch and it —',
+    'waters-of-kur':    'I came back from here twice before I —',
+    'the-threshold':    'The bridge holds but —',
+    'hollow-gate':      'Entry is not refused. It is —'
+  };
 
   // State
   var discovered = {};
@@ -34,6 +64,7 @@
   // Spotlight search state
   var searchMode = null;  // { locId, loc, keyLat, keyLng, startTime }
   var spotlightPos = null; // { x, y } container coords (null = no spotlight)
+  var lastMousePos = null; // { x, y } for whisper proximity outside search mode
 
   // Audio — divining rod pings
   var audioCtx = null;
@@ -683,6 +714,9 @@
     // ── 4. Clear holes for discovered locations ──
     ctx.globalCompositeOperation = 'destination-out';
 
+    // Breathing offset — slow, per-location phase shift
+    var breathTime = time * BREATH_SPEED * Math.PI * 2;
+
     // Pass 1: Mist-phase regions (semi-transparent reveal)
     locs.forEach(function(loc) {
       if (!discovered[loc.id]) return;
@@ -690,10 +724,14 @@
       if (disc.phase !== 'mist') return;
 
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-      var mistR = 320 * Math.pow(2, zoom); // large region-sized radius
+      var mistR = 320 * Math.pow(2, zoom);
       if (mistR < 60) mistR = 60;
 
-      // Semi-transparent hole — lets ~65% of fog through
+      // Breathing: each location breathes at its own phase
+      var breathPhase = (loc.lat + loc.lng) * 0.01;
+      var breath = 1 + Math.sin(breathTime + breathPhase) * BREATH_AMP;
+      mistR *= breath;
+
       var mistAlpha = 0.35;
       if (animatingReveal === loc.id) mistAlpha *= revealProgress;
 
@@ -713,15 +751,21 @@
     locs.forEach(function(loc) {
       if (!discovered[loc.id]) return;
       var disc = discovered[loc.id];
-      if (disc.phase === 'mist') return; // handled above
+      if (disc.phase === 'mist') return;
 
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
 
-      // Base radius scaled by zoom — pinhole if searching, generous if complete
       var baseR = (disc.phase === 'searching') ? 180 : 250;
       var scale = (disc.phase === 'searching') ? PINHOLE_SCALE : 1;
       var r = baseR * scale * Math.pow(2, zoom);
       if (r < 20) r = 20;
+
+      // Breathing: completed holes gently expand/contract
+      if (disc.phase === 'complete') {
+        var breathPhase = (loc.lat + loc.lng) * 0.01;
+        var breath = 1 + Math.sin(breathTime + breathPhase) * BREATH_AMP;
+        r *= breath;
+      }
 
       var alpha = 1;
       if (animatingReveal === loc.id) alpha = revealProgress;
@@ -964,6 +1008,59 @@
         }
       }
     }
+
+    // ── 7. Proximity whispers — cartographer's unfinished notes at the fog edge ──
+    if (spotlightPos || !searchMode) {
+      var mousePos = spotlightPos;
+      if (!mousePos && lastMousePos) mousePos = lastMousePos;
+      if (mousePos) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.save();
+        ctx.font = 'italic 13px "Cormorant Garamond", "Georgia", serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        locs.forEach(function(loc) {
+          // Only show whispers for undiscovered locations
+          if (discovered[loc.id]) return;
+          var whisper = WHISPERS[loc.id];
+          if (!whisper) return;
+
+          var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+          var distToMouse = Math.sqrt(
+            Math.pow(mousePos.x - pt.x, 2) + Math.pow(mousePos.y - pt.y, 2)
+          );
+
+          // Only show when cursor is within 250px
+          var whisperRange = 250;
+          if (distToMouse > whisperRange) return;
+          if (distToMouse < 30) return; // too close, would overlap marker
+
+          // Fade: strongest at ~80px, gone at 250px
+          var fade = Math.max(0, 1 - (distToMouse - 60) / (whisperRange - 60));
+          fade = fade * fade; // ease-in for subtlety
+
+          // Breathing opacity
+          var breathPhase = (loc.lat + loc.lng) * 0.01;
+          var breathFade = 0.8 + 0.2 * Math.sin(breathTime + breathPhase);
+          var finalAlpha = fade * breathFade * 0.5; // max 0.5 opacity — always ghostly
+
+          if (finalAlpha < 0.03) return;
+
+          // Position: offset slightly from the location point
+          var angle = Math.atan2(mousePos.y - pt.y, mousePos.x - pt.x);
+          var textX = pt.x + Math.cos(angle) * 40;
+          var textY = pt.y + Math.sin(angle) * 40;
+
+          ctx.fillStyle = 'rgba(180, 170, 150, ' + finalAlpha.toFixed(3) + ')';
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 6;
+          ctx.fillText(whisper, textX, textY);
+          ctx.shadowBlur = 0;
+        });
+        ctx.restore();
+      }
+    }
   }
 
   /* ════════════════════════════════════════════════
@@ -1089,19 +1186,23 @@
   // Mouse/touch tracking for spotlight
   function setupSpotlightTracking() {
     document.addEventListener('mousemove', function(e) {
-      if (!searchMode || !map) return;
+      if (!map) return;
       var container = map.getContainer();
       var rect = container.getBoundingClientRect();
-      spotlightPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      var pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      lastMousePos = pos; // always track for whispers
+      if (searchMode) spotlightPos = pos;
     });
 
     document.addEventListener('touchmove', function(e) {
-      if (!searchMode || !map) return;
+      if (!map) return;
       var touch = e.touches[0];
       if (!touch) return;
       var container = map.getContainer();
       var rect = container.getBoundingClientRect();
-      spotlightPos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      var pos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      lastMousePos = pos;
+      if (searchMode) spotlightPos = pos;
     }, { passive: true });
   }
 
