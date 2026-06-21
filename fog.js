@@ -95,6 +95,128 @@
   }
 
   /* ════════════════════════════════════════════════
+     AMBIENT SOUNDSCAPE — generative procedural music
+     ════════════════════════════════════════════════ */
+  var ambientStarted = false;
+  var ambientMuted = false;
+  var ambientMaster = null;
+  var ambientNodes = [];
+  var sparkleTimer = null;
+
+  function startAmbient() {
+    if (ambientStarted || !audioCtx) return;
+    ambientStarted = true;
+
+    // Master gain — controls overall volume + mute
+    ambientMaster = audioCtx.createGain();
+    ambientMaster.gain.setValueAtTime(0, audioCtx.currentTime);
+    ambientMaster.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 4);
+    ambientMaster.connect(audioCtx.destination);
+
+    // ── Layer 1: Bass drone (very low, filtered) ──
+    var drone = audioCtx.createOscillator();
+    drone.type = 'sine';
+    drone.frequency.value = 65;
+    var droneGain = audioCtx.createGain();
+    droneGain.gain.value = 0.4;
+    var droneLFO = audioCtx.createOscillator();
+    droneLFO.type = 'sine';
+    droneLFO.frequency.value = 0.08;
+    var lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 3;
+    droneLFO.connect(lfoGain);
+    lfoGain.connect(drone.frequency);
+    droneLFO.start();
+    drone.connect(droneGain);
+    droneGain.connect(ambientMaster);
+    drone.start();
+    ambientNodes.push(drone, droneLFO);
+
+    // ── Layer 2: Harmonic pad (Cm chord, triangle waves) ──
+    [130.81, 155.56, 196.00].forEach(function(noteFreq) {
+      var pad = audioCtx.createOscillator();
+      pad.type = 'triangle';
+      pad.frequency.value = noteFreq;
+      var padLFO = audioCtx.createOscillator();
+      padLFO.type = 'sine';
+      padLFO.frequency.value = 0.05 + Math.random() * 0.06;
+      var padLFOGain = audioCtx.createGain();
+      padLFOGain.gain.value = 2;
+      padLFO.connect(padLFOGain);
+      padLFOGain.connect(pad.detune);
+      padLFO.start();
+      var padGain = audioCtx.createGain();
+      padGain.gain.value = 0.15;
+      pad.connect(padGain);
+      padGain.connect(ambientMaster);
+      pad.start();
+      ambientNodes.push(pad, padLFO);
+    });
+
+    // ── Layer 3: Wind texture (filtered noise) ──
+    var bufferSize = audioCtx.sampleRate * 2;
+    var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    var nd = noiseBuffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++) nd[i] = Math.random() * 2 - 1;
+    var noise = audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
+    var noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 400;
+    noiseFilter.Q.value = 1;
+    var filterLFO = audioCtx.createOscillator();
+    filterLFO.type = 'sine';
+    filterLFO.frequency.value = 0.03;
+    var filterLFOGain = audioCtx.createGain();
+    filterLFOGain.gain.value = 200;
+    filterLFO.connect(filterLFOGain);
+    filterLFOGain.connect(noiseFilter.frequency);
+    filterLFO.start();
+    var noiseGain = audioCtx.createGain();
+    noiseGain.gain.value = 0.08;
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(ambientMaster);
+    noise.start();
+    ambientNodes.push(noise, filterLFO);
+
+    // ── Layer 4: Sparkle notes (pentatonic bells) ──
+    var sparkleNotes = [523, 587, 698, 784, 880, 1047, 1175];
+    function scheduleSparkle() {
+      if (!audioCtx || ambientMuted) {
+        sparkleTimer = setTimeout(scheduleSparkle, 3000 + Math.random() * 5000);
+        return;
+      }
+      var note = sparkleNotes[Math.floor(Math.random() * sparkleNotes.length)];
+      var osc = audioCtx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = note;
+      var env = audioCtx.createGain();
+      env.gain.setValueAtTime(0, audioCtx.currentTime);
+      env.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.3);
+      env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
+      osc.connect(env);
+      env.connect(ambientMaster);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 2.5);
+      sparkleTimer = setTimeout(scheduleSparkle, 3000 + Math.random() * 5000);
+    }
+    sparkleTimer = setTimeout(scheduleSparkle, 2000);
+  }
+
+  function toggleAmbient() {
+    if (!ambientMaster) return;
+    ambientMuted = !ambientMuted;
+    ambientMaster.gain.linearRampToValueAtTime(
+      ambientMuted ? 0 : 0.12,
+      audioCtx.currentTime + 0.5
+    );
+    var btn = document.getElementById('ambient-toggle');
+    if (btn) btn.textContent = ambientMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+  }
+
+  /* ════════════════════════════════════════════════
      INIT
      ════════════════════════════════════════════════ */
   function init(leafletMap, mapConfig) {
@@ -162,6 +284,7 @@
       if (window.EDIT_MODE) return;
       if (!map) return;
       ensureAudio(); // Initialize audio on first user interaction
+      startAmbient(); // Begin ambient soundscape
 
       // Only clicks inside the map
       var container = map.getContainer();
@@ -559,10 +682,40 @@
 
     // ── 4. Clear holes for discovered locations ──
     ctx.globalCompositeOperation = 'destination-out';
+
+    // Pass 1: Mist-phase regions (semi-transparent reveal)
     locs.forEach(function(loc) {
       if (!discovered[loc.id]) return;
-      var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
       var disc = discovered[loc.id];
+      if (disc.phase !== 'mist') return;
+
+      var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+      var mistR = 320 * Math.pow(2, zoom); // large region-sized radius
+      if (mistR < 60) mistR = 60;
+
+      // Semi-transparent hole — lets ~65% of fog through
+      var mistAlpha = 0.35;
+      if (animatingReveal === loc.id) mistAlpha *= revealProgress;
+
+      var grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, mistR);
+      grad.addColorStop(0,    'rgba(0,0,0,' + mistAlpha + ')');
+      grad.addColorStop(0.5,  'rgba(0,0,0,' + (mistAlpha * 0.9) + ')');
+      grad.addColorStop(0.75, 'rgba(0,0,0,' + (mistAlpha * 0.5) + ')');
+      grad.addColorStop(0.9,  'rgba(0,0,0,' + (mistAlpha * 0.15) + ')');
+      grad.addColorStop(1,    'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, mistR, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Pass 2: Full-clear holes (complete + searching pinhole)
+    locs.forEach(function(loc) {
+      if (!discovered[loc.id]) return;
+      var disc = discovered[loc.id];
+      if (disc.phase === 'mist') return; // handled above
+
+      var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
 
       // Base radius scaled by zoom — pinhole if searching, full if complete
       var baseR = 180;
@@ -823,6 +976,20 @@
 
     if (useInstant) {
       instantDiscover(loc);
+      return;
+    }
+
+    // Regions get mist phase (semi-transparent reveal), not search mode
+    if (loc.type === 'region' || loc.type === 'water') {
+      discovered[loc.id] = { at: Date.now(), phase: 'mist' };
+      localStorage.setItem(LS_KEY, JSON.stringify(discovered));
+      revealMarker(loc.id);
+      animateReveal(loc);
+      showCelebration(loc);
+      playDiscoveryChime();
+      setTimeout(function() { showDiscoveryCard(loc); }, 600);
+      updateProgress();
+      showDiscoveryToast(loc);
       return;
     }
 
@@ -1157,6 +1324,7 @@
     updateProgress: updateProgress,
     startDrift: startDrift,
     stopDrift: stopDrift,
+    toggleAmbient: toggleAmbient,
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
     reset: function() { localStorage.removeItem(LS_KEY); location.reload(); }

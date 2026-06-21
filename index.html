@@ -1043,6 +1043,19 @@ input { font-family: inherit; }
 .journey-fab.visible { display: flex; }
 .journey-fab-icon { font-size: 14px; }
 
+/* Ambient audio toggle */
+#ambient-toggle {
+  position: fixed; bottom: 92px; right: 130px; z-index: 700;
+  width: 36px; height: 36px;
+  background: rgba(13,13,18,0.8);
+  border: 1px solid rgba(198,141,85,0.15);
+  border-radius: 4px; color: var(--bone-dim);
+  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+#ambient-toggle:hover { border-color: var(--amber); color: var(--amber); }
+
 .journey-toast {
   position: fixed; bottom: 24px; left: 24px; z-index: 860;
   max-width: 380px; padding: 20px 24px;
@@ -1555,6 +1568,8 @@ input { font-family: inherit; }
     <div class="panel-body" id="panel-body"></div>
   </div>
 
+  <!-- Ambient Audio Toggle -->
+  <button id="ambient-toggle" title="Toggle ambient music" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">🔊</button>
   <!-- VIP Welcome Cinematic (plays once after gate) -->
   <div id="welcome" class="welcome-overlay">
     <div class="welcome-inner">
