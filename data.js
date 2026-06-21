@@ -9,7 +9,7 @@ window.MAP_CONFIG = {
   height: 8192,
   password: 'hollowlands',
   minZoom: -5,
-  maxZoom: 1,
+  maxZoom: 0,
   ksLink: 'https://www.kickstarter.com/projects/intrepidduskvolume1/intrepid-graphic-novel-volume-1'
 };
 
