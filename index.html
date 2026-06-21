@@ -431,20 +431,21 @@ input { font-family: inherit; }
   background: rgba(212, 168, 67, 0.08);
 }
 
-/* Locked gods — dark shroud with subtle pulse */
+/* Locked gods — subtle dark veil, not a black hole */
 .medallion-hot.god-locked {
   pointer-events: none; cursor: default;
 }
 .medallion-hot.god-locked::after {
   content: '';
-  position: absolute; inset: -8px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(10,12,16,0.95) 40%, rgba(10,12,16,0.7) 70%, transparent 100%);
+  position: absolute; inset: -4px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(10,12,16,0.6) 30%, rgba(10,12,16,0.35) 65%, transparent 100%);
+  border: 1px solid rgba(198,141,85,0.12);
   pointer-events: none;
-  animation: god-dormant 4s ease-in-out infinite;
+  animation: god-dormant 5s ease-in-out infinite;
 }
 @keyframes god-dormant {
-  0%,100% { opacity: 0.9; }
-  50%     { opacity: 0.75; }
+  0%,100% { opacity: 0.85; }
+  50%     { opacity: 0.6; }
 }
 
 /* Reveal animation */
