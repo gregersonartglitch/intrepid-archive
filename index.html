@@ -431,36 +431,53 @@ input { font-family: inherit; }
   background: rgba(212, 168, 67, 0.08);
 }
 
-/* Locked gods — subtle dark veil, not a black hole */
+/* Locked gods — heavy dark veil with sealed mark */
 .medallion-hot.god-locked {
   pointer-events: none; cursor: default;
 }
+.medallion-hot.god-locked::before {
+  content: '?';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700;
+  color: rgba(198, 141, 85, 0.35);
+  z-index: 2;
+  text-shadow: 0 0 8px rgba(198, 141, 85, 0.2);
+  animation: seal-pulse 3s ease-in-out infinite;
+}
+@keyframes seal-pulse {
+  0%,100% { color: rgba(198, 141, 85, 0.25); }
+  50%     { color: rgba(198, 141, 85, 0.45); }
+}
 .medallion-hot.god-locked::after {
   content: '';
-  position: absolute; inset: -4px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(10,12,16,0.6) 30%, rgba(10,12,16,0.35) 65%, transparent 100%);
-  border: 1px solid rgba(198,141,85,0.12);
+  position: absolute; inset: -6px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(10,12,16,0.85) 35%, rgba(10,12,16,0.65) 65%, rgba(10,12,16,0.3) 85%, transparent 100%);
+  border: 1.5px solid rgba(198,141,85,0.15);
   pointer-events: none;
-  animation: god-dormant 5s ease-in-out infinite;
-}
-@keyframes god-dormant {
-  0%,100% { opacity: 0.85; }
-  50%     { opacity: 0.6; }
+  z-index: 1;
 }
 
 /* Reveal animation */
+.medallion-hot.god-revealing::before { display: none; }
 .medallion-hot.god-revealing::after {
   animation: god-awaken 1.5s ease-out forwards;
 }
 @keyframes god-awaken {
-  0%   { opacity: 0.9; box-shadow: none; }
-  40%  { opacity: 0.5; box-shadow: 0 0 30px rgba(212,168,67,0.6); }
-  100% { opacity: 0; box-shadow: 0 0 60px rgba(212,168,67,0); }
+  0%   { opacity: 1; box-shadow: none; }
+  40%  { opacity: 0.5; box-shadow: 0 0 40px rgba(212,168,67,0.8); }
+  100% { opacity: 0; box-shadow: 0 0 80px rgba(212,168,67,0); }
 }
 
-/* Unlocked god — subtle golden aura */
+/* Unlocked god — golden glow ring */
+.medallion-hot.god-unlocked::before { display: none; }
 .medallion-hot.god-unlocked::after {
-  content: ''; display: none;
+  content: '';
+  position: absolute; inset: -4px; border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid rgba(212,168,67,0.35);
+  box-shadow: 0 0 12px rgba(212,168,67,0.15), inset 0 0 8px rgba(212,168,67,0.1);
+  pointer-events: none;
 }
 .medallion-hot.god-unlocked {
   pointer-events: auto; cursor: pointer;
