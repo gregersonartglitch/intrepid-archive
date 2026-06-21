@@ -2062,10 +2062,10 @@ input { font-family: inherit; }
 
       // ── Dot marker (except water) ──
       if (t !== 'water') {
-        const dotSize = { region: [32,32], capital: [12,12], city: [8,8], town: [6,6], story: [12,12], sacred: [10,10] }[t] || [8,8];
+        const dotSize = { region: [48,48], capital: [30,30], city: [30,30], town: [28,28], story: [30,30], sacred: [28,28] }[t] || [28,28];
 
         // In edit mode, use bigger dots for easier grabbing
-        const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 20), Math.max(dotSize[1], 20)] : dotSize;
+        const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 24), Math.max(dotSize[1], 24)] : dotSize;
 
         const dotIcon = L.divIcon({
           className: '' + fogHiddenClass,
@@ -2542,11 +2542,26 @@ input { font-family: inherit; }
     hotspots.forEach(function(hot) {
       hot.addEventListener('mouseenter', function() { showTip(hot); });
       hot.addEventListener('mouseleave', hideTip);
-      // Touch support: tap to toggle
+      // Click: open discovery card with guardian info
       hot.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (activeHot === hot) { hideTip(); }
-        else { showTip(hot); }
+        hideTip();
+        var card = document.getElementById('discovery-card');
+        if (!card) return;
+        var name = hot.dataset.name || '';
+        var role = hot.dataset.role || '';
+        var lore = hot.dataset.lore || '';
+        var isGuardian = !hot.dataset.god; // Tetrad have no data-god attr
+
+        card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad · Guardian' : 'The Nine';
+        card.querySelector('.dc-name').textContent = name;
+        card.querySelector('.dc-sub').textContent = role;
+        card.querySelector('.dc-desc').textContent = lore;
+        var loreEl = card.querySelector('.dc-lore');
+        if (loreEl) loreEl.style.display = 'none';
+        var artEl = card.querySelector('.dc-art');
+        if (artEl) artEl.style.display = 'none';
+        card.classList.add('visible');
       });
     });
 
