@@ -913,6 +913,88 @@
       ctx.restore();
     }
 
+    // ── 4d. Tower of the Nine — storm effect ──
+    if (discovered['tower-nine']) {
+      var towerPt = map.latLngToContainerPoint([4480, 4091]);
+      var tx = towerPt.x, ty = towerPt.y;
+
+      // Scale effect based on zoom level
+      var zoomScale = Math.pow(2, map.getZoom() - map.getMinZoom());
+      var stormRadius = 40 * zoomScale;
+      var stormCenterY = ty - 35 * zoomScale; // above the tower peak
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      // ── Swirling cloud wisps ──
+      var numWisps = 6;
+      for (var wi = 0; wi < numWisps; wi++) {
+        var wAngle = time * (0.3 + wi * 0.08) + wi * (Math.PI * 2 / numWisps);
+        var wDist = stormRadius * (0.4 + 0.3 * Math.sin(time * 0.5 + wi));
+        var wx = tx + Math.cos(wAngle) * wDist;
+        var wy = stormCenterY + Math.sin(wAngle) * wDist * 0.4; // flattened ellipse
+        var wSize = stormRadius * (0.25 + 0.15 * Math.sin(time + wi * 2));
+        var wAlpha = 0.06 + 0.04 * Math.sin(time * 0.8 + wi);
+
+        var wGrad = ctx.createRadialGradient(wx, wy, 0, wx, wy, wSize);
+        wGrad.addColorStop(0, 'rgba(80, 90, 110, ' + wAlpha + ')');
+        wGrad.addColorStop(0.6, 'rgba(50, 55, 70, ' + (wAlpha * 0.5) + ')');
+        wGrad.addColorStop(1, 'rgba(30, 35, 50, 0)');
+        ctx.fillStyle = wGrad;
+        ctx.beginPath();
+        ctx.arc(wx, wy, wSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // ── Occasional lightning ──
+      // Use a deterministic pseudo-random: lightning every ~3-6 seconds
+      var lightningCycle = Math.floor(time * 0.4);
+      var lightningPhase = (time * 0.4) % 1;
+      var lightningActive = lightningPhase < 0.04; // flash for ~100ms
+
+      // Add a secondary flash for double-strike feel
+      var lightningActive2 = lightningPhase > 0.08 && lightningPhase < 0.11;
+
+      if (lightningActive || lightningActive2) {
+        // Seed bolt path from lightning cycle
+        var boltSeed = lightningCycle * 7 + 3;
+        var bx = tx + ((boltSeed * 13 % 60) - 30) * zoomScale * 0.5;
+        var by = stormCenterY - stormRadius * 0.3;
+
+        ctx.strokeStyle = lightningActive
+          ? 'rgba(200, 210, 255, 0.7)'
+          : 'rgba(200, 210, 255, 0.35)';
+        ctx.lineWidth = lightningActive ? 1.5 : 1;
+        ctx.shadowColor = 'rgba(180, 200, 255, 0.9)';
+        ctx.shadowBlur = lightningActive ? 20 : 10;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+
+        // Jagged bolt — 4-5 segments
+        var segments = 4 + (boltSeed % 2);
+        var boltLen = stormRadius * 0.6;
+        for (var si = 1; si <= segments; si++) {
+          var segY = by + (boltLen / segments) * si;
+          var segX = bx + ((boltSeed * (si + 1) * 17 % 20) - 10) * zoomScale * 0.3;
+          ctx.lineTo(segX, segY);
+        }
+        ctx.stroke();
+
+        // Brief ambient flash
+        if (lightningActive) {
+          var flashGrad = ctx.createRadialGradient(tx, stormCenterY, 0, tx, stormCenterY, stormRadius * 1.5);
+          flashGrad.addColorStop(0, 'rgba(180, 200, 255, 0.08)');
+          flashGrad.addColorStop(1, 'rgba(180, 200, 255, 0)');
+          ctx.fillStyle = flashGrad;
+          ctx.beginPath();
+          ctx.arc(tx, stormCenterY, stormRadius * 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    }
+
     // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
       var def = TUTORIAL_DEFS[tutorialStep];
@@ -1088,7 +1170,7 @@
           // Breathing opacity
           var breathPhase = (loc.lat + loc.lng) * 0.01;
           var breathFade = 0.8 + 0.2 * Math.sin(breathTime + breathPhase);
-          var finalAlpha = fade * breathFade * 0.5; // max 0.5 opacity — always ghostly
+          var finalAlpha = fade * breathFade * 0.75; // max 0.75 — readable but still ghostly
 
           if (finalAlpha < 0.03) return;
 
@@ -1097,9 +1179,12 @@
           var textX = pt.x + Math.cos(angle) * 40;
           var textY = pt.y + Math.sin(angle) * 40;
 
-          ctx.fillStyle = 'rgba(180, 170, 150, ' + finalAlpha.toFixed(3) + ')';
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-          ctx.shadowBlur = 6;
+          // Strong text shadow for readability
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+          ctx.shadowBlur = 12;
+          ctx.fillStyle = 'rgba(210, 200, 180, ' + finalAlpha.toFixed(3) + ')';
+          ctx.fillText(whisper, textX, textY);
+          // Double-draw for extra shadow contrast
           ctx.fillText(whisper, textX, textY);
           ctx.shadowBlur = 0;
         });
