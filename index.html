@@ -1884,7 +1884,7 @@ input { font-family: inherit; }
       const needW = Math.log2(vw / cfg.width);
       const needH = Math.log2(vh / cfg.height);
       // Minimal buffer — maxBounds prevents showing edges
-      const raw = Math.max(needW, needH) + 0.05;
+      const raw = Math.max(needW, needH) - 0.15;
       return Math.floor(raw * 4) / 4;
     }
 
