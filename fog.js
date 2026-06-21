@@ -1143,7 +1143,7 @@
       if (mousePos) {
         ctx.globalCompositeOperation = 'source-over';
         ctx.save();
-        ctx.font = 'italic 13px "Cormorant Garamond", "Georgia", serif';
+        ctx.font = 'italic 18px "Cormorant Garamond", "Georgia", serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
