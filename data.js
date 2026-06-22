@@ -160,7 +160,7 @@ window.LOCATIONS = [
     name: 'OG',
     sub: 'Southern Lowlands',
     type: 'region',
-    lat: 495,
+    lat: 900,
     lng: 3750,
     desc: 'The low marshlands of OG, where the old ways persist beneath a thin veneer of Imperial compliance. The ground here does not support stone construction — buildings are raised on stilts of petrified wood harvested from the Kur border. The people of OG keep memory-keepers instead of written histories, and it is said their oral records predate the splitting of the world itself.',
     lore: '"OG remembers Dilmun. OG remembers what we were before we were halved. Do not ask them to share this memory unless you are prepared to weep."',
