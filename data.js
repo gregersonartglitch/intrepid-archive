@@ -552,11 +552,11 @@ window.LOCATIONS = [
   {
     id: 'tower-nine',
     name: 'Tower of the Nine',
-    sub: 'Site of the Red Moon Ceremony',
+    sub: 'Ruins of the Banished Age',
     type: 'story',
     lat: 4480,
     lng: 4091,
-    desc: 'An ancient ruined tower, built as a monument to the Nine sage gods whom the Tetrad cast into the deepest reaches of Kur, the underworld. The Tower rises nine stories, one for each banished god, and the blood priests of Atrus Nul now conduct the Red Moon Ceremony here — a ritual designed to shatter the Maxim Stone and reunify the Clockwork and the Hollowlands under Titan dominion. Its peak is stained permanently red from ceremonies that require a currency paid only in veins. Elena\'s journey brought her here, to the crux of everything.',
+    desc: 'An ancient tower of nine stories, one for each of the old gods the Tetrad cast into Kur. It has stood longer than any living institution in the Hollowlands — longer than the Empire, longer than the Titan courts — and the stone remembers it. At its heart sits the Maxim Stone, ringed by statues of the old gods in attitudes of judgment. The statues do not face outward. They face the Stone. Whatever the Tower was built to contain, it has not forgotten its purpose.',
     lore: '"The Tower was not built to honor the Nine. It was built to cage them. The ceremonies are not worship. They are lockpicking."',
     journeyStep: 10,
     volume1: true,
