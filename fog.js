@@ -1142,53 +1142,70 @@
       if (!mousePos && lastMousePos) mousePos = lastMousePos;
       if (mousePos) {
         ctx.globalCompositeOperation = 'source-over';
-        ctx.save();
-        ctx.font = 'italic 18px "Cormorant Garamond", "Georgia", serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+
+        // Find the single closest undiscovered location with a whisper
+        var whisperRange = 220;
+        var closestWhisper = null;
+        var closestWhisperDist = whisperRange;
 
         locs.forEach(function(loc) {
-          // Only show whispers for undiscovered locations
           if (discovered[loc.id]) return;
           var whisper = WHISPERS[loc.id];
           if (!whisper) return;
-
           var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-          var distToMouse = Math.sqrt(
-            Math.pow(mousePos.x - pt.x, 2) + Math.pow(mousePos.y - pt.y, 2)
-          );
-
-          // Only show when cursor is within 250px
-          var whisperRange = 250;
-          if (distToMouse > whisperRange) return;
-          if (distToMouse < 30) return; // too close, would overlap marker
-
-          // Fade: strongest at ~80px, gone at 250px
-          var fade = Math.max(0, 1 - (distToMouse - 60) / (whisperRange - 60));
-          fade = fade * fade; // ease-in for subtlety
-
-          // Breathing opacity
-          var breathPhase = (loc.lat + loc.lng) * 0.01;
-          var breathFade = 0.8 + 0.2 * Math.sin(breathTime + breathPhase);
-          var finalAlpha = fade * breathFade * 0.75; // max 0.75 — readable but still ghostly
-
-          if (finalAlpha < 0.03) return;
-
-          // Position: offset slightly from the location point
-          var angle = Math.atan2(mousePos.y - pt.y, mousePos.x - pt.x);
-          var textX = pt.x + Math.cos(angle) * 40;
-          var textY = pt.y + Math.sin(angle) * 40;
-
-          // Strong text shadow for readability
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-          ctx.shadowBlur = 12;
-          ctx.fillStyle = 'rgba(210, 200, 180, ' + finalAlpha.toFixed(3) + ')';
-          ctx.fillText(whisper, textX, textY);
-          // Double-draw for extra shadow contrast
-          ctx.fillText(whisper, textX, textY);
-          ctx.shadowBlur = 0;
+          var d = Math.sqrt(Math.pow(mousePos.x - pt.x, 2) + Math.pow(mousePos.y - pt.y, 2));
+          if (d < closestWhisperDist && d > 30) {
+            closestWhisperDist = d;
+            closestWhisper = { loc: loc, whisper: whisper, pt: pt, dist: d };
+          }
         });
-        ctx.restore();
+
+        if (closestWhisper) {
+          // Fade based on distance
+          var wFade = Math.max(0, 1 - (closestWhisper.dist - 60) / (whisperRange - 60));
+          wFade = wFade * wFade;
+          var breathPhase = (closestWhisper.loc.lat + closestWhisper.loc.lng) * 0.01;
+          var breathFade = 0.85 + 0.15 * Math.sin(breathTime + breathPhase);
+          var wAlpha = wFade * breathFade;
+          if (wAlpha > 0.03) {
+            ctx.save();
+            ctx.font = 'italic 16px "Cormorant Garamond", "Georgia", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // Position: above the cursor, clamped to viewport
+            var textX = mousePos.x;
+            var textY = mousePos.y - 55;
+            var tw = ctx.measureText(closestWhisper.whisper).width + 32;
+            var th = 34;
+            var tx = textX - tw / 2;
+            var ty = textY - th / 2;
+            if (tx < 10) tx = 10;
+            if (tx + tw > w - 10) tx = w - tw - 10;
+            if (ty < 10) ty = 10;
+
+            // Dark pill background
+            ctx.fillStyle = 'rgba(8, 10, 14, ' + (wAlpha * 0.88).toFixed(3) + ')';
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, tw, th, 8);
+            ctx.fill();
+
+            // Subtle border
+            ctx.strokeStyle = 'rgba(180, 160, 120, ' + (wAlpha * 0.35).toFixed(3) + ')';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(tx, ty, tw, th, 8);
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = 'rgba(210, 200, 175, ' + wAlpha.toFixed(3) + ')';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 6;
+            ctx.fillText(closestWhisper.whisper, tx + tw / 2, ty + th / 2);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+          }
+        }
       }
     }
   }
