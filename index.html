@@ -1455,12 +1455,24 @@ input { font-family: inherit; }
   margin-bottom: 10px;
 }
 #progress-count span { color: var(--amber); font-size: 14px; opacity: 0.7; }
-#progress-track {
+.progress-row {
+  margin-bottom: 12px;
+}
+.progress-row:last-of-type { margin-bottom: 0; }
+.progress-row-label {
+  font-family: var(--font-heading);
+  font-size: 9px;
+  color: rgba(198,141,85,0.6);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.progress-track {
   width: 100%; height: 8px;
   background: rgba(198,141,85,0.12);
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-top: 4px;
 }
 #progress-fill {
   height: 100%;
@@ -1469,6 +1481,14 @@ input { font-family: inherit; }
   border-radius: 4px;
   transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 0 8px rgba(212,168,67,0.5);
+}
+#progress-fill-regions {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #5a8fa0, #7ab8c8, #9ed4e0);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(120,180,200,0.4);
 }
 #progress-label {
   font-size: 11px;
@@ -1861,9 +1881,20 @@ input { font-family: inherit; }
 <!-- Progress Bar (fog system) -->
 <div id="progress-container">
   <div id="progress-title">Apprentice Scribe</div>
-  <div id="progress-count">0 <span>/ 0 charted</span></div>
-  <div id="progress-track"><div id="progress-fill"></div></div>
-  <div id="progress-label">Elena's Journey</div>
+
+  <div class="progress-row">
+    <div class="progress-row-label">Elena's Journey</div>
+    <div id="progress-count">0 <span>/ 0</span></div>
+    <div class="progress-track"><div id="progress-fill"></div></div>
+  </div>
+
+  <div class="progress-row">
+    <div class="progress-row-label">Territories</div>
+    <div id="progress-count-regions">0 <span>/ 0</span></div>
+    <div class="progress-track"><div id="progress-fill-regions"></div></div>
+  </div>
+
+  <div id="progress-label"></div>
 
   <!-- Coordinate / Sigil Unlock -->
   <div id="coord-unlock">

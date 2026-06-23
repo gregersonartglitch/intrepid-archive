@@ -1583,26 +1583,40 @@
      PROGRESS BAR
      ════════════════════════════════════════════════ */
   function updateProgress() {
-    var total = journeyPath.length;
-    var found = journeyPath.filter(function(s) { return !!discovered[s.locationId]; }).length;
-    var pct = total > 0 ? found / total : 0;
+    var locs = window.LOCATIONS || [];
 
-    var fill = document.getElementById('progress-fill');
-    var label = document.getElementById('progress-label');
-    var title = document.getElementById('progress-title');
-    var count = document.getElementById('progress-count');
+    // ── Elena's Journey track ──
+    var journeyTotal = journeyPath.length;
+    var journeyFound = journeyPath.filter(function(s) { return discovered[s.locationId] && discovered[s.locationId].phase === 'complete'; }).length;
+    var journeyPct = journeyTotal > 0 ? journeyFound / journeyTotal : 0;
 
-    if (fill) fill.style.width = (pct * 100) + '%';
-    // Big number display
-    if (count) count.innerHTML = found + ' <span>/ ' + total + ' charted</span>';
-    // Keep label as static subtitle
-    if (label) label.textContent = "Elena\u2019s Journey";
+    // ── Regions track ──
+    var regionLocs = locs.filter(function(l) { return l.type === 'region' || l.type === 'water'; });
+    var regionTotal = regionLocs.length;
+    var regionFound = regionLocs.filter(function(l) { return discovered[l.id] && discovered[l.id].phase === 'complete'; }).length;
+    var regionPct = regionTotal > 0 ? regionFound / regionTotal : 0;
+
+    // Combined pct for rank
+    var combined = (journeyFound + regionFound) / Math.max(1, journeyTotal + regionTotal);
+
+    var fillJ  = document.getElementById('progress-fill');
+    var countJ = document.getElementById('progress-count');
+    var fillR  = document.getElementById('progress-fill-regions');
+    var countR = document.getElementById('progress-count-regions');
+    var title  = document.getElementById('progress-title');
+    var label  = document.getElementById('progress-label');
+
+    if (fillJ)  fillJ.style.width  = (journeyPct * 100) + '%';
+    if (countJ) countJ.innerHTML   = journeyFound + ' <span>/ ' + journeyTotal + '</span>';
+    if (fillR)  fillR.style.width  = (regionPct * 100) + '%';
+    if (countR) countR.innerHTML   = regionFound + ' <span>/ ' + regionTotal + '</span>';
+    if (label)  label.textContent  = '';  // unused now
 
     var rank = 'Apprentice Scribe';
-    if (pct > 0.15) rank = 'Cartographer';
-    if (pct > 0.4)  rank = 'Senior Cartographer';
-    if (pct > 0.65) rank = 'Magus Scribe';
-    if (pct > 0.85) rank = 'Master Cartographer';
+    if (combined > 0.12) rank = 'Cartographer';
+    if (combined > 0.35) rank = 'Senior Cartographer';
+    if (combined > 0.60) rank = 'Magus Scribe';
+    if (combined > 0.82) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
 
     // Check god reveals — count ALL completed discoveries
@@ -1617,20 +1631,23 @@
       triggerMilestoneSpark(found);
     }
 
-    // Pulse the counter label on each discovery
-    if (label) {
-      label.style.transition = 'none';
-      label.style.color = '#d4a843';
-      label.style.transform = 'scale(1.25)';
+    // Pulse whichever count just changed
+    function pulseEl(el, color) {
+      if (!el) return;
+      el.style.transition = 'none';
+      el.style.color = color || '#d4a843';
+      el.style.transform = 'scale(1.25)';
       setTimeout(function() {
-        label.style.transition = 'color 0.8s ease, transform 0.6s ease';
-        label.style.color = '';
-        label.style.transform = '';
+        el.style.transition = 'color 0.8s ease, transform 0.6s ease';
+        el.style.color = '';
+        el.style.transform = '';
       }, 50);
     }
+    pulseEl(countJ, '#d4a843');
+    pulseEl(countR, '#7ab8c8');
 
     // ── Finale checks ──
-    checkJourneyFinale(found, total);
+    checkJourneyFinale(journeyFound, journeyTotal);
     checkVol1Finale();
   }
 
