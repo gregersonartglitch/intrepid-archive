@@ -1590,13 +1590,17 @@
     var fill = document.getElementById('progress-fill');
     var label = document.getElementById('progress-label');
     var title = document.getElementById('progress-title');
+    var count = document.getElementById('progress-count');
 
     if (fill) fill.style.width = (pct * 100) + '%';
-    if (label) label.textContent = found + ' / ' + total + ' charted';
+    // Big number display
+    if (count) count.innerHTML = found + ' <span>/ ' + total + ' charted</span>';
+    // Keep label as static subtitle
+    if (label) label.textContent = "Elena\u2019s Journey";
 
     var rank = 'Apprentice Scribe';
     if (pct > 0.15) rank = 'Cartographer';
-    if (pct > 0.4) rank = 'Senior Cartographer';
+    if (pct > 0.4)  rank = 'Senior Cartographer';
     if (pct > 0.65) rank = 'Magus Scribe';
     if (pct > 0.85) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
