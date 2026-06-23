@@ -1824,7 +1824,7 @@
     showGodRevealToast(name);
 
     // Animate the SVG clip circle open for this medallion
-    animateMedallionClip(name, 0, 0.055, 900);
+    animateMedallionClip(name, 0, 0.07, 900);
 
     // After animation, mark as unlocked
     setTimeout(function() {
@@ -1854,26 +1854,28 @@
     if (!id) return;
     var circle = document.getElementById(id);
     if (!circle) return;
+    // toR is a fraction of viewport width — convert to actual pixels
+    var targetPx = toR * window.innerWidth;
+    var fromPx = fromR * window.innerWidth;
     var start = null;
     function step(ts) {
       if (!start) start = ts;
       var progress = Math.min((ts - start) / durationMs, 1);
-      // ease-out cubic
-      var ease = 1 - Math.pow(1 - progress, 3);
-      circle.setAttribute('r', (fromR + (toR - fromR) * ease).toFixed(4));
+      var ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      circle.setAttribute('r', (fromPx + (targetPx - fromPx) * ease).toFixed(1));
       if (progress < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
-    // Also show the overlay if hidden
+    // Make overlay visible via SVG opacity attribute (classList doesn't work on SVG elements)
     var overlay = document.getElementById('frame-selected-overlay');
-    if (overlay) overlay.classList.add('loaded');
+    if (overlay) overlay.setAttribute('opacity', '1');
   }
 
   function initTetradCircles() {
     // Tetrad guardians are always revealed — open their circles immediately on load
     var tetradNames = ['Bull of Heaven', 'Lion of Justice', 'Defender', 'Water'];
     tetradNames.forEach(function(name) {
-      animateMedallionClip(name, 0, 0.065, 1200);
+      animateMedallionClip(name, 0, 0.07, 1200);
     });
   }
 

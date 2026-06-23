@@ -2956,8 +2956,35 @@ input { font-family: inherit; }
     }
 
     hotspots.forEach(function(hot) {
-      hot.addEventListener('mouseenter', function() { showTip(hot); });
-      hot.addEventListener('mouseleave', hideTip);
+      hot.addEventListener('mouseenter', function() {
+        showTip(hot);
+        // Glow this medallion
+        var hname = hot.dataset.name || '';
+        if (window.FogSystem && window.FogSystem.animateMedallionClip) {
+          window.FogSystem.animateMedallionClip(hname, 0, 0.07, 400);
+        }
+        // Show dummy info card
+        var card = document.getElementById('discovery-card');
+        if (card) {
+          var isGuardian = !hot.dataset.god;
+          card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad \u00b7 Guardian' : 'The Nine \u00b7 Revealed';
+          card.querySelector('.dc-name').textContent = hname;
+          card.querySelector('.dc-sub').textContent = hot.dataset.role || '';
+          card.querySelector('.dc-desc').textContent = hot.dataset.lore || '';
+          var loreEl = card.querySelector('.dc-lore'); if (loreEl) loreEl.style.display = 'none';
+          card.classList.add('active');
+        }
+      });
+      hot.addEventListener('mouseleave', function() {
+        hideTip();
+        // Fade glow back
+        var hname = hot.dataset.name || '';
+        if (window.FogSystem && window.FogSystem.animateMedallionClip) {
+          window.FogSystem.animateMedallionClip(hname, 0.07, 0, 350);
+        }
+        var card = document.getElementById('discovery-card');
+        if (card) card.classList.remove('active');
+      });
       // Click: open discovery card with guardian info
       hot.addEventListener('click', function(e) {
         e.stopPropagation();
