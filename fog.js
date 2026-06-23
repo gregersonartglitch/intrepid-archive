@@ -1279,9 +1279,9 @@
       return;
     }
 
-    // Regions get mist phase (semi-transparent reveal), not search mode
+    // Regions get immediate complete discovery (they show in mist visually but count as found)
     if (loc.type === 'region' || loc.type === 'water') {
-      discovered[loc.id] = { at: Date.now(), phase: 'mist' };
+      discovered[loc.id] = { at: Date.now(), phase: 'complete' };
       localStorage.setItem(LS_KEY, JSON.stringify(discovered));
       revealMarker(loc.id);
       animateReveal(loc);

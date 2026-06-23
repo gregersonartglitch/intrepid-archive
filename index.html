@@ -1703,56 +1703,60 @@ input { font-family: inherit; }
   <div id="frame-img"></div>
 
   <!-- Medallion Hotspots (positioned over frame.png medallions) -->
-  <div id="medallion-hotspots">
-    <!-- Tetrad (4 cardinal guardians) -->
+    <div id="medallion-hotspots">
+    <!-- Tetrad (4 cardinal guardians): Bull=TOP, Lion=RIGHT, Scorpion Man=BOTTOM, Water=LEFT -->
     <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
-         data-name="Water" data-role="The Great One"
-         data-lore="The primordial current. Before the gods shaped the world, Water was already moving. It remembers the shape of everything it has touched."></div>
+         data-name="Bull of Heaven" data-role="Tetrad &middot; North &middot; UTU"
+         data-lore="UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North &mdash; he IS the axis on which all seasons turn."></div>
 
     <div class="medallion-hot" style="top:50%;right:6%;transform:translateY(-50%)"
-         data-name="Bull of Heaven" data-role="Tetrad · East"
-         data-lore="His hooves crack the sky open at dawn. Where he charges, the horizon splits and light pours through. He does not guard the East — he IS the East."></div>
+         data-name="Lion of Justice" data-role="Tetrad &middot; East &middot; RAPHA"
+         data-lore="He weighs what enters and what leaves. The Lion does not roar &mdash; he watches, and his watching is the judgment. Associated with East and Dawn."></div>
 
     <div class="medallion-hot" style="bottom:5%;left:50%;transform:translateX(-50%)"
-         data-name="Lion of Justice" data-role="Tetrad · South"
-         data-lore="He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment."></div>
+         data-name="Scorpion Man" data-role="Tetrad &middot; South &middot; NIN"
+         data-lore="Guardian of the southern passage. His sting is not venom &mdash; it is memory. Those he marks remember what they were before they crossed. NIN holds dominion over Earth."></div>
 
     <div class="medallion-hot" style="top:50%;left:6%;transform:translateY(-50%)"
-         data-name="Scorpion Man" data-role="That Which Claws and Cuts"
-         data-lore="Guardian of the western passage. His sting is not venom — it is memory. Those he marks remember what they were before they crossed."></div>
+         data-name="Water" data-role="Tetrad &middot; West &middot; GU"
+         data-lore="The primordial current. Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk &mdash; Over all the Powers."></div>
 
-    <!-- The Nine (hidden until discoveries unlock them) -->
-    <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="3"
-         data-name="Fish" data-role="Water Demon · AE"
-         data-lore="The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side."></div>
+    <!-- The Nine &mdash; clockwise from TOP-BULL going clockwise:
+         upper-right: Aries(ERRA)/Pisces(AE)
+         lower-right: Cancer(ELIL)/Virgo(SINN)
+         lower-left:  Libra(AN)/Sagittarius(MISH)
+         upper-left:  Capricorn(BELU)/Gemini-TWINS(SHAM) -->
+    <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="3"
+         data-name="Fire Satyr" data-role="God of War &middot; ERRA &middot; Aries"
+         data-lore="War is not his purpose &mdash; it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
 
-    <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="5"
-         data-name="Fire Satyr" data-role="God of War · ERRA"
-         data-lore="War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
+    <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="5"
+         data-name="Fish" data-role="Water Demon &middot; AE &middot; Pisces"
+         data-lore="The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing &mdash; it was never on one side."></div>
 
-    <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="7"
-         data-name="The Twins" data-role="SHAM &amp; MASH · The Great Twins"
-         data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
+    <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="7"
+         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger &middot; Cancer"
+         data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there &mdash; he simply removes what was hiding it."></div>
 
-    <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="10"
-         data-name="Crab" data-role="ELIL · The Deceptive Digger"
-         data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there — he simply removes what was hiding it."></div>
-
-    <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="14"
-         data-name="Furrow" data-role="SINN · Daughter of the Moon"
+    <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="10"
+         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon &middot; Virgo"
          data-lore="Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to."></div>
 
-    <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="18"
-         data-name="Fate" data-role="AN · Scales of Destiny"
-         data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed."></div>
+    <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="14"
+         data-name="Fate" data-role="AN &middot; Scales of Destiny &middot; Libra"
+         data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight &mdash; they measure what is owed."></div>
 
-    <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="22"
-         data-name="Defender" data-role="MISH · The Last Kings"
-         data-lore="The Mish were the last human kings — sovereign before the gods divided the world. The Irradari wiped them from history so thoroughly that only this sigil remembers they ruled at all."></div>
+    <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="18"
+         data-name="Defender" data-role="MISH &middot; The Last Kings &middot; Sagittarius"
+         data-lore="The Mish were the last human kings &mdash; sovereign before the gods divided the world. The Irradari wiped them from history so thoroughly that only this sigil remembers they ruled at all."></div>
 
-    <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="27"
-         data-name="Goat Fish" data-role="BELU · of Storm"
+    <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="22"
+         data-name="Goat Fish" data-role="BELU &middot; of Storm &middot; Capricorn"
          data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
+
+    <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="27"
+         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins &middot; Gemini"
+         data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
   </div>
 
   <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
