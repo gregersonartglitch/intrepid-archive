@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -805,8 +805,15 @@ input { font-family: inherit; }
 
 /* Town */
 .mk-town {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: #6a4a30; border: 1px solid var(--copper);
+  width: 12px; height: 12px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe066, #d4a843);
+  border: 1.5px solid rgba(255,220,80,0.6);
+  box-shadow: 0 0 6px rgba(212,168,67,0.7), 0 0 12px rgba(212,168,67,0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.mk-town:hover {
+  transform: scale(1.4);
+  box-shadow: 0 0 10px rgba(212,168,67,1), 0 0 20px rgba(212,168,67,0.5);
 }
 .mk-town-lbl {
   font-family: var(--font-ui); font-size: calc(14px * var(--label-scale)); font-weight: 600; color: rgba(255,255,255,0.75);
@@ -2478,7 +2485,7 @@ input { font-family: inherit; }
 
       // ── Dot marker (except water) ──
       if (t !== 'water') {
-        const dotSize = { region: [72,72], capital: [48,48], city: [48,48], town: [44,44], story: [48,48], sacred: [44,44] }[t] || [44,44];
+        const dotSize = { region: [72,72], capital: [48,48], city: [48,48], town: [16,16], story: [48,48], sacred: [44,44] }[t] || [44,44];
 
         // In edit mode, use bigger dots for easier grabbing
         const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 24), Math.max(dotSize[1], 24)] : dotSize;
