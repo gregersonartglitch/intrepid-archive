@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -420,7 +420,7 @@ input { font-family: inherit; }
 /* Frame image overlay */
 #frame-img {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame_original_02.png') center/cover no-repeat;
+  background: url('frame_original_02.png?v=1782250059') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-img.loaded { opacity: 1; }
@@ -1729,10 +1729,10 @@ input { font-family: inherit; }
       </clipPath>
     </defs>
     <!-- Base layer: default bronze state -->
-    <image id="frame-img" href="frame_original_02.png"
+    <image id="frame-img" href="frame_original_02.png?v=1782250059"
            width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>
     <!-- Selected layer: glowing state, clipped to revealed circles only -->
-    <image id="frame-selected-overlay" href="frame_original_02_on_state.png"
+    <image id="frame-selected-overlay" href="frame_original_02_on_state.png?v=1782250059"
            width="100%" height="100%" preserveAspectRatio="xMidYMid slice"
            clip-path="url(#medallion-reveal-clip)"/>
   </svg>
