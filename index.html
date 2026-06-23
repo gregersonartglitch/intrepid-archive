@@ -381,7 +381,7 @@ input { font-family: inherit; }
 #frame-svg-wrapper.loaded { opacity: 1; }
 
 /* Torch overlay: on_state image revealed by soft mask following mouse */
-#frame-selected-overlay {
+#frame-torch-overlay {
   position: fixed; inset: 0; z-index: 511; pointer-events: none;
   background: url('frame_original_02_on_state.png?v=1782250059') center/cover no-repeat;
   mask-image: radial-gradient(circle at var(--mx, -500px) var(--my, -500px),
@@ -1748,33 +1748,12 @@ body.debug-hotspots .medallion-hot::after {
   <!-- Single SVG: both frame layers render identically via same preserveAspectRatio -->
   <svg id="frame-svg-wrapper" xmlns="http://www.w3.org/2000/svg"
        style="position:fixed;inset:0;width:100%;height:100%;z-index:510;pointer-events:none;opacity:1">
-    <defs>
-      <!-- userSpaceOnUse: cx/cy as % of SVG viewport, r animated in JS as px -->
-      <clipPath id="medallion-reveal-clip" clipPathUnits="userSpaceOnUse">
-        <circle id="mclip-bull"        cx="50%"   cy="15.6%" r="0"/>
-        <circle id="mclip-lion"        cx="83.8%" cy="43.5%" r="0"/>
-        <circle id="mclip-defender"    cx="50%"   cy="77.0%" r="0"/>
-        <circle id="mclip-water"       cx="17.9%" cy="43.5%" r="0"/>
-        <circle id="mclip-fire-satyr"  cx="73.0%" cy="17.0%" r="0"/>
-        <circle id="mclip-twins"       cx="27.0%" cy="17.0%" r="0"/>
-        <circle id="mclip-fish"        cx="85.4%" cy="29.0%" r="0"/>
-        <circle id="mclip-crab"        cx="85.4%" cy="58.0%" r="0"/>
-        <circle id="mclip-furrow"      cx="73.0%" cy="72.0%" r="0"/>
-        <circle id="mclip-fate"        cx="27.0%" cy="85.0%" r="0"/>
-        <circle id="mclip-scorpion"    cx="27.0%" cy="72.0%" r="0"/>
-        <circle id="mclip-goat-fish"   cx="14.6%" cy="58.0%" r="0"/>
-      </clipPath>
-    </defs>
     <!-- Base layer: default bronze state -->
     <image id="frame-img" href="frame_original_02.png?v=1782250059"
            width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>
-    <!-- Selected layer: glowing state, clipped to revealed circles only -->
-    <image id="frame-selected-overlay" href="frame_original_02_on_state.png?v=1782250059"
-           width="100%" height="100%" preserveAspectRatio="xMidYMid slice"
-           clip-path="url(#medallion-reveal-clip)"/>
   </svg>
   <!-- Torch overlay: on_state image revealed by CSS mask following mouse -->
-  <div id="frame-selected-overlay"></div>
+  <div id="frame-torch-overlay"></div>
   <!-- Medallion interactions handled via JS proximity detection (no hotspot divs needed) -->
 
   <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
@@ -2076,7 +2055,7 @@ body.debug-hotspots .medallion-hot::after {
 
     // ── Torch effect + proximity card detection ──────────────────────────
     (function() {
-      var overlay = document.getElementById('frame-selected-overlay');
+      var overlay = document.getElementById('frame-torch-overlay');
       if (!overlay) return;
 
       // All 12 medallions: position as fraction of viewport, name, role, lore, unlock threshold
@@ -2084,41 +2063,41 @@ body.debug-hotspots .medallion-hot::after {
       // cx/cy = fraction of viewport width/height
       var MEDALLIONS = [
         // ── Cardinals ────────────────────────────────────────────────────
-        { name: 'Bull of Heaven',  cx: 0.500, cy: 0.085, guardian: true,
+        { name: 'Bull of Heaven',  cx: 0.490, cy: 0.133, guardian: true,
           role: 'Tetrad · North · UTU',
           lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Lion of Justice', cx: 0.870, cy: 0.430, guardian: true,
+        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, guardian: true,
           role: 'Tetrad · East · RAPHA',
           lore: 'He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Defender',        cx: 0.500, cy: 0.820, guardian: true,
+        { name: 'Defender',        cx: 0.482, cy: 0.783, guardian: true,
           role: 'Tetrad · South · MISH',
           lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Water',           cx: 0.130, cy: 0.430, guardian: true,
+        { name: 'Water',           cx: 0.248, cy: 0.437, guardian: true,
           role: 'Tetrad · West · GU',
           lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
         // ── The Nine (clockwise from upper-right) ────────────────────────
-        { name: 'The Twins',    cx: 0.720, cy: 0.115, unlock: 3,
+        { name: 'The Twins',    cx: 0.725, cy: 0.138, unlock: 3,
           role: 'SHAM & MASH · The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Crab',         cx: 0.870, cy: 0.270, unlock: 5,
+        { name: 'Crab',         cx: 0.799, cy: 0.313, unlock: 5,
           role: 'ELIL · The Deceptive Digger',
           lore: 'God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there — he simply removes what was hiding it.' },
-        { name: 'Furrow',       cx: 0.870, cy: 0.590, unlock: 7,
+        { name: 'Furrow',       cx: 0.806, cy: 0.594, unlock: 7,
           role: 'SINN · Daughter of the Moon',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'Fate',         cx: 0.720, cy: 0.760, unlock: 10,
+        { name: 'Fate',         cx: 0.717, cy: 0.841, unlock: 10,
           role: 'AN · Scales of Destiny',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Goat Fish',    cx: 0.280, cy: 0.760, unlock: 14,
+        { name: 'Goat Fish',    cx: 0.260, cy: 0.835, unlock: 14,
           role: 'BELU · of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Scorpion Man', cx: 0.130, cy: 0.590, unlock: 18,
+        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, unlock: 18,
           role: 'NIN · Of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Fish',         cx: 0.130, cy: 0.270, unlock: 22,
+        { name: 'Fish',         cx: 0.178, cy: 0.319, unlock: 22,
           role: 'Water Demon · AE',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Fire Satyr',   cx: 0.280, cy: 0.115, unlock: 27,
+        { name: 'Fire Satyr',   cx: 0.249, cy: 0.138, unlock: 27,
           role: 'God of War · ERRA',
           lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
@@ -2238,7 +2217,8 @@ body.debug-hotspots .medallion-hot::after {
           handles.forEach(function(h) {
             var cx = (parseFloat(h.style.left) / window.innerWidth).toFixed(3);
             var cy = (parseFloat(h.style.top) / window.innerHeight).toFixed(3);
-            lines.push("        { name: '" + h.dataset.mname + "', cx: " + cx + ", cy: " + cy + " },");
+            var r = Math.round(parseFloat(h.dataset.radius || 80));
+            lines.push("        { name: '" + h.dataset.mname + "', cx: " + cx + ", cy: " + cy + ", r: " + r + " },");
           });
           var text = lines.join('\n');
           navigator.clipboard.writeText(text).then(function() {
@@ -2269,7 +2249,9 @@ body.debug-hotspots .medallion-hot::after {
           handle.dataset.mname = m.name;
           var px = m.cx * vw;
           var py = m.cy * vh;
-          handle.style.cssText = 'position:fixed;width:80px;height:80px;border-radius:50%;' +
+          var radius = m.r || 80; // default 80px
+          handle.dataset.radius = radius;
+          handle.style.cssText = 'position:fixed;width:' + radius + 'px;height:' + radius + 'px;border-radius:50%;' +
             'background:' + colors[i % colors.length] + '33;' +
             'border:3px solid ' + colors[i % colors.length] + ';' +
             'cursor:grab;pointer-events:auto;display:flex;align-items:center;justify-content:center;' +
@@ -2284,20 +2266,24 @@ body.debug-hotspots .medallion-hot::after {
           label.textContent = m.name;
           handle.appendChild(label);
 
-          // Coordinate display
+          // Coordinate + size display
           var coordLabel = document.createElement('div');
           coordLabel.style.cssText = 'position:absolute;top:-20px;left:50%;transform:translateX(-50%);' +
             'background:rgba(0,0,0,0.9);color:#fff;font-size:10px;padding:1px 4px;border-radius:2px;' +
             'white-space:nowrap;font-family:monospace;pointer-events:none;';
-          coordLabel.textContent = m.cx.toFixed(3) + ', ' + m.cy.toFixed(3);
+          function updateCoordLabel() {
+            var cx = (parseFloat(handle.style.left) / window.innerWidth).toFixed(3);
+            var cy = (parseFloat(handle.style.top) / window.innerHeight).toFixed(3);
+            coordLabel.textContent = cx + ', ' + cy + ' r:' + Math.round(parseFloat(handle.dataset.radius));
+          }
+          updateCoordLabel();
           handle.appendChild(coordLabel);
 
           // Drag logic
-          var dragging = false, offX = 0, offY = 0;
+          var dragging = false;
           handle.addEventListener('mousedown', function(e) {
             e.preventDefault(); e.stopPropagation();
             dragging = true;
-            offX = 0; offY = 0;
             handle.style.cursor = 'grabbing';
             handle.style.zIndex = '10001';
           });
@@ -2305,15 +2291,25 @@ body.debug-hotspots .medallion-hot::after {
             if (!dragging) return;
             handle.style.left = e.clientX + 'px';
             handle.style.top = e.clientY + 'px';
-            var cx = (e.clientX / window.innerWidth).toFixed(3);
-            var cy = (e.clientY / window.innerHeight).toFixed(3);
-            coordLabel.textContent = cx + ', ' + cy;
+            updateCoordLabel();
           });
           document.addEventListener('mouseup', function() {
             if (!dragging) return;
             dragging = false;
             handle.style.cursor = 'grab';
             handle.style.zIndex = '';
+          });
+
+          // Scroll to resize
+          handle.addEventListener('wheel', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var r = parseFloat(handle.dataset.radius);
+            r += (e.deltaY < 0 ? 8 : -8); // scroll up = bigger
+            r = Math.max(30, Math.min(300, r));
+            handle.dataset.radius = r;
+            handle.style.width = r + 'px';
+            handle.style.height = r + 'px';
+            updateCoordLabel();
           });
 
           editorContainer.appendChild(handle);
