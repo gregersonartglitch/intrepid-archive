@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -373,22 +373,12 @@ input { font-family: inherit; }
   background: linear-gradient(to left, rgba(6,5,11,0.65), transparent);
 }
 
-/* Frame image overlay — default state */
-#frame-img {
+/* Frame SVG wrapper */
+#frame-svg-wrapper {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame_original_02.png') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
-#frame-img.loaded { opacity: 1; }
-
-/* Frame selected-state SVG overlay */
-#frame-selected-overlay {
-  position: fixed; inset: 0; z-index: 511; pointer-events: none;
-  background: url('frame_original_02_on_state.png') center/cover no-repeat;
-  clip-path: url(#medallion-reveal-clip);
-  opacity: 0; transition: opacity 0.5s ease;
-}
-#frame-selected-overlay.loaded { opacity: 1; }
+#frame-svg-wrapper.loaded { opacity: 1; }
 
 /* Corner medallions */
 .frame-corner {
@@ -1717,31 +1707,35 @@ input { font-family: inherit; }
   </div>
 
   <!-- Frame image overlay -->
-  <div id="frame-img"></div>
-
-  <!-- Medallion Hotspots (positioned over frame_original_02.png medallions) -->
     <!-- SVG overlay: frame_selected.png clipped to only show unlocked medallion circles -->
-  <!-- Hidden SVG for clip definitions only -->
-<svg style="position:absolute;width:0;height:0;overflow:hidden">
+  <!-- Single SVG: both frame layers render identically via same preserveAspectRatio -->
+  <svg id="frame-svg-wrapper" xmlns="http://www.w3.org/2000/svg"
+       style="position:fixed;inset:0;width:100%;height:100%;z-index:510;pointer-events:none;opacity:0;transition:opacity 0.5s ease">
     <defs>
-      <clipPath id="medallion-reveal-clip" clipPathUnits="objectBoundingBox">
-        <circle id="mclip-bull"        cx="0.500" cy="0.156" r="0"/>
-        <circle id="mclip-lion"        cx="0.838" cy="0.435" r="0"/>
-        <circle id="mclip-defender"    cx="0.500" cy="0.770" r="0"/>
-        <circle id="mclip-water"       cx="0.179" cy="0.435" r="0"/>
-        <circle id="mclip-fire-satyr"  cx="0.730" cy="0.170" r="0"/>
-        <circle id="mclip-twins"       cx="0.270" cy="0.170" r="0"/>
-        <circle id="mclip-fish"        cx="0.854" cy="0.290" r="0"/>
-        <circle id="mclip-crab"        cx="0.854" cy="0.580" r="0"/>
-        <circle id="mclip-furrow"      cx="0.730" cy="0.720" r="0"/>
-        <circle id="mclip-fate"        cx="0.270" cy="0.850" r="0"/>
-        <circle id="mclip-scorpion"    cx="0.270" cy="0.720" r="0"/>
-        <circle id="mclip-goat-fish"   cx="0.146" cy="0.580" r="0"/>
+      <!-- userSpaceOnUse: cx/cy as % of SVG viewport, r animated in JS as px -->
+      <clipPath id="medallion-reveal-clip" clipPathUnits="userSpaceOnUse">
+        <circle id="mclip-bull"        cx="50%"   cy="15.6%" r="0"/>
+        <circle id="mclip-lion"        cx="83.8%" cy="43.5%" r="0"/>
+        <circle id="mclip-defender"    cx="50%"   cy="77.0%" r="0"/>
+        <circle id="mclip-water"       cx="17.9%" cy="43.5%" r="0"/>
+        <circle id="mclip-fire-satyr"  cx="73.0%" cy="17.0%" r="0"/>
+        <circle id="mclip-twins"       cx="27.0%" cy="17.0%" r="0"/>
+        <circle id="mclip-fish"        cx="85.4%" cy="29.0%" r="0"/>
+        <circle id="mclip-crab"        cx="85.4%" cy="58.0%" r="0"/>
+        <circle id="mclip-furrow"      cx="73.0%" cy="72.0%" r="0"/>
+        <circle id="mclip-fate"        cx="27.0%" cy="85.0%" r="0"/>
+        <circle id="mclip-scorpion"    cx="27.0%" cy="72.0%" r="0"/>
+        <circle id="mclip-goat-fish"   cx="14.6%" cy="58.0%" r="0"/>
       </clipPath>
     </defs>
+    <!-- Base layer: default bronze state -->
+    <image id="frame-img" href="frame_original_02.png"
+           width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>
+    <!-- Selected layer: glowing state, clipped to revealed circles only -->
+    <image id="frame-selected-overlay" href="frame_original_02_on_state.png"
+           width="100%" height="100%" preserveAspectRatio="xMidYMid slice"
+           clip-path="url(#medallion-reveal-clip)"/>
   </svg>
-  <div id="frame-selected-overlay"></div>
-
   <div id="medallion-hotspots">
     <!-- Tetrad (4 cardinal guardians): Bull=TOP, Lion=RIGHT, Scorpion Man=BOTTOM, Water=LEFT -->
     <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
@@ -1760,41 +1754,37 @@ input { font-family: inherit; }
          data-name="Water" data-role="Tetrad &middot; West &middot; GU"
          data-lore="The primordial current. Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk &mdash; Over all the Powers."></div>
 
-    <!-- The Nine — clockwise from TOP-BULL:
-         upper-right: Aries(ERRA)/Pisces(AE)
-         lower-right: Cancer(ELIL)/Virgo(SINN)
-         lower-left:  Libra(AN)/Scorpio(NIN)
-         upper-left:  Capricorn(BELU)/Gemini-TWINS(SHAM) -->
+    <!-- The Nine (clockwise from top) -->
     <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="3"
-         data-name="Fire Satyr" data-role="God of War &middot; ERRA &middot; Aries"
+         data-name="Fire Satyr" data-role="God of War &middot; ERRA"
          data-lore="War is not his purpose &mdash; it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
 
     <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="5"
-         data-name="Fish" data-role="Water Demon &middot; AE &middot; Pisces"
+         data-name="Fish" data-role="Water Demon &middot; AE"
          data-lore="The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing &mdash; it was never on one side."></div>
 
     <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="7"
-         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger &middot; Cancer"
+         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger"
          data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there &mdash; he simply removes what was hiding it."></div>
 
     <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="10"
-         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon &middot; Virgo"
+         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon"
          data-lore="Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to."></div>
 
     <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="14"
-         data-name="Fate" data-role="AN &middot; Scales of Destiny &middot; Libra"
+         data-name="Fate" data-role="AN &middot; Scales of Destiny"
          data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight &mdash; they measure what is owed."></div>
 
     <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="18"
-         data-name="Scorpion Man" data-role="NIN · Of Earth · Scorpio"
+         data-name="Scorpion Man" data-role="NIN &middot; Of Earth"
          data-lore="That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing."></div>
 
     <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="22"
-         data-name="Goat Fish" data-role="BELU &middot; of Storm &middot; Capricorn"
+         data-name="Goat Fish" data-role="BELU &middot; of Storm"
          data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
 
     <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="27"
-         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins &middot; Gemini"
+         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins"
          data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
   </div>
 
