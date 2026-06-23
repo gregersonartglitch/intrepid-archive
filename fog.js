@@ -1825,6 +1825,8 @@
 
     // Animate the SVG clip circle open for this medallion
     animateMedallionClip(name, 0, 0.07, 900);
+    // Also permanently reveal via torch overlay
+    if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
 
     // After animation, mark as unlocked
     setTimeout(function() {

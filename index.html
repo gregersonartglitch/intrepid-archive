@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -380,6 +380,16 @@ input { font-family: inherit; }
 }
 #frame-svg-wrapper.loaded { opacity: 1; }
 
+/* Torch overlay: on_state image revealed by soft mask following mouse */
+#frame-selected-overlay {
+  position: fixed; inset: 0; z-index: 511; pointer-events: none;
+  background: url('frame_original_02_on_state.png?v=1782250059') center/cover no-repeat;
+  mask-image: radial-gradient(circle 140px at var(--mx, -500px) var(--my, -500px),
+    black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle 140px at var(--mx, -500px) var(--my, -500px),
+    black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%);
+}
+
 /* Corner medallions */
 .frame-corner {
   position: absolute; width: 110px; height: 110px; z-index: 502;
@@ -429,6 +439,22 @@ input { font-family: inherit; }
 #medallion-hotspots {
   position: fixed; inset: 0; z-index: 515; pointer-events: none;
 }
+/* DEBUG mode: Shift+D to toggle */
+body.debug-hotspots .medallion-hot {
+  background: rgba(255, 80, 0, 0.5) !important;
+  border: 2px solid #ff5000 !important;
+  border-radius: 50% !important;
+  width: 70px !important; height: 70px !important;
+  display: flex !important; align-items: center; justify-content: center;
+}
+body.debug-hotspots .medallion-hot::after {
+  content: attr(data-name);
+  position: absolute; top: 75px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.9); color: #ffcc00; font-size: 11px;
+  white-space: nowrap; padding: 3px 6px; border-radius: 3px; pointer-events: none;
+  font-family: monospace; border: 1px solid #ffcc00;
+}
+
 .medallion-hot {
   position: absolute; width: 80px; height: 80px; border-radius: 50%;
   pointer-events: auto; cursor: pointer;
@@ -1743,6 +1769,9 @@ input { font-family: inherit; }
            width="100%" height="100%" preserveAspectRatio="xMidYMid slice"
            clip-path="url(#medallion-reveal-clip)"/>
   </svg>
+  <!-- Torch overlay: on_state image revealed by CSS mask following mouse -->
+  <div id="frame-selected-overlay"></div>
+
   <div id="medallion-hotspots">
     <!-- Tetrad (4 cardinal guardians): Bull=TOP, Lion=RIGHT, Scorpion Man=BOTTOM, Water=LEFT -->
     <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
@@ -2091,6 +2120,66 @@ input { font-family: inherit; }
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
     initMedallionTooltips();
+
+    // ── Torch effect: soft spotlight follows mouse over frame overlay ──
+    (function() {
+      var overlay = document.getElementById('frame-selected-overlay');
+      if (!overlay) return;
+
+      // Positions of each medallion as % of viewport (for permanent reveals)
+      var GLOW_POS = {
+        'Bull of Heaven':  { x: '50%',    y: '15.6%' },
+        'Lion of Justice': { x: '83.8%',  y: '43.5%' },
+        'Defender':        { x: '50%',    y: '77%'   },
+        'Water':           { x: '17.9%',  y: '43.5%' },
+        'Fire Satyr':      { x: '73%',    y: '17%'   },
+        'Twins':           { x: '27%',    y: '17%'   },
+        'Fish':            { x: '85.4%',  y: '29%'   },
+        'Crab':            { x: '85.4%',  y: '58%'   },
+        'Furrow':          { x: '73%',    y: '72%'   },
+        'Fate':            { x: '27%',    y: '85%'   },
+        'Scorpion':        { x: '27%',    y: '72%'   },
+        'Goat Fish':       { x: '14.6%',  y: '58%'   }
+      };
+
+      window._permanentGlows = window._permanentGlows || {};
+
+      function buildMask(mxVal, myVal) {
+        // Soft torch spotlight
+        var parts = [
+          'radial-gradient(circle 140px at ' + mxVal + ' ' + myVal + ', ' +
+          'black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%)'
+        ];
+        // Permanent reveals (soft, slightly smaller)
+        Object.keys(window._permanentGlows).forEach(function(name) {
+          var p = GLOW_POS[name];
+          if (!p) return;
+          parts.push(
+            'radial-gradient(circle 100px at ' + p.x + ' ' + p.y + ', ' +
+            'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)'
+          );
+        });
+        return parts.join(', ');
+      }
+
+      var lastMx = '-500px', lastMy = '-500px';
+      document.addEventListener('mousemove', function(e) {
+        lastMx = e.clientX + 'px';
+        lastMy = e.clientY + 'px';
+        var mask = buildMask(lastMx, lastMy);
+        overlay.style.maskImage = mask;
+        overlay.style.webkitMaskImage = mask;
+      });
+
+      // Expose so fog.js can add permanent glows on god unlock
+      window.addPermanentMedallionGlow = function(name) {
+        window._permanentGlows[name] = true;
+        var mask = buildMask(lastMx, lastMy);
+        overlay.style.maskImage = mask;
+        overlay.style.webkitMaskImage = mask;
+      };
+    })();
+
     // Reveal Tetrad guardian circles on load (they're always accessible)
     setTimeout(function() {
       if (window.FogSystem && window.FogSystem.initTetradCircles) {
