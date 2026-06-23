@@ -376,7 +376,7 @@ input { font-family: inherit; }
 /* Frame image overlay — default state */
 #frame-img {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame.png?v=4') center/cover no-repeat;
+  background: url('frame_original_02.png') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-img.loaded { opacity: 1; }
@@ -428,7 +428,7 @@ input { font-family: inherit; }
 /* Frame image overlay */
 #frame-img {
   position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame.png?v=4') center/cover no-repeat;
+  background: url('frame_original_02.png') center/cover no-repeat;
   opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-img.loaded { opacity: 1; }
@@ -1717,29 +1717,29 @@ input { font-family: inherit; }
   <!-- Frame image overlay -->
   <div id="frame-img"></div>
 
-  <!-- Medallion Hotspots (positioned over frame.png medallions) -->
+  <!-- Medallion Hotspots (positioned over frame_original_02.png medallions) -->
     <!-- SVG overlay: frame_selected.png clipped to only show unlocked medallion circles -->
   <svg id="frame-selected-overlay" xmlns="http://www.w3.org/2000/svg"
        viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
     <defs>
       <clipPath id="medallion-reveal-clip" clipPathUnits="objectBoundingBox">
-        <!-- Tetrad (always revealed, r starts at 0.06) -->
-        <circle id="mclip-bull"        cx="0.500" cy="0.030" r="0"/>
-        <circle id="mclip-lion"        cx="0.940" cy="0.500" r="0"/>
-        <circle id="mclip-defender"    cx="0.500" cy="0.960" r="0"/>
-        <circle id="mclip-water"       cx="0.060" cy="0.500" r="0"/>
-        <!-- The Nine (start r=0, unlock on discovery threshold) -->
-        <circle id="mclip-fire-satyr"  cx="0.780" cy="0.140" r="0"/>
-        <circle id="mclip-fish"        cx="0.900" cy="0.300" r="0"/>
-        <circle id="mclip-crab"        cx="0.900" cy="0.700" r="0"/>
-        <circle id="mclip-furrow"      cx="0.780" cy="0.860" r="0"/>
-        <circle id="mclip-fate"        cx="0.220" cy="0.860" r="0"/>
-        <circle id="mclip-scorpion"    cx="0.100" cy="0.700" r="0"/>
-        <circle id="mclip-goat-fish"   cx="0.100" cy="0.300" r="0"/>
-        <circle id="mclip-twins"       cx="0.220" cy="0.140" r="0"/>
+        <!-- Tetrad cardinals -->
+        <circle id="mclip-bull"        cx="0.500" cy="0.158" r="0"/>
+        <circle id="mclip-lion"        cx="0.835" cy="0.435" r="0"/>
+        <circle id="mclip-defender"    cx="0.500" cy="0.750" r="0"/>
+        <circle id="mclip-water"       cx="0.195" cy="0.435" r="0"/>
+        <!-- The Nine -->
+        <circle id="mclip-fire-satyr"  cx="0.762" cy="0.175" r="0"/>
+        <circle id="mclip-twins"       cx="0.238" cy="0.175" r="0"/>
+        <circle id="mclip-fish"        cx="0.870" cy="0.310" r="0"/>
+        <circle id="mclip-crab"        cx="0.870" cy="0.580" r="0"/>
+        <circle id="mclip-furrow"      cx="0.762" cy="0.740" r="0"/>
+        <circle id="mclip-fate"        cx="0.762" cy="0.870" r="0"/>
+        <circle id="mclip-scorpion"    cx="0.238" cy="0.740" r="0"/>
+        <circle id="mclip-goat-fish"   cx="0.130" cy="0.580" r="0"/>
       </clipPath>
     </defs>
-    <image href="frame_selected.png" width="100%" height="100%"
+    <image href="frame_original_02_on_state.png" width="100%" height="100%"
            clip-path="url(#medallion-reveal-clip)"
            preserveAspectRatio="xMidYMid slice"/>
   </svg>
@@ -2915,7 +2915,7 @@ input { font-family: inherit; }
     const fi = document.getElementById('frame-img');
     const img = new Image();
     img.onload = () => fi.classList.add('loaded');
-    img.src = 'frame.png?v=4';
+    img.src = 'frame_original_02.png';
   }
 
   /* ═══════════════════════════════════════════
