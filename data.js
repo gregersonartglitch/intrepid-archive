@@ -270,7 +270,7 @@ window.LOCATIONS = [
     lng: 2334,
     desc: 'The war-city consecrated to the god whose name it bears — Erra, father of Atrus Nul, lord of plague and conflict. The architecture is brutal: windowless barracks, training amphitheaters stained dark with old blood, and the Pillar of Lament where the names of the conquered are etched in script too small to read without kneeling. Elena passed through this city and found that war is not an event here but a permanent atmospheric condition.',
     lore: '"Erra is not a place where wars begin. Erra is the place where the idea of war lives when it is not being used."',
-    journeyStep: 9,
+    journeyStep: 11,
     volume1: true
   },
   {
@@ -484,8 +484,8 @@ window.LOCATIONS = [
     lng: 1700,
     desc: 'The wound in the world where the boundary between the Clockwork and the Hollowlands grows thin enough to breach. The Hollowgate is not a structure but an absence — a place where reality stutters and the air tastes of static electricity and old stone. It is here that Elena\'s passage began, though whether she found the door or the door found her remains a matter of considerable and uneasy debate.',
     lore: '"They did not discover the door. They were the door."',
-    journeyStep: 1,
-    volume1: true
+    journeyStep: null,
+    volume1: false
   },
   {
     id: 'crossing-pool',
@@ -538,6 +538,18 @@ window.LOCATIONS = [
     art: 'monastery-wind.jpg'
   },
   {
+    id: 'ashal',
+    name: 'Ashal',
+    sub: 'The Pilgrim\'s Rest',
+    type: 'town',
+    lat: 4200,
+    lng: 4560,
+    desc: 'The settlement at the base of the peak that holds the Monastery of the Wind — the last inhabited place before the climb begins. Ashal is where pilgrims leave behind what they cannot carry up: excess gear, pets, second-guessing. The town has grown entirely around the needs of those passing through it, and its people have a reputation for being extraordinarily helpful without asking a single question about where you are going or why. They have learned that the answers are never the business of the town.',
+    lore: '"Leave what you cannot carry. Take only what the Oracle can see through. Ashal asks nothing else of you."',
+    journeyStep: 6,
+    volume1: true
+  },
+  {
     id: 'moon-stronghold',
     name: 'Moon Queen\'s Stronghold',
     sub: 'Seat of the Moon Queen',
@@ -571,7 +583,7 @@ window.LOCATIONS = [
     lng: 4092,
     desc: 'The monolith that holds the two halves of the world apart. The Maxim Stone is not large — it stands only as tall as a person — but its presence distorts everything around it: light bends, sound delays, and anyone who approaches feels the weight of two realities pressing against each other through a crack no wider than a heartbeat. This is where Elena\'s first journey ended. This is where the prophecy began to prove itself.',
     lore: '"The Stone does not separate the worlds. The Stone is the wound\'s suture. Remove it and the wound reopens. The wound is the size of everything."',
-    journeyStep: 11,
+    journeyStep: 12,
     volume1: true
   },
 
@@ -718,7 +730,7 @@ window.LOCATIONS = [
     lng: 1394,
     desc: 'The judicial heart of the Moon Queen\'s domain, where disputes are settled by moonlight and the verdicts are written in silver ink that fades by dawn — binding only those who witnessed the judgment. Sinn\'s architecture is circular, its streets spiraling inward like the chambers of a nautilus shell. It is said that the city was designed by Sabella herself, modeled on a memory of something she saw in the Clockwork and could not forget.',
     lore: '"Sinn does not dispense justice. Sinn dispenses clarity. The difference is that justice can be appealed."',
-    journeyStep: null,
+    journeyStep: 9,
     volume1: true
   },
   {
@@ -730,8 +742,8 @@ window.LOCATIONS = [
     lng: 1022,
     desc: 'The fortified garrison town that guards the Moon Queen\'s eastern border against Imperial incursion. Indras Na is staffed by soldiers who serve not by conscription but by oath — an oath spoken once, in the dark, to a queen they may never meet. The walls are lined with mirrors that reflect moonlight into concentrated beams, turning the perimeter into a web of silver tripwires. Those who returned from attempted siege spoke of blindness and the sound of laughter.',
     lore: '"Indras Na has never fallen. This is not because it cannot be taken. It is because those who try forget why they came."',
-    journeyStep: null,
-    volume1: false
+    journeyStep: 10,
+    volume1: true
   },
   {
     id: 'armatu',
@@ -935,12 +947,14 @@ window.JOURNEY_PATH = [
   { step: 3,  locationId: 'sabellas-hut',     label: 'Grandmother\'s Trail' },
   { step: 4,  locationId: 'tower-nine',       label: 'The Final Tower' },
   { step: 5,  locationId: 'monastery-wind',   label: 'The Oracle' },
-  { step: 6,  locationId: 'hollowgate',       label: 'The Threshold' },
+  { step: 6,  locationId: 'ashal',            label: 'Pilgrim\'s Rest' },
   { step: 7,  locationId: 'mish',             label: 'Through Mish' },
   { step: 8,  locationId: 'brea',             label: 'City of Scribes' },
   { step: 9,  locationId: 'moon-stronghold',  label: 'The Moon Queen' },
-  { step: 10, locationId: 'erra',             label: 'War\'s Shadow' },
-  { step: 11, locationId: 'maxim-stone',      label: 'The Breaking' }
+  { step: 10, locationId: 'sinn',             label: 'The Moon Court' },
+  { step: 11, locationId: 'indras-na',        label: 'The Garrison' },
+  { step: 12, locationId: 'erra',             label: 'War\'s Shadow' },
+  { step: 13, locationId: 'maxim-stone',      label: 'The Breaking' }
 ];
 
 // ═══════════════════════════════════════════════════════════════

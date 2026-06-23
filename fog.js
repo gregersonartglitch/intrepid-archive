@@ -1625,10 +1625,10 @@
     }).length;
     checkGodReveals(totalDiscovered);
 
-    // Milestone sparks at 5, 10, 15
+    // Milestone sparks at 5, 10, 15 (total combined discoveries)
     var milestones = [5, 10, 15];
-    if (milestones.indexOf(found) > -1 && found > 0) {
-      triggerMilestoneSpark(found);
+    if (milestones.indexOf(totalDiscovered) > -1 && totalDiscovered > 0) {
+      triggerMilestoneSpark(totalDiscovered);
     }
 
     // Pulse whichever count just changed
