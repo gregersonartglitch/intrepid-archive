@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -423,64 +423,52 @@ input { font-family: inherit; }
   position: fixed; inset: 0; z-index: 515; pointer-events: none;
 }
 .medallion-hot {
-  position: absolute; width: 60px; height: 60px; border-radius: 50%;
+  position: absolute; width: 80px; height: 80px; border-radius: 50%;
   pointer-events: auto; cursor: pointer;
-  transition: all 0.8s ease;
+  transition: all 0.4s ease;
+  display: flex; align-items: center; justify-content: center;
 }
 .medallion-hot:hover {
-  background: rgba(212, 168, 67, 0.08);
+  background: rgba(212, 168, 67, 0.12);
+  box-shadow: 0 0 20px rgba(212,168,67,0.2);
+}
+.medallion-hot:active {
+  background: rgba(212, 168, 67, 0.22);
+  transform: scale(0.94);
 }
 
-/* Locked gods — heavy dark veil with sealed mark */
-.medallion-hot.god-locked {
-  pointer-events: none; cursor: default;
-}
-.medallion-hot.god-locked::before {
-  content: '?';
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700;
-  color: rgba(198, 141, 85, 0.35);
-  z-index: 2;
-  text-shadow: 0 0 8px rgba(198, 141, 85, 0.2);
-  animation: seal-pulse 3s ease-in-out infinite;
-}
-@keyframes seal-pulse {
-  0%,100% { color: rgba(198, 141, 85, 0.25); }
-  50%     { color: rgba(198, 141, 85, 0.45); }
-}
+/* Locked gods — pulsing sealed glow (no ? mark) */
 .medallion-hot.god-locked::after {
   content: '';
-  position: absolute; inset: -6px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(10,12,16,0.85) 35%, rgba(10,12,16,0.65) 65%, rgba(10,12,16,0.3) 85%, transparent 100%);
-  border: 1.5px solid rgba(198,141,85,0.15);
+  position: absolute; inset: 0; border-radius: 50%;
+  background: radial-gradient(circle, rgba(198,141,85,0.08) 0%, transparent 70%);
+  border: 1px solid rgba(198,141,85,0.2);
+  animation: seal-pulse 3s ease-in-out infinite;
   pointer-events: none;
-  z-index: 1;
+}
+@keyframes seal-pulse {
+  0%,100% { border-color: rgba(198,141,85,0.12); box-shadow: none; }
+  50%     { border-color: rgba(198,141,85,0.4); box-shadow: 0 0 14px rgba(198,141,85,0.2); }
 }
 
 /* Reveal animation */
-.medallion-hot.god-revealing::before { display: none; }
 .medallion-hot.god-revealing::after {
   animation: god-awaken 1.5s ease-out forwards;
 }
 @keyframes god-awaken {
   0%   { opacity: 1; box-shadow: none; }
   40%  { opacity: 0.5; box-shadow: 0 0 40px rgba(212,168,67,0.8); }
-  100% { opacity: 0; box-shadow: 0 0 80px rgba(212,168,67,0); }
+  100% { opacity: 0; }
 }
 
-/* Unlocked god — golden glow ring */
-.medallion-hot.god-unlocked::before { display: none; }
+/* Unlocked god — steady gold ring */
 .medallion-hot.god-unlocked::after {
   content: '';
   position: absolute; inset: -4px; border-radius: 50%;
   background: transparent;
-  border: 1.5px solid rgba(212,168,67,0.35);
-  box-shadow: 0 0 12px rgba(212,168,67,0.15), inset 0 0 8px rgba(212,168,67,0.1);
+  border: 1.5px solid rgba(212,168,67,0.5);
+  box-shadow: 0 0 16px rgba(212,168,67,0.25), inset 0 0 10px rgba(212,168,67,0.1);
   pointer-events: none;
-}
-.medallion-hot.god-unlocked {
-  pointer-events: auto; cursor: pointer;
 }
 
 /* Tooltip */
@@ -2937,14 +2925,36 @@ input { font-family: inherit; }
         var card = document.getElementById('discovery-card');
         if (!card) return;
         var name = hot.dataset.name || '';
-        var role = hot.dataset.role || '';
+                var role = hot.dataset.role || '';
         var lore = hot.dataset.lore || '';
-        var isGuardian = !hot.dataset.god; // Tetrad have no data-god attr
+        var isGuardian = !hot.dataset.god;
+        var isLocked = hot.classList.contains('god-locked');
 
-        card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad · Guardian' : 'The Nine';
-        card.querySelector('.dc-name').textContent = name;
-        card.querySelector('.dc-sub').textContent = role;
-        card.querySelector('.dc-desc').textContent = lore;
+        // Brief gold flash on the medallion
+        hot.style.transition = 'none';
+        hot.style.background = 'rgba(212,168,67,0.25)';
+        setTimeout(function() {
+          hot.style.transition = 'all 0.6s ease';
+          hot.style.background = '';
+        }, 140);
+
+        if (isGuardian) {
+          card.querySelector('.dc-type').textContent = 'Tetrad \u00b7 Guardian';
+          card.querySelector('.dc-name').textContent = name;
+          card.querySelector('.dc-sub').textContent = role;
+          card.querySelector('.dc-desc').textContent = lore;
+        } else if (isLocked) {
+          card.querySelector('.dc-type').textContent = 'The Nine \u00b7 Sealed';
+          card.querySelector('.dc-name').textContent = name;
+          card.querySelector('.dc-sub').textContent = role;
+          card.querySelector('.dc-desc').textContent = 'This sigil remains sealed. The god whose face it bears has not yet made itself known to you. Continue charting the Hollowlands \u2014 some truths only open when you have walked far enough to deserve them.';
+        } else {
+          card.querySelector('.dc-type').textContent = 'The Nine \u00b7 Revealed';
+          card.querySelector('.dc-name').textContent = name;
+          card.querySelector('.dc-sub').textContent = role;
+          card.querySelector('.dc-desc').textContent = lore;
+        }
+
         var loreEl = card.querySelector('.dc-lore');
         if (loreEl) loreEl.style.display = 'none';
         var artEl = card.querySelector('.dc-art');
