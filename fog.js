@@ -995,6 +995,62 @@
       ctx.restore();
     }
 
+    // ── 4e. Constellation lines (finale — journey complete) ──
+    var fs = window._finaleState;
+    if (fs && fs.constellationLines && fs.constellationLines.length > 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      var drawProg = fs.constellationDrawProgress || 0;
+      var pulseLine = 0.55 + 0.15 * Math.sin(time * 1.8);
+
+      for (var li = 0; li < fs.constellationLines.length; li++) {
+        var segAlpha = Math.min(1, Math.max(0, drawProg - li));
+        if (segAlpha <= 0) break;
+
+        var lineA = fs.constellationLines[li].a;
+        var lineB = fs.constellationLines[li].b;
+        var ptA = map.latLngToContainerPoint([lineA.lat, lineA.lng]);
+        var ptB = map.latLngToContainerPoint([lineB.lat, lineB.lng]);
+
+        // Partial segment during animation
+        var endX = ptA.x + (ptB.x - ptA.x) * segAlpha;
+        var endY = ptA.y + (ptB.y - ptA.y) * segAlpha;
+
+        // Glowing gold line
+        ctx.beginPath();
+        ctx.moveTo(ptA.x, ptA.y);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = 'rgba(212, 168, 67, ' + (pulseLine * (segAlpha === 1 ? 1 : segAlpha)).toFixed(3) + ')';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = 'rgba(212, 168, 67, 0.6)';
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+
+        // Node dot at each end
+        if (segAlpha === 1) {
+          ctx.fillStyle = 'rgba(212, 168, 67, ' + (pulseLine * 0.9).toFixed(3) + ')';
+          ctx.shadowBlur = 12;
+          ctx.beginPath();
+          ctx.arc(ptB.x, ptB.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // ── 4f. Fog wave clear (finale — vol1 complete) ──
+    var waveP = window._fogWaveClearProgress ? window._fogWaveClearProgress() : 0;
+    if (waveP > 0) {
+      // Thin the fog globally using a semi-transparent overlay that erases fog
+      ctx.save();
+      ctx.globalCompositeOperation = 'destination-out';
+      var eased = waveP * waveP * (3 - 2 * waveP); // smoothstep
+      ctx.fillStyle = 'rgba(0,0,0,' + (eased * 0.55).toFixed(3) + ')';
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
     // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
       var def = TUTORIAL_DEFS[tutorialStep];
@@ -1550,7 +1606,169 @@
       return discovered[id].phase === 'complete';
     }).length;
     checkGodReveals(totalDiscovered);
+
+    // Milestone sparks at 5, 10, 15
+    var milestones = [5, 10, 15];
+    if (milestones.indexOf(found) > -1 && found > 0) {
+      triggerMilestoneSpark(found);
+    }
+
+    // Pulse the counter label on each discovery
+    if (label) {
+      label.style.transition = 'none';
+      label.style.color = '#d4a843';
+      label.style.transform = 'scale(1.25)';
+      setTimeout(function() {
+        label.style.transition = 'color 0.8s ease, transform 0.6s ease';
+        label.style.color = '';
+        label.style.transform = '';
+      }, 50);
+    }
+
+    // ── Finale checks ──
+    checkJourneyFinale(found, total);
+    checkVol1Finale();
   }
+
+  // Track whether finales have already fired
+  var finaleState = {
+    journey: false,
+    vol1: false,
+    constellationLines: [] // [{x1,y1,x2,y2}, ...] persisted after draw
+  };
+
+  function checkJourneyFinale(found, total) {
+    if (finaleState.journey) return;
+    if (found < total || total === 0) return;
+    finaleState.journey = true;
+    // Build constellation line data
+    buildConstellationLines();
+    // Short pause then draw lines + show closing toast
+    setTimeout(drawConstellationAnimation, 800);
+    setTimeout(showJourneyToast, 5000);
+  }
+
+  function checkVol1Finale() {
+    if (finaleState.vol1) return;
+    var vol1Locs = (window.LOCATIONS || []).filter(function(l) { return l.volume1; });
+    var vol1Found = vol1Locs.filter(function(l) {
+      return discovered[l.id] && discovered[l.id].phase === 'complete';
+    }).length;
+    if (vol1Found < vol1Locs.length || vol1Locs.length === 0) return;
+    finaleState.vol1 = true;
+    setTimeout(triggerFogWaveClear, 2000);
+    setTimeout(awakenAzu, 5500);
+  }
+
+  function buildConstellationLines() {
+    finaleState.constellationLines = [];
+    for (var i = 0; i < journeyPath.length - 1; i++) {
+      var a = journeyPath[i];
+      var b = journeyPath[i + 1];
+      if (discovered[a.locationId] && discovered[b.locationId]) {
+        var locA = (window.LOCATIONS || []).find(function(l) { return l.id === a.locationId; });
+        var locB = (window.LOCATIONS || []).find(function(l) { return l.id === b.locationId; });
+        if (locA && locB) {
+          finaleState.constellationLines.push({ a: locA, b: locB });
+        }
+      }
+    }
+  }
+
+  // Animate constellation lines drawing in one by one
+  function drawConstellationAnimation() {
+    var lines = finaleState.constellationLines;
+    if (!lines.length) return;
+    var lineProgress = 0; // which line segment we're drawing (float)
+    var totalLines = lines.length;
+    var start = performance.now();
+    var lineDur = 300; // ms per segment
+
+    function frame(now) {
+      lineProgress = Math.min(totalLines, (now - start) / lineDur);
+      finaleState.constellationDrawProgress = lineProgress;
+      draw();
+      if (lineProgress < totalLines) {
+        requestAnimationFrame(frame);
+      } else {
+        finaleState.constellationDrawProgress = totalLines;
+        draw();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // Fog wave clear — gentle radial sweep from center
+  var fogWaveClearProgress = 0; // 0 = no clear, 1 = fully thinned
+  function triggerFogWaveClear() {
+    var start = performance.now();
+    var dur = 3500;
+    function frame(now) {
+      fogWaveClearProgress = Math.min(1, (now - start) / dur);
+      draw();
+      if (fogWaveClearProgress < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function awakenAzu() {
+    var el = document.getElementById('azu-medallion');
+    if (!el) return;
+    el.classList.add('azu-awakening');
+    // Play a grand chord
+    if (audioCtx) {
+      [130, 196, 261, 392].forEach(function(freq, i) {
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.08);
+        gain.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + i * 0.08 + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 4);
+        osc.start(audioCtx.currentTime + i * 0.08);
+        osc.stop(audioCtx.currentTime + 4.5);
+      });
+    }
+    setTimeout(function() { el.classList.add('azu-unlocked'); }, 1500);
+  }
+
+  function triggerMilestoneSpark(count) {
+    // Spark from the progress bar area
+    var bar = document.getElementById('progress-container');
+    if (!bar) return;
+    var rect = bar.getBoundingClientRect();
+    var cx = rect.left + rect.width / 2;
+    var cy = rect.top;
+    for (var i = 0; i < 14; i++) {
+      var spark = document.createElement('div');
+      spark.style.cssText =
+        'position:fixed;left:' + cx + 'px;top:' + cy + 'px;width:4px;height:4px;' +
+        'border-radius:50%;background:#d4a843;pointer-events:none;z-index:900;' +
+        'animation:spark-fly 1.2s ease-out forwards;';
+      var a = (i / 14) * Math.PI * 2;
+      var d = 40 + Math.random() * 60;
+      spark.style.setProperty('--sx', Math.cos(a) * d + 'px');
+      spark.style.setProperty('--sy', Math.sin(a) * d + 'px');
+      spark.style.animationDelay = (Math.random() * 0.2) + 's';
+      document.body.appendChild(spark);
+      setTimeout(function(s) { s.remove(); }, 1500, spark);
+    }
+  }
+
+  function showJourneyToast() {
+    var overlay = document.getElementById('finale-overlay');
+    if (overlay) overlay.classList.add('visible');
+  }
+
+  // Constellation lines are drawn in the main draw() loop — hook them in here
+  // This flag tells draw() to render them
+  window._finaleState = finaleState;
+  window._fogWaveClearProgress = function() { return fogWaveClearProgress; };
+
+  /* ════════════════════════════════════════════════
+     GOD REVEALS
+     ════════════════════════════════════════════════ */
 
   function checkGodReveals(count) {
     var gods = document.querySelectorAll('.medallion-hot.god-locked');

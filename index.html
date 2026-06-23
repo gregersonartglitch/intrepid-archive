@@ -508,6 +508,108 @@ input { font-family: inherit; }
 }
 
 /* ═══════════════════════════════════════════
+   AZU — CENTER MEDALLION
+   ═══════════════════════════════════════════ */
+#azu-medallion {
+  position: fixed;
+  bottom: 50%; left: 50%;
+  transform: translate(-50%, 50%);
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 460;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+#azu-medallion.azu-awakening {
+  opacity: 1; pointer-events: auto;
+  animation: azu-pulse 1.5s ease-out 3;
+}
+#azu-medallion.azu-unlocked {
+  opacity: 1; pointer-events: auto;
+  box-shadow: 0 0 20px rgba(212,168,67,0.5), 0 0 60px rgba(212,168,67,0.2);
+}
+@keyframes azu-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(212,168,67,0.8); }
+  50%  { box-shadow: 0 0 0 30px rgba(212,168,67,0); }
+  100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
+}
+.azu-inner {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,168,67,0.3) 0%, rgba(212,168,67,0.05) 70%, transparent 100%);
+  border: 1px solid rgba(212,168,67,0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.azu-symbol {
+  font-size: 28px; color: #d4a843;
+  text-shadow: 0 0 12px rgba(212,168,67,0.8);
+}
+
+/* ═══════════════════════════════════════════
+   FINALE OVERLAY
+   ═══════════════════════════════════════════ */
+#finale-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(6, 7, 10, 0.88);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 1.5s ease;
+}
+#finale-overlay.visible {
+  opacity: 1; pointer-events: auto;
+}
+#finale-content {
+  text-align: center; max-width: 480px; padding: 48px;
+}
+#finale-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
+  color: #c68d55; margin-bottom: 20px;
+}
+#finale-name {
+  font-family: 'Cinzel', serif;
+  font-size: 48px; font-weight: 700; color: #d4a843;
+  letter-spacing: 4px; margin-bottom: 24px;
+  text-shadow: 0 0 40px rgba(212,168,67,0.4);
+}
+#finale-sub {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 20px; color: #efe7d2;
+  font-style: italic; margin-bottom: 8px;
+}
+#finale-sub2 {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 20px; color: #efe7d2;
+  font-style: italic; margin-bottom: 40px;
+}
+#finale-dismiss {
+  background: transparent;
+  border: 1px solid rgba(212,168,67,0.5);
+  color: #d4a843; font-family: 'Cinzel', serif;
+  font-size: 13px; letter-spacing: 2px;
+  padding: 12px 32px; border-radius: 4px;
+  cursor: pointer; transition: all 0.3s ease;
+}
+#finale-dismiss:hover {
+  background: rgba(212,168,67,0.12);
+  border-color: rgba(212,168,67,0.9);
+}
+
+/* Milestone spark animation */
+@keyframes spark-fly {
+  0%   { transform: translate(0,0); opacity: 1; }
+  100% { transform: translate(var(--sx), var(--sy)); opacity: 0; }
+}
+
+/* Progress label pulse */
+#progress-label {
+  transition: color 0.8s ease, transform 0.6s ease;
+  display: inline-block;
+}
+
+/* ═══════════════════════════════════════════
    HEADER
    ═══════════════════════════════════════════ */
 #hdr {
@@ -1578,7 +1680,26 @@ input { font-family: inherit; }
          data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
   </div>
 
-  <!-- Header -->
+  <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
+  <div id="azu-medallion"
+       data-name="AZU" data-role="Dragon of the Sun"
+       data-lore="The center of the zodiac. The Dragon who holds the frame together. AZU does not guard the Hollowlands — AZU is the reason it holds its shape at all. You have seen everything the frame was willing to show you. Now it sees you back.">
+    <div class="azu-inner">
+      <span class="azu-symbol">☀</span>
+    </div>
+  </div>
+
+  <!-- Finale Overlay — Journey Complete -->
+  <div id="finale-overlay">
+    <div id="finale-content">
+      <div id="finale-label">The archive is complete</div>
+      <div id="finale-name">Cartographer</div>
+      <div id="finale-sub">The Hollowlands has been watching.</div>
+      <div id="finale-sub2">It sees you now.</div>
+      <button id="finale-dismiss">Continue →</button>
+    </div>
+  </div>
+
   <div id="hdr">
     <div class="hdr-title">The Hollowlands</div>
     <div class="hdr-sub">Magus Scribes — Cartographer Access</div>
@@ -1980,6 +2101,53 @@ input { font-family: inherit; }
     if (window.FogSystem && !EDIT_MODE) {
       window.FogSystem.init(map, cfg);
       window.FogSystem.startDrift(); // subtle animated fog glow
+    }
+
+    // Finale dismiss button
+    var finaleBtn = document.getElementById('finale-dismiss');
+    if (finaleBtn) {
+      finaleBtn.addEventListener('click', function() {
+        var overlay = document.getElementById('finale-overlay');
+        if (overlay) {
+          overlay.style.transition = 'opacity 0.8s ease';
+          overlay.style.opacity = '0';
+          setTimeout(function() {
+            overlay.style.pointerEvents = 'none';
+          }, 800);
+        }
+      });
+    }
+
+    // AZU medallion click — opens discovery card
+    var azuEl = document.getElementById('azu-medallion');
+    if (azuEl) {
+      azuEl.addEventListener('click', function() {
+        var loc = {
+          id: 'azu-god',
+          name: azuEl.getAttribute('data-name'),
+          sub: azuEl.getAttribute('data-role'),
+          type: 'sacred',
+          desc: 'The Dragon of the Sun sits at the center of the zodiac frame — not depicted, not named, not honored on any altar in the Hollowlands. The Tetrad made sure of that. AZU predates the division of the worlds and is the only force in the cosmology that answers to neither Clockwork nor living realm.',
+          lore: azuEl.getAttribute('data-lore')
+        };
+        if (window.FogSystem && window.FogSystem.showCard) {
+          window.FogSystem.showCard(loc);
+        } else {
+          // Fallback: inject directly into card
+          var card = document.getElementById('discovery-card');
+          if (card) {
+            card.querySelector('.dc-name').textContent = loc.name;
+            card.querySelector('.dc-sub').textContent = loc.sub;
+            card.querySelector('.dc-type').textContent = 'Sacred · The Center';
+            card.querySelector('.dc-desc').textContent = loc.desc;
+            var loreEl = card.querySelector('.dc-lore');
+            if (loreEl) { loreEl.textContent = loc.lore; loreEl.style.display = 'block'; }
+            var artEl = card.querySelector('.dc-art');
+            if (artEl) artEl.style.display = 'none';
+            card.classList.add('visible');
+          }
+        }
+      });
     }
   }
 
