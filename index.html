@@ -384,10 +384,14 @@ input { font-family: inherit; }
 #frame-selected-overlay {
   position: fixed; inset: 0; z-index: 511; pointer-events: none;
   background: url('frame_original_02_on_state.png?v=1782250059') center/cover no-repeat;
-  mask-image: radial-gradient(circle 140px at var(--mx, -500px) var(--my, -500px),
-    black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%);
-  -webkit-mask-image: radial-gradient(circle 140px at var(--mx, -500px) var(--my, -500px),
-    black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%);
+  mask-image: radial-gradient(circle at var(--mx, -500px) var(--my, -500px),
+    rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px,
+    rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px,
+    rgba(0,0,0,0.04) 240px, transparent 300px);
+  -webkit-mask-image: radial-gradient(circle at var(--mx, -500px) var(--my, -500px),
+    rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px,
+    rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px,
+    rgba(0,0,0,0.04) 240px, transparent 300px);
 }
 
 /* Corner medallions */
@@ -1792,36 +1796,29 @@ body.debug-hotspots .medallion-hot::after {
 
     <!-- The Nine (clockwise from top) -->
     <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="3"
-         data-name="Fire Satyr" data-role="God of War &middot; ERRA"
-         data-lore="War is not his purpose &mdash; it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
+         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins" data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
 
     <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="5"
-         data-name="Fish" data-role="Water Demon &middot; AE"
-         data-lore="The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing &mdash; it was never on one side."></div>
+         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger" data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there &mdash; he simply removes what was hiding it."></div>
 
     <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="7"
-         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger"
-         data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there &mdash; he simply removes what was hiding it."></div>
+         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon" data-lore="Ereshkigal&apos;s child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to."></div>
 
     <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="10"
-         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon"
-         data-lore="Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to."></div>
+         data-name="Fate" data-role="AN &middot; Scales of Destiny" data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight &mdash; they measure what is owed."></div>
 
     <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="14"
-         data-name="Fate" data-role="AN &middot; Scales of Destiny"
-         data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight &mdash; they measure what is owed."></div>
+         data-name="Goat Fish" data-role="BELU &middot; of Storm" data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
 
     <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="18"
          data-name="Scorpion Man" data-role="NIN &middot; Of Earth"
          data-lore="That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing."></div>
 
     <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="22"
-         data-name="Goat Fish" data-role="BELU &middot; of Storm"
-         data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
+         data-name="Fish" data-role="Water Demon &middot; AE" data-lore="The first thing that moved in the deep. AE&apos;s servant, older than worship. It swims between worlds without crossing &mdash; it was never on one side."></div>
 
     <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="27"
-         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins"
-         data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
+         data-name="Fire Satyr" data-role="God of War &middot; ERRA" data-lore="War is not his purpose &mdash; it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
   </div>
 
   <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
@@ -2147,8 +2144,10 @@ body.debug-hotspots .medallion-hot::after {
       function buildMask(mxVal, myVal) {
         // Soft torch spotlight
         var parts = [
-          'radial-gradient(circle 140px at ' + mxVal + ' ' + myVal + ', ' +
-          'black 0%, rgba(0,0,0,0.88) 28%, rgba(0,0,0,0.4) 58%, rgba(0,0,0,0.1) 80%, transparent 100%)'
+          'radial-gradient(circle at ' + mxVal + ' ' + myVal + ', ' +
+          'rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px, ' +
+          'rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px, ' +
+          'rgba(0,0,0,0.04) 240px, transparent 300px)'
         ];
         // Permanent reveals (soft, slightly smaller)
         Object.keys(window._permanentGlows).forEach(function(name) {
