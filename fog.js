@@ -7,7 +7,7 @@
   'use strict';
 
   var LS_KEY = 'intrepid_atlas_discovered';
-  var CLICK_RADIUS = 80;   // how close (px) user must click to the glow
+  var CLICK_RADIUS = 110;   // how close (px) user must click to the glow
   var TUTORIAL_STEPS = 6;  // 6-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
   var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it

@@ -2230,7 +2230,7 @@ input { font-family: inherit; }
 
       // ── Dot marker (except water) ──
       if (t !== 'water') {
-        const dotSize = { region: [48,48], capital: [30,30], city: [30,30], town: [28,28], story: [30,30], sacred: [28,28] }[t] || [28,28];
+        const dotSize = { region: [72,72], capital: [48,48], city: [48,48], town: [44,44], story: [48,48], sacred: [44,44] }[t] || [44,44];
 
         // In edit mode, use bigger dots for easier grabbing
         const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 24), Math.max(dotSize[1], 24)] : dotSize;
