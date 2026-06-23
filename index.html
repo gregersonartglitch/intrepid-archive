@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2204,6 +2204,148 @@ body.debug-hotspots .medallion-hot::after {
       };
       // Expose MEDALLIONS so fog.js can look up unlock thresholds
       window.MEDALLION_DEFS = MEDALLIONS;
+    })();
+
+    // ── Medallion Position Editor (Shift+M to toggle) ──────────────────
+    (function() {
+      var editorActive = false;
+      var editorContainer = null;
+      var handles = [];
+
+      function createEditor() {
+        if (editorContainer) return;
+        var defs = window.MEDALLION_DEFS;
+        if (!defs) return;
+
+        editorContainer = document.createElement('div');
+        editorContainer.id = 'medallion-editor';
+        editorContainer.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none;';
+
+        // Toolbar
+        var toolbar = document.createElement('div');
+        toolbar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:10000;' +
+          'background:rgba(0,0,0,0.9);border:2px solid #d4a843;border-radius:8px;padding:8px 16px;' +
+          'display:flex;gap:12px;align-items:center;pointer-events:auto;font-family:monospace;';
+        toolbar.innerHTML = '<span style="color:#d4a843;font-weight:bold;">MEDALLION EDITOR</span>' +
+          '<span style="color:#aaa;font-size:12px;">Drag circles onto medallions</span>';
+
+        var copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy Coords';
+        copyBtn.style.cssText = 'background:#d4a843;color:#000;border:none;padding:4px 12px;border-radius:4px;' +
+          'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
+        copyBtn.onclick = function() {
+          var lines = [];
+          handles.forEach(function(h) {
+            var cx = (parseFloat(h.style.left) / window.innerWidth).toFixed(3);
+            var cy = (parseFloat(h.style.top) / window.innerHeight).toFixed(3);
+            lines.push("        { name: '" + h.dataset.mname + "', cx: " + cx + ", cy: " + cy + " },");
+          });
+          var text = lines.join('\n');
+          navigator.clipboard.writeText(text).then(function() {
+            copyBtn.textContent = 'Copied!';
+            copyBtn.style.background = '#4a4';
+            setTimeout(function() { copyBtn.textContent = 'Copy Coords'; copyBtn.style.background = '#d4a843'; }, 1500);
+          });
+          console.log('Medallion positions:\n' + text);
+        };
+        toolbar.appendChild(copyBtn);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕ Close';
+        closeBtn.style.cssText = 'background:#633;color:#fff;border:none;padding:4px 12px;border-radius:4px;' +
+          'cursor:pointer;font-family:monospace;font-size:12px;';
+        closeBtn.onclick = function() { toggleEditor(); };
+        toolbar.appendChild(closeBtn);
+
+        editorContainer.appendChild(toolbar);
+
+        // Create a handle for each medallion
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var colors = ['#ff4444','#ff8844','#ffcc44','#44ff44','#44ffcc','#44ccff',
+                      '#4488ff','#8844ff','#cc44ff','#ff44cc','#ff4488','#ff8866'];
+
+        defs.forEach(function(m, i) {
+          var handle = document.createElement('div');
+          handle.dataset.mname = m.name;
+          var px = m.cx * vw;
+          var py = m.cy * vh;
+          handle.style.cssText = 'position:fixed;width:80px;height:80px;border-radius:50%;' +
+            'background:' + colors[i % colors.length] + '33;' +
+            'border:3px solid ' + colors[i % colors.length] + ';' +
+            'cursor:grab;pointer-events:auto;display:flex;align-items:center;justify-content:center;' +
+            'left:' + px + 'px;top:' + py + 'px;transform:translate(-50%,-50%);' +
+            'box-shadow:0 0 15px ' + colors[i % colors.length] + '88;';
+
+          var label = document.createElement('div');
+          label.style.cssText = 'position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);' +
+            'background:rgba(0,0,0,0.95);color:' + colors[i % colors.length] + ';font-size:11px;' +
+            'padding:2px 6px;border-radius:3px;white-space:nowrap;font-family:monospace;' +
+            'border:1px solid ' + colors[i % colors.length] + ';pointer-events:none;';
+          label.textContent = m.name;
+          handle.appendChild(label);
+
+          // Coordinate display
+          var coordLabel = document.createElement('div');
+          coordLabel.style.cssText = 'position:absolute;top:-20px;left:50%;transform:translateX(-50%);' +
+            'background:rgba(0,0,0,0.9);color:#fff;font-size:10px;padding:1px 4px;border-radius:2px;' +
+            'white-space:nowrap;font-family:monospace;pointer-events:none;';
+          coordLabel.textContent = m.cx.toFixed(3) + ', ' + m.cy.toFixed(3);
+          handle.appendChild(coordLabel);
+
+          // Drag logic
+          var dragging = false, offX = 0, offY = 0;
+          handle.addEventListener('mousedown', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            dragging = true;
+            offX = 0; offY = 0;
+            handle.style.cursor = 'grabbing';
+            handle.style.zIndex = '10001';
+          });
+          document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            handle.style.left = e.clientX + 'px';
+            handle.style.top = e.clientY + 'px';
+            var cx = (e.clientX / window.innerWidth).toFixed(3);
+            var cy = (e.clientY / window.innerHeight).toFixed(3);
+            coordLabel.textContent = cx + ', ' + cy;
+          });
+          document.addEventListener('mouseup', function() {
+            if (!dragging) return;
+            dragging = false;
+            handle.style.cursor = 'grab';
+            handle.style.zIndex = '';
+          });
+
+          editorContainer.appendChild(handle);
+          handles.push(handle);
+        });
+
+        document.body.appendChild(editorContainer);
+      }
+
+      function destroyEditor() {
+        if (editorContainer) {
+          editorContainer.remove();
+          editorContainer = null;
+          handles = [];
+        }
+      }
+
+      function toggleEditor() {
+        editorActive = !editorActive;
+        if (editorActive) {
+          createEditor();
+        } else {
+          destroyEditor();
+        }
+      }
+
+      document.addEventListener('keydown', function(e) {
+        if (e.shiftKey && e.key === 'M') {
+          e.preventDefault();
+          toggleEditor();
+        }
+      });
     })();
 
     // Reveal Tetrad guardian circles on load (they're always accessible)
