@@ -373,6 +373,21 @@ input { font-family: inherit; }
   background: linear-gradient(to left, rgba(6,5,11,0.65), transparent);
 }
 
+/* Frame image overlay — default state */
+#frame-img {
+  position: fixed; inset: 0; z-index: 510; pointer-events: none;
+  background: url('frame.png?v=4') center/cover no-repeat;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+#frame-img.loaded { opacity: 1; }
+
+/* Frame selected-state SVG overlay */
+#frame-selected-overlay {
+  position: fixed; inset: 0; z-index: 511; pointer-events: none;
+  opacity: 0; transition: opacity 0.5s ease;
+}
+#frame-selected-overlay.loaded { opacity: 1; }
+
 /* Corner medallions */
 .frame-corner {
   position: absolute; width: 110px; height: 110px; z-index: 502;
@@ -1703,7 +1718,33 @@ input { font-family: inherit; }
   <div id="frame-img"></div>
 
   <!-- Medallion Hotspots (positioned over frame.png medallions) -->
-    <div id="medallion-hotspots">
+    <!-- SVG overlay: frame_selected.png clipped to only show unlocked medallion circles -->
+  <svg id="frame-selected-overlay" xmlns="http://www.w3.org/2000/svg"
+       viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <clipPath id="medallion-reveal-clip" clipPathUnits="objectBoundingBox">
+        <!-- Tetrad (always revealed, r starts at 0.06) -->
+        <circle id="mclip-bull"        cx="0.500" cy="0.030" r="0"/>
+        <circle id="mclip-lion"        cx="0.940" cy="0.500" r="0"/>
+        <circle id="mclip-defender"    cx="0.500" cy="0.960" r="0"/>
+        <circle id="mclip-water"       cx="0.060" cy="0.500" r="0"/>
+        <!-- The Nine (start r=0, unlock on discovery threshold) -->
+        <circle id="mclip-fire-satyr"  cx="0.780" cy="0.140" r="0"/>
+        <circle id="mclip-fish"        cx="0.900" cy="0.300" r="0"/>
+        <circle id="mclip-crab"        cx="0.900" cy="0.700" r="0"/>
+        <circle id="mclip-furrow"      cx="0.780" cy="0.860" r="0"/>
+        <circle id="mclip-fate"        cx="0.220" cy="0.860" r="0"/>
+        <circle id="mclip-scorpion"    cx="0.100" cy="0.700" r="0"/>
+        <circle id="mclip-goat-fish"   cx="0.100" cy="0.300" r="0"/>
+        <circle id="mclip-twins"       cx="0.220" cy="0.140" r="0"/>
+      </clipPath>
+    </defs>
+    <image href="frame_selected.png" width="100%" height="100%"
+           clip-path="url(#medallion-reveal-clip)"
+           preserveAspectRatio="xMidYMid slice"/>
+  </svg>
+
+  <div id="medallion-hotspots">
     <!-- Tetrad (4 cardinal guardians): Bull=TOP, Lion=RIGHT, Scorpion Man=BOTTOM, Water=LEFT -->
     <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
          data-name="Bull of Heaven" data-role="Tetrad &middot; North &middot; UTU"
@@ -2055,6 +2096,13 @@ input { font-family: inherit; }
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
     initMedallionTooltips();
+    // Reveal Tetrad guardian circles on load (they're always accessible)
+    setTimeout(function() {
+      if (window.FogSystem && window.FogSystem.initTetradCircles) {
+        window.FogSystem.initTetradCircles();
+      }
+    }, 800);
+
 
     // Wire Get Volume 1 button
     var v1Btn = document.getElementById('hdr-v1-btn');

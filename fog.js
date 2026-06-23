@@ -1823,11 +1823,58 @@
     // Show toast
     showGodRevealToast(name);
 
+    // Animate the SVG clip circle open for this medallion
+    animateMedallionClip(name, 0, 0.075, 900);
+
     // After animation, mark as unlocked
     setTimeout(function() {
       el.classList.remove('god-revealing');
       el.classList.add('god-unlocked');
     }, 1500);
+  }
+
+  // Map data-name → SVG clip circle ID
+  var MEDALLION_CLIP_IDS = {
+    'Bull of Heaven':  'mclip-bull',
+    'Lion of Justice': 'mclip-lion',
+    'Defender':        'mclip-defender',
+    'Water':           'mclip-water',
+    'Fire Satyr':      'mclip-fire-satyr',
+    'Fish':            'mclip-fish',
+    'Crab':            'mclip-crab',
+    'Furrow':          'mclip-furrow',
+    'Fate':            'mclip-fate',
+    'Scorpion Man':    'mclip-scorpion',
+    'Goat Fish':       'mclip-goat-fish',
+    'The Twins':       'mclip-twins'
+  };
+
+  function animateMedallionClip(name, fromR, toR, durationMs) {
+    var id = MEDALLION_CLIP_IDS[name];
+    if (!id) return;
+    var circle = document.getElementById(id);
+    if (!circle) return;
+    var start = null;
+    function step(ts) {
+      if (!start) start = ts;
+      var progress = Math.min((ts - start) / durationMs, 1);
+      // ease-out cubic
+      var ease = 1 - Math.pow(1 - progress, 3);
+      circle.setAttribute('r', (fromR + (toR - fromR) * ease).toFixed(4));
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+    // Also show the overlay if hidden
+    var overlay = document.getElementById('frame-selected-overlay');
+    if (overlay) overlay.classList.add('loaded');
+  }
+
+  function initTetradCircles() {
+    // Tetrad guardians are always revealed — open their circles immediately on load
+    var tetradNames = ['Bull of Heaven', 'Lion of Justice', 'Defender', 'Water'];
+    tetradNames.forEach(function(name) {
+      animateMedallionClip(name, 0, 0.075, 1200);
+    });
   }
 
   function showGodRevealToast(name) {
@@ -1901,6 +1948,8 @@
     toggleAmbient: toggleAmbient,
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
+    initTetradCircles: initTetradCircles,
+    animateMedallionClip: animateMedallionClip,
     reset: function() { localStorage.removeItem(LS_KEY); location.reload(); }
   };
 })();
