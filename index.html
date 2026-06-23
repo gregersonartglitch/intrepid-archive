@@ -2063,41 +2063,41 @@ body.debug-hotspots .medallion-hot::after {
       // cx/cy = fraction of viewport width/height
       var MEDALLIONS = [
         // ── Cardinals ────────────────────────────────────────────────────
-        { name: 'Bull of Heaven',  cx: 0.490, cy: 0.133, guardian: true,
+        { name: 'Bull of Heaven',  cx: 0.491, cy: 0.131, r: 152, guardian: true,
           role: 'Tetrad · North · UTU',
           lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, guardian: true,
+        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, r: 184, guardian: true,
           role: 'Tetrad · East · RAPHA',
           lore: 'He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Defender',        cx: 0.482, cy: 0.783, guardian: true,
+        { name: 'Defender',        cx: 0.483, cy: 0.782, r: 216, guardian: true,
           role: 'Tetrad · South · MISH',
           lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Water',           cx: 0.248, cy: 0.437, guardian: true,
+        { name: 'Water',           cx: 0.244, cy: 0.437, r: 184, guardian: true,
           role: 'Tetrad · West · GU',
           lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
         // ── The Nine (clockwise from upper-right) ────────────────────────
-        { name: 'The Twins',    cx: 0.725, cy: 0.138, unlock: 3,
+        { name: 'The Twins',    cx: 0.725, cy: 0.132, r: 120, unlock: 3,
           role: 'SHAM & MASH · The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Crab',         cx: 0.799, cy: 0.313, unlock: 5,
+        { name: 'Crab',         cx: 0.799, cy: 0.311, r: 128, unlock: 5,
           role: 'ELIL · The Deceptive Digger',
           lore: 'God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there — he simply removes what was hiding it.' },
-        { name: 'Furrow',       cx: 0.806, cy: 0.594, unlock: 7,
+        { name: 'Furrow',       cx: 0.807, cy: 0.597, r: 120, unlock: 7,
           role: 'SINN · Daughter of the Moon',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'Fate',         cx: 0.717, cy: 0.841, unlock: 10,
+        { name: 'Fate',         cx: 0.716, cy: 0.838, r: 128, unlock: 10,
           role: 'AN · Scales of Destiny',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Goat Fish',    cx: 0.260, cy: 0.835, unlock: 14,
+        { name: 'Goat Fish',    cx: 0.262, cy: 0.835, r: 128, unlock: 14,
           role: 'BELU · of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, unlock: 18,
+        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, r: 128, unlock: 18,
           role: 'NIN · Of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Fish',         cx: 0.178, cy: 0.319, unlock: 22,
+        { name: 'Fish',         cx: 0.179, cy: 0.317, r: 128, unlock: 22,
           role: 'Water Demon · AE',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Fire Satyr',   cx: 0.249, cy: 0.138, unlock: 27,
+        { name: 'Fire Satyr',   cx: 0.250, cy: 0.142, r: 120, unlock: 27,
           role: 'God of War · ERRA',
           lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
@@ -2118,7 +2118,8 @@ body.debug-hotspots .medallion-hot::after {
         Object.keys(window._permanentGlows).forEach(function(name) {
           var m = GLOW_POS[name];
           if (!m) return;
-          parts.push('radial-gradient(circle at ' + (m.cx*100)+'% ' + (m.cy*100)+'%, ' +
+          var glowR = (m.r || 80) / 2;
+          parts.push('radial-gradient(circle ' + glowR + 'px at ' + (m.cx*100)+'% ' + (m.cy*100)+'%, ' +
             'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)');
         });
         return parts.join(', ');
@@ -2149,7 +2150,6 @@ body.debug-hotspots .medallion-hot::after {
       }
 
       var lastMx = '-500px', lastMy = '-500px';
-      var PROXIMITY_PX = 90; // pixels from medallion center to trigger card
 
       document.addEventListener('mousemove', function(e) {
         lastMx = e.clientX + 'px';
@@ -2158,16 +2158,17 @@ body.debug-hotspots .medallion-hot::after {
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
 
-        // Proximity check — find nearest medallion
+        // Proximity check — find nearest medallion within its radius
         var vw = window.innerWidth, vh = window.innerHeight;
         var nearest = null, nearestDist = Infinity;
         MEDALLIONS.forEach(function(m) {
           var dx = e.clientX - m.cx * vw;
           var dy = e.clientY - m.cy * vh;
           var dist = Math.sqrt(dx*dx + dy*dy);
-          if (dist < nearestDist) { nearestDist = dist; nearest = m; }
+          var threshold = (m.r || 80) / 2;
+          if (dist < threshold && dist < nearestDist) { nearestDist = dist; nearest = m; }
         });
-        if (nearest && nearestDist < PROXIMITY_PX) {
+        if (nearest) {
           showProximityCard(nearest);
         } else {
           hideProximityCard();
