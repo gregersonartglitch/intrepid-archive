@@ -1775,51 +1775,7 @@ body.debug-hotspots .medallion-hot::after {
   </svg>
   <!-- Torch overlay: on_state image revealed by CSS mask following mouse -->
   <div id="frame-selected-overlay"></div>
-
-  <div id="medallion-hotspots">
-    <!-- Tetrad (4 cardinal guardians): Bull=TOP, Lion=RIGHT, Scorpion Man=BOTTOM, Water=LEFT -->
-    <div class="medallion-hot" style="top:3%;left:50%;transform:translateX(-50%)"
-         data-name="Bull of Heaven" data-role="Tetrad &middot; North &middot; UTU"
-         data-lore="UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North &mdash; he IS the axis on which all seasons turn."></div>
-
-    <div class="medallion-hot" style="top:50%;right:6%;transform:translateY(-50%)"
-         data-name="Lion of Justice" data-role="Tetrad &middot; East &middot; RAPHA"
-         data-lore="He weighs what enters and what leaves. The Lion does not roar &mdash; he watches, and his watching is the judgment. Associated with East and Dawn."></div>
-
-    <div class="medallion-hot" style="bottom:5%;left:50%;transform:translateX(-50%)"
-         data-name="Defender" data-role="Tetrad · South · MISH"
-         data-lore="The winged archer of the southern reach. MISH is associated with South and also Fire. He does not aim at enemies — he aims at the horizon, and the horizon moves."></div>
-
-    <div class="medallion-hot" style="top:50%;left:6%;transform:translateY(-50%)"
-         data-name="Water" data-role="Tetrad &middot; West &middot; GU"
-         data-lore="The primordial current. Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk &mdash; Over all the Powers."></div>
-
-    <!-- The Nine (clockwise from top) -->
-    <div class="medallion-hot god-locked" style="top:14%;right:22%" data-god="nine" data-unlock="3"
-         data-name="The Twins" data-role="SHAM &amp; MASH &middot; The Great Twins" data-lore="Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed."></div>
-
-    <div class="medallion-hot god-locked" style="top:30%;right:10%" data-god="nine" data-unlock="5"
-         data-name="Crab" data-role="ELIL &middot; The Deceptive Digger" data-lore="God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there &mdash; he simply removes what was hiding it."></div>
-
-    <div class="medallion-hot god-locked" style="bottom:30%;right:10%" data-god="nine" data-unlock="7"
-         data-name="Furrow" data-role="SINN &middot; Daughter of the Moon" data-lore="Ereshkigal&apos;s child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to."></div>
-
-    <div class="medallion-hot god-locked" style="bottom:14%;right:22%" data-god="nine" data-unlock="10"
-         data-name="Fate" data-role="AN &middot; Scales of Destiny" data-lore="AN holds the balance that cannot be appealed. The scales do not measure weight &mdash; they measure what is owed."></div>
-
-    <div class="medallion-hot god-locked" style="bottom:14%;left:22%" data-god="nine" data-unlock="14"
-         data-name="Goat Fish" data-role="BELU &middot; of Storm" data-lore="Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either."></div>
-
-    <div class="medallion-hot god-locked" style="bottom:30%;left:10%" data-god="nine" data-unlock="18"
-         data-name="Scorpion Man" data-role="NIN &middot; Of Earth"
-         data-lore="That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing."></div>
-
-    <div class="medallion-hot god-locked" style="top:30%;left:10%" data-god="nine" data-unlock="22"
-         data-name="Fish" data-role="Water Demon &middot; AE" data-lore="The first thing that moved in the deep. AE&apos;s servant, older than worship. It swims between worlds without crossing &mdash; it was never on one side."></div>
-
-    <div class="medallion-hot god-locked" style="top:14%;left:22%" data-god="nine" data-unlock="27"
-         data-name="Fire Satyr" data-role="God of War &middot; ERRA" data-lore="War is not his purpose &mdash; it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it."></div>
-  </div>
+  <!-- Medallion interactions handled via JS proximity detection (no hotspot divs needed) -->
 
   <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
   <div id="azu-medallion"
@@ -2118,65 +2074,136 @@ body.debug-hotspots .medallion-hot::after {
     tryLoadFrameImage();
     initMedallionTooltips();
 
-    // ── Torch effect: soft spotlight follows mouse over frame overlay ──
+    // ── Torch effect + proximity card detection ──────────────────────────
     (function() {
       var overlay = document.getElementById('frame-selected-overlay');
       if (!overlay) return;
 
-      // Positions of each medallion as % of viewport (for permanent reveals)
-      var GLOW_POS = {
-        'Bull of Heaven':  { x: '50%',    y: '15.6%' },
-        'Lion of Justice': { x: '83.8%',  y: '43.5%' },
-        'Defender':        { x: '50%',    y: '77%'   },
-        'Water':           { x: '17.9%',  y: '43.5%' },
-        'Fire Satyr':      { x: '73%',    y: '17%'   },
-        'Twins':           { x: '27%',    y: '17%'   },
-        'Fish':            { x: '85.4%',  y: '29%'   },
-        'Crab':            { x: '85.4%',  y: '58%'   },
-        'Furrow':          { x: '73%',    y: '72%'   },
-        'Fate':            { x: '27%',    y: '85%'   },
-        'Scorpion':        { x: '27%',    y: '72%'   },
-        'Goat Fish':       { x: '14.6%',  y: '58%'   }
-      };
+      // All 12 medallions: position as fraction of viewport, name, role, lore, unlock threshold
+      // Positions calibrated to actual frame_original_02.png art (center/cover rendered)
+      // cx/cy = fraction of viewport width/height
+      var MEDALLIONS = [
+        // ── Cardinals ────────────────────────────────────────────────────
+        { name: 'Bull of Heaven',  cx: 0.500, cy: 0.085, guardian: true,
+          role: 'Tetrad · North · UTU',
+          lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
+        { name: 'Lion of Justice', cx: 0.870, cy: 0.430, guardian: true,
+          role: 'Tetrad · East · RAPHA',
+          lore: 'He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
+        { name: 'Defender',        cx: 0.500, cy: 0.820, guardian: true,
+          role: 'Tetrad · South · MISH',
+          lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
+        { name: 'Water',           cx: 0.130, cy: 0.430, guardian: true,
+          role: 'Tetrad · West · GU',
+          lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
+        // ── The Nine (clockwise from upper-right) ────────────────────────
+        { name: 'The Twins',    cx: 0.720, cy: 0.115, unlock: 3,
+          role: 'SHAM & MASH · The Great Twins',
+          lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
+        { name: 'Crab',         cx: 0.870, cy: 0.270, unlock: 5,
+          role: 'ELIL · The Deceptive Digger',
+          lore: 'God of Air who burrows into earth. ELIL moves sideways through truth. What he uncovers was always there — he simply removes what was hiding it.' },
+        { name: 'Furrow',       cx: 0.870, cy: 0.590, unlock: 7,
+          role: 'SINN · Daughter of the Moon',
+          lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
+        { name: 'Fate',         cx: 0.720, cy: 0.760, unlock: 10,
+          role: 'AN · Scales of Destiny',
+          lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
+        { name: 'Goat Fish',    cx: 0.280, cy: 0.760, unlock: 14,
+          role: 'BELU · of Storm',
+          lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
+        { name: 'Scorpion Man', cx: 0.130, cy: 0.590, unlock: 18,
+          role: 'NIN · Of Earth',
+          lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
+        { name: 'Fish',         cx: 0.130, cy: 0.270, unlock: 22,
+          role: 'Water Demon · AE',
+          lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
+        { name: 'Fire Satyr',   cx: 0.280, cy: 0.115, unlock: 27,
+          role: 'God of War · ERRA',
+          lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
+      ];
 
       window._permanentGlows = window._permanentGlows || {};
 
+      // Build GLOW_POS lookup for permanent reveals
+      var GLOW_POS = {};
+      MEDALLIONS.forEach(function(m) { GLOW_POS[m.name] = m; });
+
       function buildMask(mxVal, myVal) {
-        // Soft torch spotlight
         var parts = [
           'radial-gradient(circle at ' + mxVal + ' ' + myVal + ', ' +
           'rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px, ' +
           'rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px, ' +
           'rgba(0,0,0,0.04) 240px, transparent 300px)'
         ];
-        // Permanent reveals (soft, slightly smaller)
         Object.keys(window._permanentGlows).forEach(function(name) {
-          var p = GLOW_POS[name];
-          if (!p) return;
-          parts.push(
-            'radial-gradient(circle 100px at ' + p.x + ' ' + p.y + ', ' +
-            'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)'
-          );
+          var m = GLOW_POS[name];
+          if (!m) return;
+          parts.push('radial-gradient(circle at ' + (m.cx*100)+'% ' + (m.cy*100)+'%, ' +
+            'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)');
         });
         return parts.join(', ');
       }
 
+      // Card show/hide helpers
+      var card = document.getElementById('discovery-card');
+      var activeCard = null;
+      function showProximityCard(m) {
+        if (!card || activeCard === m.name) return;
+        activeCard = m.name;
+        var type = m.guardian ? 'Tetrad · Guardian' : 'The Nine · Revealed';
+        var typeEl = card.querySelector('.dc-type');
+        var nameEl = card.querySelector('.dc-name');
+        var subEl  = card.querySelector('.dc-sub');
+        var descEl = card.querySelector('.dc-desc');
+        if (typeEl) typeEl.textContent = type;
+        if (nameEl) nameEl.textContent = m.name;
+        if (subEl)  subEl.textContent  = m.role;
+        if (descEl) descEl.textContent = m.lore;
+        var loreEl = card.querySelector('.dc-lore'); if (loreEl) loreEl.style.display = 'none';
+        card.classList.add('active');
+      }
+      function hideProximityCard() {
+        if (!card || !activeCard) return;
+        activeCard = null;
+        card.classList.remove('active');
+      }
+
       var lastMx = '-500px', lastMy = '-500px';
+      var PROXIMITY_PX = 90; // pixels from medallion center to trigger card
+
       document.addEventListener('mousemove', function(e) {
         lastMx = e.clientX + 'px';
         lastMy = e.clientY + 'px';
         var mask = buildMask(lastMx, lastMy);
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
+
+        // Proximity check — find nearest medallion
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var nearest = null, nearestDist = Infinity;
+        MEDALLIONS.forEach(function(m) {
+          var dx = e.clientX - m.cx * vw;
+          var dy = e.clientY - m.cy * vh;
+          var dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < nearestDist) { nearestDist = dist; nearest = m; }
+        });
+        if (nearest && nearestDist < PROXIMITY_PX) {
+          showProximityCard(nearest);
+        } else {
+          hideProximityCard();
+        }
       });
 
-      // Expose so fog.js can add permanent glows on god unlock
+      // Expose for fog.js permanent unlocks
       window.addPermanentMedallionGlow = function(name) {
         window._permanentGlows[name] = true;
         var mask = buildMask(lastMx, lastMy);
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
       };
+      // Expose MEDALLIONS so fog.js can look up unlock thresholds
+      window.MEDALLION_DEFS = MEDALLIONS;
     })();
 
     // Reveal Tetrad guardian circles on load (they're always accessible)
