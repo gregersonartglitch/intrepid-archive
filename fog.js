@@ -1824,7 +1824,7 @@
     showGodRevealToast(name);
 
     // Animate the SVG clip circle open for this medallion
-    animateMedallionClip(name, 0, 0.075, 900);
+    animateMedallionClip(name, 0, 0.055, 900);
 
     // After animation, mark as unlocked
     setTimeout(function() {
@@ -1873,7 +1873,7 @@
     // Tetrad guardians are always revealed — open their circles immediately on load
     var tetradNames = ['Bull of Heaven', 'Lion of Justice', 'Defender', 'Water'];
     tetradNames.forEach(function(name) {
-      animateMedallionClip(name, 0, 0.075, 1200);
+      animateMedallionClip(name, 0, 0.065, 1200);
     });
   }
 
