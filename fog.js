@@ -1788,25 +1788,27 @@
   window._fogWaveClearProgress = function() { return fogWaveClearProgress; };
 
   /* ════════════════════════════════════════════════
-     GOD REVEALS
+     GOD REVEALS — driven by MEDALLION_DEFS array
      ════════════════════════════════════════════════ */
 
+  var revealedGods = {}; // track which gods have been revealed
+
   function checkGodReveals(count) {
-    var gods = document.querySelectorAll('.medallion-hot.god-locked');
-    gods.forEach(function(god) {
-      var threshold = parseInt(god.getAttribute('data-unlock') || '999');
-      if (count >= threshold) {
-        revealGod(god);
+    var defs = window.MEDALLION_DEFS;
+    if (!defs) return;
+    defs.forEach(function(m) {
+      if (m.guardian) return; // tetrad are always revealed
+      if (revealedGods[m.name]) return; // already revealed
+      if (m.unlock && count >= m.unlock) {
+        revealGod(m);
       }
     });
   }
 
-  function revealGod(el) {
-    el.classList.remove('god-locked');
-    el.classList.add('god-revealing');
-    var name = el.getAttribute('data-name') || 'Unknown';
+  function revealGod(m) {
+    revealedGods[m.name] = true;
 
-    // Play a deep chime for god reveal
+    // Play a deep chime
     if (audioCtx) {
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
@@ -1821,64 +1823,36 @@
     }
 
     // Show toast
-    showGodRevealToast(name);
+    showGodRevealToast(m.name);
 
-    // Animate the SVG clip circle open for this medallion
-    animateMedallionClip(name, 0, 0.07, 900);
-    // Also permanently reveal via torch overlay
-    if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+    // Permanently reveal via torch overlay
+    if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
 
-    // After animation, mark as unlocked
-    setTimeout(function() {
-      el.classList.remove('god-revealing');
-      el.classList.add('god-unlocked');
-    }, 1500);
-  }
-
-  // Map data-name → SVG clip circle ID
-  var MEDALLION_CLIP_IDS = {
-    'Bull of Heaven':  'mclip-bull',
-    'Lion of Justice': 'mclip-lion',
-    'Defender':        'mclip-defender',
-    'Water':           'mclip-water',
-    'Fire Satyr':      'mclip-fire-satyr',
-    'Fish':            'mclip-fish',
-    'Crab':            'mclip-crab',
-    'Furrow':          'mclip-furrow',
-    'Fate':            'mclip-fate',
-    'Scorpion Man':    'mclip-scorpion',
-    'Goat Fish':       'mclip-goat-fish',
-    'The Twins':       'mclip-twins'
-  };
-
-  function animateMedallionClip(name, fromR, toR, durationMs) {
-    var id = MEDALLION_CLIP_IDS[name];
-    if (!id) return;
-    var circle = document.getElementById(id);
-    if (!circle) return;
-    // toR is a fraction of viewport width — convert to actual pixels
-    var targetPx = toR * window.innerWidth;
-    var fromPx = fromR * window.innerWidth;
-    var start = null;
-    function step(ts) {
-      if (!start) start = ts;
-      var progress = Math.min((ts - start) / durationMs, 1);
-      var ease = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-      circle.setAttribute('r', (fromPx + (targetPx - fromPx) * ease).toFixed(1));
-      if (progress < 1) requestAnimationFrame(step);
-    }
-    requestAnimationFrame(step);
-    // Make overlay visible via SVG opacity attribute (classList doesn't work on SVG elements)
-    var overlay = document.getElementById('frame-selected-overlay');
-    if (overlay) overlay.setAttribute('opacity', '1');
+    // Save to localStorage
+    try {
+      var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+      saved[m.name] = true;
+      localStorage.setItem('revealedGods', JSON.stringify(saved));
+    } catch(e) {}
   }
 
   function initTetradCircles() {
-    // Tetrad guardians are always revealed — open their circles immediately on load
+    // Tetrad guardians are always revealed — add permanent glows on load
     var tetradNames = ['Bull of Heaven', 'Lion of Justice', 'Defender', 'Water'];
     tetradNames.forEach(function(name) {
-      animateMedallionClip(name, 0, 0.07, 1200);
+      revealedGods[name] = true;
+      if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
     });
+    // Also restore any previously revealed gods from localStorage
+    try {
+      var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+      Object.keys(saved).forEach(function(name) {
+        if (!revealedGods[name]) {
+          revealedGods[name] = true;
+          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+        }
+      });
+    } catch(e) {}
   }
 
   function showGodRevealToast(name) {
@@ -1953,7 +1927,7 @@
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
     initTetradCircles: initTetradCircles,
-    animateMedallionClip: animateMedallionClip,
-    reset: function() { localStorage.removeItem(LS_KEY); location.reload(); }
+    _revealedGods: revealedGods,
+    reset: function() { localStorage.removeItem(LS_KEY); localStorage.removeItem('revealedGods'); location.reload(); }
   };
 })();

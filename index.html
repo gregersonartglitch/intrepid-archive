@@ -2131,16 +2131,33 @@ body.debug-hotspots .medallion-hot::after {
       function showProximityCard(m) {
         if (!card || activeCard === m.name) return;
         activeCard = m.name;
-        var type = m.guardian ? 'Tetrad · Guardian' : 'The Nine · Revealed';
+
+        // Check if this god is revealed
+        var isRevealed = m.guardian || (window.FogSystem && window.FogSystem._revealedGods && window.FogSystem._revealedGods[m.name]);
+        // Fallback: check localStorage
+        if (!isRevealed) {
+          try { var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}'); isRevealed = !!saved[m.name]; } catch(e) {}
+        }
+
         var typeEl = card.querySelector('.dc-type');
         var nameEl = card.querySelector('.dc-name');
         var subEl  = card.querySelector('.dc-sub');
         var descEl = card.querySelector('.dc-desc');
-        if (typeEl) typeEl.textContent = type;
-        if (nameEl) nameEl.textContent = m.name;
-        if (subEl)  subEl.textContent  = m.role;
-        if (descEl) descEl.textContent = m.lore;
-        var loreEl = card.querySelector('.dc-lore'); if (loreEl) loreEl.style.display = 'none';
+        var loreEl = card.querySelector('.dc-lore');
+
+        if (isRevealed) {
+          var type = m.guardian ? 'Tetrad · Guardian' : 'The Nine · Awakened';
+          if (typeEl) typeEl.textContent = type;
+          if (nameEl) nameEl.textContent = m.name;
+          if (subEl)  subEl.textContent  = m.role;
+          if (descEl) descEl.textContent = m.lore;
+        } else {
+          if (typeEl) typeEl.textContent = 'The Nine · Sealed';
+          if (nameEl) nameEl.textContent = '???';
+          if (subEl)  subEl.textContent  = '';
+          if (descEl) descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this guardian.';
+        }
+        if (loreEl) loreEl.style.display = 'none';
         card.classList.add('active');
       }
       function hideProximityCard() {
