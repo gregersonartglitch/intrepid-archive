@@ -276,12 +276,12 @@ window.LOCATIONS = [
   {
     id: 'mish',
     name: 'Mish',
-    sub: 'Western Trade Junction',
+    sub: 'Seat of the Last Human Kings',
     type: 'city',
     lat: 3136,
     lng: 2504,
-    desc: 'A crossroads city where every road in the western Hollowlands converges in a tangle of market stalls, caravanserais, and competing rumors. Mish is loud, fragrant, and dangerous in the way that only a city with no single authority can be. Elena\'s passage through Mish marked the first time the Hollowlands showed her something other than hostility — it showed her commerce, which in this world is merely hostility wearing perfume.',
-    lore: '"In Mish, everything is for sale. The things not visibly for sale are merely more expensive."',
+    desc: 'Before the Titan wars reshaped everything, Mish was the seat of the human kings — the only sovereignty in the Hollowlands that answered to neither the Titan courts nor the old gods. For generations the Mish kings held the line, refusing to kneel while other kingdoms fell or were absorbed. They stood as a bulwark not through superior force but through will and the stubborn insistence that human law had a right to exist in a world being carved up by divine politics. But the warring Titans were patient. What could not be conquered was corrupted. The Mish kings began making compromises — small ones at first, then larger. Evil worked its way into the kingship the way water works into stone. By the time the last king\'s hands were fully dirty, there was nothing left worth defending. Atrus Nul moved on Mish without a formal declaration. The king and his sons were hunted down and made a public example of. The city survived. The dynasty did not. What you walk through now is a crossroads of market stalls and caravansary commerce — a city that has learned to ask no one about the empty thrones.',
+    lore: '"Mish remembers its kings the way a scar remembers the wound — not with grief, but with the shape of it."',
     journeyStep: 5,
     volume1: true
   },
