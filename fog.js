@@ -1922,8 +1922,9 @@
       'letter-spacing:1px;text-transform:uppercase;font-family:inherit;';
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (confirm('Reset all discoveries and start over?')) {
+      if (confirm('Reset all discoveries and start over? This clears your entire journey.')) {
         localStorage.removeItem(LS_KEY);
+        localStorage.removeItem('revealedGods');
         location.reload();
       }
     });
