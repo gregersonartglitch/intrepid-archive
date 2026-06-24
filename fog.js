@@ -1981,8 +1981,17 @@
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (confirm('Reset all discoveries and start over? This clears your entire journey.')) {
-        localStorage.removeItem(LS_KEY);
-        localStorage.removeItem('revealedGods');
+        // Clear all intrepid-related state for a true fresh start
+        var keysToRemove = [
+          LS_KEY,                        // discovered locations
+          LS_KEY + '_v',                 // version tracker
+          'revealedGods',                // medallion reveals
+          'intrepid_atlas_welcomed',     // welcome screen shown
+          'intrepid_atlas_hinted',       // first-time hint
+          'intrepid_atlas_reveals',      // region reveal state
+          'intrepid_coord_unlocks'       // sigil coordinate unlocks
+        ];
+        keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
         location.reload();
       }
     });

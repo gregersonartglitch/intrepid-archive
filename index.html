@@ -1838,7 +1838,7 @@ body.debug-hotspots .medallion-hot::after {
 
   <!-- Journey Narration Toast -->
   <div id="journey-toast" class="journey-toast">
-    <div class="journey-toast-step"><span id="jt-step">1</span> of <span id="jt-total">11</span></div>
+    <div class="journey-toast-step"><span id="jt-step">1</span> of <span id="jt-total">8</span></div>
     <div class="journey-toast-name" id="jt-name"></div>
     <div class="journey-toast-desc" id="jt-desc"></div>
     <div class="journey-toast-nav">
@@ -2130,6 +2130,8 @@ body.debug-hotspots .medallion-hot::after {
       var activeCard = null;
       function showProximityCard(m) {
         if (!card || activeCard === m.name) return;
+        // Don't overwrite a fog system discovery card that's already open
+        if (card.classList.contains('visible') && !activeCard) return;
         activeCard = m.name;
 
         // Check if this god is revealed
@@ -2713,7 +2715,7 @@ body.debug-hotspots .medallion-hot::after {
      MARKERS — only rendered for visible (clear) locations
      ═══════════════════════════════════════════ */
   // ── Edit Mode ──
-  const EDIT_MODE = window.location.search.includes('edit');
+  const EDIT_MODE = (new URLSearchParams(window.location.search)).has('edit');
   const editedCoords = {}; // { locationId: { lat, lng } }
 
   if (EDIT_MODE) {
