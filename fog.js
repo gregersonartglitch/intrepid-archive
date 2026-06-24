@@ -1617,10 +1617,8 @@
     if (combined > 0.82) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
 
-    // Check god reveals — count ALL completed discoveries
-    var totalDiscovered = Object.keys(discovered).filter(function(id) {
-      return discovered[id].phase === 'complete';
-    }).length;
+    // Check god reveals — count ALL discoveries (any phase)
+    var totalDiscovered = Object.keys(discovered).length;
     checkGodReveals(totalDiscovered);
 
     // Milestone sparks at 5, 10, 15 (total combined discoveries)
