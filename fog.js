@@ -1851,11 +1851,15 @@
   }
 
   function initTetradCircles() {
-    // Restore previously revealed gods from localStorage (no auto-reveal)
+    // Restore previously revealed gods — but validate against current discovery count
+    var currentCount = Object.keys(discovered).length;
+    var defs = window.MEDALLION_DEFS || [];
     try {
       var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
       Object.keys(saved).forEach(function(name) {
-        if (!revealedGods[name]) {
+        // Find the medallion def to check threshold
+        var def = defs.find(function(m) { return m.name === name; });
+        if (def && def.unlock && currentCount >= def.unlock && !revealedGods[name]) {
           revealedGods[name] = true;
           if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
         }
