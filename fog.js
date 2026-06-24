@@ -1659,17 +1659,19 @@
     checkVol1Finale();
   }
 
-  // Track whether finales have already fired
-  var finaleState = {
-    journey: false,
-    vol1: false,
-    constellationLines: [] // [{x1,y1,x2,y2}, ...] persisted after draw
-  };
+  // Track whether finales have already fired (persisted to prevent replay)
+  var finaleState = (function() {
+    try {
+      var saved = JSON.parse(localStorage.getItem('intrepid_atlas_finales') || '{}');
+      return { journey: !!saved.journey, vol1: !!saved.vol1, constellationLines: saved.constellationLines || [] };
+    } catch(e) { return { journey: false, vol1: false, constellationLines: [] }; }
+  })();
 
   function checkJourneyFinale(found, total) {
     if (finaleState.journey) return;
     if (found < total || total === 0) return;
     finaleState.journey = true;
+    try { localStorage.setItem('intrepid_atlas_finales', JSON.stringify(finaleState)); } catch(e) {}
     // Build constellation line data
     buildConstellationLines();
     // Short pause then draw lines + show closing toast
@@ -1685,6 +1687,7 @@
     }).length;
     if (vol1Found < vol1Locs.length || vol1Locs.length === 0) return;
     finaleState.vol1 = true;
+    try { localStorage.setItem('intrepid_atlas_finales', JSON.stringify(finaleState)); } catch(e) {}
     setTimeout(triggerFogWaveClear, 2000);
     setTimeout(awakenAzu, 5500);
   }
@@ -1989,7 +1992,8 @@
           'intrepid_atlas_welcomed',     // welcome screen shown
           'intrepid_atlas_hinted',       // first-time hint
           'intrepid_atlas_reveals',      // region reveal state
-          'intrepid_coord_unlocks'       // sigil coordinate unlocks
+          'intrepid_coord_unlocks',      // sigil coordinate unlocks
+          'intrepid_atlas_finales'       // finale animation state
         ];
         keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
         location.reload();
