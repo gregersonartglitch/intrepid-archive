@@ -2389,10 +2389,21 @@ body.debug-hotspots .medallion-hot::after {
     })();
 
     // Reveal Tetrad guardian circles on load (they're always accessible)
-    setTimeout(function() {
-      if (window.FogSystem && window.FogSystem.initTetradCircles) {
-        window.FogSystem.initTetradCircles();
-  function applyReveal(regionId) {
+     setTimeout(function() {
+       if (window.FogSystem && window.FogSystem.initTetradCircles) {
+         window.FogSystem.initTetradCircles();
+       }
+     }, 800);
+
+     // Wire Get Volume 1 button
+     var v1Btn = document.getElementById('hdr-v1-btn');
+     if (v1Btn && window.MAP_CONFIG && window.MAP_CONFIG.ksLink) v1Btn.href = window.MAP_CONFIG.ksLink;
+   }
+
+   /* ═══════════════════════════════════════════
+      REVEAL LOGIC
+      ═══════════════════════════════════════════ */
+   function applyReveal(regionId) {
     if (!revealsData || !revealsData.regions[regionId]) return;
     const region = revealsData.regions[regionId];
     if (region.state === 'clear') return; // already revealed
