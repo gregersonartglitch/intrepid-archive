@@ -1193,7 +1193,8 @@
     }
 
     // ── 7. Proximity whispers — cartographer's unfinished notes at the fog edge ──
-    if (spotlightPos || !searchMode) {
+    // Suppress during tutorial so hint text doesn't compete
+    if ((spotlightPos || !searchMode) && tutorialStep >= TUTORIAL_STEPS) {
       var mousePos = spotlightPos;
       if (!mousePos && lastMousePos) mousePos = lastMousePos;
       if (mousePos) {
