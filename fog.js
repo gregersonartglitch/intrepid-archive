@@ -1277,8 +1277,9 @@
       return;
     }
 
-    // Regions get immediate complete discovery (they show in mist visually but count as found)
-    if (loc.type === 'region' || loc.type === 'water') {
+    // Most locations get mist (low fog) reveal. Only story locations get full clear.
+    var isStory = (loc.type === 'story');
+    if (!isStory) {
       discovered[loc.id] = { at: Date.now(), phase: 'mist' };
       localStorage.setItem(LS_KEY, JSON.stringify(discovered));
       revealMarker(loc.id);
@@ -1291,7 +1292,7 @@
       return;
     }
 
-    // Phase 1: pinhole + enter search mode
+    // Story locations: Phase 1 — pinhole + enter search mode
     discovered[loc.id] = { at: Date.now(), phase: 'searching' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
