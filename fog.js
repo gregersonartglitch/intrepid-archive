@@ -1835,12 +1835,63 @@
     // Permanently reveal via torch overlay
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
 
+    // Pulsing attention ring on the medallion icon
+    spawnMedallionPulse(m);
+
     // Save to localStorage
     try {
       var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
       saved[m.name] = true;
       localStorage.setItem('revealedGods', JSON.stringify(saved));
     } catch(e) {}
+  }
+
+  function spawnMedallionPulse(m) {
+    // Inject keyframes once
+    if (!document.getElementById('medallion-pulse-style')) {
+      var style = document.createElement('style');
+      style.id = 'medallion-pulse-style';
+      style.textContent =
+        '@keyframes medallion-pulse {' +
+        '  0%   { transform: translate(-50%,-50%) scale(0.6); opacity: 0; }' +
+        '  15%  { transform: translate(-50%,-50%) scale(1);   opacity: 0.9; }' +
+        '  50%  { transform: translate(-50%,-50%) scale(1.3); opacity: 0.5; }' +
+        '  85%  { transform: translate(-50%,-50%) scale(1);   opacity: 0.9; }' +
+        '  100% { transform: translate(-50%,-50%) scale(0.6); opacity: 0; }' +
+        '}' +
+        '@keyframes medallion-glow-fade {' +
+        '  0%   { opacity: 1; }' +
+        '  70%  { opacity: 1; }' +
+        '  100% { opacity: 0; }' +
+        '}';
+      document.head.appendChild(style);
+    }
+
+    var px = (m.cx * 100) + 'vw';
+    var py = (m.cy * 100) + 'vh';
+    var ringSize = (m.r || 80) + 'px';
+
+    // Outer pulse ring
+    var ring = document.createElement('div');
+    ring.style.cssText =
+      'position:fixed;left:' + px + ';top:' + py + ';z-index:940;pointer-events:none;' +
+      'width:' + ringSize + ';height:' + ringSize + ';' +
+      'border:2px solid rgba(212,168,67,0.7);border-radius:50%;' +
+      'box-shadow:0 0 30px rgba(212,168,67,0.4), inset 0 0 20px rgba(212,168,67,0.15);' +
+      'animation: medallion-pulse 2s ease-in-out 4, medallion-glow-fade 8s ease forwards;';
+    document.body.appendChild(ring);
+
+    // Inner soft glow
+    var glow = document.createElement('div');
+    glow.style.cssText =
+      'position:fixed;left:' + px + ';top:' + py + ';z-index:939;pointer-events:none;' +
+      'width:' + (parseInt(ringSize) * 1.5) + 'px;height:' + (parseInt(ringSize) * 1.5) + 'px;' +
+      'background:radial-gradient(circle, rgba(212,168,67,0.25) 0%, transparent 70%);' +
+      'border-radius:50%;transform:translate(-50%,-50%);' +
+      'animation: medallion-glow-fade 8s ease forwards;';
+    document.body.appendChild(glow);
+
+    setTimeout(function() { ring.remove(); glow.remove(); }, 8500);
   }
 
   function initTetradCircles() {
