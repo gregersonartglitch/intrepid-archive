@@ -1989,7 +1989,6 @@
           LS_KEY,                        // discovered locations
           LS_KEY + '_v',                 // version tracker
           'revealedGods',                // medallion reveals
-          'intrepid_atlas_welcomed',     // welcome screen shown
           'intrepid_atlas_hinted',       // first-time hint
           'intrepid_atlas_reveals',      // region reveal state
           'intrepid_coord_unlocks',      // sigil coordinate unlocks
