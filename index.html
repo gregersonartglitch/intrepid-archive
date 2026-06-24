@@ -2158,12 +2158,12 @@ body.debug-hotspots .medallion-hot::after {
           if (descEl) descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this guardian.';
         }
         if (loreEl) loreEl.style.display = 'none';
-        card.classList.add('active');
+        card.classList.add('visible');
       }
       function hideProximityCard() {
         if (!card || !activeCard) return;
         activeCard = null;
-        card.classList.remove('active');
+        card.classList.remove('visible');
       }
 
       var lastMx = '-500px', lastMy = '-500px';
