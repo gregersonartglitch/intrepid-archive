@@ -608,14 +608,7 @@
 
   function isClickable(locId) {
     if (discovered[locId]) return false;
-    // Regions are always clickable — they're geography
-    var locs = window.LOCATIONS || [];
-    var loc = locs.find(function(l) { return l.id === locId; });
-    if (loc && (loc.type === 'region' || loc.type === 'water')) return true;
-    // Story locations follow the journey path
-    var next = getNextPathLocation();
-    if (next) return locId === next;
-    return true; // path done, everything clickable
+    return true; // all undiscovered locations are clickable
   }
 
   /* ════════════════════════════════════════════════
