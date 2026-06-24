@@ -1798,7 +1798,6 @@
     var defs = window.MEDALLION_DEFS;
     if (!defs) return;
     defs.forEach(function(m) {
-      if (m.guardian) return; // tetrad are always revealed
       if (revealedGods[m.name]) return; // already revealed
       if (m.unlock && count >= m.unlock) {
         revealGod(m);
@@ -1809,22 +1808,36 @@
   function revealGod(m) {
     revealedGods[m.name] = true;
 
-    // Play a deep chime
+    // Play a deep chime — guardians get a higher, brighter tone
     if (audioCtx) {
+      var freq = m.guardian ? 220 : 130; // A3 for guardians, C2 for the Nine
       var osc = audioCtx.createOscillator();
       var gain = audioCtx.createGain();
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.type = 'sine';
-      osc.frequency.value = 130; // low C
-      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
       osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 2);
+      osc.stop(audioCtx.currentTime + 3);
+
+      // Add harmonic overtone for richer sound
+      var osc2 = audioCtx.createOscillator();
+      var gain2 = audioCtx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.type = 'sine';
+      osc2.frequency.value = freq * 1.5; // perfect fifth
+      gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+      osc2.start(audioCtx.currentTime + 0.1);
+      osc2.stop(audioCtx.currentTime + 2.5);
     }
 
-    // Show toast
-    showGodRevealToast(m.name);
+    // Show celebration toast
+    var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
+    showGodRevealToast(m.name, m.role, typeLabel);
 
     // Permanently reveal via torch overlay
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
@@ -1838,13 +1851,7 @@
   }
 
   function initTetradCircles() {
-    // Tetrad guardians are always revealed — add permanent glows on load
-    var tetradNames = ['Bull of Heaven', 'Lion of Justice', 'Defender', 'Water'];
-    tetradNames.forEach(function(name) {
-      revealedGods[name] = true;
-      if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
-    });
-    // Also restore any previously revealed gods from localStorage
+    // Restore previously revealed gods from localStorage (no auto-reveal)
     try {
       var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
       Object.keys(saved).forEach(function(name) {
@@ -1856,27 +1863,45 @@
     } catch(e) {}
   }
 
-  function showGodRevealToast(name) {
+  function showGodRevealToast(name, role, typeLabel) {
     var old = document.getElementById('god-toast');
     if (old) old.remove();
+
+    // Screen-edge gold glow
+    var glow = document.createElement('div');
+    glow.id = 'god-toast-glow';
+    glow.style.cssText =
+      'position:fixed;inset:0;z-index:949;pointer-events:none;' +
+      'box-shadow:inset 0 0 120px rgba(212,168,67,0.4), inset 0 0 60px rgba(198,141,85,0.2);' +
+      'opacity:0;transition:opacity 1.5s ease;';
+    document.body.appendChild(glow);
+
     var toast = document.createElement('div');
     toast.id = 'god-toast';
     toast.style.cssText =
-      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:950;' +
-      'background:rgba(10,12,16,0.95);border:1px solid rgba(212,168,67,0.6);' +
-      'border-radius:10px;padding:20px 40px;text-align:center;pointer-events:none;' +
-      'opacity:0;transition:opacity 1s ease;';
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);z-index:950;' +
+      'background:radial-gradient(ellipse at center, rgba(15,12,8,0.97), rgba(10,12,16,0.95));' +
+      'border:1px solid rgba(212,168,67,0.5);' +
+      'border-radius:12px;padding:30px 60px;text-align:center;pointer-events:none;' +
+      'opacity:0;transition:opacity 1.2s ease, transform 1.2s ease;' +
+      'box-shadow:0 0 60px rgba(212,168,67,0.15), 0 0 20px rgba(0,0,0,0.8);';
     toast.innerHTML =
-      '<div style="font-family:Cinzel,serif;font-size:11px;color:#c68d55;text-transform:uppercase;letter-spacing:3px;margin-bottom:6px;">The frame stirs</div>' +
-      '<div style="font-family:Cinzel,serif;font-size:22px;color:#d4a843;letter-spacing:2px;">' + name + '</div>' +
-      '<div style="font-family:EB Garamond,serif;font-size:13px;color:#bfb299;font-style:italic;margin-top:8px;">has awakened</div>';
+      '<div style="font-family:Cinzel,serif;font-size:10px;color:#c68d55;text-transform:uppercase;letter-spacing:4px;margin-bottom:10px;opacity:0.8;">' + (typeLabel || 'THE FRAME STIRS') + '</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:28px;color:#d4a843;letter-spacing:3px;text-shadow:0 0 20px rgba(212,168,67,0.4);">' + name + '</div>' +
+      (role ? '<div style="font-family:EB Garamond,serif;font-size:14px;color:#bfb299;font-style:italic;margin-top:8px;letter-spacing:1px;">' + role + '</div>' : '') +
+      '<div style="font-family:EB Garamond,serif;font-size:12px;color:#8a7d6b;margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>';
     document.body.appendChild(toast);
+
     requestAnimationFrame(function() {
+      glow.style.opacity = '1';
       toast.style.opacity = '1';
+      toast.style.transform = 'translate(-50%,-50%) scale(1)';
       setTimeout(function() {
+        glow.style.opacity = '0';
         toast.style.opacity = '0';
-        setTimeout(function() { toast.remove(); }, 1000);
-      }, 3000);
+        toast.style.transform = 'translate(-50%,-50%) scale(1.05)';
+        setTimeout(function() { toast.remove(); glow.remove(); }, 1500);
+      }, 5000);
     });
   }
 
