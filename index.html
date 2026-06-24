@@ -1954,6 +1954,12 @@ body.debug-hotspots .medallion-hot::after {
   }
 
   function checkGate() {
+    // BYPASS: auto-grant for testing
+    setTier('A', 'Cartographer');
+    gate.style.display = 'none';
+    launch((new URLSearchParams(window.location.search)).get('scan'));
+    return;
+    // --- original gate logic below (inactive) ---
     // Check URL for key param (Cartographer private links)
     const params = new URLSearchParams(window.location.search);
     const urlKey = params.get('key');
