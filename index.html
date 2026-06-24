@@ -1900,7 +1900,7 @@ body.debug-hotspots .medallion-hot::after {
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
-  var CURRENT_VERSION = 15;
+  var CURRENT_VERSION = 16;
   var vKey = 'intrepid_atlas_discovered_v';
   var dKey = 'intrepid_atlas_discovered';
   var stored = parseInt(localStorage.getItem(vKey) || '0');
@@ -1911,7 +1911,7 @@ body.debug-hotspots .medallion-hot::after {
   }
 })();
 </script>
-<script src="fog.js?v=14"></script>
+<script src="fog.js?v=16"></script>
 <script>
 (function() {
   'use strict';
@@ -2163,13 +2163,13 @@ body.debug-hotspots .medallion-hot::after {
         }
 
         if (isRevealed) {
-          var type = m.guardian ? 'Tetrad · Guardian' : 'The Eight · Awakened';
+          var type = m.guardian ? 'Tetrad · Guardian' : 'Apkallu · Awakened';
           if (typeEl) typeEl.textContent = type;
           if (nameEl) nameEl.textContent = m.name;
           if (subEl)  subEl.textContent  = m.role;
           if (descEl) descEl.textContent = m.lore;
         } else {
-          var sealedType = m.guardian ? 'Tetrad · Sealed' : 'The Eight · Sealed';
+          var sealedType = m.guardian ? 'Tetrad · Sealed' : 'Apkallu · Sealed';
           if (typeEl) typeEl.textContent = sealedType;
           if (nameEl) nameEl.textContent = '???';
           if (subEl)  subEl.textContent  = '';
@@ -3263,7 +3263,7 @@ body.debug-hotspots .medallion-hot::after {
         var card = document.getElementById('discovery-card');
         if (card) {
           var isGuardian = !hot.dataset.god;
-          card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad \u00b7 Guardian' : 'The Nine \u00b7 Revealed';
+          card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad \u00b7 Guardian' : 'Apkallu \u00b7 Revealed';
           card.querySelector('.dc-name').textContent = hname;
           card.querySelector('.dc-sub').textContent = hot.dataset.role || '';
           card.querySelector('.dc-desc').textContent = hot.dataset.lore || '';
@@ -3307,12 +3307,12 @@ body.debug-hotspots .medallion-hot::after {
           card.querySelector('.dc-sub').textContent = role;
           card.querySelector('.dc-desc').textContent = lore;
         } else if (isLocked) {
-          card.querySelector('.dc-type').textContent = 'The Nine \u00b7 Sealed';
+          card.querySelector('.dc-type').textContent = 'Apkallu \u00b7 Sealed';
           card.querySelector('.dc-name').textContent = name;
           card.querySelector('.dc-sub').textContent = role;
           card.querySelector('.dc-desc').textContent = 'This sigil remains sealed. The god whose face it bears has not yet made itself known to you. Continue charting the Hollowlands \u2014 some truths only open when you have walked far enough to deserve them.';
         } else {
-          card.querySelector('.dc-type').textContent = 'The Nine \u00b7 Revealed';
+          card.querySelector('.dc-type').textContent = 'Apkallu \u00b7 Revealed';
           card.querySelector('.dc-name').textContent = name;
           card.querySelector('.dc-sub').textContent = role;
           card.querySelector('.dc-desc').textContent = lore;

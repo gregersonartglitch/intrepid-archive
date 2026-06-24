@@ -19,7 +19,7 @@
 
   // Proximity whispers — incomplete cartographer's notes at the fog edge
   var WHISPERS = {
-    'tower-of-nine':    'Nine windows. Only three face —',
+    'tower-nine':       'Nine windows. Only three face —',
     'crossing-pool':    'The water remembers every face that —',
     'sabellas-hut':     'Larger inside. She warned me not to measure —',
     'monastery':        'The monks stopped writing three days before —',
@@ -320,6 +320,13 @@
       // Only clicks inside the map
       var container = map.getContainer();
       if (!container.contains(e.target)) return;
+
+      // Allow close button to dismiss card
+      if (e.target.closest('.dc-close')) {
+        var card = document.getElementById('discovery-card');
+        if (card) card.classList.remove('visible');
+        return;
+      }
 
       // Skip UI elements
       if (e.target.closest('#layers, #discovery-card, #progress-container, .leaflet-control-zoom, #fog-reset-btn')) return;
@@ -1407,9 +1414,7 @@
 
   function showDiscoveryToast(loc) {
     var total = (window.LOCATIONS || []).length;
-    var found = Object.keys(discovered).filter(function(id) {
-      return discovered[id].phase === 'complete';
-    }).length;
+    var found = Object.keys(discovered).length;
 
     var old = document.getElementById('discovery-toast');
     if (old) old.remove();
@@ -1562,10 +1567,19 @@
     var loreEl = card.querySelector('.dc-lore');
     if (loc.lore && loreEl) { loreEl.textContent = loc.lore; loreEl.style.display = 'block'; }
     else if (loreEl) { loreEl.style.display = 'none'; }
-    // Art image
+    // Art image (dc-art is a div, use background-image)
     var artEl = card.querySelector('.dc-art');
-    if (loc.art && artEl) { artEl.src = loc.art; artEl.style.display = 'block'; }
-    else if (artEl) { artEl.style.display = 'none'; }
+    if (loc.art && artEl) {
+      artEl.style.backgroundImage = 'url(' + loc.art + ')';
+      artEl.style.backgroundSize = 'cover';
+      artEl.style.backgroundPosition = 'center';
+      artEl.style.width = '100%';
+      artEl.style.aspectRatio = '16/9';
+      artEl.style.borderRadius = '6px';
+      artEl.style.filter = 'none';
+      artEl.style.border = 'none';
+      artEl.style.display = 'block';
+    } else if (artEl) { artEl.style.display = 'none'; }
 
     card.classList.add('visible');
   }
@@ -1667,7 +1681,7 @@
     if (finaleState.vol1) return;
     var vol1Locs = (window.LOCATIONS || []).filter(function(l) { return l.volume1; });
     var vol1Found = vol1Locs.filter(function(l) {
-      return discovered[l.id] && discovered[l.id].phase === 'complete';
+      return !!discovered[l.id];
     }).length;
     if (vol1Found < vol1Locs.length || vol1Locs.length === 0) return;
     finaleState.vol1 = true;
