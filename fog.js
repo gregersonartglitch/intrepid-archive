@@ -695,13 +695,13 @@
       }
     }
 
-    // ── 3b. Pulsing beacons for ALL undiscovered locations ──
+    // ── 3b. Pulsing beacons for undiscovered locations near cleared areas ──
     locs.forEach(function(loc) {
       if (discovered[loc.id]) return;
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
       if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
 
-      // Check if this location is near any discovered location (within cleared fog)
+      // Only show beacon if near a discovered location (within cleared fog radius)
       var nearDiscovered = false;
       Object.keys(discovered).forEach(function(dId) {
         if (nearDiscovered) return;
@@ -712,21 +712,18 @@
         if (Math.sqrt(dx*dx + dy*dy) < 400) nearDiscovered = true;
       });
 
-      // Brighter beacon if visible in cleared area, fainter if still in fog
-      var baseAlpha = nearDiscovered ? 0.25 : 0.10;
-      var pulseAmp = nearDiscovered ? 0.12 : 0.05;
-      var beaconR = nearDiscovered ? 20 : 15;
-      var isRegion = (loc.type === 'region');
-      if (isRegion) { baseAlpha = 0.15; pulseAmp = 0.08; beaconR = 25; }
+      // Skip locations deep in unexplored fog
+      if (!nearDiscovered) return;
+
+      var baseAlpha = 0.22;
+      var pulseAmp = 0.10;
+      var beaconR = 18;
 
       var p = baseAlpha + Math.sin(time * 1.8 + loc.lat * 0.02) * pulseAmp;
       var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 5;
       var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
-      g.addColorStop(0, 'rgba(198, 141, 85, ' + (p + 0.1) + ')');
-      if (nearDiscovered) {
-        // Add a bright core for locations in cleared areas
-        g.addColorStop(0.15, 'rgba(239, 231, 210, ' + (p * 0.6) + ')');
-      }
+      g.addColorStop(0, 'rgba(239, 231, 210, ' + (p * 0.5) + ')');
+      g.addColorStop(0.2, 'rgba(198, 141, 85, ' + (p + 0.1) + ')');
       g.addColorStop(0.5, 'rgba(198, 141, 85, ' + p + ')');
       g.addColorStop(1, 'rgba(198, 141, 85, 0)');
       ctx.fillStyle = g;
