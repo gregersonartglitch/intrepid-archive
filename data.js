@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════
 // INTREPID DUSK — HOLLOWLANDS MAP DATA
 // The Cartographer Archive — VIP Patron Access
 // ═══════════════════════════════════════════════════════════════
@@ -270,7 +270,7 @@ window.LOCATIONS = [
     lng: 2334,
     desc: 'The war-city consecrated to the god whose name it bears — Erra, father of Atrus Nul, lord of plague and conflict. The architecture is brutal: windowless barracks, training amphitheaters stained dark with old blood, and the Pillar of Lament where the names of the conquered are etched in script too small to read without kneeling. Elena passed through this city and found that war is not an event here but a permanent atmospheric condition.',
     lore: '"Erra is not a place where wars begin. Erra is the place where the idea of war lives when it is not being used."',
-    journeyStep: 11,
+    journeyStep: null,
     volume1: true
   },
   {
@@ -282,7 +282,7 @@ window.LOCATIONS = [
     lng: 2504,
     desc: 'Before the Titan wars reshaped everything, Mish was the seat of the human kings — the only sovereignty in the Hollowlands that answered to neither the Titan courts nor the old gods. For generations the Mish kings held the line, refusing to kneel while other kingdoms fell or were absorbed. They stood as a bulwark not through superior force but through will and the stubborn insistence that human law had a right to exist in a world being carved up by divine politics. But the warring Titans were patient. What could not be conquered was corrupted. The Mish kings began making compromises — small ones at first, then larger. Evil worked its way into the kingship the way water works into stone. By the time the last king\'s hands were fully dirty, there was nothing left worth defending. Atrus Nul moved on Mish without a formal declaration. The king and his sons were hunted down and made a public example of. The city survived. The dynasty did not. What you walk through now is a crossroads of market stalls and caravansary commerce — a city that has learned to ask no one about the empty thrones. The rough geography of the surrounding territory — broken hills and choked passes that swallow armies whole — has kept the Empire from completing what Atrus Nul began. Mish is technically rebel lands. The resistance is real but impotent: too fractured to threaten, too protected to erase. The Empire tolerates it the way you tolerate a bruise — not because it doesn\'t hurt, but because the cure is worse.',
     lore: '"Mish remembers its kings the way a scar remembers the wound — not with grief, but with the shape of it."',
-    journeyStep: 5,
+    journeyStep: 4,
     volume1: true
   },
   {
@@ -354,7 +354,7 @@ window.LOCATIONS = [
     lng: 2678,
     desc: 'The ink-stained city where the Hollowlands commits its permitted knowledge to page. Brea\'s libraries are carved into a mountainside, their entrances guarded not by soldiers but by archivists whose authority exceeds that of any general. Elena found answers here — and questions she had not thought to ask. It is said that Brea contains a copy of every document ever written in the Hollowlands, including several that have not been written yet.',
     lore: '"The scribes of Brea do not record history. They negotiate with it. The pen, in Brea, is not mightier than the sword — it is the sword, wearing a different handle."',
-    journeyStep: 6,
+    journeyStep: null,
     volume1: true
   },
   {
@@ -496,7 +496,7 @@ window.LOCATIONS = [
     lng: 4193,
     desc: 'A still, black pool of water no wider than a room, ringed by stones that bear the scorch marks of repeated transit. This is where Elena surfaced — gasping, disoriented, in a world that was not hers and yet recognized her with the familiarity of a mirror. The Crossing Pool is warm regardless of season, and those who kneel beside it sometimes see a reflection that moves independently of the viewer.',
     lore: '"The pool does not connect two places. It connects two versions of one place that forgot it was whole."',
-    journeyStep: 2,
+    journeyStep: 1,
     volume1: true
   },
   {
@@ -508,7 +508,7 @@ window.LOCATIONS = [
     lng: 4189,
     desc: 'A clearing in the dense Matgul canopy where the light falls in a single concentrated shaft regardless of cloud cover or time of day. It was here that Elena found the Dawn Spear — or rather, where the Dawn Spear permitted itself to be found. The weapon had waited in the hollow of a dead tree, untouched by rot, humming at a frequency that Elena recognized though she had never heard it before.',
     lore: '"The Spear was not forged. The Spear was promised. It waited in the wood for the one who would carry the promise forward."',
-    journeyStep: 3,
+    journeyStep: 2,
     volume1: true
   },
   {
@@ -520,7 +520,7 @@ window.LOCATIONS = [
     lng: 4168,
     desc: 'A modest dwelling of woven branches and river clay, hidden in the borderland between Matgul and OG. Sabella\'s Hut is larger inside than outside — a trait its builder either could not or would not explain. Elena found traces of her grandmother here: a DOD field manual adapted into a gardening guide, star charts relabeled with Hollowlands constellations, and a letter, unfinished, addressed to someone named Nick.',
     lore: '"Sabella crossed from the Clockwork carrying only grief and a government-issued sidearm. She built a kingdom from one and buried the other. Which was which depends on who tells the story."',
-    journeyStep: 4,
+    journeyStep: 3,
     volume1: true,
     art: 'sabellas-hut.jpg'
   },
@@ -533,7 +533,7 @@ window.LOCATIONS = [
     lng: 4509,
     desc: 'A sanctuary carved into a windswept peak where the Oracle Isin Ada reads the future in the patterns of dust storms. The Monastery is accessible only by a path that the wind erases nightly — pilgrims must find a new route each dawn. Elena climbed to the Oracle seeking direction and received instead a prophecy she did not want: three will rise, and the world will be unmade or remade, and she will be present for both.',
     lore: '"Three will rise. One Dusk, One Dark, One Dawn destroying Stone. Ushering the end. Isin Ada spoke this once and then wept for six days."',
-    journeyStep: 7,
+    journeyStep: 5,
     volume1: true,
     art: 'monastery-wind.jpg'
   },
@@ -546,7 +546,7 @@ window.LOCATIONS = [
     lng: 4560,
     desc: 'The settlement at the base of the peak that holds the Monastery of the Wind — the last inhabited place before the climb begins. Ashal is where pilgrims leave behind what they cannot carry up: excess gear, pets, second-guessing. The town has grown entirely around the needs of those passing through it, and its people have a reputation for being extraordinarily helpful without asking a single question about where you are going or why. They have learned that the answers are never the business of the town.',
     lore: '"Leave what you cannot carry. Take only what the Oracle can see through. Ashal asks nothing else of you."',
-    journeyStep: 6,
+    journeyStep: null,
     volume1: true
   },
   {
@@ -558,7 +558,7 @@ window.LOCATIONS = [
     lng: 1900,
     desc: 'The silver-walled fortress from which Sabella — the woman who was once a DOD remote viewer, once a grieving fiancée, and is now the Moon Queen — governs the last free territory in the Hollowlands. The Stronghold gleams with a light that has no visible source, and its corridors rearrange according to the Queen\'s mood. Elena stood before her grandmother here and understood, for the first time, that rescue is not always what the rescued want.',
     lore: '"The Moon Queen built her throne from the wreckage of a life she chose to leave behind. She did not look back. Looking back is for those who believe they left something worth returning to."',
-    journeyStep: 8,
+    journeyStep: null,
     volume1: true
   },
   {
@@ -570,7 +570,7 @@ window.LOCATIONS = [
     lng: 4091,
     desc: 'An ancient tower of nine stories, one for each of the old gods the Tetrad cast into Kur. It has stood longer than any living institution in the Hollowlands — longer than the Empire, longer than the Titan courts — and the stone remembers it. At its heart sits the Maxim Stone, ringed by statues of the old gods in attitudes of judgment. The statues do not face outward. They face the Stone. Whatever the Tower was built to contain, it has not forgotten its purpose.',
     lore: '"The Tower was not built to honor the Nine. It was built to cage them. The ceremonies are not worship. They are lockpicking."',
-    journeyStep: 10,
+    journeyStep: 6,
     volume1: true,
     art: 'tower-nine.jpg'
   },
@@ -583,7 +583,7 @@ window.LOCATIONS = [
     lng: 4092,
     desc: 'The monolith that holds the two halves of the world apart. The Maxim Stone is not large — it stands only as tall as a person — but its presence distorts everything around it: light bends, sound delays, and anyone who approaches feels the weight of two realities pressing against each other through a crack no wider than a heartbeat. This is where Elena\'s first journey ended. This is where the prophecy began to prove itself.',
     lore: '"The Stone does not separate the worlds. The Stone is the wound\'s suture. Remove it and the wound reopens. The wound is the size of everything."',
-    journeyStep: 12,
+    journeyStep: null,
     volume1: true
   },
 
@@ -730,7 +730,7 @@ window.LOCATIONS = [
     lng: 1500,
     desc: 'The judicial heart of the Moon Queen\'s domain, where disputes are settled by moonlight and the verdicts are written in silver ink that fades by dawn — binding only those who witnessed the judgment. Sinn\'s architecture is circular, its streets spiraling inward like the chambers of a nautilus shell. It is said that the city was designed by Sabella herself, modeled on a memory of something she saw in the Clockwork and could not forget.',
     lore: '"Sinn does not dispense justice. Sinn dispenses clarity. The difference is that justice can be appealed."',
-    journeyStep: 9,
+    journeyStep: 7,
     volume1: true
   },
   {
@@ -742,7 +742,7 @@ window.LOCATIONS = [
     lng: 1250,
     desc: 'The fortified garrison town that guards the Moon Queen\'s eastern border against Imperial incursion. Indras Na is staffed by soldiers who serve not by conscription but by oath — an oath spoken once, in the dark, to a queen they may never meet. The walls are lined with mirrors that reflect moonlight into concentrated beams, turning the perimeter into a web of silver tripwires. Those who returned from attempted siege spoke of blindness and the sound of laughter.',
     lore: '"Indras Na has never fallen. This is not because it cannot be taken. It is because those who try forget why they came."',
-    journeyStep: 10,
+    journeyStep: 8,
     volume1: true
   },
   {
@@ -942,19 +942,14 @@ window.LOCATIONS = [
 // ═══════════════════════════════════════════════════════════════
 
 window.JOURNEY_PATH = [
-  { step: 1,  locationId: 'crossing-pool',    label: 'Into the Hollowlands' },
-  { step: 2,  locationId: 'dawn-spear',       label: 'Sabella\'s Clearing' },
-  { step: 3,  locationId: 'sabellas-hut',     label: 'Grandmother\'s Trail' },
-  { step: 4,  locationId: 'tower-nine',       label: 'The Final Tower' },
-  { step: 5,  locationId: 'monastery-wind',   label: 'The Oracle' },
-  { step: 6,  locationId: 'ashal',            label: 'Pilgrim\'s Rest' },
-  { step: 7,  locationId: 'mish',             label: 'Through Mish' },
-  { step: 8,  locationId: 'brea',             label: 'City of Scribes' },
-  { step: 9,  locationId: 'moon-stronghold',  label: 'The Moon Queen' },
-  { step: 10, locationId: 'sinn',             label: 'The Moon Court' },
-  { step: 11, locationId: 'indras-na',        label: 'The Garrison' },
-  { step: 12, locationId: 'erra',             label: 'War\'s Shadow' },
-  { step: 13, locationId: 'maxim-stone',      label: 'The Breaking' }
+  { step: 1, locationId: 'crossing-pool',  label: 'Into the Hollowlands' },
+  { step: 2, locationId: 'dawn-spear',     label: 'Sabella\'s Clearing' },
+  { step: 3, locationId: 'sabellas-hut',   label: 'Grandmother\'s Trail' },
+  { step: 4, locationId: 'mish',           label: 'The Town' },
+  { step: 5, locationId: 'monastery-wind', label: 'The Oracle' },
+  { step: 6, locationId: 'tower-nine',     label: 'The Tower of the Nine' },
+  { step: 7, locationId: 'sinn',           label: 'The Moon Court' },
+  { step: 8, locationId: 'indras-na',      label: 'The Western Garrison' }
 ];
 
 // ═══════════════════════════════════════════════════════════════

@@ -1282,7 +1282,7 @@
 
     // Regions get immediate complete discovery (they show in mist visually but count as found)
     if (loc.type === 'region' || loc.type === 'water') {
-      discovered[loc.id] = { at: Date.now(), phase: 'complete' };
+      discovered[loc.id] = { at: Date.now(), phase: 'mist' };
       localStorage.setItem(LS_KEY, JSON.stringify(discovered));
       revealMarker(loc.id);
       animateReveal(loc);
@@ -1588,13 +1588,13 @@
 
     // ── Elena's Journey track ──
     var journeyTotal = journeyPath.length;
-    var journeyFound = journeyPath.filter(function(s) { return discovered[s.locationId] && discovered[s.locationId].phase === 'complete'; }).length;
+    var journeyFound = journeyPath.filter(function(s) { return !!discovered[s.locationId]; }).length;
     var journeyPct = journeyTotal > 0 ? journeyFound / journeyTotal : 0;
 
     // ── Regions track ──
     var regionLocs = locs.filter(function(l) { return l.type === 'region' || l.type === 'water'; });
     var regionTotal = regionLocs.length;
-    var regionFound = regionLocs.filter(function(l) { return discovered[l.id] && discovered[l.id].phase === 'complete'; }).length;
+    var regionFound = regionLocs.filter(function(l) { return !!discovered[l.id]; }).length;
     var regionPct = regionTotal > 0 ? regionFound / regionTotal : 0;
 
     // Combined pct for rank
