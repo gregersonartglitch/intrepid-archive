@@ -2062,42 +2062,42 @@ body.debug-hotspots .medallion-hot::after {
       // Positions calibrated to actual frame_original_02.png art (center/cover rendered)
       // cx/cy = fraction of viewport width/height
       var MEDALLIONS = [
-        // ── Cardinals ──────────────────────── spriteX/spriteY = hand-tuned % into sprite sheet
-        { name: 'Bull of Heaven',  cx: 0.491, cy: 0.131, r: 152, guardian: true, unlock: 5, spriteX: 100, spriteY: 0,
+        // ── Cardinals ──────────────────────────────────────────────────────
+        { name: 'Bull of Heaven',  cx: 0.491, cy: 0.131, r: 152, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png',
           role: 'Tetrad · North · UTU',
           lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, r: 184, guardian: true, unlock: 9, spriteX: 33, spriteY: 0,
+        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, r: 184, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png',
           role: 'Tetrad · East · RAPHA',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Defender',        cx: 0.483, cy: 0.782, r: 216, guardian: true, unlock: 13, spriteX: 0, spriteY: 0,
+        { name: 'Defender',        cx: 0.483, cy: 0.782, r: 216, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png',
           role: 'Tetrad · South · MISH',
           lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Water',           cx: 0.244, cy: 0.437, r: 184, guardian: true, unlock: 17, spriteX: 67, spriteY: 0,
+        { name: 'Water',           cx: 0.244, cy: 0.437, r: 184, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png',
           role: 'Tetrad · West · GU',
           lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
-        { name: 'The Twins',    cx: 0.725, cy: 0.132, r: 120, unlock: 10, spriteX: 0, spriteY: 50,
+        { name: 'The Twins',    cx: 0.725, cy: 0.132, r: 120, unlock: 10, spriteFile: 'assets/medallions/twins.png',
           role: 'SHAM & MASH · The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Crab',         cx: 0.799, cy: 0.311, r: 128, unlock: 14, spriteX: 33, spriteY: 50,
+        { name: 'Crab',         cx: 0.799, cy: 0.311, r: 128, unlock: 14, spriteFile: 'assets/medallions/crab.png',
           role: 'ELIL · The Deceptive Digger',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Furrow',       cx: 0.807, cy: 0.597, r: 120, unlock: 18, spriteX: 67, spriteY: 100,
+        { name: 'Furrow',       cx: 0.807, cy: 0.597, r: 120, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
           role: 'SINN · Daughter of the Moon',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'Fate',         cx: 0.716, cy: 0.838, r: 128, unlock: 22, spriteX: 67, spriteY: 50,
+        { name: 'Fate',         cx: 0.716, cy: 0.838, r: 128, unlock: 22, spriteFile: 'assets/medallions/fate.png',
           role: 'AN · Scales of Destiny',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Goat Fish',    cx: 0.262, cy: 0.835, r: 128, unlock: 26, spriteX: 33, spriteY: 100,
+        { name: 'Goat Fish',    cx: 0.262, cy: 0.835, r: 128, unlock: 26, spriteFile: 'assets/medallions/goatfish.png',
           role: 'BELU · of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, r: 128, unlock: 30, spriteX: 100, spriteY: 50,
+        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, r: 128, unlock: 30, spriteFile: 'assets/medallions/scorpion.png',
           role: 'NIN · Of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Fish',         cx: 0.179, cy: 0.317, r: 128, unlock: 34, spriteX: 100, spriteY: 100,
+        { name: 'Fish',         cx: 0.179, cy: 0.317, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png',
           role: 'Water Demon · AE',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Fire Satyr',   cx: 0.250, cy: 0.142, r: 120, unlock: 38, spriteX: 0, spriteY: 100,
+        { name: 'Fire Satyr',   cx: 0.250, cy: 0.142, r: 120, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png',
           role: 'God of War · ERRA',
           lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
@@ -2145,14 +2145,14 @@ body.debug-hotspots .medallion-hot::after {
         var descEl = card.querySelector('.dc-desc');
         var loreEl = card.querySelector('.dc-lore');
 
-        // Show sprite image — zoomed to center on each carving
-        if (artEl && m.spriteX !== undefined) {
+        // Show medallion image
+        if (artEl && m.spriteFile) {
           artEl.style.display = 'block';
           artEl.style.width = '100%';
           artEl.style.aspectRatio = '1';
-          artEl.style.backgroundImage = 'url(assets/medallion-sprites.png)';
-          artEl.style.backgroundSize = '500% 380%';
-          artEl.style.backgroundPosition = m.spriteX + '% ' + m.spriteY + '%';
+          artEl.style.backgroundImage = 'url(' + m.spriteFile + ')';
+          artEl.style.backgroundSize = 'cover';
+          artEl.style.backgroundPosition = 'center';
           artEl.style.borderRadius = '50%';
           artEl.style.border = '1px solid rgba(198,141,85,0.3)';
           if (isRevealed) {
