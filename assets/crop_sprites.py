@@ -1,35 +1,31 @@
 from PIL import Image
-import os
-
 img = Image.open(r'C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map\assets\medallion-sprites.png')
 w, h = img.size
 cw, ch = w // 4, h // 3
-print(f"Image: {w}x{h}, Cell: {cw}x{ch}")
 
+# Hand-tuned centers for each carving (adjusted from pure grid centers)
 mapping = {
-    'defender':     (0, 0),
-    'lion':         (1, 0),
-    'water':        (2, 0),
-    'bull':         (3, 0),
-    'twins':        (0, 1),
-    'crab':         (1, 1),
-    'fate':         (2, 1),
-    'scorpion':     (3, 1),
-    'firesatyr':    (0, 2),
-    'goatfish':     (1, 2),
-    'furrow':       (2, 2),
-    'fish':         (3, 2),
+    'defender':  (620, 610),   # row0 col0 - archer shifted right
+    'lion':      (1800, 600),  # row0 col1 
+    'water':     (3000, 600),  # row0 col2
+    'bull':      (4170, 590),  # row0 col3 - bull shifted left slightly
+    'twins':     (590, 1790),  # row1 col0
+    'crab':      (1810, 1780), # row1 col1
+    'fate':      (3000, 1800), # row1 col2
+    'scorpion':  (4200, 1790), # row1 col3
+    'firesatyr': (600, 2990),  # row2 col0
+    'goatfish':  (1800, 2990), # row2 col1
+    'furrow':    (3000, 2990), # row2 col2
+    'fish':      (4200, 2990), # row2 col3
 }
 
+import os
 outdir = r'C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map\assets\medallions'
-os.makedirs(outdir, exist_ok=True)
+half = 540  # crop radius
 
-for name, (col, row) in mapping.items():
-    cx = col * cw + cw // 2
-    cy = row * ch + ch // 2
-    half = min(cw, ch) // 2 - 30
-    box = (cx - half, cy - half, cx + half, cy + half)
+for name, (cx, cy) in mapping.items():
+    box = (max(0, cx - half), max(0, cy - half), min(w, cx + half), min(h, cy + half))
     crop = img.crop(box)
     crop = crop.resize((400, 400), Image.LANCZOS)
     crop.save(os.path.join(outdir, name + '.png'))
-    print(f'{name}: center=({cx},{cy}), saved 400x400')
+    print(f'{name}: center=({cx},{cy}), saved')
