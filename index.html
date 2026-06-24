@@ -1858,7 +1858,7 @@ body.debug-hotspots .medallion-hot::after {
 <!-- Discovery Card (fog system) -->
 <div id="discovery-card">
   <button class="dc-close" aria-label="Close">✕</button>
-  <img class="dc-art" style="display:none" />
+  <div class="dc-art" style="display:none"></div>
   <div class="dc-type"></div>
   <div class="dc-name"></div>
   <div class="dc-sub"></div>
@@ -2062,42 +2062,42 @@ body.debug-hotspots .medallion-hot::after {
       // Positions calibrated to actual frame_original_02.png art (center/cover rendered)
       // cx/cy = fraction of viewport width/height
       var MEDALLIONS = [
-        // ── Cardinals ────────────────────────────────────────────────────
-        { name: 'Bull of Heaven',  cx: 0.491, cy: 0.131, r: 152, guardian: true, unlock: 5,
+        // ── Cardinals ──────────────────────────────────────────────────── sprite: col, row (0-indexed in 4x3 grid)
+        { name: 'Bull of Heaven',  cx: 0.491, cy: 0.131, r: 152, guardian: true, unlock: 5, spriteCol: 3, spriteRow: 0,
           role: 'Tetrad · North · UTU',
           lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, r: 184, guardian: true, unlock: 9,
+        { name: 'Lion of Justice', cx: 0.733, cy: 0.438, r: 184, guardian: true, unlock: 9, spriteCol: 1, spriteRow: 0,
           role: 'Tetrad · East · RAPHA',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Defender',        cx: 0.483, cy: 0.782, r: 216, guardian: true, unlock: 13,
+        { name: 'Defender',        cx: 0.483, cy: 0.782, r: 216, guardian: true, unlock: 13, spriteCol: 0, spriteRow: 0,
           role: 'Tetrad · South · MISH',
           lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Water',           cx: 0.244, cy: 0.437, r: 184, guardian: true, unlock: 17,
+        { name: 'Water',           cx: 0.244, cy: 0.437, r: 184, guardian: true, unlock: 17, spriteCol: 2, spriteRow: 0,
           role: 'Tetrad · West · GU',
           lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
-        { name: 'The Twins',    cx: 0.725, cy: 0.132, r: 120, unlock: 10,
+        { name: 'The Twins',    cx: 0.725, cy: 0.132, r: 120, unlock: 10, spriteCol: 0, spriteRow: 1,
           role: 'SHAM & MASH · The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Crab',         cx: 0.799, cy: 0.311, r: 128, unlock: 14,
+        { name: 'Crab',         cx: 0.799, cy: 0.311, r: 128, unlock: 14, spriteCol: 1, spriteRow: 1,
           role: 'ELIL · The Deceptive Digger',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Furrow',       cx: 0.807, cy: 0.597, r: 120, unlock: 18,
+        { name: 'Furrow',       cx: 0.807, cy: 0.597, r: 120, unlock: 18, spriteCol: 2, spriteRow: 2,
           role: 'SINN · Daughter of the Moon',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'Fate',         cx: 0.716, cy: 0.838, r: 128, unlock: 22,
+        { name: 'Fate',         cx: 0.716, cy: 0.838, r: 128, unlock: 22, spriteCol: 2, spriteRow: 1,
           role: 'AN · Scales of Destiny',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Goat Fish',    cx: 0.262, cy: 0.835, r: 128, unlock: 26,
+        { name: 'Goat Fish',    cx: 0.262, cy: 0.835, r: 128, unlock: 26, spriteCol: 1, spriteRow: 2,
           role: 'BELU · of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, r: 128, unlock: 30,
+        { name: 'Scorpion Man', cx: 0.177, cy: 0.598, r: 128, unlock: 30, spriteCol: 3, spriteRow: 1,
           role: 'NIN · Of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Fish',         cx: 0.179, cy: 0.317, r: 128, unlock: 34,
+        { name: 'Fish',         cx: 0.179, cy: 0.317, r: 128, unlock: 34, spriteCol: 3, spriteRow: 2,
           role: 'Water Demon · AE',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Fire Satyr',   cx: 0.250, cy: 0.142, r: 120, unlock: 38,
+        { name: 'Fire Satyr',   cx: 0.250, cy: 0.142, r: 120, unlock: 38, spriteCol: 0, spriteRow: 2,
           role: 'God of War · ERRA',
           lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
@@ -2132,27 +2132,45 @@ body.debug-hotspots .medallion-hot::after {
         if (!card || activeCard === m.name) return;
         activeCard = m.name;
 
-        // Check if this god is revealed (guardians now also require discovery)
+        // Check if this god is revealed
         var isRevealed = (window.FogSystem && window.FogSystem._revealedGods && window.FogSystem._revealedGods[m.name]);
-        // Fallback: check localStorage
         if (!isRevealed) {
           try { var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}'); isRevealed = !!saved[m.name]; } catch(e) {}
         }
 
+        var artEl  = card.querySelector('.dc-art');
         var typeEl = card.querySelector('.dc-type');
         var nameEl = card.querySelector('.dc-name');
         var subEl  = card.querySelector('.dc-sub');
         var descEl = card.querySelector('.dc-desc');
         var loreEl = card.querySelector('.dc-lore');
 
+        // Show sprite image from 4x3 grid
+        if (artEl && m.spriteCol !== undefined) {
+          artEl.style.display = 'block';
+          artEl.style.width = '100%';
+          artEl.style.aspectRatio = '1';
+          artEl.style.backgroundImage = 'url(assets/medallion-sprites.png)';
+          artEl.style.backgroundSize = '400% 300%'; // 4 cols x 3 rows
+          artEl.style.backgroundPosition = (m.spriteCol * 33.333) + '% ' + (m.spriteRow * 50) + '%';
+          artEl.style.borderRadius = '50%';
+          artEl.style.border = '1px solid rgba(198,141,85,0.3)';
+          if (isRevealed) {
+            artEl.style.filter = 'none';
+          } else {
+            artEl.style.filter = 'brightness(0.15) contrast(1.2)';
+          }
+        }
+
         if (isRevealed) {
-          var type = m.guardian ? 'Tetrad · Guardian' : 'The Nine · Awakened';
+          var type = m.guardian ? 'Tetrad · Guardian' : 'The Eight · Awakened';
           if (typeEl) typeEl.textContent = type;
           if (nameEl) nameEl.textContent = m.name;
           if (subEl)  subEl.textContent  = m.role;
           if (descEl) descEl.textContent = m.lore;
         } else {
-          if (typeEl) typeEl.textContent = 'The Nine · Sealed';
+          var sealedType = m.guardian ? 'Tetrad · Sealed' : 'The Eight · Sealed';
+          if (typeEl) typeEl.textContent = sealedType;
           if (nameEl) nameEl.textContent = '???';
           if (subEl)  subEl.textContent  = '';
           if (descEl) descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this guardian.';
