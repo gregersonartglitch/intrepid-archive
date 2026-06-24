@@ -695,16 +695,38 @@
       }
     }
 
-    // ── 3b. Faint glows for undiscovered regions (always visible) ──
+    // ── 3b. Pulsing beacons for ALL undiscovered locations ──
     locs.forEach(function(loc) {
       if (discovered[loc.id]) return;
-      if (loc.type !== 'region') return;
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
       if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
-      var p = 0.12 + Math.sin(time * 1.2 + loc.lat * 0.02) * 0.06;
-      var rGlow = 25 + Math.sin(time * 0.8 + loc.lng * 0.01) * 5;
+
+      // Check if this location is near any discovered location (within cleared fog)
+      var nearDiscovered = false;
+      Object.keys(discovered).forEach(function(dId) {
+        if (nearDiscovered) return;
+        var dLoc = locs.find(function(l) { return l.id === dId; });
+        if (!dLoc) return;
+        var dx = loc.lat - dLoc.lat;
+        var dy = loc.lng - dLoc.lng;
+        if (Math.sqrt(dx*dx + dy*dy) < 400) nearDiscovered = true;
+      });
+
+      // Brighter beacon if visible in cleared area, fainter if still in fog
+      var baseAlpha = nearDiscovered ? 0.25 : 0.10;
+      var pulseAmp = nearDiscovered ? 0.12 : 0.05;
+      var beaconR = nearDiscovered ? 20 : 15;
+      var isRegion = (loc.type === 'region');
+      if (isRegion) { baseAlpha = 0.15; pulseAmp = 0.08; beaconR = 25; }
+
+      var p = baseAlpha + Math.sin(time * 1.8 + loc.lat * 0.02) * pulseAmp;
+      var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 5;
       var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
       g.addColorStop(0, 'rgba(198, 141, 85, ' + (p + 0.1) + ')');
+      if (nearDiscovered) {
+        // Add a bright core for locations in cleared areas
+        g.addColorStop(0.15, 'rgba(239, 231, 210, ' + (p * 0.6) + ')');
+      }
       g.addColorStop(0.5, 'rgba(198, 141, 85, ' + p + ')');
       g.addColorStop(1, 'rgba(198, 141, 85, 0)');
       ctx.fillStyle = g;
@@ -712,24 +734,6 @@
       ctx.arc(pt.x, pt.y, rGlow, 0, Math.PI * 2);
       ctx.fill();
     });
-
-    if (!nextId && isPathComplete()) {
-      // After path is done, show faint glows on all remaining undiscovered (non-region)
-      locs.forEach(function(loc) {
-        if (discovered[loc.id]) return;
-        if (loc.type === 'region') return; // already handled above
-        var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-        if (pt.x < -40 || pt.x > w + 40 || pt.y < -40 || pt.y > h + 40) return;
-        var p = 0.08 + Math.sin(time * 1.5 + loc.lat * 0.01) * 0.04;
-        var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, 15);
-        g.addColorStop(0, 'rgba(198, 141, 85, ' + p + ')');
-        g.addColorStop(1, 'rgba(198, 141, 85, 0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 15, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
 
     // ── 4. Clear holes for discovered locations ──
     ctx.globalCompositeOperation = 'destination-out';
