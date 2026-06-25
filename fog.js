@@ -1802,7 +1802,8 @@
      GOD REVEALS — driven by MEDALLION_DEFS array
      ════════════════════════════════════════════════ */
 
-  var revealedGods = {}; // track which gods have been revealed
+  // Restore revealed gods immediately to prevent re-reveal race condition
+  var revealedGods = JSON.parse(localStorage.getItem('revealedGods') || '{}');
 
   function checkGodReveals(count) {
     var defs = window.MEDALLION_DEFS;
