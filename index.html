@@ -373,25 +373,19 @@ input { font-family: inherit; }
   background: linear-gradient(to left, rgba(6,5,11,0.65), transparent);
 }
 
-/* Frame SVG wrapper */
+/* Frame SVG wrapper — sized by JS (updateFrameRect) */
 #frame-svg-wrapper {
-  position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  opacity: 0; transition: opacity 0.5s ease;
+  position: fixed; z-index: 510; pointer-events: none;
+  overflow: hidden; opacity: 0; transition: opacity 0.5s ease;
 }
 #frame-svg-wrapper.loaded { opacity: 1; }
 
-/* Torch overlay: on_state image revealed by soft mask following mouse */
+/* Torch overlay — sized by JS to match frame exactly */
 #frame-torch-overlay {
-  position: fixed; inset: 0; z-index: 511; pointer-events: none;
-  background: url('frame_original_02_on_state.png?v=1782250059') center/cover no-repeat;
-  mask-image: radial-gradient(circle at var(--mx, -500px) var(--my, -500px),
-    rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px,
-    rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px,
-    rgba(0,0,0,0.04) 240px, transparent 300px);
-  -webkit-mask-image: radial-gradient(circle at var(--mx, -500px) var(--my, -500px),
-    rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px,
-    rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px,
-    rgba(0,0,0,0.04) 240px, transparent 300px);
+  position: fixed; z-index: 511; pointer-events: none;
+  background: url('frame_original_02_on_state.png?v=1782250059') 0 0 / 100% 100% no-repeat;
+  mask-image: radial-gradient(circle at -500px -500px, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at -500px -500px, transparent 100%);
 }
 
 /* Corner medallions */
@@ -1745,12 +1739,10 @@ body.debug-hotspots .medallion-hot::after {
 
   <!-- Frame image overlay -->
     <!-- SVG overlay: frame_selected.png clipped to only show unlocked medallion circles -->
-  <!-- Single SVG: both frame layers render identically via same preserveAspectRatio -->
-  <svg id="frame-svg-wrapper" xmlns="http://www.w3.org/2000/svg"
-       style="position:fixed;inset:0;width:100%;height:100%;z-index:510;pointer-events:none;opacity:1">
-    <!-- Base layer: default bronze state -->
+  <!-- Frame: sized by JS between contain and cover -->
+  <svg id="frame-svg-wrapper" xmlns="http://www.w3.org/2000/svg">
     <image id="frame-img" href="frame_original_02.png?v=1782250059"
-           width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>
+           width="100%" height="100%" preserveAspectRatio="xMidYMid meet"/>
   </svg>
   <!-- Torch overlay: on_state image revealed by CSS mask following mouse -->
   <div id="frame-torch-overlay"></div>
@@ -2057,6 +2049,8 @@ body.debug-hotspots .medallion-hot::after {
 
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
+    updateFrameRect();
+    window.addEventListener('resize', updateFrameRect);
     initMedallionTooltips();
 
     // ── Torch effect + proximity card detection ──────────────────────────
@@ -2125,7 +2119,8 @@ body.debug-hotspots .medallion-hot::after {
           var m = GLOW_POS[name];
           if (!m) return;
           var glowR = (m.r || 80) / 2;
-          parts.push('radial-gradient(circle ' + glowR + 'px at ' + (m.cx*100)+'% ' + (m.cy*100)+'%, ' +
+          var pos = getMedallionScreenPos(m.cx, m.cy);
+          parts.push('radial-gradient(circle ' + glowR + 'px at ' + pos.x + 'px ' + pos.y + 'px, ' +
             'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)');
         });
         return parts.join(', ');
@@ -2202,11 +2197,11 @@ body.debug-hotspots .medallion-hot::after {
         overlay.style.webkitMaskImage = mask;
 
         // Proximity check — find nearest medallion within its radius
-        var vw = window.innerWidth, vh = window.innerHeight;
         var nearest = null, nearestDist = Infinity;
         MEDALLIONS.forEach(function(m) {
-          var dx = e.clientX - m.cx * vw;
-          var dy = e.clientY - m.cy * vh;
+          var pos = getMedallionScreenPos(m.cx, m.cy);
+          var dx = e.clientX - pos.x;
+          var dy = e.clientY - pos.y;
           var dist = Math.sqrt(dx*dx + dy*dy);
           var threshold = (m.r || 80) / 2;
           if (dist < threshold && dist < nearestDist) { nearestDist = dist; nearest = m; }
@@ -3205,8 +3200,79 @@ body.debug-hotspots .medallion-hot::after {
   function tryLoadFrameImage() {
     const fi = document.getElementById('frame-img');
     const img = new Image();
-    img.onload = () => fi.classList.add('loaded');
+    img.onload = function() {
+      fi.classList.add('loaded');
+      var wrapper = document.getElementById('frame-svg-wrapper');
+      if (wrapper) wrapper.classList.add('loaded');
+    };
     img.src = 'frame_original_02.png';
+  }
+
+  /* ═══════════════════════════════════════════
+     FRAME POSITION HELPERS — meet/contain rendering
+     ═══════════════════════════════════════════ */
+  // Compute where the frame renders — BLEND between contain (0) and cover (1)
+  // Adjust FRAME_BLEND to taste: 0 = full frame visible, 1 = fills viewport
+  var FRAME_BLEND = 0.55;
+  function updateFrameRect() {
+    var FW = 2400, FH = 1792;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var containScale = Math.min(vw / FW, vh / FH);
+    var coverScale   = Math.max(vw / FW, vh / FH);
+    var scale = containScale + (coverScale - containScale) * FRAME_BLEND;
+    var w = FW * scale, h = FH * scale;
+    var left = (vw - w) / 2, top = (vh - h) / 2;
+    window._frameRect = { w: w, h: h, left: left, top: top, scale: scale };
+
+    // Size SVG wrapper and torch overlay to this rect
+    ['frame-svg-wrapper', 'frame-torch-overlay'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.style.width  = w + 'px';
+      el.style.height = h + 'px';
+      el.style.left   = left + 'px';
+      el.style.top    = top + 'px';
+    });
+
+    // Dark gap panels — cover fog/map visible in viewport gaps
+    var gapLeft = Math.max(0, left);
+    var gapTop  = Math.max(0, top);
+    var gaps = [
+      { id:'fgap-l', css:'top:0;left:0;width:'+gapLeft+'px;height:100vh' },
+      { id:'fgap-r', css:'top:0;right:0;width:'+gapLeft+'px;height:100vh' },
+      { id:'fgap-t', css:'top:0;left:0;width:100vw;height:'+gapTop+'px' },
+      { id:'fgap-b', css:'bottom:0;left:0;width:100vw;height:'+gapTop+'px' }
+    ];
+    gaps.forEach(function(g) {
+      var el = document.getElementById(g.id);
+      if (!el) { el = document.createElement('div'); el.id = g.id; document.body.appendChild(el); }
+      el.style.cssText = 'position:fixed;z-index:509;background:#0d0d12;pointer-events:none;' + g.css;
+    });
+  }
+
+  function getMedallionScreenPos(cx, cy) {
+    var FW = 2400, FH = 1792, FAR = FW / FH;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var fr = window._frameRect;
+    if (!fr) return { x: cx * vw, y: cy * vh };
+
+    // Step 1: Where would cover render? (to find frame-image coords)
+    var coverScale, coverOY;
+    if (vw / vh > FAR) {
+      coverScale = vw / FW;
+      coverOY = (vh - FH * coverScale) / 2;
+    } else {
+      coverScale = vh / FH;
+      coverOY = 0;
+    }
+    var frameX = cx * FW;
+    var frameY = (cy * vh - coverOY) / coverScale;
+
+    // Step 2: Convert to blended frame rect position
+    return {
+      x: (frameX / FW) * fr.w + fr.left,
+      y: (frameY / FH) * fr.h + fr.top
+    };
   }
 
   /* ═══════════════════════════════════════════
