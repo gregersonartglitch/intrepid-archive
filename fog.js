@@ -1884,8 +1884,16 @@
       document.head.appendChild(style);
     }
 
-    var px = (m.cx * 100) + 'vw';
-    var py = (m.cy * 100) + 'vh';
+    // Use frame-aware positioning if available (blended frame mode)
+    var px, py;
+    if (window.getMedallionScreenPos) {
+      var pos = window.getMedallionScreenPos(m.cx, m.cy);
+      px = pos.x + 'px';
+      py = pos.y + 'px';
+    } else {
+      px = (m.cx * 100) + 'vw';
+      py = (m.cy * 100) + 'vh';
+    }
     var ringSize = (m.r || 80) + 'px';
 
     // Outer pulse ring

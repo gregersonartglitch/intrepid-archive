@@ -3274,6 +3274,8 @@ body.debug-hotspots .medallion-hot::after {
       y: (frameY / FH) * fr.h + fr.top
     };
   }
+  // Expose for fog.js (spawnMedallionPulse positioning)
+  window.getMedallionScreenPos = getMedallionScreenPos;
 
   /* ═══════════════════════════════════════════
      MEDALLION TOOLTIPS
