@@ -290,6 +290,7 @@
 
     // UI
     updateProgress();
+    suppressAnimations = false; // from now on, new reveals get the full ceremony
     addResetButton();
 
     // Tutorial
@@ -1804,6 +1805,7 @@
 
   // Restore revealed gods immediately to prevent re-reveal race condition
   var revealedGods = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+  var suppressAnimations = true; // suppress toasts/pulses during initial load restoration
 
   function checkGodReveals(count) {
     var defs = window.MEDALLION_DEFS;
@@ -1819,42 +1821,44 @@
   function revealGod(m) {
     revealedGods[m.name] = true;
 
-    // Play a deep chime — guardians get a higher, brighter tone
-    if (audioCtx) {
-      var freq = m.guardian ? 220 : 130; // A3 for guardians, C2 for the Nine
-      var osc = audioCtx.createOscillator();
-      var gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
-      osc.start(audioCtx.currentTime);
-      osc.stop(audioCtx.currentTime + 3);
+    // During page load restoration, just save state silently — no ceremony
+    if (!suppressAnimations) {
+      // Play a deep chime — guardians get a higher, brighter tone
+      if (audioCtx) {
+        var freq = m.guardian ? 220 : 130;
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 3);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 3);
 
-      // Add harmonic overtone for richer sound
-      var osc2 = audioCtx.createOscillator();
-      var gain2 = audioCtx.createGain();
-      osc2.connect(gain2);
-      gain2.connect(audioCtx.destination);
-      osc2.type = 'sine';
-      osc2.frequency.value = freq * 1.5; // perfect fifth
-      gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
-      osc2.start(audioCtx.currentTime + 0.1);
-      osc2.stop(audioCtx.currentTime + 2.5);
+        var osc2 = audioCtx.createOscillator();
+        var gain2 = audioCtx.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.type = 'sine';
+        osc2.frequency.value = freq * 1.5;
+        gain2.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.5);
+        osc2.start(audioCtx.currentTime + 0.1);
+        osc2.stop(audioCtx.currentTime + 2.5);
+      }
+
+      // Show celebration toast
+      var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
+      showGodRevealToast(m.name, m.role, typeLabel);
+
+      // Pulsing attention ring on the medallion icon
+      spawnMedallionPulse(m);
     }
 
-    // Show celebration toast
-    var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
-    showGodRevealToast(m.name, m.role, typeLabel);
-
-    // Permanently reveal via torch overlay
+    // Permanently reveal via torch overlay (always — even on restore)
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
-
-    // Pulsing attention ring on the medallion icon
-    spawnMedallionPulse(m);
 
     // Save to localStorage
     try {
