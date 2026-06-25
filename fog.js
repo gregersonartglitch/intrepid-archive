@@ -256,7 +256,7 @@
     journeyPath = window.JOURNEY_PATH || [];
 
     // Auto-clear stale localStorage when fog system version changes
-    var FOG_VERSION = 16;
+    var FOG_VERSION = 17;
     var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
     if (storedVersion !== FOG_VERSION) {
       localStorage.removeItem(LS_KEY);
