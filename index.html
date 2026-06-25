@@ -2511,8 +2511,8 @@ body.debug-hotspots .medallion-hot::after {
     };
     imgEl.src = cfg.image;  // cfg.image already includes cache-bust param
 
-    // Start centered on the map, at the minimum zoom (fills viewport exactly)
-    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin - 0.5);
+    // Start centered on the map at minimum zoom (fills viewport)
+    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
 
     // Create layer groups
     const defs = window.LAYER_DEFS || [];
@@ -3258,22 +3258,29 @@ body.debug-hotspots .medallion-hot::after {
     var fr = window._frameRect;
     if (!fr) return { x: cx * vw, y: cy * vh };
 
-    // Step 1: Where would cover render? (to find frame-image coords)
-    var coverScale, coverOY;
+    // cx/cy are viewport fractions calibrated when frame used cover mode.
+    // Step 1: Convert viewport fractions to pixel coords within the original frame image.
+    // In cover mode, the image is scaled to fill the viewport:
+    var coverScale, coverOX, coverOY;
     if (vw / vh > FAR) {
+      // wider than image — scale to width, crop top/bottom
       coverScale = vw / FW;
-      coverOY = (vh - FH * coverScale) / 2;
+      coverOX = 0;
+      coverOY = (vh - FH * coverScale) / 2; // negative = cropped
     } else {
+      // taller than image — scale to height, crop sides
       coverScale = vh / FH;
+      coverOX = (vw - FW * coverScale) / 2;
       coverOY = 0;
     }
-    var frameX = cx * FW;
-    var frameY = (cy * vh - coverOY) / coverScale;
+    // Pixel in original image that cx/cy pointed to in cover mode:
+    var imgX = (cx * vw - coverOX) / coverScale;
+    var imgY = (cy * vh - coverOY) / coverScale;
 
-    // Step 2: Convert to blended frame rect position
+    // Step 2: Convert image pixel to blended frame screen position
     return {
-      x: (frameX / FW) * fr.w + fr.left,
-      y: (frameY / FH) * fr.h + fr.top
+      x: (imgX / FW) * fr.w + fr.left,
+      y: (imgY / FH) * fr.h + fr.top
     };
   }
   // Expose for fog.js (spawnMedallionPulse positioning)
