@@ -16,6 +16,8 @@
    DESIGN TOKENS
    ═══════════════════════════════════════════ */
 :root {
+  --min-app-width: 900px;
+  --min-app-height: 600px;
   --stone-dark: #0d0d12;
   --stone-mid: #1a1612;
   --stone-warm: #2a231c;
@@ -40,7 +42,7 @@
    ═══════════════════════════════════════════ */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: var(--stone-dark); color: var(--bone); }
-body { font-family: var(--font-body); }
+body { font-family: var(--font-body); min-width: var(--min-app-width); min-height: var(--min-app-height); overflow: hidden; }
 button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; }
 input { font-family: inherit; }
 
@@ -2046,7 +2048,21 @@ body.debug-hotspots .medallion-hot::after {
     // initClouds(); // disabled — translucent ovals are distracting
     tryLoadFrameImage();
     updateFrameRect();
-    window.addEventListener('resize', updateFrameRect);
+
+    // Debounced resize — brief dark flash hides janky intermediate states
+    var resizeTimer = null;
+    var resizeOverlay = document.createElement('div');
+    resizeOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0d0d12;' +
+      'opacity:0;pointer-events:none;transition:opacity 0.15s ease;';
+    document.body.appendChild(resizeOverlay);
+    window.addEventListener('resize', function() {
+      resizeOverlay.style.opacity = '1';
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        updateFrameRect();
+        resizeOverlay.style.opacity = '0';
+      }, 200);
+    });
     initMedallionTooltips();
 
     // ── Torch effect + proximity card detection ──────────────────────────
