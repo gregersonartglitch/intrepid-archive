@@ -566,9 +566,10 @@ body.debug-hotspots .medallion-hot::after {
    FINALE OVERLAY
    ═══════════════════════════════════════════ */
 #finale-overlay {
-  position: fixed; inset: 0; z-index: 999;
-  background: rgba(6, 7, 10, 0.88);
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(6, 7, 10, 0.92);
   display: flex; align-items: center; justify-content: center;
+  width: 100vw; height: 100vh;
   opacity: 0; pointer-events: none;
   transition: opacity 1.5s ease;
 }
@@ -576,7 +577,8 @@ body.debug-hotspots .medallion-hot::after {
   opacity: 1; pointer-events: auto;
 }
 #finale-content {
-  text-align: center; max-width: 480px; padding: 48px;
+  text-align: center; max-width: 520px; padding: 48px;
+  margin: 0 auto;
 }
 #finale-label {
   font-family: 'Cinzel', serif;
