@@ -2452,14 +2452,15 @@ body.debug-hotspots .medallion-hot::after {
         toolbar.appendChild(closeBtn);
         document.body.appendChild(toolbar);
 
-        // Create dots — positioned as % of the image
+        // Create dots with visible radius rings — positioned as % of the image
         var dots = [];
         defs.forEach(function(m, i) {
           var dot = document.createElement('div');
           var color = colors[i % colors.length];
-          var sz = 20;
+          var sz = 12;
+          var currentR = m.r || 80;
           dot.dataset.mname = m.name;
-          dot.dataset.radius = m.r || 80;
+          dot.dataset.radius = currentR;
           dot.style.cssText = 'position:absolute;z-index:9998;pointer-events:auto;cursor:grab;' +
             'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;' +
             'background:' + color + ';border:2px solid white;' +
@@ -2467,14 +2468,38 @@ body.debug-hotspots .medallion-hot::after {
             'left:' + (m.cx * 100) + '%;top:' + (m.cy * 100) + '%;' +
             'transform:translate(-50%,-50%);';
 
-          // Label
+          // Radius ring — shows hit zone, sized as % of wrapper (= % of image)
+          var ring = document.createElement('div');
+          var ringPct = (currentR / 2400) * 100; // r is in image pixels, convert to % of image width
+          ring.className = 'cal-ring';
+          ring.style.cssText = 'position:absolute;border:1.5px solid ' + color + ';border-radius:50%;' +
+            'pointer-events:none;opacity:0.5;' +
+            'width:' + (ringPct * 2) + '%;height:' + (ringPct * 2) + '%;' + // diameter
+            'left:50%;top:50%;transform:translate(-50%,-50%);' +
+            'box-sizing:border-box;';
+          dot.appendChild(ring);
+
+          // Label with name + radius
           var label = document.createElement('div');
+          label.className = 'cal-label';
           label.style.cssText = 'position:absolute;top:' + (sz + 2) + 'px;left:50%;transform:translateX(-50%);' +
             'white-space:nowrap;font-family:monospace;font-size:10px;color:#fff;' +
             'background:rgba(0,0,0,0.9);padding:1px 5px;border-radius:3px;pointer-events:none;' +
             'border:1px solid ' + color + ';';
-          label.textContent = m.name;
+          label.textContent = m.name + ' r=' + currentR;
           dot.appendChild(label);
+
+          // Scroll wheel to resize radius
+          dot.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            var delta = e.deltaY > 0 ? -4 : 4;
+            currentR = Math.max(20, Math.min(300, currentR + delta));
+            dot.dataset.radius = currentR;
+            var newPct = (currentR / 2400) * 100;
+            ring.style.width = (newPct * 2) + '%';
+            ring.style.height = (newPct * 2) + '%';
+            label.textContent = m.name + ' r=' + currentR;
+          });
 
           // Drag — convert mouse position to % of wrapper
           var dragging = false;
