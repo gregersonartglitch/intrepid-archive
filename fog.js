@@ -1857,8 +1857,8 @@
       spawnMedallionPulse(m);
     }
 
-    // Permanently reveal via torch overlay (always — even on restore)
-    if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
+    // No permanent glow — just the reveal pulse animation
+    // if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
 
     // Save to localStorage
     try {
@@ -1925,7 +1925,8 @@
         var def = defs.find(function(m) { return m.name === name; });
         if (def && def.unlock && currentCount >= def.unlock && !revealedGods[name]) {
           revealedGods[name] = true;
-          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+          // No permanent glow on restore
+          // if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
         }
       });
     } catch(e) {}
