@@ -601,17 +601,34 @@ body.debug-hotspots .medallion-hot::after {
   font-size: 20px; color: #efe7d2;
   font-style: italic; margin-bottom: 40px;
 }
-#finale-dismiss {
+#finale-dismiss, .finale-action {
   background: transparent;
   border: 1px solid rgba(212,168,67,0.5);
   color: #d4a843; font-family: 'Cinzel', serif;
   font-size: 13px; letter-spacing: 2px;
   padding: 12px 32px; border-radius: 4px;
   cursor: pointer; transition: all 0.3s ease;
+  display: block; width: 100%; text-align: center;
+  margin-bottom: 12px; text-decoration: none;
 }
-#finale-dismiss:hover {
+#finale-dismiss:hover, .finale-action:hover {
   background: rgba(212,168,67,0.12);
   border-color: rgba(212,168,67,0.9);
+}
+.finale-action.secondary {
+  border-color: rgba(120,100,220,0.5);
+  color: #9080cc;
+}
+.finale-action.secondary:hover {
+  background: rgba(120,100,220,0.1);
+  border-color: rgba(120,100,220,0.9);
+}
+.finale-actions {
+  margin-top: 36px;
+}
+.finale-divider {
+  width: 60px; height: 1px; margin: 28px auto;
+  background: linear-gradient(to right, transparent, rgba(198,141,85,0.4), transparent);
 }
 
 /* Milestone spark animation */
@@ -1762,7 +1779,13 @@ body.debug-hotspots .medallion-hot::after {
       <div id="finale-name">Cartographer</div>
       <div id="finale-sub">The Hollowlands has been watching.</div>
       <div id="finale-sub2">It sees you now.</div>
-      <button id="finale-dismiss">Continue →</button>
+      <div class="finale-actions">
+        <button id="finale-dismiss" class="finale-action">Continue Exploring →</button>
+        <div class="finale-divider"></div>
+        <a class="finale-action" id="finale-volume" href="#" target="_blank" rel="noopener">📜 Read Volume 1</a>
+        <a class="finale-action secondary" id="finale-dossier" href="dossier.html" target="_blank" rel="noopener">🗓 Character Dossier</a>
+        <button class="finale-action secondary" id="finale-reset" style="margin-top:8px;font-size:11px;opacity:0.6;">Begin Again</button>
+      </div>
     </div>
   </div>
 

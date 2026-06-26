@@ -1791,7 +1791,17 @@
 
   function showJourneyToast() {
     var overlay = document.getElementById('finale-overlay');
-    if (overlay) overlay.classList.add('visible');
+    if (!overlay) return;
+    overlay.classList.add('visible');
+
+    // Wire up finale buttons
+    var dismissBtn = document.getElementById('finale-dismiss');
+    if (dismissBtn) dismissBtn.onclick = function() { overlay.classList.remove('visible'); };
+
+    var resetBtn = document.getElementById('finale-reset');
+    if (resetBtn) resetBtn.onclick = function() {
+      if (window.FogSystem && window.FogSystem.reset) window.FogSystem.reset();
+    };
   }
 
   // Constellation lines are drawn in the main draw() loop — hook them in here
