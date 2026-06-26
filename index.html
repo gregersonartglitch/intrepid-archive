@@ -2386,6 +2386,8 @@ body.debug-hotspots .medallion-hot::after {
     })();
 
     // ── ?calibrate mode: visual medallion position editor ──────────────
+    // Dots are positioned as % of the frame IMAGE (2400×1792), not the viewport.
+    // Resize the window and dots stay locked to the art.
     if (window.location.search.indexOf('calibrate') !== -1) {
       (function() {
         var defs = window.MEDALLION_DEFS;
@@ -2393,15 +2395,25 @@ body.debug-hotspots .medallion-hot::after {
         var colors = ['#ff4444','#ff8844','#ffcc44','#44ff44','#44ffcc','#44ccff',
                       '#4488ff','#8844ff','#cc44ff','#ff44cc','#ff4488','#ff8866'];
 
-        // Container for dots + toolbar
-        var container = document.createElement('div');
-        container.id = 'calibrate-overlay';
-        container.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
-        document.body.appendChild(container);
+        // Wrapper matches the frame rect exactly — dots are absolute within it
+        var wrapper = document.createElement('div');
+        wrapper.id = 'calibrate-wrapper';
+        wrapper.style.cssText = 'position:fixed;z-index:9998;pointer-events:none;overflow:visible;';
+        function sizeWrapper() {
+          var fr = window._frameRect;
+          if (!fr) return;
+          wrapper.style.width  = fr.w + 'px';
+          wrapper.style.height = fr.h + 'px';
+          wrapper.style.left   = fr.left + 'px';
+          wrapper.style.top    = fr.top + 'px';
+        }
+        sizeWrapper();
+        window.addEventListener('resize', sizeWrapper);
+        document.body.appendChild(wrapper);
 
         // Toolbar
         var toolbar = document.createElement('div');
-        toolbar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;' +
+        toolbar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:10000;' +
           'background:rgba(0,0,0,0.92);border:2px solid #d4a843;border-radius:8px;padding:8px 16px;' +
           'display:flex;gap:12px;align-items:center;pointer-events:auto;font-family:monospace;';
         toolbar.innerHTML = '<span style="color:#d4a843;font-weight:bold;">CALIBRATE MODE</span>' +
@@ -2414,9 +2426,9 @@ body.debug-hotspots .medallion-hot::after {
         copyBtn.onclick = function() {
           var lines = [];
           dots.forEach(function(d) {
-            var fr = window._frameRect;
-            var cx = ((parseFloat(d.style.left) - fr.left) / fr.w).toFixed(4);
-            var cy = ((parseFloat(d.style.top) - fr.top) / fr.h).toFixed(4);
+            // left/top are percentages of the frame image — that IS the image fraction
+            var cx = (parseFloat(d.style.left) / 100).toFixed(4);
+            var cy = (parseFloat(d.style.top) / 100).toFixed(4);
             lines.push("        { name: '" + d.dataset.mname + "', cx: " + cx + ", cy: " + cy + ", r: " + d.dataset.radius + " },");
           });
           var text = lines.join('\n');
@@ -2432,35 +2444,35 @@ body.debug-hotspots .medallion-hot::after {
         closeBtn.textContent = 'Exit';
         closeBtn.style.cssText = 'background:#633;color:#fff;border:none;padding:6px 14px;border-radius:4px;' +
           'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
-        closeBtn.onclick = function() { container.remove(); toolbar.remove(); };
+        closeBtn.onclick = function() { wrapper.remove(); toolbar.remove(); };
         toolbar.appendChild(closeBtn);
         document.body.appendChild(toolbar);
 
-        // Create draggable dots
+        // Create dots — positioned as % of the image
         var dots = [];
         defs.forEach(function(m, i) {
           var dot = document.createElement('div');
-          var pos = getMedallionScreenPos(m.cx, m.cy);
           var color = colors[i % colors.length];
-          var sz = Math.max(24, (m.r || 80) / 3);
+          var sz = 20;
           dot.dataset.mname = m.name;
           dot.dataset.radius = m.r || 80;
-          dot.style.cssText = 'position:fixed;z-index:9998;pointer-events:auto;cursor:grab;' +
+          dot.style.cssText = 'position:absolute;z-index:9998;pointer-events:auto;cursor:grab;' +
             'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;' +
             'background:' + color + ';border:2px solid white;' +
-            'box-shadow:0 0 8px rgba(0,0,0,0.6);' +
-            'left:' + pos.x + 'px;top:' + pos.y + 'px;' +
+            'box-shadow:0 0 8px rgba(0,0,0,0.8);' +
+            'left:' + (m.cx * 100) + '%;top:' + (m.cy * 100) + '%;' +
             'transform:translate(-50%,-50%);';
 
           // Label
           var label = document.createElement('div');
-          label.style.cssText = 'position:absolute;top:' + (sz + 4) + 'px;left:50%;transform:translateX(-50%);' +
+          label.style.cssText = 'position:absolute;top:' + (sz + 2) + 'px;left:50%;transform:translateX(-50%);' +
             'white-space:nowrap;font-family:monospace;font-size:10px;color:#fff;' +
-            'background:rgba(0,0,0,0.85);padding:1px 5px;border-radius:3px;pointer-events:none;';
+            'background:rgba(0,0,0,0.9);padding:1px 5px;border-radius:3px;pointer-events:none;' +
+            'border:1px solid ' + color + ';';
           label.textContent = m.name;
           dot.appendChild(label);
 
-          // Drag logic
+          // Drag — convert mouse position to % of wrapper
           var dragging = false;
           dot.addEventListener('mousedown', function(e) {
             dragging = true;
@@ -2469,37 +2481,21 @@ body.debug-hotspots .medallion-hot::after {
           });
           document.addEventListener('mousemove', function(e) {
             if (!dragging) return;
-            dot.style.left = e.clientX + 'px';
-            dot.style.top = e.clientY + 'px';
+            var rect = wrapper.getBoundingClientRect();
+            var pctX = ((e.clientX - rect.left) / rect.width) * 100;
+            var pctY = ((e.clientY - rect.top) / rect.height) * 100;
+            dot.style.left = pctX + '%';
+            dot.style.top = pctY + '%';
           });
           document.addEventListener('mouseup', function() {
-            if (dragging) {
-              dragging = false;
-              dot.style.cursor = 'grab';
-            }
+            if (dragging) { dragging = false; dot.style.cursor = 'grab'; }
           });
 
-          container.appendChild(dot);
+          wrapper.appendChild(dot);
           dots.push(dot);
         });
 
-        // Reposition dots on resize
-        window.addEventListener('resize', function() {
-          dots.forEach(function(d, i) {
-            var m = defs[i];
-            // Only reposition if not being dragged and still at original position
-            var fr = window._frameRect;
-            if (!fr) return;
-            var currentCx = ((parseFloat(d.style.left) - fr.left) / fr.w);
-            // If dot has been manually moved, reposition using its image-fraction
-            var pos = getMedallionScreenPos(currentCx >= 0 && currentCx <= 1 ? currentCx : m.cx, 
-              ((parseFloat(d.style.top) - fr.top) / fr.h) || m.cy);
-            d.style.left = pos.x + 'px';
-            d.style.top = pos.y + 'px';
-          });
-        });
-
-        console.log('%c🎯 CALIBRATE MODE ACTIVE — Drag dots to medallion centers, then click Copy Values', 
+        console.log('%c🎯 CALIBRATE MODE — dots track the frame image at any window size',
           'color: #d4a843; font-size: 14px; font-weight: bold;');
       })();
     }
