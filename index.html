@@ -2049,20 +2049,8 @@ body.debug-hotspots .medallion-hot::after {
     tryLoadFrameImage();
     updateFrameRect();
 
-    // Debounced resize — brief dark flash hides janky intermediate states
-    var resizeTimer = null;
-    var resizeOverlay = document.createElement('div');
-    resizeOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0d0d12;' +
-      'opacity:0;pointer-events:none;transition:opacity 0.15s ease;';
-    document.body.appendChild(resizeOverlay);
-    window.addEventListener('resize', function() {
-      resizeOverlay.style.opacity = '1';
-      if (resizeTimer) clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(function() {
-        updateFrameRect();
-        resizeOverlay.style.opacity = '0';
-      }, 200);
-    });
+    // Resize — update frame, clip-path, and gaps immediately on every event
+    window.addEventListener('resize', updateFrameRect);
     initMedallionTooltips();
 
     // ── Torch effect + proximity card detection ──────────────────────────
