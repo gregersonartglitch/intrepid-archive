@@ -2120,7 +2120,9 @@ body.debug-hotspots .medallion-hot::after {
         Object.keys(window._permanentGlows).forEach(function(name) {
           var m = GLOW_POS[name];
           if (!m) return;
-          var glowR = (m.r || 80) / 2;
+          var fr = window._frameRect;
+          var s = fr ? fr.w / 2400 : 1;
+          var glowR = ((m.r || 80) * s) / 2;
           var pos = getMedallionScreenPos(m.cx, m.cy);
           parts.push('radial-gradient(circle ' + glowR + 'px at ' + pos.x + 'px ' + pos.y + 'px, ' +
             'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)');
@@ -2198,14 +2200,16 @@ body.debug-hotspots .medallion-hot::after {
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
 
-        // Proximity check — find nearest medallion within its radius
+        // Proximity check — find nearest medallion within its scaled radius
         var nearest = null, nearestDist = Infinity;
+        var fr = window._frameRect;
+        var radiusScale = fr ? fr.w / 2400 : 1; // scale r relative to native image width
         MEDALLIONS.forEach(function(m) {
           var pos = getMedallionScreenPos(m.cx, m.cy);
           var dx = e.clientX - pos.x;
           var dy = e.clientY - pos.y;
           var dist = Math.sqrt(dx*dx + dy*dy);
-          var threshold = (m.r || 80) / 2;
+          var threshold = ((m.r || 80) * radiusScale) / 2;
           if (dist < threshold && dist < nearestDist) { nearestDist = dist; nearest = m; }
         });
         if (nearest) {
