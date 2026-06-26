@@ -425,13 +425,7 @@ input { font-family: inherit; }
   letter-spacing: 10px; text-align: center;
 }
 
-/* Frame image overlay */
-#frame-img {
-  position: fixed; inset: 0; z-index: 510; pointer-events: none;
-  background: url('frame_original_02.png?v=1782250059') center/cover no-repeat;
-  opacity: 0; transition: opacity 0.5s ease;
-}
-#frame-img.loaded { opacity: 1; }
+/* Frame rendering handled by #frame-svg-wrapper + updateFrameRect() */
 
 /* Medallion Hotspots */
 #medallion-hotspots {
@@ -3357,10 +3351,8 @@ body.debug-hotspots .medallion-hot::after {
      FRAME IMAGE
      ═══════════════════════════════════════════ */
   function tryLoadFrameImage() {
-    const fi = document.getElementById('frame-img');
     const img = new Image();
     img.onload = function() {
-      fi.classList.add('loaded');
       var wrapper = document.getElementById('frame-svg-wrapper');
       if (wrapper) wrapper.classList.add('loaded');
     };
@@ -3412,34 +3404,6 @@ body.debug-hotspots .medallion-hot::after {
       el.style.cssText = 'position:fixed;z-index:509;background:#0d0d12;pointer-events:auto;' + g.css;
     });
 
-    // Pointer blocker — SVG with elliptical cutout matching frame's map opening
-    // Blocks clicks on frame decoration, passes through to map in center
-    var blocker = document.getElementById('frame-pointer-blocker');
-    if (!blocker) {
-      blocker = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      blocker.id = 'frame-pointer-blocker';
-      blocker.style.cssText = 'position:fixed;z-index:512;overflow:visible;';
-      blocker.innerHTML =
-        '<defs><mask id="frame-hole-mask">' +
-        '<rect width="100%" height="100%" fill="white"/>' +
-        '<ellipse id="frame-hole" fill="black"/>' +
-        '</mask></defs>' +
-        '<rect width="100%" height="100%" fill="transparent" mask="url(#frame-hole-mask)" ' +
-        'style="pointer-events:auto;"/>';
-      document.body.appendChild(blocker);
-    }
-    blocker.style.width  = w + 'px';
-    blocker.style.height = h + 'px';
-    blocker.style.left   = left + 'px';
-    blocker.style.top    = top + 'px';
-    blocker.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
-    var hole = document.getElementById('frame-hole');
-    if (hole) {
-      hole.setAttribute('cx', MAP_HOLE_CX * w);
-      hole.setAttribute('cy', MAP_HOLE_CY * h);
-      hole.setAttribute('rx', MAP_HOLE_RX * w);
-      hole.setAttribute('ry', MAP_HOLE_RY * h);
-    }
 
     // Clip ALL map content to the elliptical opening — no fog/clouds/markers leak outside
     var clipCx = MAP_HOLE_CX * w + left;  // screen-space center
