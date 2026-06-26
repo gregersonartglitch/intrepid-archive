@@ -2499,6 +2499,7 @@ body.debug-hotspots .medallion-hot::after {
           // Scroll wheel to resize radius
           dot.addEventListener('wheel', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             var delta = e.deltaY > 0 ? -4 : 4;
             currentR = Math.max(20, Math.min(300, currentR + delta));
             dot.dataset.radius = currentR;
