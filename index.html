@@ -2111,11 +2111,14 @@ body.debug-hotspots .medallion-hot::after {
       MEDALLIONS.forEach(function(m) { GLOW_POS[m.name] = m; });
 
       function buildMask(mxVal, myVal) {
+        // Scale gradient radius by frame scale so torch works at any window size
+        var fr = window._frameRect;
+        var s = fr ? fr.w / 2400 : 1;
         var parts = [
           'radial-gradient(circle at ' + mxVal + ' ' + myVal + ', ' +
-          'rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) 40px, rgba(0,0,0,0.8) 80px, ' +
-          'rgba(0,0,0,0.55) 120px, rgba(0,0,0,0.3) 160px, rgba(0,0,0,0.12) 200px, ' +
-          'rgba(0,0,0,0.04) 240px, transparent 300px)'
+          'rgba(0,0,0,1) 0px, rgba(0,0,0,0.95) ' + (40*s) + 'px, rgba(0,0,0,0.8) ' + (80*s) + 'px, ' +
+          'rgba(0,0,0,0.55) ' + (120*s) + 'px, rgba(0,0,0,0.3) ' + (160*s) + 'px, rgba(0,0,0,0.12) ' + (200*s) + 'px, ' +
+          'rgba(0,0,0,0.04) ' + (240*s) + 'px, transparent ' + (300*s) + 'px)'
         ];
         Object.keys(window._permanentGlows).forEach(function(name) {
           var m = GLOW_POS[name];
@@ -3369,6 +3372,10 @@ body.debug-hotspots .medallion-hot::after {
   // Compute where the frame renders — BLEND between contain (0) and cover (1)
   // Adjust FRAME_BLEND to taste: 0 = full frame visible, 1 = fills viewport
   var FRAME_BLEND = 0.55;
+  // Map opening in frame art — center and radius as fractions of image (2400×1792)
+  var MAP_HOLE_CX = 0.488, MAP_HOLE_CY = 0.478;
+  var MAP_HOLE_RX = 0.295, MAP_HOLE_RY = 0.330; // elliptical (wider vertically)
+
   function updateFrameRect() {
     var FW = 2400, FH = 1792;
     var vw = window.innerWidth, vh = window.innerHeight;
@@ -3389,7 +3396,7 @@ body.debug-hotspots .medallion-hot::after {
       el.style.top    = top + 'px';
     });
 
-    // Dark gap panels — cover fog/map visible in viewport gaps
+    // Dark gap panels — cover fog/map visible in viewport gaps (block pointer events)
     var gapLeft = Math.max(0, left);
     var gapTop  = Math.max(0, top);
     var gaps = [
@@ -3401,8 +3408,37 @@ body.debug-hotspots .medallion-hot::after {
     gaps.forEach(function(g) {
       var el = document.getElementById(g.id);
       if (!el) { el = document.createElement('div'); el.id = g.id; document.body.appendChild(el); }
-      el.style.cssText = 'position:fixed;z-index:509;background:#0d0d12;pointer-events:none;' + g.css;
+      el.style.cssText = 'position:fixed;z-index:509;background:#0d0d12;pointer-events:auto;' + g.css;
     });
+
+    // Pointer blocker — SVG with elliptical cutout matching frame's map opening
+    // Blocks clicks on frame decoration, passes through to map in center
+    var blocker = document.getElementById('frame-pointer-blocker');
+    if (!blocker) {
+      blocker = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      blocker.id = 'frame-pointer-blocker';
+      blocker.style.cssText = 'position:fixed;z-index:512;overflow:visible;';
+      blocker.innerHTML =
+        '<defs><mask id="frame-hole-mask">' +
+        '<rect width="100%" height="100%" fill="white"/>' +
+        '<ellipse id="frame-hole" fill="black"/>' +
+        '</mask></defs>' +
+        '<rect width="100%" height="100%" fill="transparent" mask="url(#frame-hole-mask)" ' +
+        'style="pointer-events:auto;"/>';
+      document.body.appendChild(blocker);
+    }
+    blocker.style.width  = w + 'px';
+    blocker.style.height = h + 'px';
+    blocker.style.left   = left + 'px';
+    blocker.style.top    = top + 'px';
+    blocker.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    var hole = document.getElementById('frame-hole');
+    if (hole) {
+      hole.setAttribute('cx', MAP_HOLE_CX * w);
+      hole.setAttribute('cy', MAP_HOLE_CY * h);
+      hole.setAttribute('rx', MAP_HOLE_RX * w);
+      hole.setAttribute('ry', MAP_HOLE_RY * h);
+    }
   }
 
   // cx/cy are fractions of the frame IMAGE (2400x1792), not viewport fractions.
