@@ -2643,6 +2643,7 @@ body.debug-hotspots .medallion-hot::after {
       bounceAtZoomLimits: false,
       preferCanvas: true
     });
+    window._leafletMap = map; // Expose for resize handler in updateFrameRect
 
     // Recalculate minZoom when window is resized
     window.addEventListener('resize', function() {
@@ -3438,6 +3439,22 @@ body.debug-hotspots .medallion-hot::after {
       hole.setAttribute('cy', MAP_HOLE_CY * h);
       hole.setAttribute('rx', MAP_HOLE_RX * w);
       hole.setAttribute('ry', MAP_HOLE_RY * h);
+    }
+
+    // Clip ALL map content to the elliptical opening — no fog/clouds/markers leak outside
+    var clipCx = MAP_HOLE_CX * w + left;  // screen-space center
+    var clipCy = MAP_HOLE_CY * h + top;
+    var clipRx = MAP_HOLE_RX * w;
+    var clipRy = MAP_HOLE_RY * h;
+    var clipVal = 'ellipse(' + clipRx + 'px ' + clipRy + 'px at ' + clipCx + 'px ' + clipCy + 'px)';
+    ['map', 'clouds'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.clipPath = clipVal;
+    });
+
+    // Tell Leaflet the container changed size
+    if (window._leafletMap) {
+      window._leafletMap.invalidateSize({ animate: false });
     }
   }
 
