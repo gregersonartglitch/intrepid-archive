@@ -3252,36 +3252,12 @@ body.debug-hotspots .medallion-hot::after {
     });
   }
 
+  // cx/cy are fractions of the frame IMAGE (2400x1792), not viewport fractions.
+  // Screen position = image fraction * frame rect size + frame rect offset.
   function getMedallionScreenPos(cx, cy) {
-    var FW = 2400, FH = 1792, FAR = FW / FH;
-    var vw = window.innerWidth, vh = window.innerHeight;
     var fr = window._frameRect;
-    if (!fr) return { x: cx * vw, y: cy * vh };
-
-    // cx/cy are viewport fractions calibrated when frame used cover mode.
-    // Step 1: Convert viewport fractions to pixel coords within the original frame image.
-    // In cover mode, the image is scaled to fill the viewport:
-    var coverScale, coverOX, coverOY;
-    if (vw / vh > FAR) {
-      // wider than image — scale to width, crop top/bottom
-      coverScale = vw / FW;
-      coverOX = 0;
-      coverOY = (vh - FH * coverScale) / 2; // negative = cropped
-    } else {
-      // taller than image — scale to height, crop sides
-      coverScale = vh / FH;
-      coverOX = (vw - FW * coverScale) / 2;
-      coverOY = 0;
-    }
-    // Pixel in original image that cx/cy pointed to in cover mode:
-    var imgX = (cx * vw - coverOX) / coverScale;
-    var imgY = (cy * vh - coverOY) / coverScale;
-
-    // Step 2: Convert image pixel to blended frame screen position
-    return {
-      x: (imgX / FW) * fr.w + fr.left,
-      y: (imgY / FH) * fr.h + fr.top
-    };
+    if (!fr) return { x: cx * window.innerWidth, y: cy * window.innerHeight };
+    return { x: cx * fr.w + fr.left, y: cy * fr.h + fr.top };
   }
   // Expose for fog.js (spawnMedallionPulse positioning)
   window.getMedallionScreenPos = getMedallionScreenPos;
