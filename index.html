@@ -2079,29 +2079,29 @@ body.debug-hotspots .medallion-hot::after {
           lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
         { name: 'Sham & Mash',  cx: 0.725, cy: 0.132, r: 120, unlock: 10, spriteFile: 'assets/medallions/twins.png',
-          role: 'The Great Twins · Sunlight',
+          role: 'The Great Twins · Gemini',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
         { name: 'Elil',          cx: 0.799, cy: 0.311, r: 128, unlock: 14, spriteFile: 'assets/medallions/crab.png',
-          role: 'The Deceptive Digger · Crab',
+          role: 'The Shapeshifter · Cancer',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Sinn',          cx: 0.807, cy: 0.597, r: 120, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
-          role: 'Daughter of the Moon · Furrow',
+        { name: 'Ningal',        cx: 0.807, cy: 0.597, r: 120, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
+          role: 'Queen of the Underworld · Virgo',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
         { name: 'An',            cx: 0.716, cy: 0.838, r: 128, unlock: 22, spriteFile: 'assets/medallions/fate.png',
-          role: 'Scales of Destiny · Fate',
+          role: 'Lord of Flight · Libra',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
         { name: 'Belu',          cx: 0.262, cy: 0.835, r: 128, unlock: 26, spriteFile: 'assets/medallions/goatfish.png',
-          role: 'God of Storm · Goat Fish',
+          role: 'God of Storm · Capricorn',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
         { name: 'Nin',           cx: 0.177, cy: 0.598, r: 128, unlock: 30, spriteFile: 'assets/medallions/scorpion.png',
-          role: 'God of Earth · Scorpion Man',
+          role: 'God of Earth · Scorpio',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
         { name: 'Ae',            cx: 0.179, cy: 0.317, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png',
-          role: 'Water Demon · Fish',
+          role: 'Lord of the Divine River · Pisces',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Erra',          cx: 0.250, cy: 0.142, r: 120, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png',
-          role: 'God of War · Fire Satyr',
-          lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
+        { name: 'Irra',          cx: 0.250, cy: 0.142, r: 120, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png',
+          role: 'God of War · Aries',
+          lore: 'War is not his purpose — it is his nature. IRRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
 
       window._permanentGlows = window._permanentGlows || {};
@@ -2384,6 +2384,125 @@ body.debug-hotspots .medallion-hot::after {
         }
       });
     })();
+
+    // ── ?calibrate mode: visual medallion position editor ──────────────
+    if (window.location.search.indexOf('calibrate') !== -1) {
+      (function() {
+        var defs = window.MEDALLION_DEFS;
+        if (!defs) return;
+        var colors = ['#ff4444','#ff8844','#ffcc44','#44ff44','#44ffcc','#44ccff',
+                      '#4488ff','#8844ff','#cc44ff','#ff44cc','#ff4488','#ff8866'];
+
+        // Container for dots + toolbar
+        var container = document.createElement('div');
+        container.id = 'calibrate-overlay';
+        container.style.cssText = 'position:fixed;inset:0;z-index:9998;pointer-events:none;';
+        document.body.appendChild(container);
+
+        // Toolbar
+        var toolbar = document.createElement('div');
+        toolbar.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;' +
+          'background:rgba(0,0,0,0.92);border:2px solid #d4a843;border-radius:8px;padding:8px 16px;' +
+          'display:flex;gap:12px;align-items:center;pointer-events:auto;font-family:monospace;';
+        toolbar.innerHTML = '<span style="color:#d4a843;font-weight:bold;">CALIBRATE MODE</span>' +
+          '<span style="color:#aaa;font-size:12px;">Drag dots onto medallion centers</span>';
+
+        var copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy Values';
+        copyBtn.style.cssText = 'background:#d4a843;color:#000;border:none;padding:6px 14px;border-radius:4px;' +
+          'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
+        copyBtn.onclick = function() {
+          var lines = [];
+          dots.forEach(function(d) {
+            var fr = window._frameRect;
+            var cx = ((parseFloat(d.style.left) - fr.left) / fr.w).toFixed(4);
+            var cy = ((parseFloat(d.style.top) - fr.top) / fr.h).toFixed(4);
+            lines.push("        { name: '" + d.dataset.mname + "', cx: " + cx + ", cy: " + cy + ", r: " + d.dataset.radius + " },");
+          });
+          var text = lines.join('\n');
+          navigator.clipboard.writeText(text).then(function() {
+            copyBtn.textContent = 'Copied!';
+            copyBtn.style.background = '#44ff44';
+            setTimeout(function() { copyBtn.textContent = 'Copy Values'; copyBtn.style.background = '#d4a843'; }, 1500);
+          });
+        };
+        toolbar.appendChild(copyBtn);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Exit';
+        closeBtn.style.cssText = 'background:#633;color:#fff;border:none;padding:6px 14px;border-radius:4px;' +
+          'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
+        closeBtn.onclick = function() { container.remove(); toolbar.remove(); };
+        toolbar.appendChild(closeBtn);
+        document.body.appendChild(toolbar);
+
+        // Create draggable dots
+        var dots = [];
+        defs.forEach(function(m, i) {
+          var dot = document.createElement('div');
+          var pos = getMedallionScreenPos(m.cx, m.cy);
+          var color = colors[i % colors.length];
+          var sz = Math.max(24, (m.r || 80) / 3);
+          dot.dataset.mname = m.name;
+          dot.dataset.radius = m.r || 80;
+          dot.style.cssText = 'position:fixed;z-index:9998;pointer-events:auto;cursor:grab;' +
+            'width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;' +
+            'background:' + color + ';border:2px solid white;' +
+            'box-shadow:0 0 8px rgba(0,0,0,0.6);' +
+            'left:' + pos.x + 'px;top:' + pos.y + 'px;' +
+            'transform:translate(-50%,-50%);';
+
+          // Label
+          var label = document.createElement('div');
+          label.style.cssText = 'position:absolute;top:' + (sz + 4) + 'px;left:50%;transform:translateX(-50%);' +
+            'white-space:nowrap;font-family:monospace;font-size:10px;color:#fff;' +
+            'background:rgba(0,0,0,0.85);padding:1px 5px;border-radius:3px;pointer-events:none;';
+          label.textContent = m.name;
+          dot.appendChild(label);
+
+          // Drag logic
+          var dragging = false;
+          dot.addEventListener('mousedown', function(e) {
+            dragging = true;
+            dot.style.cursor = 'grabbing';
+            e.preventDefault();
+          });
+          document.addEventListener('mousemove', function(e) {
+            if (!dragging) return;
+            dot.style.left = e.clientX + 'px';
+            dot.style.top = e.clientY + 'px';
+          });
+          document.addEventListener('mouseup', function() {
+            if (dragging) {
+              dragging = false;
+              dot.style.cursor = 'grab';
+            }
+          });
+
+          container.appendChild(dot);
+          dots.push(dot);
+        });
+
+        // Reposition dots on resize
+        window.addEventListener('resize', function() {
+          dots.forEach(function(d, i) {
+            var m = defs[i];
+            // Only reposition if not being dragged and still at original position
+            var fr = window._frameRect;
+            if (!fr) return;
+            var currentCx = ((parseFloat(d.style.left) - fr.left) / fr.w);
+            // If dot has been manually moved, reposition using its image-fraction
+            var pos = getMedallionScreenPos(currentCx >= 0 && currentCx <= 1 ? currentCx : m.cx, 
+              ((parseFloat(d.style.top) - fr.top) / fr.h) || m.cy);
+            d.style.left = pos.x + 'px';
+            d.style.top = pos.y + 'px';
+          });
+        });
+
+        console.log('%c🎯 CALIBRATE MODE ACTIVE — Drag dots to medallion centers, then click Copy Values', 
+          'color: #d4a843; font-size: 14px; font-weight: bold;');
+      })();
+    }
 
     // Reveal Tetrad guardian circles on load (they're always accessible)
      setTimeout(function() {
