@@ -3054,7 +3054,6 @@ body.debug-hotspots .medallion-hot::after {
      veiled → silhouette → clear
      ═══════════════════════════════════════════ */
   function buildVeil() {
-    return; // TEMP: veil disabled for development
     if (!regionsData || !regionsData.features) return;
     const veilGroup = layerGroups['veil'];
     if (!veilGroup) return;
