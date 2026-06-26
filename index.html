@@ -2127,7 +2127,10 @@ body.debug-hotspots .medallion-hot::after {
           var s = fr ? fr.w / 2400 : 1;
           var glowR = ((m.r || 80) * s) / 2;
           var pos = getMedallionScreenPos(m.cx, m.cy);
-          parts.push('radial-gradient(circle ' + glowR + 'px at ' + pos.x + 'px ' + pos.y + 'px, ' +
+          // Convert to overlay-relative coords (overlay is at fr.left, fr.top)
+          var ox = pos.x - (fr ? fr.left : 0);
+          var oy = pos.y - (fr ? fr.top : 0);
+          parts.push('radial-gradient(circle ' + glowR + 'px at ' + ox + 'px ' + oy + 'px, ' +
             'black 0%, rgba(0,0,0,0.85) 30%, rgba(0,0,0,0.35) 65%, transparent 100%)');
         });
         return parts.join(', ');
@@ -2197,8 +2200,11 @@ body.debug-hotspots .medallion-hot::after {
       var lastMx = '-500px', lastMy = '-500px';
 
       document.addEventListener('mousemove', function(e) {
-        lastMx = e.clientX + 'px';
-        lastMy = e.clientY + 'px';
+        // Convert viewport mouse coords to overlay-relative coords
+        // (the overlay is positioned at _frameRect.left/top, not 0,0)
+        var rect = overlay.getBoundingClientRect();
+        lastMx = (e.clientX - rect.left) + 'px';
+        lastMy = (e.clientY - rect.top) + 'px';
         var mask = buildMask(lastMx, lastMy);
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
