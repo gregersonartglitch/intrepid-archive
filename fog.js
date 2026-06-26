@@ -1851,7 +1851,7 @@
 
       // Show celebration toast
       var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
-      showGodRevealToast(m.name, m.role, typeLabel);
+      showGodRevealToast(m.name, m.role, typeLabel, !!m.guardian);
 
       // Pulsing attention ring on the medallion icon
       spawnMedallionPulse(m);
@@ -1896,12 +1896,17 @@
     }
     var glowSize = (m.r || 80) * 1.2 + 'px';
 
-    // Soft warm glow — no ring, no border, just light
+    // Guardian = gold, The Eight = blue-violet
+    var glowColor = m.guardian
+      ? 'radial-gradient(circle, rgba(212,168,67,0.35) 0%, rgba(198,141,85,0.15) 40%, transparent 70%)'
+      : 'radial-gradient(circle, rgba(120,100,220,0.35) 0%, rgba(90,70,180,0.15) 40%, transparent 70%)';
+
+    // Soft glow — no ring, no border, just light
     var glow = document.createElement('div');
     glow.style.cssText =
       'position:fixed;left:' + px + ';top:' + py + ';z-index:939;pointer-events:none;' +
       'width:' + glowSize + ';height:' + glowSize + ';' +
-      'background:radial-gradient(circle, rgba(212,168,67,0.35) 0%, rgba(198,141,85,0.15) 40%, transparent 70%);' +
+      'background:' + glowColor + ';' +
       'border-radius:50%;transform:translate(-50%,-50%);' +
       'animation: med-warm-pulse 1.6s ease-in-out forwards;';
     document.body.appendChild(glow);
@@ -1926,16 +1931,22 @@
     } catch(e) {}
   }
 
-  function showGodRevealToast(name, role, typeLabel) {
+  function showGodRevealToast(name, role, typeLabel, isGuardian) {
     var old = document.getElementById('god-toast');
     if (old) old.remove();
 
-    // Screen-edge gold glow
+    // Guardian = gold, The Eight = blue-violet
+    var accentR = isGuardian ? '212,168,67' : '120,100,220';
+    var accentHex = isGuardian ? '#d4a843' : '#7864dc';
+    var accentDim = isGuardian ? '#c68d55' : '#9080cc';
+    var subtleHex = isGuardian ? '#8a7d6b' : '#7a7599';
+
+    // Screen-edge glow
     var glow = document.createElement('div');
     glow.id = 'god-toast-glow';
     glow.style.cssText =
       'position:fixed;inset:0;z-index:949;pointer-events:none;' +
-      'box-shadow:inset 0 0 120px rgba(212,168,67,0.4), inset 0 0 60px rgba(198,141,85,0.2);' +
+      'box-shadow:inset 0 0 120px rgba(' + accentR + ',0.4), inset 0 0 60px rgba(' + accentR + ',0.2);' +
       'opacity:0;transition:opacity 1.5s ease;';
     document.body.appendChild(glow);
 
@@ -1944,15 +1955,15 @@
     toast.style.cssText =
       'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);z-index:950;' +
       'background:radial-gradient(ellipse at center, rgba(15,12,8,0.97), rgba(10,12,16,0.95));' +
-      'border:1px solid rgba(212,168,67,0.5);' +
+      'border:1px solid rgba(' + accentR + ',0.5);' +
       'border-radius:12px;padding:30px 60px;text-align:center;pointer-events:none;' +
       'opacity:0;transition:opacity 1.2s ease, transform 1.2s ease;' +
-      'box-shadow:0 0 60px rgba(212,168,67,0.15), 0 0 20px rgba(0,0,0,0.8);';
+      'box-shadow:0 0 60px rgba(' + accentR + ',0.15), 0 0 20px rgba(0,0,0,0.8);';
     toast.innerHTML =
-      '<div style="font-family:Cinzel,serif;font-size:10px;color:#c68d55;text-transform:uppercase;letter-spacing:4px;margin-bottom:10px;opacity:0.8;">' + (typeLabel || 'THE FRAME STIRS') + '</div>' +
-      '<div style="font-family:Cinzel,serif;font-size:28px;color:#d4a843;letter-spacing:3px;text-shadow:0 0 20px rgba(212,168,67,0.4);">' + name + '</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:10px;color:' + accentDim + ';text-transform:uppercase;letter-spacing:4px;margin-bottom:10px;opacity:0.8;">' + (typeLabel || 'THE FRAME STIRS') + '</div>' +
+      '<div style="font-family:Cinzel,serif;font-size:28px;color:' + accentHex + ';letter-spacing:3px;text-shadow:0 0 20px rgba(' + accentR + ',0.4);">' + name + '</div>' +
       (role ? '<div style="font-family:EB Garamond,serif;font-size:14px;color:#bfb299;font-style:italic;margin-top:8px;letter-spacing:1px;">' + role + '</div>' : '') +
-      '<div style="font-family:EB Garamond,serif;font-size:12px;color:#8a7d6b;margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>';
+      '<div style="font-family:EB Garamond,serif;font-size:12px;color:' + subtleHex + ';margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>';
     document.body.appendChild(toast);
 
     requestAnimationFrame(function() {
