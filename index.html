@@ -2164,8 +2164,7 @@ body.debug-hotspots .medallion-hot::after {
       var activeCard = null;
       function showProximityCard(m) {
         if (!card || activeCard === m.name) return;
-        // Don't overwrite a fog system discovery card that's already open
-        if (card.classList.contains('visible') && !activeCard) return;
+        // Medallion cards take priority — overwrite any existing location/region card
         activeCard = m.name;
 
         // Check if this god is revealed
