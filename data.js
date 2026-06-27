@@ -1,4 +1,4 @@
-﻿// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
 // INTREPID DUSK — HOLLOWLANDS MAP DATA
 // The Cartographer Archive — VIP Patron Access
 // ═══════════════════════════════════════════════════════════════
@@ -284,6 +284,16 @@ window.LOCATIONS = [
     lore: '"Mish remembers its kings the way a scar remembers the wound — not with grief, but with the shape of it."',
     journeyStep: 4,
     volume1: true
+  },
+  {
+    id: 'denegoth',
+    name: 'Denegoth',
+    sub: 'Mountain of the Mish Borderlands',
+    type: 'sacred',
+    lat: 2800,
+    lng: 2200,
+    desc: 'The mountain called Denegoth rises from the broken hills northwest of Mish like a clenched fist. The locals say it was here that the last Mish king made his final stand before Atrus Nul dragged him down. Whether that is history or myth depends on who you ask. What is certain is that the mountain has never been fully explored. The passes that wind through its lower slopes are treacherous, and the upper reaches are shrouded in a perpetual haze that the Mish call the Breath. Traders avoid it. Soldiers avoid it. The mountain does not care either way.',
+    lore: '"Denegoth does not sleep. It waits."'
   },
   {
     id: 'belu',
