@@ -26,3 +26,7 @@
 
 # Catch-all for unknown sigils → landing page
 /sigil/*              /                           302
+
+# Reader path typo (dual → dusk)
+/reader/intrepid-dual-volume-1    /reader/intrepid-dusk-volume-1/    302
+/reader/intrepid-dual-volume-1/*  /reader/intrepid-dusk-volume-1/:splat 302

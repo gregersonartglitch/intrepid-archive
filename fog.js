@@ -8,7 +8,7 @@
 
   var LS_KEY = 'intrepid_atlas_discovered';
   var CLICK_RADIUS = 110;   // how close (px) user must click to the glow
-  var TUTORIAL_STEPS = 6;  // 6-step guided walkthrough
+  var TUTORIAL_STEPS = 7;  // 7-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
   var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
@@ -16,7 +16,6 @@
   var HINT_DELAY = 5000;     // ms before key starts hinting
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
   var BREATH_AMP = 0.06;     // how much the edges expand/contract (fraction)
-
   // Proximity whispers — incomplete cartographer's notes at the fog edge
   var WHISPERS = {
     'tower-nine':       'Nine windows. Only three face —',
@@ -64,7 +63,18 @@
   // Spotlight search state
   var searchMode = null;  // { locId, loc, keyLat, keyLng, startTime }
   var spotlightPos = null; // { x, y } container coords (null = no spotlight)
-  var lastMousePos = null; // { x, y } for whisper proximity outside search mode
+  var towerForeshadowTime = 0; // timestamp when tower foreshadow was triggered (0 = inactive)
+  var clusterPeek = {};        // undiscovered cluster siblings made visible after parent find
+  var locationPanelFn = null;  // set by index.html — all location lore uses the right sidebar
+  var whisperPanelEl = null;
+  var whisperLocEl = null;
+  var whisperTextEl = null;
+  var currentWhisperId = null;
+
+  // When a journey site is found, its nearby companions become visible + glow.
+  var SITE_CLUSTERS = {
+    'tower-nine': ['maxim-stone']
+  };
 
   // Audio — divining rod pings
   var audioCtx = null;
@@ -80,8 +90,11 @@
   }
 
   function playPing(frequency, duration, volume) {
-    if (!audioCtx || audioCtx.state === 'suspended') {
-      if (audioCtx) audioCtx.resume();
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().then(function() {
+        playPing(frequency, duration, volume);
+      });
       return;
     }
     var osc = audioCtx.createOscillator();
@@ -109,7 +122,7 @@
 
   // Called from draw() during search mode — pings based on proximity
   function updateDiviningAudio(proximity) {
-    if (!audioCtx || !searchMode) return;
+    if (!audioCtx || !searchMode || searchMode.silenced) return;
     var now = Date.now();
 
     // Ping interval: 800ms when far → 100ms when close
@@ -126,125 +139,135 @@
   }
 
   /* ════════════════════════════════════════════════
-     AMBIENT SOUNDSCAPE — generative procedural music
+     AMBIENT SOUNDSCAPE — shared MP3 loop (default on)
      ════════════════════════════════════════════════ */
+  var AMBIENT_LS_KEY = 'intrepid_ambient_enabled';
+  var AMBIENT_SRC = 'assets/audio/ambient.mp3';
+  var AMBIENT_VOLUME = 0.2;
+  var AMBIENT_FADE_MS = 2500;
   var ambientStarted = false;
-  var ambientMuted = false;
-  var ambientMaster = null;
-  var ambientNodes = [];
-  var sparkleTimer = null;
+  var ambientEnabled = true;
+  var ambientAudio = null;
+  var ambientFadeRAF = null;
 
-  function startAmbient() {
-    if (ambientStarted || !audioCtx) return;
-    ambientStarted = true;
+  function loadAmbientPreference() {
+    try {
+      var stored = localStorage.getItem(AMBIENT_LS_KEY);
+      if (stored === null) {
+        ambientEnabled = true;
+      } else {
+        ambientEnabled = stored === 'true';
+      }
+    } catch (e) {
+      ambientEnabled = true;
+    }
+  }
 
-    // Master gain — controls overall volume + mute
-    ambientMaster = audioCtx.createGain();
-    ambientMaster.gain.setValueAtTime(0, audioCtx.currentTime);
-    ambientMaster.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 4);
-    ambientMaster.connect(audioCtx.destination);
+  function updateAmbientButton() {
+    var btn = document.getElementById('ambient-toggle');
+    if (btn) btn.textContent = ambientEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+  }
 
-    // ── Layer 1: Bass drone (very low, filtered) ──
-    var drone = audioCtx.createOscillator();
-    drone.type = 'sine';
-    drone.frequency.value = 65;
-    var droneGain = audioCtx.createGain();
-    droneGain.gain.value = 0.4;
-    var droneLFO = audioCtx.createOscillator();
-    droneLFO.type = 'sine';
-    droneLFO.frequency.value = 0.08;
-    var lfoGain = audioCtx.createGain();
-    lfoGain.gain.value = 3;
-    droneLFO.connect(lfoGain);
-    lfoGain.connect(drone.frequency);
-    droneLFO.start();
-    drone.connect(droneGain);
-    droneGain.connect(ambientMaster);
-    drone.start();
-    ambientNodes.push(drone, droneLFO);
+  function ensureAmbientAudio() {
+    if (ambientAudio) return ambientAudio;
+    ambientAudio = new Audio(AMBIENT_SRC);
+    ambientAudio.loop = true;
+    ambientAudio.volume = 0;
+    ambientAudio.preload = 'auto';
+    ambientAudio.load();
+    return ambientAudio;
+  }
 
-    // ── Layer 2: Harmonic pad (Cm chord, triangle waves) ──
-    [130.81, 155.56, 196.00].forEach(function(noteFreq) {
-      var pad = audioCtx.createOscillator();
-      pad.type = 'triangle';
-      pad.frequency.value = noteFreq;
-      var padLFO = audioCtx.createOscillator();
-      padLFO.type = 'sine';
-      padLFO.frequency.value = 0.05 + Math.random() * 0.06;
-      var padLFOGain = audioCtx.createGain();
-      padLFOGain.gain.value = 2;
-      padLFO.connect(padLFOGain);
-      padLFOGain.connect(pad.detune);
-      padLFO.start();
-      var padGain = audioCtx.createGain();
-      padGain.gain.value = 0.15;
-      pad.connect(padGain);
-      padGain.connect(ambientMaster);
-      pad.start();
-      ambientNodes.push(pad, padLFO);
-    });
+  function cancelAmbientFade() {
+    if (ambientFadeRAF) {
+      cancelAnimationFrame(ambientFadeRAF);
+      ambientFadeRAF = null;
+    }
+  }
 
-    // ── Layer 3: Wind texture (filtered noise) ──
-    var bufferSize = audioCtx.sampleRate * 2;
-    var noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    var nd = noiseBuffer.getChannelData(0);
-    for (var i = 0; i < bufferSize; i++) nd[i] = Math.random() * 2 - 1;
-    var noise = audioCtx.createBufferSource();
-    noise.buffer = noiseBuffer;
-    noise.loop = true;
-    var noiseFilter = audioCtx.createBiquadFilter();
-    noiseFilter.type = 'lowpass';
-    noiseFilter.frequency.value = 400;
-    noiseFilter.Q.value = 1;
-    var filterLFO = audioCtx.createOscillator();
-    filterLFO.type = 'sine';
-    filterLFO.frequency.value = 0.03;
-    var filterLFOGain = audioCtx.createGain();
-    filterLFOGain.gain.value = 200;
-    filterLFO.connect(filterLFOGain);
-    filterLFOGain.connect(noiseFilter.frequency);
-    filterLFO.start();
-    var noiseGain = audioCtx.createGain();
-    noiseGain.gain.value = 0.08;
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(ambientMaster);
-    noise.start();
-    ambientNodes.push(noise, filterLFO);
-
-    // ── Layer 4: Sparkle notes (pentatonic bells) ──
-    var sparkleNotes = [523, 587, 698, 784, 880, 1047, 1175];
-    function scheduleSparkle() {
-      if (!audioCtx || ambientMuted) {
-        sparkleTimer = setTimeout(scheduleSparkle, 3000 + Math.random() * 5000);
+  function fadeAmbientIn() {
+    var audio = ensureAmbientAudio();
+    if (ambientFadeRAF) return;
+    if (audio.volume >= AMBIENT_VOLUME) return;
+    var fromVol = audio.volume;
+    var startTime = null;
+    function step(ts) {
+      if (!ambientEnabled) {
+        cancelAmbientFade();
         return;
       }
-      var note = sparkleNotes[Math.floor(Math.random() * sparkleNotes.length)];
-      var osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = note;
-      var env = audioCtx.createGain();
-      env.gain.setValueAtTime(0, audioCtx.currentTime);
-      env.gain.linearRampToValueAtTime(0.04, audioCtx.currentTime + 0.3);
-      env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2);
-      osc.connect(env);
-      env.connect(ambientMaster);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 2.5);
-      sparkleTimer = setTimeout(scheduleSparkle, 3000 + Math.random() * 5000);
+      if (!startTime) startTime = ts;
+      var t = Math.min(1, (ts - startTime) / AMBIENT_FADE_MS);
+      audio.volume = fromVol + (AMBIENT_VOLUME - fromVol) * t;
+      if (t < 1) {
+        ambientFadeRAF = requestAnimationFrame(step);
+      } else {
+        ambientFadeRAF = null;
+        audio.volume = AMBIENT_VOLUME;
+      }
     }
-    sparkleTimer = setTimeout(scheduleSparkle, 2000);
+    ambientFadeRAF = requestAnimationFrame(step);
+  }
+
+  function startAmbientPlayback() {
+    var audio = ensureAmbientAudio();
+    if (!audio.paused && audio.volume >= AMBIENT_VOLUME * 0.95) return;
+    var playPromise = audio.play();
+    if (playPromise && playPromise.then) {
+      playPromise.then(function() { fadeAmbientIn(); }).catch(function() { /* blocked */ });
+    } else {
+      fadeAmbientIn();
+    }
+  }
+
+  function playAmbient() {
+    ensureAmbientAudio();
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().then(function() { startAmbientPlayback(); });
+      return;
+    }
+    startAmbientPlayback();
+  }
+
+  function stopAmbient() {
+    cancelAmbientFade();
+    if (!ambientAudio) return;
+    ambientAudio.pause();
+    ambientAudio.volume = 0;
+  }
+
+  function initAmbient() {
+    if (ambientStarted) return;
+    ambientStarted = true;
+    loadAmbientPreference();
+    updateAmbientButton();
+    if (ambientEnabled) playAmbient();
   }
 
   function toggleAmbient() {
-    if (!ambientMaster) return;
-    ambientMuted = !ambientMuted;
-    ambientMaster.gain.linearRampToValueAtTime(
-      ambientMuted ? 0 : 0.12,
-      audioCtx.currentTime + 0.5
-    );
-    var btn = document.getElementById('ambient-toggle');
-    if (btn) btn.textContent = ambientMuted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+    ensureAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    if (!ambientStarted) {
+      ambientStarted = true;
+      loadAmbientPreference();
+    }
+    ambientEnabled = !ambientEnabled;
+    try {
+      localStorage.setItem(AMBIENT_LS_KEY, ambientEnabled ? 'true' : 'false');
+    } catch (e) { /* private browsing */ }
+    updateAmbientButton();
+    if (ambientEnabled) playAmbient();
+    else stopAmbient();
+  }
+
+  function unlockAmbientOnGesture() {
+    if (!ambientStarted) {
+      ambientStarted = true;
+      loadAmbientPreference();
+      updateAmbientButton();
+    }
+    if (!ambientEnabled) return;
+    playAmbient();
   }
 
   /* ════════════════════════════════════════════════
@@ -256,7 +279,7 @@
     journeyPath = window.JOURNEY_PATH || [];
 
     // Auto-clear stale localStorage when fog system version changes
-    var FOG_VERSION = 18;
+    var FOG_VERSION = 20;
     var storedVersion = parseInt(localStorage.getItem(LS_KEY + '_v') || '0');
     if (storedVersion !== FOG_VERSION) {
       localStorage.removeItem(LS_KEY);
@@ -268,13 +291,23 @@
     try { discovered = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
     catch(e) { discovered = {}; }
 
-    // Load fog texture
+    loadAmbientPreference();
+    updateAmbientButton();
+    ensureAmbientAudio();
+
+    // Load fog texture (solid #141820 fill still renders if missing)
     fogTexture = new Image();
     fogTexture.onload = function() { textureReady = true; draw(); };
+    fogTexture.onerror = function() { textureReady = false; draw(); };
     fogTexture.src = 'fog_texture.png';
 
-    // Create fog canvas (pointer-events: none — never blocks anything)
+    // Remove any stale fog canvas (e.g. from older builds that used fogPane)
+    var staleFog = map.getContainer().querySelectorAll('.fog-canvas');
+    for (var si = 0; si < staleFog.length; si++) staleFog[si].remove();
+
+    // Create fog canvas on the map container (must not live in a 0×0 Leaflet pane)
     fogCanvas = document.createElement('canvas');
+    fogCanvas.className = 'fog-canvas';
     fogCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:450;pointer-events:none;';
     map.getContainer().appendChild(fogCanvas);
     fogCtx = fogCanvas.getContext('2d');
@@ -285,18 +318,31 @@
 
     // Redraw on map events
     map.on('move zoom viewreset resize zoomend', draw);
+    map.on('moveend zoomend', updateProximityWhispers);
     window.addEventListener('resize', draw);
     draw();
+    updateProximityWhispers();
 
     // UI
     updateProgress();
     suppressAnimations = false; // from now on, new reveals get the full ceremony
     addResetButton();
+    addGuideButton();
 
     // Tutorial
     tutorialStep = Object.keys(discovered).length;
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
+    }
+
+    if (discovered['tower-nine']) {
+      peekClusterSites('tower-nine');
+    }
+
+    // Sync marker visibility with saved discoveries (buildMarkers runs before init)
+    var savedIds = Object.keys(discovered);
+    for (var ri = 0; ri < savedIds.length; ri++) {
+      revealMarker(savedIds[ri]);
     }
   }
 
@@ -306,6 +352,24 @@
      ════════════════════════════════════════════════ */
   function setupClickHandler() {
     var mouseDownX = 0, mouseDownY = 0;
+    // UI chrome — bail before audio init or proximity scans (capture phase runs first)
+    var FOG_UI_SKIP = '#layers, #panel, #discovery-card, #progress-container, .leaflet-control-zoom, ' +
+      '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
+      '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
+      '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
+      '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
+
+    function isFogUiTarget(e) {
+      return !!(e.target && e.target.closest && e.target.closest(FOG_UI_SKIP));
+    }
+
+    function primeAudioDeferred() {
+      ensureAudio();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      // Defer ambient unlock so discovery/reveal runs in this turn first
+      if (!ambientStarted) setTimeout(initAmbient, 0);
+      else if (ambientEnabled) playAmbient();
+    }
 
     document.addEventListener('mousedown', function(e) {
       mouseDownX = e.clientX;
@@ -315,34 +379,49 @@
     document.addEventListener('click', function(e) {
       if (window.EDIT_MODE) return;
       if (!map) return;
-      ensureAudio(); // Initialize audio on first user interaction
-      startAmbient(); // Begin ambient soundscape
 
-      // Only clicks inside the map
       var container = map.getContainer();
-      if (!container.contains(e.target)) return;
+      var clickedInsideMap = container.contains(e.target);
 
       // Allow close button to dismiss card
-      if (e.target.closest('.dc-close')) {
+      if (e.target.closest('.dc-close, .dc-dismiss-btn')) {
         var card = document.getElementById('discovery-card');
         if (card) card.classList.remove('visible');
         return;
       }
 
-      // Skip UI elements
-      if (e.target.closest('#layers, #discovery-card, #progress-container, .leaflet-control-zoom, #fog-reset-btn')) return;
+      // Marker/label clicks are handled by Leaflet in edit mode only.
+      if (window.EDIT_MODE && e.target.closest('.leaflet-marker-icon')) return;
+
+      // Skip UI elements — must run before audio/proximity (capture phase blocks their handlers)
+      if (isFogUiTarget(e)) return;
+
+      // Normal discovery clicks must start inside the map. Search-mode clicks
+      // may land over the decorative frame/medallions, because the hidden key
+      // can appear visually behind that art at some zoom levels.
+      if (!clickedInsideMap && !searchMode) return;
 
       // Skip drags
       var dx = e.clientX - mouseDownX;
       var dy = e.clientY - mouseDownY;
       if (Math.sqrt(dx * dx + dy * dy) > 8) return;
 
-      // Close card if open
+      // Close location panel if open
+      var panelEl = document.getElementById('panel');
+      if (panelEl && panelEl.classList.contains('open')) {
+        if (window.closeLocationPanel) window.closeLocationPanel();
+        else panelEl.classList.remove('open');
+        return;
+      }
+
+      // Close discovery card if open (medallions / sigils)
       var card = document.getElementById('discovery-card');
       if (card && card.classList.contains('visible')) {
         card.classList.remove('visible');
         return;
       }
+
+      primeAudioDeferred();
 
       // Where did user click (container-relative)?
       var rect = container.getBoundingClientRect();
@@ -350,21 +429,45 @@
       var y = e.clientY - rect.top;
 
       // Check proximity to the next clickable location
+      // ── Direct golden-glow click: if user clicks within the section 3 glow
+      // area, trigger the next journey step immediately. This ensures the large
+      // visible golden orb is always clickable regardless of radius edge cases.
+      if (!searchMode) {
+        var glowNextId = getNextPathLocation();
+        if (glowNextId) {
+          var glowNextLoc = (window.LOCATIONS || []).find(function(l) { return l.id === glowNextId; });
+          if (glowNextLoc) {
+            var gnpt = map.latLngToContainerPoint([glowNextLoc.lat, glowNextLoc.lng]);
+            var gnDist = Math.sqrt(Math.pow(x - gnpt.x, 2) + Math.pow(y - gnpt.y, 2));
+            if (gnDist < 130) {
+              e.stopPropagation(); e.preventDefault();
+              if (glowNextId === FINAL_ELENA_STOP && !explorationComplete()) {
+                showLockedMessage();
+                return;
+              }
+              discoverLocation(glowNextLoc);
+              return;
+            }
+          }
+        }
+      }
+
       var locs = window.LOCATIONS || [];
       var closest = null;
       var closestDist = Infinity;
 
       locs.forEach(function(loc) {
         if (!isClickable(loc.id)) return;
-        var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+        var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
         var d = Math.sqrt(Math.pow(x - pt.x, 2) + Math.pow(y - pt.y, 2));
-        if (d < CLICK_RADIUS && d < closestDist) {
+        var locRadius = clickRadiusFor(loc);
+        if (d < locRadius && d < closestDist) {
           closest = loc;
           closestDist = d;
         }
       });
 
-      // During search mode: check for key click
+      // During search mode: check for key click first
       if (searchMode) {
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
@@ -372,8 +475,13 @@
           e.stopPropagation();
           e.preventDefault();
           completeDiscovery(searchMode.loc);
+          return;
         }
-        return; // during search, no other clicks
+        // If the click hit a non-story location (region, city, etc), allow it through
+        if (closest && closest.type !== 'story') {
+          discoverLocation(closest);
+        }
+        return; // still block story location clicks during search
       }
 
       if (closest) {
@@ -381,6 +489,29 @@
         e.stopPropagation();
         e.preventDefault();
         discoverLocation(closest);
+      } else {
+        // Check for a DISCOVERED location nearby — reopen its card
+        var discLoc = null, discDist = Infinity;
+        (window.LOCATIONS || []).forEach(function(loc) {
+          var d2 = discovered[loc.id];
+          if (!d2 || d2.phase === 'searching') return; // not yet complete
+          var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+          var d = Math.sqrt(Math.pow(x - pt.x, 2) + Math.pow(y - pt.y, 2));
+          if (d < clickRadiusFor(loc) && d < discDist) { discLoc = loc; discDist = d; }
+        });
+        if (discLoc) {
+          e.stopPropagation();
+          e.preventDefault();
+          showDiscoveryCard(discLoc);
+        } else {
+          // Check if player clicked near a LOCKED location — show helpful message
+          var lockedLoc = findLockedLocationNear(x, y);
+          if (lockedLoc) {
+            e.stopPropagation();
+            e.preventDefault();
+            showLockedFeedback(lockedLoc);
+          }
+        }
       }
     }, true); // CAPTURE PHASE
 
@@ -393,15 +524,26 @@
     document.addEventListener('touchend', function(e) {
       if (window.EDIT_MODE || !map) return;
       var container = map.getContainer();
-      if (!container.contains(e.target)) return;
-      if (e.target.closest('#layers, #discovery-card, #progress-container, .leaflet-control-zoom, #fog-reset-btn')) return;
+      var touchedInsideMap = container.contains(e.target);
+      if (isFogUiTarget(e)) return;
+      if (e.target.closest('.leaflet-marker-icon')) return;
+      if (!touchedInsideMap && !searchMode) return;
 
       var touch = e.changedTouches[0];
       if (!touch) return;
       if (Math.sqrt(Math.pow(touch.clientX-touchStartX,2)+Math.pow(touch.clientY-touchStartY,2)) > 15) return;
 
+      var panelEl = document.getElementById('panel');
+      if (panelEl && panelEl.classList.contains('open')) {
+        if (window.closeLocationPanel) window.closeLocationPanel();
+        else panelEl.classList.remove('open');
+        return;
+      }
+
       var card = document.getElementById('discovery-card');
       if (card && card.classList.contains('visible')) { card.classList.remove('visible'); return; }
+
+      primeAudioDeferred();
 
       var rect = container.getBoundingClientRect();
       var x = touch.clientX - rect.left;
@@ -410,21 +552,51 @@
       var closest = null, closestDist = Infinity;
       locs.forEach(function(loc) {
         if (!isClickable(loc.id)) return;
-        var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+        var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
         var d = Math.sqrt(Math.pow(x-pt.x,2)+Math.pow(y-pt.y,2));
-        if (d < CLICK_RADIUS && d < closestDist) { closest = loc; closestDist = d; }
+        if (d < clickRadiusFor(loc) && d < closestDist) { closest = loc; closestDist = d; }
       });
-      // During search mode: check for key click (touch)
+      // During search mode: check for key tap first
       if (searchMode) {
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
         if (keyDist < KEY_CLICK_RADIUS + 10) { // slightly larger for touch
           e.preventDefault();
           completeDiscovery(searchMode.loc);
+          return;
+        }
+        // Allow non-story locations (regions, cities) to be tapped during search
+        if (closest && closest.type !== 'story') {
+          e.preventDefault();
+          discoverLocation(closest);
         }
         return;
       }
-      if (closest) { e.preventDefault(); discoverLocation(closest); }
+      if (closest) {
+        e.preventDefault();
+        discoverLocation(closest);
+      } else {
+        // Check for a DISCOVERED location nearby — reopen its card
+        var discLoc = null, discDist = Infinity;
+        (window.LOCATIONS || []).forEach(function(loc) {
+          var d2 = discovered[loc.id];
+          if (!d2 || d2.phase === 'searching') return;
+          var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+          var d = Math.sqrt(Math.pow(x-pt.x,2)+Math.pow(y-pt.y,2));
+          if (d < clickRadiusFor(loc) && d < discDist) { discLoc = loc; discDist = d; }
+        });
+        if (discLoc) {
+          e.preventDefault();
+          showDiscoveryCard(discLoc);
+        } else {
+          // Check if player tapped near a LOCKED location
+          var lockedLoc = findLockedLocationNear(x, y);
+          if (lockedLoc) {
+            e.preventDefault();
+            showLockedFeedback(lockedLoc);
+          }
+        }
+      }
     }, true);
   }
 
@@ -438,12 +610,13 @@
      Step 5: Free exploration (brief encouragement)
      ════════════════════════════════════════════════ */
   var TUTORIAL_DEFS = [
-    { msg: 'A light stirs in the mist. Touch it.', action: 'click' },
-    { msg: 'Scroll to read, then close the card.', action: 'close-card' },
-    { msg: 'The path leads on. Follow the light.', action: 'click' },
-    { msg: 'The mist thickens. Move your cursor to search.', action: 'search' },
-    { msg: 'A sigil glimmers. Find it and touch it.', action: 'find-key' },
-    { msg: 'The archive is yours, Cartographer. Chart the unknown.', action: 'auto' }
+    { msg: 'Do you see the light in the mist? Tap it.', action: 'click', display: 'canvas' },
+    { msg: 'You made a discovery! Read the card, then close it.', action: 'close-card', display: 'toast' },
+    { msg: 'A new light has appeared. Follow it.', action: 'click', display: 'canvas' },
+    { msg: 'Close the card — then look for the next glow nearby.', action: 'search', display: 'toast' },
+    { msg: 'Listen for the chime — faster beeps mean you are over the target. Look for the diagonal point.', action: 'find-key', display: 'canvas' },
+    { msg: 'When the beeping quickens, tap that spot to reveal what lies beneath.', action: 'auto', display: 'toast' },
+    { msg: 'The archive is yours, Cartographer. Explore freely.', action: 'auto', display: 'toast' }
   ];
 
   // Which tutorial steps use instant reveal (no spotlight search)
@@ -467,11 +640,56 @@
   function showTutorialHint(loc) {
     removeTutorialHint();
     tutorialHintLoc = loc;
-    console.log('[TUTORIAL] Step', tutorialStep, ':', TUTORIAL_DEFS[tutorialStep].msg);
+    var def = TUTORIAL_DEFS[tutorialStep];
+    console.log('[TUTORIAL] Step', tutorialStep, ':', def.msg);
+
+    // Toast-type messages: show as big centered screen overlay
+    if (def.display === 'toast') {
+      showPersistentTutorialToast(def.msg);
+    }
 
     // Step 1 (card reading) — listen for card close
     if (tutorialStep === TUTORIAL_CARD_STEP) {
       waitForCardClose();
+    }
+  }
+
+  // Persistent toast that stays until the next tutorial step — very prominent
+  function showPersistentTutorialToast(msg) {
+    removePersistentToast();
+
+    // Inject pulse animation once
+    if (!document.getElementById('tut-toast-style')) {
+      var s = document.createElement('style');
+      s.id = 'tut-toast-style';
+      s.textContent = '@keyframes tutBorderPulse { 0%,100%{border-color:rgba(198,141,85,0.4)} 50%{border-color:rgba(212,168,67,0.9)} }';
+      document.head.appendChild(s);
+    }
+
+    var toast = document.createElement('div');
+    toast.id = 'tutorial-persistent-toast';
+    toast.style.cssText =
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;' +
+      'background:rgba(8,10,14,0.97);' +
+      'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
+      'padding:24px 48px;text-align:center;max-width:520px;width:90%;' +
+      'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;pointer-events:none;' +
+      'font-size:20px;letter-spacing:0.5px;line-height:1.6;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,141,85,0.12);' +
+      'animation:tutBorderPulse 2s ease-in-out infinite;' +
+      'opacity:0;transition:opacity 0.5s ease;';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+  }
+
+  function removePersistentToast() {
+    var old = document.getElementById('tutorial-persistent-toast');
+    if (old) {
+      old.style.opacity = '0';
+      setTimeout(function() { old.remove(); }, 600);
     }
   }
 
@@ -519,6 +737,7 @@
 
   function removeTutorialHint() {
     tutorialHintLoc = null;
+    removePersistentToast();
   }
 
   function advanceTutorial() {
@@ -533,24 +752,38 @@
 
     var def = TUTORIAL_DEFS[tutorialStep];
 
-    // Auto-dismiss steps (like step 5 encouragement)
+    // Always show the screen toast first for toast-type steps
+    if (def.display === 'toast') {
+      showPersistentTutorialToast(def.msg);
+    }
+
+    // Auto-dismiss steps — show toast, wait, then advance
     if (def.action === 'auto') {
       removeTutorialHint();
-      // Show a brief toast instead of a hint arrow
-      showTutorialToast(def.msg);
-      setTimeout(function() { advanceTutorial(); }, 4000);
+      setTimeout(function() { advanceTutorial(); }, 2500);
       return;
     }
 
-    // Card-close step doesn't need to fly anywhere — hint shows next to card
+    // Card-close step — show the toast, then wait for card close
     if (def.action === 'close-card') {
       // tutorialHintLoc was set by instantDiscover before advancing
       waitForCardClose();
       return;
     }
 
-    // Search + find-key steps don't fly — they happen at the current location
-    if (def.action === 'search' || def.action === 'find-key') {
+    // Search step — update hint to the NEXT journey location so the player can click it
+    // to enter pinhole/chime search mode. Without this, tutorialHintLoc stays on the
+    // just-discovered previous step and blocks the click.
+    if (def.action === 'search') {
+      var nextId = getNextPathLocation();
+      var locs = window.LOCATIONS || [];
+      var nextLoc = locs.find(function(l) { return l.id === nextId; });
+      if (nextLoc) tutorialHintLoc = nextLoc; // makes sabellas-hut clickable
+      return;
+    }
+
+    // Find-key step — tutorialHintLoc is already the search location (set by discoverLocation)
+    if (def.action === 'find-key') {
       // Keep current hint location
       return;
     }
@@ -597,10 +830,27 @@
   /* ════════════════════════════════════════════════
      PATH LOGIC
      ════════════════════════════════════════════════ */
+  // The final Elena stop — locked until all territories + cartographer sites are charted
+  var FINAL_ELENA_STOP = 'indras-na';
+
+  function explorationComplete() {
+    var allLocs = window.LOCATIONS || [];
+    var regionLocs = allLocs.filter(function(l) { return l.type === 'region'; });
+    var regionsComplete = regionLocs.every(function(l) { return !!discovered[l.id]; });
+    var siteLocs = allLocs.filter(function(l) { return !!l.cartographerSite; });
+    var sitesComplete = siteLocs.every(function(l) { return !!discovered[l.id]; });
+    return regionsComplete && sitesComplete;
+  }
+
   function getNextPathLocation() {
     for (var i = 0; i < journeyPath.length; i++) {
-      if (!discovered[journeyPath[i].locationId]) {
-        return journeyPath[i].locationId;
+      var stepId = journeyPath[i].locationId;
+      if (!discovered[stepId]) {
+        // Final Elena beat stays sealed until the map is fully charted
+        if (stepId === FINAL_ELENA_STOP && !explorationComplete()) {
+          return null;
+        }
+        return stepId;
       }
     }
     return null;
@@ -610,13 +860,413 @@
     return journeyPath.some(function(s) { return s.locationId === locId; });
   }
 
+  function isFullyDiscovered(locId) {
+    var d = discovered[locId];
+    return !!d && d.phase !== 'searching';
+  }
+
   function isPathComplete() {
-    return journeyPath.every(function(s) { return !!discovered[s.locationId]; });
+    return journeyPath.every(function(s) { return isFullyDiscovered(s.locationId); });
+  }
+
+  var TERRITORY_GLOW_RADIUS = 500;
+  var TERRITORY_FRONTIER_RADIUS = 1800;
+
+  function isTerritory(loc) {
+    return loc && (loc.type === 'region' || loc.type === 'water');
+  }
+
+  function getInteractionLatLng(loc) {
+    return [
+      loc.hotspotLat != null ? loc.hotspotLat : loc.lat,
+      loc.hotspotLng != null ? loc.hotspotLng : loc.lng
+    ];
+  }
+
+  function hasNearbyNonTerritoryDiscovery(loc, radius) {
+    var allLocs = window.LOCATIONS || [];
+    var nearby = false;
+    Object.keys(discovered).forEach(function(dId) {
+      if (nearby) return;
+      var dLoc = allLocs.find(function(l) { return l.id === dId; });
+      if (!dLoc || isTerritory(dLoc)) return;
+      var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+      if (Math.sqrt(dx * dx + dy * dy) < radius) nearby = true;
+    });
+    return nearby;
+  }
+
+  function hasNearbyTerritoryDiscovery(loc, radius) {
+    var allLocs = window.LOCATIONS || [];
+    var nearby = false;
+    Object.keys(discovered).forEach(function(dId) {
+      if (nearby) return;
+      var dLoc = allLocs.find(function(l) { return l.id === dId; });
+      if (!isTerritory(dLoc)) return;
+      var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+      if (Math.sqrt(dx * dx + dy * dy) < radius) nearby = true;
+    });
+    return nearby;
+  }
+
+  var _fallbackTerritoryCache = null;
+  var _fallbackTerritoryDiscCount = -1;
+
+  function getFallbackTerritoryId() {
+    var discCount = Object.keys(discovered).length;
+    if (_fallbackTerritoryDiscCount === discCount) return _fallbackTerritoryCache;
+
+    var allLocs = window.LOCATIONS || [];
+    var undiscoveredTerritories = allLocs.filter(function(l) {
+      return isTerritory(l) && !discovered[l.id];
+    });
+    if (!undiscoveredTerritories.length) {
+      _fallbackTerritoryCache = null;
+      _fallbackTerritoryDiscCount = discCount;
+      return null;
+    }
+
+    // Normal/frontier glows take priority. Fallback only prevents dead-ends
+    // after coordinate edits leave every territory outside the intended radius.
+    var hasNormalGlow = undiscoveredTerritories.some(function(loc) {
+      return hasNearbyNonTerritoryDiscovery(loc, TERRITORY_GLOW_RADIUS) ||
+             hasNearbyTerritoryDiscovery(loc, TERRITORY_FRONTIER_RADIUS);
+    });
+    if (hasNormalGlow) {
+      _fallbackTerritoryCache = null;
+      _fallbackTerritoryDiscCount = discCount;
+      return null;
+    }
+
+    var best = null;
+    var bestD = Infinity;
+    undiscoveredTerritories.forEach(function(loc) {
+      Object.keys(discovered).forEach(function(dId) {
+        var dLoc = allLocs.find(function(l) { return l.id === dId; });
+        if (!dLoc || isTerritory(dLoc)) return;
+        var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+        var d = Math.sqrt(dx * dx + dy * dy);
+        if (d < bestD) {
+          bestD = d;
+          best = loc;
+        }
+      });
+    });
+    _fallbackTerritoryCache = best ? best.id : null;
+    _fallbackTerritoryDiscCount = discCount;
+    return _fallbackTerritoryCache;
+  }
+
+  function territoryHasGlow(loc) {
+    return hasNearbyNonTerritoryDiscovery(loc, TERRITORY_GLOW_RADIUS) ||
+           hasNearbyTerritoryDiscovery(loc, TERRITORY_FRONTIER_RADIUS) ||
+           loc.id === getFallbackTerritoryId();
+  }
+
+  function nearestTerritoryIsDiscovered(loc) {
+    var allLocs = window.LOCATIONS || [];
+    var nearestRegion = null, nrDist = Infinity;
+    allLocs.forEach(function(r) {
+      if (!isTerritory(r)) return;
+      var dx = loc.lat - r.lat, dy = loc.lng - r.lng;
+      var d = Math.sqrt(dx * dx + dy * dy);
+      if (d < nrDist) {
+        nrDist = d;
+        nearestRegion = r;
+      }
+    });
+    return !!(nearestRegion && discovered[nearestRegion.id]);
   }
 
   function isClickable(locId) {
     if (discovered[locId]) return false;
-    return true; // all undiscovered locations are clickable
+
+    var allLocs = window.LOCATIONS || [];
+    var loc = allLocs.find(function(l) { return l.id === locId; });
+    if (!loc) return false;
+
+    // Gate the final Elena stop: requires all territories + cartographer sites first
+    if (locId === FINAL_ELENA_STOP && !explorationComplete()) {
+      return false;
+    }
+
+    // During tutorial (before Sabella's Hut is found): ONLY the current guided
+    // journey step is clickable. The instant sabellas-hut is discovered, the
+    // full proximity system unlocks — no waiting for toast delays.
+    var sabellasDone = !!discovered['sabellas-hut'];
+    if (!sabellasDone && tutorialHintLoc) {
+      return locId === tutorialHintLoc.id;
+    }
+
+    // ── Post-tutorial: NO GLOW = NOT CLICKABLE ──
+    // Check if this location is within 400 units of any discovered location
+    // (same proximity gate the beacon draw uses)
+    var nearCleared = false;
+    Object.keys(discovered).forEach(function(dId) {
+      if (nearCleared) return;
+      var dLoc = allLocs.find(function(l) { return l.id === dId; });
+      if (!dLoc) return;
+      var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+      if (Math.sqrt(dx * dx + dy * dy) < 400) nearCleared = true;
+    });
+
+    // Story path locations: clickable if it's the next step (golden glow)
+    // OR if cleared fog has reached it (amber star visible)
+    // OR if it's a revealed cluster companion at this tower
+    if (loc.type === 'story') {
+      return locId === getNextPathLocation() || nearCleared || !!clusterPeek[locId];
+    }
+
+    // Journey cities (Sinn, Indras Na, etc.) — follow the golden path only
+    if (isOnPath(locId)) {
+      return locId === getNextPathLocation();
+    }
+
+    // Territories: clickable exactly when their orange glow is visible.
+    if (isTerritory(loc)) {
+      return territoryHasGlow(loc);
+    }
+
+    // CartographerSites (amber star): clickable when the same amber star is visible.
+    if (loc.cartographerSite) {
+      return nearCleared || nearestTerritoryIsDiscovered(loc) || !!clusterPeek[locId];
+    }
+
+    // Everything else: no glow drawn, not clickable
+    return false;
+  }
+
+
+  // Show a brief locked message when the player clicks the final stop too early
+  function showLockedMessage() {
+    var old = document.getElementById('locked-msg');
+    if (old) old.remove();
+
+    // Count remaining work to give specific guidance
+    var locs = window.LOCATIONS || [];
+    var undiscRegions = locs.filter(function(l) { return (l.type === 'region' || l.type === 'water') && !discovered[l.id]; }).length;
+    var undiscCities  = locs.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
+    var remaining = [];
+    if (undiscRegions > 0) remaining.push(undiscRegions + ' ' + (undiscRegions === 1 ? 'territory' : 'territories'));
+    if (undiscCities  > 0) remaining.push(undiscCities  + ' ' + (undiscCities  === 1 ? 'city or site' : 'cities &amp; sites'));
+
+    var el = document.createElement('div');
+    el.id = 'locked-msg';
+    el.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-60%);z-index:1100;cursor:pointer;' +
+      'background:rgba(8,10,14,0.97);border:2px solid rgba(180,80,60,0.7);' +
+      'border-radius:14px;padding:28px 48px;text-align:center;max-width:560px;width:90%;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'font-size:16px;line-height:1.7;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(180,80,60,0.15);' +
+      'opacity:0;transition:opacity 0.4s ease;';
+    el.innerHTML =
+      '<div style="font-size:12px;color:#c87060;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">The Path Is Sealed</div>' +
+      '<div style="margin-bottom:14px;">Chart every territory and ancient site before Elena\'s journey can end. <strong style="color:#d4a843;">' + remaining.join(' and ') + '</strong> remain uncharted.</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
+        '<span style="color:#d99040;">◈ Orange shimmer in the fog</span> — an undiscovered territory. Click it to reveal.<br>' +
+        '<span style="color:#d4a843;">★ Amber star</span> — a hidden location. Click to search with hot &amp; cold chime.' +
+      '</div>' +
+      '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
+    document.body.appendChild(el);
+
+    function dismiss() {
+      el.style.opacity = '0';
+      setTimeout(function() { el.remove(); }, 600);
+    }
+    el.addEventListener('click', dismiss);
+
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { el.style.opacity = '1'; });
+    });
+    setTimeout(dismiss, 7000);
+  }
+
+  // Left-side whisper toast for locked locations (matches discovery/guide hints)
+  function showLockedHintToast(title, message) {
+    var old = document.getElementById('locked-hint-toast');
+    if (old) old.remove();
+
+    var toast = document.createElement('div');
+    toast.id = 'locked-hint-toast';
+    toast.style.cssText =
+      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
+      'background:rgba(10,12,16,0.94);' +
+      'border:1px solid rgba(198,141,85,0.35);border-left:3px solid rgba(198,141,85,0.7);' +
+      'border-radius:0 8px 8px 0;padding:16px 18px;width:218px;' +
+      'font-family:"EB Garamond",serif;color:#efe7d2;' +
+      'opacity:0;transition:opacity 0.5s ease;' +
+      'box-shadow:0 6px 30px rgba(0,0,0,0.6);';
+    toast.innerHTML =
+      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;' +
+        'color:#c68d55;margin-bottom:8px;font-family:Cinzel,serif;">Not Yet</div>' +
+      (title ? '<div style="font-size:14px;font-weight:600;color:#d4c89a;margin-bottom:8px;line-height:1.3;">' + title + '</div>' : '') +
+      '<div style="font-size:12px;color:#9a8f7e;line-height:1.7;">' + message + '</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;">tap to dismiss</div>';
+    document.body.appendChild(toast);
+
+    function dismiss() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    }
+    toast.addEventListener('click', dismiss);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    setTimeout(dismiss, 5000);
+  }
+
+  // Fixed left-side whisper panel — proximity notes, no cursor follow
+  function getWhisperElements() {
+    if (!whisperPanelEl) {
+      whisperPanelEl = document.getElementById('whisper-panel');
+      whisperLocEl = document.getElementById('whisper-loc');
+      whisperTextEl = document.getElementById('whisper-text');
+    }
+    return whisperPanelEl;
+  }
+
+  function clearWhisperPanel() {
+    var panel = getWhisperElements();
+    if (!panel) return;
+    panel.classList.remove('visible');
+    currentWhisperId = null;
+  }
+
+  function updateWhisperPanel(closestWhisper) {
+    var panel = getWhisperElements();
+    if (!panel) return;
+
+    if (!closestWhisper) {
+      if (currentWhisperId) clearWhisperPanel();
+      return;
+    }
+
+    var id = closestWhisper.loc.id;
+    if (id !== currentWhisperId) {
+      currentWhisperId = id;
+      if (whisperLocEl) {
+        whisperLocEl.textContent = closestWhisper.loc.name || '';
+        whisperLocEl.style.display = closestWhisper.loc.name ? 'block' : 'none';
+      }
+      if (whisperTextEl) {
+        whisperTextEl.textContent = '\u201c' + closestWhisper.whisper + '\u201d';
+      }
+    }
+
+    panel.classList.add('visible');
+  }
+
+  // Proximity whispers — keyed to viewport center (what you're looking at), not cursor
+  function getMapViewportCenter() {
+    if (!map) return null;
+    var container = map.getContainer();
+    return { x: container.clientWidth / 2, y: container.clientHeight / 2 };
+  }
+
+  function updateProximityWhispers() {
+    if (!map || searchMode || tutorialStep < TUTORIAL_STEPS) {
+      clearWhisperPanel();
+      return;
+    }
+
+    var anchor = getMapViewportCenter();
+    if (!anchor) {
+      clearWhisperPanel();
+      return;
+    }
+
+    var locs = window.LOCATIONS || [];
+    var whisperRange = 220;
+    var closestWhisper = null;
+    var closestWhisperDist = whisperRange;
+
+    locs.forEach(function(loc) {
+      if (discovered[loc.id]) return;
+      var whisper = WHISPERS[loc.id];
+      if (!whisper) return;
+      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+      var d = Math.sqrt(Math.pow(anchor.x - pt.x, 2) + Math.pow(anchor.y - pt.y, 2));
+      if (d < closestWhisperDist && d > 30) {
+        closestWhisperDist = d;
+        closestWhisper = { loc: loc, whisper: whisper };
+      }
+    });
+
+    if (closestWhisper) {
+      updateWhisperPanel(closestWhisper);
+    } else {
+      clearWhisperPanel();
+    }
+  }
+
+  function showLockedFeedback(loc) {
+    if (!loc) return;
+    if (loc.id === FINAL_ELENA_STOP) {
+      showLockedMessage();
+      return;
+    }
+    if (isOnPath(loc.id) && loc.id !== getNextPathLocation()) {
+      showLockedHintToast(
+        loc.name,
+        'Elena\u2019s path leads elsewhere first. Follow the golden glow.'
+      );
+      return;
+    }
+    if (loc.cartographerSite) {
+      showLockedHintToast(
+        loc.name,
+        'This site stays sealed until its territory is charted. Claim the nearest orange shimmer first.'
+      );
+      return;
+    }
+    if (isTerritory(loc)) {
+      showLockedHintToast(
+        loc.name,
+        'The fog still hides this territory. Chart nearer discoveries first.'
+      );
+      return;
+    }
+    showLockedHintToast(
+      loc.name,
+      'This place remains hidden. Chart nearer discoveries first.'
+    );
+  }
+
+  function findLockedLocationNear(x, y) {
+    var lockedLoc = null, lockedDist = Infinity;
+    (window.LOCATIONS || []).forEach(function(loc) {
+      if (discovered[loc.id]) return;
+      if (isClickable(loc.id)) return;
+      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+      var d = Math.sqrt(Math.pow(x - pt.x, 2) + Math.pow(y - pt.y, 2));
+      if (d < clickRadiusFor(loc) && d < lockedDist) { lockedLoc = loc; lockedDist = d; }
+    });
+    return lockedLoc;
+  }
+
+
+  /* ════════════════════════════════════════════════
+     CANVAS SIZE — match container rect + devicePixelRatio
+     ════════════════════════════════════════════════ */
+  function syncFogCanvasSize() {
+    var container = map.getContainer();
+    var rect = container.getBoundingClientRect();
+    var cssW = Math.max(1, Math.round(rect.width));
+    var cssH = Math.max(1, Math.round(rect.height));
+    var dpr = window.devicePixelRatio || 1;
+    var bufW = Math.round(cssW * dpr);
+    var bufH = Math.round(cssH * dpr);
+
+    if (fogCanvas.width !== bufW || fogCanvas.height !== bufH) {
+      fogCanvas.width = bufW;
+      fogCanvas.height = bufH;
+      fogCanvas.style.width = cssW + 'px';
+      fogCanvas.style.height = cssH + 'px';
+      fogCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    return { w: cssW, h: cssH };
   }
 
   /* ════════════════════════════════════════════════
@@ -625,17 +1275,20 @@
   function draw() {
     if (!map || !fogCtx) return;
 
-    var container = map.getContainer();
-    var w = container.clientWidth;
-    var h = container.clientHeight;
-    fogCanvas.width = w;
-    fogCanvas.height = h;
+    var size = syncFogCanvasSize();
+    var w = size.w;
+    var h = size.h;
+    if (!w || !h) return;
 
     var ctx = fogCtx;
     var zoom = map.getZoom();
     var time = Date.now() / 1000;
 
     // ── 1. Solid dark base (fully opaque) ──
+    // Reset composite mode explicitly — Chrome persists context state across frames
+    // when canvas dimensions haven't changed, causing destination-out bleed.
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
     ctx.fillStyle = '#141820';
     ctx.fillRect(0, 0, w, h);
 
@@ -675,65 +1328,186 @@
 
     if (nextId) {
       var glowLoc = locs.find(function(l) { return l.id === nextId; });
-      if (glowLoc) {
+      // Before Sabella's Hut is found: only draw the current hint glow.
+      // After it's found: always draw for nextId (even mid-tutorial auto-toasts).
+      var tutorialBlocked = (!discovered['sabellas-hut'] && tutorialHintLoc &&
+                             nextId !== tutorialHintLoc.id);
+      if (glowLoc && !tutorialBlocked) {
         var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
         if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
-          // Outer glow
-          var pulse = 0.3 + Math.sin(time * 2) * 0.15;
-          var outerR = 50 + Math.sin(time * 1.5) * 12;
+          var pulse = 0.2 + Math.sin(time * 2) * 0.1;
+          var outerR = 50 + Math.sin(time * 1.5) * 10;
+
+          // Pass 1: poke a subtle hole in the fog so the map hints through
+          ctx.globalCompositeOperation = 'destination-out';
+          var holeGrad = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
+          holeGrad.addColorStop(0,   'rgba(0,0,0,0.35)');
+          holeGrad.addColorStop(0.4, 'rgba(0,0,0,0.15)');
+          holeGrad.addColorStop(0.8, 'rgba(0,0,0,0.03)');
+          holeGrad.addColorStop(1,   'rgba(0,0,0,0)');
+          ctx.fillStyle = holeGrad;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Pass 2: subtle golden tint
+          ctx.globalCompositeOperation = 'source-over';
           var glow = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
-          glow.addColorStop(0, 'rgba(239, 231, 210, ' + (pulse + 0.25) + ')');
-          glow.addColorStop(0.25, 'rgba(212, 168, 67, ' + (pulse + 0.1) + ')');
-          glow.addColorStop(0.6, 'rgba(198, 141, 85, ' + pulse + ')');
-          glow.addColorStop(1, 'rgba(198, 141, 85, 0)');
+          glow.addColorStop(0,    'rgba(255, 240, 180, ' + (pulse + 0.25) + ')');
+          glow.addColorStop(0.3,  'rgba(212, 168, 67, '  + (pulse + 0.1)  + ')');
+          glow.addColorStop(0.7,  'rgba(198, 141, 85, '  + (pulse * 0.5)  + ')');
+          glow.addColorStop(1,    'rgba(198, 141, 85, 0)');
           ctx.fillStyle = glow;
           ctx.beginPath();
           ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
           ctx.fill();
 
-          // Bright core
-          var core = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, 10);
-          core.addColorStop(0, 'rgba(255, 248, 230, 0.9)');
+          // Small pulsing core
+          var coreR = 8 + Math.sin(time * 3) * 3;
+          var core = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, coreR);
+          core.addColorStop(0, 'rgba(255, 252, 220, 0.85)');
           core.addColorStop(1, 'rgba(212, 168, 67, 0)');
           ctx.fillStyle = core;
           ctx.beginPath();
-          ctx.arc(gpt.x, gpt.y, 10, 0, Math.PI * 2);
+          ctx.arc(gpt.x, gpt.y, coreR, 0, Math.PI * 2);
           ctx.fill();
         }
       }
     }
 
-    // ── 3b. Pulsing beacons for undiscovered locations near cleared areas ──
+    // ── 3b. Pulsing beacons for undiscovered locations ──
+    // Visual language:
+    //   TERRITORIES → wide orange shimmer (reads as "fog thinning", no chime implied)
+    //   CITIES/TOWNS/SACRED → bright amber star, only after nearest territory is discovered
+    //   JOURNEY PATH stops → amber star freely (story beats, section 3 handles active step)
+
+    // Pre-compute nearest-discovered-distance for ALL undiscovered regions so
+    // the rank sort is accurate (can't sort inside the loop that computes the values).
+    var undiscRegionsSorted = locs.filter(function(l) {
+      return (l.type === 'region' || l.type === 'water') && !discovered[l.id];
+    }).map(function(l) {
+      var minD = Infinity;
+      Object.keys(discovered).forEach(function(dId) {
+        var dLoc = locs.find(function(ll) { return ll.id === dId; });
+        if (!dLoc) return;
+        var dx = l.lat - dLoc.lat, dy = l.lng - dLoc.lng;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if (d < minD) minD = d;
+      });
+      l._nearestDiscDist = minD;
+      return l;
+    }).sort(function(a, b) {
+      return (a._nearestDiscDist || 99999) - (b._nearestDiscDist || 99999);
+    });
+
     locs.forEach(function(loc) {
       if (discovered[loc.id]) return;
-      var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-      if (pt.x < -60 || pt.x > w + 60 || pt.y < -60 || pt.y > h + 60) return;
+      if (!discovered['sabellas-hut']) return; // no beacons until tutorial cluster done
 
-      // Only show beacon if near a discovered location (within cleared fog radius)
-      var nearDiscovered = false;
-      Object.keys(discovered).forEach(function(dId) {
-        if (nearDiscovered) return;
-        var dLoc = locs.find(function(l) { return l.id === dId; });
-        if (!dLoc) return;
-        var dx = loc.lat - dLoc.lat;
-        var dy = loc.lng - dLoc.lng;
-        if (Math.sqrt(dx*dx + dy*dy) < 400) nearDiscovered = true;
-      });
+      // Story locations: suppress if out-of-sequence AND far from cleared fog.
+      if (loc.type === 'story' && loc.id !== nextId) {
+        var storyNearDisc = false;
+        Object.keys(discovered).forEach(function(dId) {
+          if (storyNearDisc) return;
+          var dLoc = locs.find(function(l) { return l.id === dId; });
+          if (!dLoc) return;
+          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+          if (Math.sqrt(dx * dx + dy * dy) < 400) storyNearDisc = true;
+        });
+        if (!storyNearDisc) return;
+      }
 
-      // Skip locations deep in unexplored fog
-      if (!nearDiscovered) return;
+      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+      if (pt.x < -120 || pt.x > w + 120 || pt.y < -120 || pt.y > h + 120) return;
 
-      var baseAlpha = 0.22;
-      var pulseAmp = 0.10;
-      var beaconR = 18;
+      var isRegion = isTerritory(loc);
+
+      if (isRegion) {
+        // ── TERRITORY GLOW (ORANGE) ──
+        // Uses the same predicate as isClickable(): normal proximity first,
+        // nearest-undiscovered fallback only when proximity would dead-end.
+        if (!territoryHasGlow(loc)) return;
+
+        var shimmerAlpha = 0.30 + Math.sin(time * 0.9 + loc.lat * 0.01) * 0.08;
+        var shimmerR = 88 + Math.sin(time * 0.4 + loc.lng * 0.008) * 14;
+
+        // Thin the fog below reachable territory beacons so players can scan
+        // the map instead of hunting for barely-visible pixels.
+        ctx.globalCompositeOperation = 'destination-out';
+        var territoryHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR * 1.05);
+        territoryHole.addColorStop(0,   'rgba(0,0,0,0.30)');
+        territoryHole.addColorStop(0.45,'rgba(0,0,0,0.14)');
+        territoryHole.addColorStop(0.8, 'rgba(0,0,0,0.04)');
+        territoryHole.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = territoryHole;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, shimmerR * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalCompositeOperation = 'source-over';
+        var sg = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR);
+        sg.addColorStop(0,   'rgba(255, 185, 70, ' + Math.min(0.62, shimmerAlpha * 1.55) + ')');
+        sg.addColorStop(0.4, 'rgba(220, 120, 30, ' + shimmerAlpha + ')');
+        sg.addColorStop(0.8, 'rgba(180, 90,  20, ' + shimmerAlpha * 0.45 + ')');
+        sg.addColorStop(1,   'rgba(160, 70,  10, 0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, shimmerR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 220, 120, 0.55)';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5 + Math.sin(time * 2.2) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      // ── LOCATION GLOW (YELLOW) ──
+      // Non-region: check proximity — only glow if within cleared fog range
+      var onPath = isOnPath(loc.id);
+      if (!onPath) {
+        var nearDiscovered = false;
+        Object.keys(discovered).forEach(function(dId) {
+          if (nearDiscovered) return;
+          var dLoc = locs.find(function(l) { return l.id === dId; });
+          if (!dLoc) return;
+          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+          if (Math.sqrt(dx * dx + dy * dy) < 400) nearDiscovered = true;
+        });
+
+        if (!nearDiscovered) {
+          // Far from cleared fog — require territory to be discovered first
+          if (!nearestTerritoryIsDiscovered(loc)) return;
+        }
+      }
+
+      // Journey path stops, cartographer sites, or cluster companions
+      if (!onPath && !loc.cartographerSite && !clusterPeek[loc.id]) return;
+
+      // Yellow star beacon
+      var baseAlpha = 0.36;
+      var pulseAmp  = 0.16;
+      var beaconR   = 30;
 
       var p = baseAlpha + Math.sin(time * 1.8 + loc.lat * 0.02) * pulseAmp;
-      var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 5;
+      var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 6;
+
+      ctx.globalCompositeOperation = 'destination-out';
+      var siteHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow * 1.25);
+      siteHole.addColorStop(0,   'rgba(0,0,0,0.22)');
+      siteHole.addColorStop(0.55,'rgba(0,0,0,0.08)');
+      siteHole.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = siteHole;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, rGlow * 1.25, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalCompositeOperation = 'source-over';
       var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
-      g.addColorStop(0, 'rgba(239, 231, 210, ' + (p * 0.5) + ')');
-      g.addColorStop(0.2, 'rgba(198, 141, 85, ' + (p + 0.1) + ')');
-      g.addColorStop(0.5, 'rgba(198, 141, 85, ' + p + ')');
-      g.addColorStop(1, 'rgba(198, 141, 85, 0)');
+      g.addColorStop(0,    'rgba(255, 255, 180, ' + Math.min(1, p * 1.0) + ')');
+      g.addColorStop(0.15, 'rgba(255, 230, 80, '  + Math.min(1, p + 0.15) + ')');
+      g.addColorStop(0.4,  'rgba(240, 200, 50, '  + p + ')');
+      g.addColorStop(1,    'rgba(220, 180, 40, 0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, rGlow, 0, Math.PI * 2);
@@ -784,7 +1558,7 @@
 
       var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
 
-      var baseR = (disc.phase === 'searching') ? 180 : 250;
+      var baseR = (disc.phase === 'searching') ? 180 : (loc.revealRadius || 80);
       var scale = (disc.phase === 'searching') ? PINHOLE_SCALE : 1;
       var r = baseR * scale * Math.pow(2, zoom);
       if (r < 20) r = 20;
@@ -997,7 +1771,100 @@
       ctx.restore();
     }
 
-    // ── 4e. Constellation lines (finale — journey complete) ──
+    // ── 4d-ii. Perimeter lightning — west & east edges ──
+    (function() {
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+
+      var pw = w, ph = h;
+
+      // Helper: draw one jagged bolt from (sx,sy) toward direction (dx,dy) with given length
+      function drawBolt(sx, sy, angle, length, seed, bright, colorR, colorG, colorB) {
+        var segments = 4 + (seed % 3);
+        var alpha = bright ? 0.75 : 0.38;
+        ctx.strokeStyle = 'rgba(' + colorR + ',' + colorG + ',' + colorB + ',' + alpha + ')';
+        ctx.lineWidth   = bright ? 1.8 : 0.9;
+        ctx.shadowColor = 'rgba(' + colorR + ',' + colorG + ',' + colorB + ', 0.95)';
+        ctx.shadowBlur  = bright ? 22 : 11;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        var cx = sx, cy = sy;
+        for (var si = 1; si <= segments; si++) {
+          var frac = si / segments;
+          var tx2 = sx + Math.cos(angle) * length * frac;
+          var ty2 = sy + Math.sin(angle) * length * frac;
+          // jag perpendicular to bolt direction
+          var jag = ((seed * (si + 1) * 13 % 40) - 20);
+          cx = tx2 + Math.cos(angle + Math.PI / 2) * jag;
+          cy = ty2 + Math.sin(angle + Math.PI / 2) * jag;
+          ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+        // branch off midpoint
+        if (bright && segments > 4) {
+          var branchFrac = 0.45 + (seed % 3) * 0.1;
+          var brx = sx + Math.cos(angle) * length * branchFrac + ((seed * 7 % 30) - 15);
+          var bry = sy + Math.sin(angle) * length * branchFrac + ((seed * 11 % 30) - 15);
+          ctx.strokeStyle = 'rgba(' + colorR + ',' + colorG + ',' + colorB + ', 0.35)';
+          ctx.lineWidth = 0.8;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(brx, bry);
+          ctx.lineTo(brx + Math.cos(angle + 0.6) * length * 0.3, bry + Math.sin(angle + 0.6) * length * 0.3);
+          ctx.stroke();
+        }
+      }
+
+      function ambientFlash(cx2, cy2, radius, colorR, colorG, colorB) {
+        var fg = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, radius);
+        fg.addColorStop(0, 'rgba(' + colorR + ',' + colorG + ',' + colorB + ', 0.10)');
+        fg.addColorStop(1, 'rgba(' + colorR + ',' + colorG + ',' + colorB + ', 0)');
+        ctx.fillStyle = fg;
+        ctx.beginPath();
+        ctx.arc(cx2, cy2, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Define 6 strike zones: 3 west (inward-right), 3 east (inward-left)
+      // Each zone has its own time offset so they fire independently
+      var zones = [
+        // West edge — bolts angle inward (right-ish) with slight downward drift
+        { side: 'W', yFrac: 0.15, timeScale: 0.28, offset: 0.00, angleBase:  0.25, cr: 200, cg: 210, cb: 255 },
+        { side: 'W', yFrac: 0.48, timeScale: 0.19, offset: 0.33, angleBase:  0.08, cr: 190, cg: 200, cb: 255 },
+        { side: 'W', yFrac: 0.75, timeScale: 0.23, offset: 0.67, angleBase: -0.20, cr: 210, cg: 200, cb: 255 },
+        // East edge — bolts angle inward (left-ish)
+        { side: 'E', yFrac: 0.20, timeScale: 0.22, offset: 0.17, angleBase: Math.PI - 0.30, cr: 200, cg: 215, cb: 255 },
+        { side: 'E', yFrac: 0.50, timeScale: 0.31, offset: 0.50, angleBase: Math.PI - 0.05, cr: 195, cg: 210, cb: 255 },
+        { side: 'E', yFrac: 0.78, timeScale: 0.18, offset: 0.82, angleBase: Math.PI + 0.25, cr: 205, cg: 205, cb: 255 },
+      ];
+
+      zones.forEach(function(z, zi) {
+        var phase  = ((time * z.timeScale) + z.offset) % 1;
+        var cycle  = Math.floor((time * z.timeScale) + z.offset);
+        var seed   = (cycle * 17 + zi * 31 + 7) % 97;
+
+        var active1 = phase < 0.035;                          // primary flash
+        var active2 = phase > 0.06 && phase < 0.085;         // secondary double-strike
+
+        if (!active1 && !active2) return;
+
+        var oy = (seed * 7 % 60) - 30; // slight vertical randomness within zone
+        var sy = ph * z.yFrac + oy;
+        var sx = z.side === 'W' ? 0 : pw;
+        var boltLen = 80 + (seed % 60);
+        var angle = z.angleBase + ((seed % 9) - 4) * 0.06;
+
+        drawBolt(sx, sy, angle, boltLen, seed, active1, z.cr, z.cg, z.cb);
+
+        if (active1) {
+          ambientFlash(sx, sy, boltLen * 1.4, z.cr, z.cg, z.cb);
+        }
+      });
+
+      ctx.restore();
+    })();
+
+
     var fs = window._finaleState;
     if (fs && fs.constellationLines && fs.constellationLines.length > 0) {
       ctx.save();
@@ -1053,10 +1920,12 @@
       ctx.restore();
     }
 
-    // ── 5. Tutorial hint (drawn on canvas — guaranteed visible) ──
+    // ── 5. Tutorial hint (drawn on canvas — only for canvas-type steps) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
       var def = TUTORIAL_DEFS[tutorialStep];
       var msg = def ? def.msg : '';
+      var displayType = def ? (def.display || 'canvas') : 'canvas';
+      if (displayType === 'canvas') {
       var hpt = map.latLngToContainerPoint([tutorialHintLoc.lat, tutorialHintLoc.lng]);
       var hx = hpt.x;
       var hy = hpt.y;
@@ -1069,19 +1938,32 @@
         hy = keyPt.y;
       }
 
-      // For card-close step, point arrow at the card's close button
+      // For card-close step, point arrow at the panel close button
       var arrowAbove = true;
       if (def && def.action === 'close-card') {
-        var card = document.getElementById('discovery-card');
-        if (card && card.classList.contains('visible')) {
-          var closeBtn = card.querySelector('.dc-close');
+        var panelEl = document.getElementById('panel');
+        if (panelEl && panelEl.classList.contains('open')) {
+          var closeBtn = panelEl.querySelector('.panel-close');
           if (closeBtn) {
             var cbr = closeBtn.getBoundingClientRect();
             var container = map.getContainer();
             var containerRect = container.getBoundingClientRect();
             hx = cbr.left - containerRect.left + cbr.width / 2;
             hy = cbr.top - containerRect.top + cbr.height / 2;
-            arrowAbove = false; // arrow points from left
+            arrowAbove = false;
+          }
+        } else {
+          var card = document.getElementById('discovery-card');
+          if (card && card.classList.contains('visible')) {
+            var closeBtn = card.querySelector('.dc-close');
+            if (closeBtn) {
+              var cbr = closeBtn.getBoundingClientRect();
+              var container = map.getContainer();
+              var containerRect = container.getBoundingClientRect();
+              hx = cbr.left - containerRect.left + cbr.width / 2;
+              hy = cbr.top - containerRect.top + cbr.height / 2;
+              arrowAbove = false;
+            }
           }
         }
       }
@@ -1106,7 +1988,7 @@
 
       // Text background pill — bigger and more prominent
       ctx.save();
-      ctx.font = 'italic 600 15px "Cinzel", "Cormorant Garamond", serif';
+      ctx.font = '500 17px "Montserrat", "Segoe UI", sans-serif';
       var tw = ctx.measureText(msg).width + 40;
       var th = 36;
       var tx, ty;
@@ -1140,6 +2022,7 @@
       ctx.textBaseline = 'middle';
       ctx.fillText(msg, tx + tw / 2, ty + th / 2);
       ctx.restore();
+      } // end displayType === 'canvas'
     }
 
     // ── 6. Navigation beacon — arrow pointing to next journey step ──
@@ -1193,86 +2076,17 @@
         }
       }
     }
-
-    // ── 7. Proximity whispers — cartographer's unfinished notes at the fog edge ──
-    // Suppress during tutorial so hint text doesn't compete
-    if ((spotlightPos || !searchMode) && tutorialStep >= TUTORIAL_STEPS) {
-      var mousePos = spotlightPos;
-      if (!mousePos && lastMousePos) mousePos = lastMousePos;
-      if (mousePos) {
-        ctx.globalCompositeOperation = 'source-over';
-
-        // Find the single closest undiscovered location with a whisper
-        var whisperRange = 220;
-        var closestWhisper = null;
-        var closestWhisperDist = whisperRange;
-
-        locs.forEach(function(loc) {
-          if (discovered[loc.id]) return;
-          var whisper = WHISPERS[loc.id];
-          if (!whisper) return;
-          var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
-          var d = Math.sqrt(Math.pow(mousePos.x - pt.x, 2) + Math.pow(mousePos.y - pt.y, 2));
-          if (d < closestWhisperDist && d > 30) {
-            closestWhisperDist = d;
-            closestWhisper = { loc: loc, whisper: whisper, pt: pt, dist: d };
-          }
-        });
-
-        if (closestWhisper) {
-          // Fade based on distance
-          var wFade = Math.max(0, 1 - (closestWhisper.dist - 60) / (whisperRange - 60));
-          wFade = wFade * wFade;
-          var breathPhase = (closestWhisper.loc.lat + closestWhisper.loc.lng) * 0.01;
-          var breathFade = 0.85 + 0.15 * Math.sin(breathTime + breathPhase);
-          var wAlpha = wFade * breathFade;
-          if (wAlpha > 0.03) {
-            ctx.save();
-            ctx.font = 'italic 16px "Cormorant Garamond", "Georgia", serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // Position: above the cursor, clamped to viewport
-            var textX = mousePos.x;
-            var textY = mousePos.y - 55;
-            var tw = ctx.measureText(closestWhisper.whisper).width + 32;
-            var th = 34;
-            var tx = textX - tw / 2;
-            var ty = textY - th / 2;
-            if (tx < 10) tx = 10;
-            if (tx + tw > w - 10) tx = w - tw - 10;
-            if (ty < 10) ty = 10;
-
-            // Dark pill background
-            ctx.fillStyle = 'rgba(8, 10, 14, ' + (wAlpha * 0.88).toFixed(3) + ')';
-            ctx.beginPath();
-            ctx.roundRect(tx, ty, tw, th, 8);
-            ctx.fill();
-
-            // Subtle border
-            ctx.strokeStyle = 'rgba(180, 160, 120, ' + (wAlpha * 0.35).toFixed(3) + ')';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.roundRect(tx, ty, tw, th, 8);
-            ctx.stroke();
-
-            // Text
-            ctx.fillStyle = 'rgba(210, 200, 175, ' + wAlpha.toFixed(3) + ')';
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = 6;
-            ctx.fillText(closestWhisper.whisper, tx + tw / 2, ty + th / 2);
-            ctx.shadowBlur = 0;
-            ctx.restore();
-          }
-        }
-      }
-    }
   }
 
   /* ════════════════════════════════════════════════
      DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
+    if (!discovered[loc.id] && !isClickable(loc.id)) {
+      showLockedFeedback(loc);
+      return;
+    }
+
     // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
     var isTutorial = tutorialStep < TUTORIAL_STEPS;
     var useInstant = isTutorial && TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep) > -1;
@@ -1282,8 +2096,10 @@
       return;
     }
 
-    // Most locations get mist (low fog) reveal. Only story locations get full clear.
-    var isStory = (loc.type === 'story');
+    // Most locations get mist (low fog) reveal. Journey path locations get the
+    // full chime/search mechanic regardless of their nominal type (mish, sinn,
+    // indras-na are type:'city' in data.js but behave as story stops).
+    var isStory = (loc.type === 'story') || isOnPath(loc.id);
     if (!isStory) {
       discovered[loc.id] = { at: Date.now(), phase: 'mist' };
       localStorage.setItem(LS_KEY, JSON.stringify(discovered));
@@ -1291,9 +2107,10 @@
       animateReveal(loc);
       showCelebration(loc);
       playDiscoveryChime();
-      setTimeout(function() { showDiscoveryCard(loc); }, 600);
+      setTimeout(function() { openLocationDetails(loc); }, 600);
       updateProgress();
       showDiscoveryToast(loc);
+      updateProximityWhispers();
       return;
     }
 
@@ -1328,6 +2145,12 @@
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
     showDiscoveryToast(loc);
+    updateProximityWhispers();
+
+    // Special unlock celebration for Sham & Mash
+    if (loc.id === 'mash' || loc.id === 'sham-territory') {
+      setTimeout(function() { showTerritoryUnlock(loc); }, 800);
+    }
 
     if (tutorialStep < TUTORIAL_STEPS) {
       // Restore hint loc so the next step has a position to anchor to
@@ -1336,10 +2159,69 @@
         // Step 0 done → advance to step 1 (card reading)
         advanceTutorial();
       } else if (tutorialStep !== TUTORIAL_CARD_STEP) {
-        // Normal advance for click steps
-        advanceTutorial();
+        if (tutorialStep === 2) {
+          // Step 2 (dawn-spear): wait for the card to close before advancing to
+          // the search step. Without this, the 'search the fog' toast appears
+          // while the discovery card is still open — very confusing.
+          waitForCardClose();
+        } else {
+          advanceTutorial();
+        }
       }
     }
+  }
+
+  // ─────────────────────────────────────────────────
+  // Special territory unlock celebration (Sham & Mash)
+  // ─────────────────────────────────────────────────
+  function showTerritoryUnlock(loc) {
+    // Screen-edge gold pulse
+    var glow = document.createElement('div');
+    glow.style.cssText =
+      'position:fixed;inset:0;z-index:949;pointer-events:none;' +
+      'box-shadow:inset 0 0 140px rgba(212,168,67,0.45), inset 0 0 60px rgba(212,168,67,0.2);' +
+      'opacity:0;transition:opacity 1s ease;';
+    document.body.appendChild(glow);
+    requestAnimationFrame(function() {
+      glow.style.opacity = '1';
+      setTimeout(function() {
+        glow.style.transition = 'opacity 2s ease';
+        glow.style.opacity = '0';
+        setTimeout(function() { glow.remove(); }, 2000);
+      }, 2500);
+    });
+
+    // Congratulations toast — left side, larger than normal discovery toast
+    var old = document.getElementById('territory-unlock-toast');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.id = 'territory-unlock-toast';
+    toast.style.cssText =
+      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
+      'background:rgba(10,12,16,0.95);' +
+      'border:1px solid rgba(212,168,67,0.5);border-left:4px solid rgba(212,168,67,0.9);' +
+      'border-radius:0 10px 10px 0;padding:18px 22px;width:220px;' +
+      'font-family:"Cinzel",serif;color:#efe7d2;' +
+      'opacity:0;transition:opacity 0.6s ease;' +
+      'box-shadow:0 8px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,168,67,0.1);';
+    toast.innerHTML =
+      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Territory Unlocked</div>' +
+      '<div style="font-size:11px;color:#8a7d6b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Congratulations</div>' +
+      '<div style="font-size:18px;font-weight:600;letter-spacing:1px;color:#efe7d2;margin-bottom:6px;">✦ ' + loc.name + '</div>' +
+      (loc.sub ? '<div style="font-size:11px;color:#9a8f7e;font-family:EB Garamond,serif;font-style:italic;margin-bottom:12px;">' + loc.sub + '</div>' : '<div style="margin-bottom:12px;"></div>') +
+      '<div style="font-size:10px;color:#c68d55;letter-spacing:1px;">This territory is now revealed.<br>Discover its cities &amp; sites.</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+    document.body.appendChild(toast);
+
+    function dismissUnlock() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 600);
+    }
+    toast.addEventListener('click', dismissUnlock);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    setTimeout(dismissUnlock, 7000);
   }
 
   // Enter search mode — place a hidden key in the fog ring
@@ -1359,6 +2241,7 @@
     // Initialize spotlight at the pinhole center so it works immediately
     var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
     spotlightPos = { x: pt.x, y: pt.y };
+    clearWhisperPanel();
 
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
@@ -1368,6 +2251,10 @@
 
     // Keep spotlight visible during reveal animation — don't snap away
     // searchMode and spotlightPos stay alive until animation ends
+    // but silence the divining-rod pings immediately so the success chime
+    // is not followed by a stale "keep searching" sound.
+    if (searchMode) searchMode.silenced = true;
+    lastPingTime = Date.now();
 
     discovered[loc.id] = { at: discovered[loc.id].at, phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
@@ -1377,39 +2264,77 @@
       // Clear search mode AFTER the reveal animation completes
       searchMode = null;
       spotlightPos = null;
+      updateProximityWhispers();
     });
     showCelebration(loc);
     playDiscoveryChime();
-    setTimeout(function() { showDiscoveryCard(loc); }, 600);
+    setTimeout(function() {
+      if (loc.id === FINAL_ELENA_STOP && isPathComplete()) {
+        if (window.closeLocationPanel) window.closeLocationPanel();
+        return;
+      }
+      openLocationDetails(loc);
+    }, 600);
     updateProgress();
-    showDiscoveryToast(loc);
+    if (!(loc.id === FINAL_ELENA_STOP && isPathComplete())) {
+      showDiscoveryToast(loc);
+    }
 
     // Advance tutorial if in search steps
     if (tutorialStep < TUTORIAL_STEPS) {
       advanceTutorial();
     }
-  }
 
-  // Mouse/touch tracking for spotlight
+    // Foreshadow the Tower of Nine after Sabella's Hut is found
+    if (loc.id === 'sabellas-hut' && !discovered['tower-nine']) {
+      setTimeout(function() {
+        towerForeshadowTime = Date.now();
+        // Left-side whisper hint
+        var hint = document.createElement('div');
+        hint.style.cssText =
+          'position:fixed;left:20px;top:42%;z-index:900;pointer-events:none;' +
+          'border-left:3px solid rgba(198,141,85,0.5);padding:10px 14px;width:200px;' +
+          'font-family:"EB Garamond",serif;font-size:12px;font-style:italic;' +
+          'color:#a09070;opacity:0;transition:opacity 1s ease;line-height:1.6;';
+        hint.textContent = '\u201cSomething to the north stirs in the dark\u2026\u201d';
+        document.body.appendChild(hint);
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() { hint.style.opacity = '1'; });
+        });
+        setTimeout(function() {
+          hint.style.opacity = '0';
+          setTimeout(function() { hint.remove(); }, 1000);
+        }, 5000);
+      }, 1500); // delay so it fires after the reveal animation settles
+    }
+
+    // Tower cluster: reveal companion site (Maxim Stone)
+    if (loc.id === 'tower-nine') {
+      setTimeout(function() {
+        peekClusterSites('tower-nine');
+        showTowerClusterHint();
+      }, 1800);
+    }
+
+    delete clusterPeek[loc.id];
+  } // end completeDiscovery
+
+  // Mouse/touch tracking for spotlight (search mode only)
   function setupSpotlightTracking() {
     document.addEventListener('mousemove', function(e) {
-      if (!map) return;
+      if (!map || !searchMode) return;
       var container = map.getContainer();
       var rect = container.getBoundingClientRect();
-      var pos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      lastMousePos = pos; // always track for whispers
-      if (searchMode) spotlightPos = pos;
+      spotlightPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     });
 
     document.addEventListener('touchmove', function(e) {
-      if (!map) return;
+      if (!map || !searchMode) return;
       var touch = e.touches[0];
       if (!touch) return;
       var container = map.getContainer();
       var rect = container.getBoundingClientRect();
-      var pos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-      lastMousePos = pos;
-      if (searchMode) spotlightPos = pos;
+      spotlightPos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
     }, { passive: true });
   }
 
@@ -1423,9 +2348,10 @@
     var toast = document.createElement('div');
     toast.id = 'discovery-toast';
     toast.style.cssText =
-      'position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:900;' +
-      'background:rgba(10,12,16,0.92);border:1px solid rgba(198,141,85,0.4);' +
-      'border-radius:8px;padding:12px 24px;text-align:center;' +
+      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:900;' +
+      'background:rgba(10,12,16,0.92);' +
+      'border:1px solid rgba(198,141,85,0.35);border-left:3px solid rgba(198,141,85,0.7);' +
+      'border-radius:0 8px 8px 0;padding:14px 20px;width:200px;' +
       'font-family:"Cinzel",serif;color:#efe7d2;pointer-events:none;' +
       'opacity:0;transition:opacity 0.5s ease;';
 
@@ -1483,11 +2409,11 @@
     var refs = markerRefs[locId];
     if (!refs) return;
     if (refs.dot && refs.dot._icon) {
-      refs.dot._icon.classList.remove('fog-hidden');
+      refs.dot._icon.classList.remove('fog-hidden', 'fog-peek');
       refs.dot._icon.classList.add('fog-revealed');
     }
     if (refs.label && refs.label._icon) {
-      refs.label._icon.classList.remove('fog-hidden');
+      refs.label._icon.classList.remove('fog-hidden', 'fog-peek');
       refs.label._icon.classList.add('fog-revealed');
     }
   }
@@ -1495,6 +2421,80 @@
   function registerMarker(locId, type, marker) {
     if (!markerRefs[locId]) markerRefs[locId] = {};
     markerRefs[locId][type] = marker;
+  }
+
+  function setMarkerHighlight(locId, on) {
+    var refs = markerRefs[locId];
+    if (!refs) return;
+    ['dot', 'label'].forEach(function(type) {
+      var m = refs[type];
+      if (m && m._icon) m._icon.classList.toggle('mk-marker-active', !!on);
+    });
+  }
+
+  function peekMarker(locId) {
+    if (discovered[locId]) return;
+    clusterPeek[locId] = true;
+    var refs = markerRefs[locId];
+    if (!refs) return;
+    ['dot', 'label'].forEach(function(type) {
+      var m = refs[type];
+      if (m && m._icon) {
+        m._icon.classList.remove('fog-hidden');
+        m._icon.classList.add('fog-peek');
+      }
+    });
+  }
+
+  function peekClusterSites(parentId) {
+    var siblings = SITE_CLUSTERS[parentId];
+    if (!siblings) return;
+    siblings.forEach(function(id) { peekMarker(id); });
+    draw();
+  }
+
+  function showTowerClusterHint() {
+    var old = document.getElementById('tower-cluster-hint');
+    if (old) old.remove();
+
+    var hint = document.createElement('div');
+    hint.id = 'tower-cluster-hint';
+    hint.style.cssText =
+      'position:fixed;left:20px;top:38%;z-index:900;pointer-events:none;' +
+      'border-left:3px solid rgba(212,168,67,0.55);padding:10px 14px;max-width:240px;' +
+      'font-family:"EB Garamond",serif;font-size:13px;font-style:italic;' +
+      'color:#d4c4a0;opacity:0;transition:opacity 1s ease;line-height:1.6;';
+    hint.innerHTML =
+      '\u201cOne secret crowns this tower.\u201d<br>' +
+      '<span style="font-size:11px;color:#a09070;">The Maxim Stone still waits — follow the glowing star.</span>';
+    document.body.appendChild(hint);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { hint.style.opacity = '1'; });
+    });
+    setTimeout(function() {
+      hint.style.opacity = '0';
+      setTimeout(function() { hint.remove(); }, 1000);
+    }, 7000);
+  }
+
+  function clickRadiusFor(loc) {
+    if (loc.type === 'region' || loc.type === 'water') return CLICK_RADIUS * 2;
+    if (loc.cartographerSite) return CLICK_RADIUS * 1.4;
+    return CLICK_RADIUS;
+  }
+
+  function bindLocationPanel(fn) {
+    locationPanelFn = fn;
+  }
+
+  function openLocationDetails(loc, marker) {
+    if (locationPanelFn) {
+      locationPanelFn(loc, marker || null);
+      return;
+    }
+    if (window.openLocationPanel) {
+      window.openLocationPanel(loc, marker || null);
+    }
   }
 
   function isDiscovered(locId) { return !!discovered[locId]; }
@@ -1553,36 +2553,7 @@
      DISCOVERY CARD
      ════════════════════════════════════════════════ */
   function showDiscoveryCard(loc) {
-    var card = document.getElementById('discovery-card');
-    if (!card) return;
-
-    var step = journeyPath.find(function(s) { return s.locationId === loc.id; });
-    card.querySelector('.dc-name').textContent = loc.name;
-    card.querySelector('.dc-sub').textContent = loc.sub || (step ? step.label : '');
-    card.querySelector('.dc-desc').textContent = loc.desc || 'This location awaits further charting...';
-
-    var typeLabel = { region: 'Region', capital: 'Capital City', city: 'City', town: 'Settlement',
-                      story: 'Story Location', sacred: 'Sacred Site', water: 'Body of Water' }[loc.type] || 'Location';
-    card.querySelector('.dc-type').textContent = step ? 'Step ' + step.step + ' · ' + typeLabel : typeLabel;
-
-    var loreEl = card.querySelector('.dc-lore');
-    if (loc.lore && loreEl) { loreEl.textContent = loc.lore; loreEl.style.display = 'block'; }
-    else if (loreEl) { loreEl.style.display = 'none'; }
-    // Art image (dc-art is a div, use background-image)
-    var artEl = card.querySelector('.dc-art');
-    if (loc.art && artEl) {
-      artEl.style.backgroundImage = 'url(' + loc.art + ')';
-      artEl.style.backgroundSize = 'cover';
-      artEl.style.backgroundPosition = 'center';
-      artEl.style.width = '100%';
-      artEl.style.aspectRatio = '16/9';
-      artEl.style.borderRadius = '6px';
-      artEl.style.filter = 'none';
-      artEl.style.border = 'none';
-      artEl.style.display = 'block';
-    } else if (artEl) { artEl.style.display = 'none'; }
-
-    card.classList.add('visible');
+    openLocationDetails(loc);
   }
 
   function closeDiscoveryCard() {
@@ -1598,36 +2569,47 @@
 
     // ── Elena's Journey track ──
     var journeyTotal = journeyPath.length;
-    var journeyFound = journeyPath.filter(function(s) { return !!discovered[s.locationId]; }).length;
+    var journeyFound = journeyPath.filter(function(s) { return isFullyDiscovered(s.locationId); }).length;
     var journeyPct = journeyTotal > 0 ? journeyFound / journeyTotal : 0;
 
-    // ── Regions track ──
-    var regionLocs = locs.filter(function(l) { return l.type === 'region' || l.type === 'water'; });
+    // ── Territories track ── (major regions only, not water)
+    var regionLocs = locs.filter(function(l) { return l.type === 'region'; });
     var regionTotal = regionLocs.length;
     var regionFound = regionLocs.filter(function(l) { return !!discovered[l.id]; }).length;
     var regionPct = regionTotal > 0 ? regionFound / regionTotal : 0;
 
-    // Combined pct for rank
-    var combined = (journeyFound + regionFound) / Math.max(1, journeyTotal + regionTotal);
+    // ── Cities & Sites track ── (cartographer landmark sites)
+    var cityLocs = locs.filter(function(l) { return !!l.cartographerSite; });
+    var cityTotal = cityLocs.length;
+    var cityFound = cityLocs.filter(function(l) { return !!discovered[l.id]; }).length;
+    var cityPct = cityTotal > 0 ? cityFound / cityTotal : 0;
 
-    var fillJ  = document.getElementById('progress-fill');
-    var countJ = document.getElementById('progress-count');
-    var fillR  = document.getElementById('progress-fill-regions');
-    var countR = document.getElementById('progress-count-regions');
-    var title  = document.getElementById('progress-title');
-    var label  = document.getElementById('progress-label');
+    // Combined pct for rank (weighted: journey counts most, then territories, then cities)
+    var combined = (journeyFound * 3 + regionFound * 2 + cityFound) /
+                   Math.max(1, journeyTotal * 3 + regionTotal * 2 + cityTotal);
+
+    var fillJ   = document.getElementById('progress-fill');
+    var countJ  = document.getElementById('progress-count');
+    var fillR   = document.getElementById('progress-fill-regions');
+    var countR  = document.getElementById('progress-count-regions');
+    var fillC   = document.getElementById('progress-fill-cities');
+    var countC  = document.getElementById('progress-count-cities');
+    var title   = document.getElementById('progress-title');
+    var label   = document.getElementById('progress-label');
 
     if (fillJ)  fillJ.style.width  = (journeyPct * 100) + '%';
     if (countJ) countJ.innerHTML   = journeyFound + ' <span>/ ' + journeyTotal + '</span>';
     if (fillR)  fillR.style.width  = (regionPct * 100) + '%';
     if (countR) countR.innerHTML   = regionFound + ' <span>/ ' + regionTotal + '</span>';
-    if (label)  label.textContent  = '';  // unused now
+    if (fillC)  fillC.style.width  = (cityPct * 100) + '%';
+    if (countC) countC.innerHTML   = cityFound + ' <span>/ ' + cityTotal + '</span>';
+    if (label)  label.textContent  = '';
 
     var rank = 'Apprentice Scribe';
-    if (combined > 0.12) rank = 'Cartographer';
-    if (combined > 0.35) rank = 'Senior Cartographer';
-    if (combined > 0.60) rank = 'Magus Scribe';
-    if (combined > 0.82) rank = 'Master Cartographer';
+    if (combined > 0.10) rank = 'Cartographer';
+    if (combined > 0.30) rank = 'Senior Cartographer';
+    if (combined > 0.55) rank = 'Magus Scribe';
+    if (combined > 0.80) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
 
     // Check god reveals — count ALL discoveries (any phase)
@@ -1654,6 +2636,7 @@
     }
     pulseEl(countJ, '#d4a843');
     pulseEl(countR, '#7ab8c8');
+    pulseEl(countC, '#8cb88c');
 
     // ── Finale checks ──
     checkJourneyFinale(journeyFound, journeyTotal);
@@ -1671,20 +2654,27 @@
   function checkJourneyFinale(found, total) {
     if (finaleState.journey) return;
     if (found < total || total === 0) return;
+
+    // Also require all territories (regions) to be discovered
+    var locs = window.LOCATIONS || [];
+    var regionLocs = locs.filter(function(l) { return l.type === 'region'; });
+    var regionFound = regionLocs.filter(function(l) { return !!discovered[l.id]; }).length;
+    if (regionFound < regionLocs.length || regionLocs.length === 0) return;
+
     finaleState.journey = true;
     try { localStorage.setItem('intrepid_atlas_finales', JSON.stringify(finaleState)); } catch(e) {}
-    // Build constellation line data
+    if (window.closeLocationPanel) window.closeLocationPanel();
+    // Brief beat for the last chime, then constellation + congratulations
     buildConstellationLines();
-    // Short pause then draw lines + show closing toast
-    setTimeout(drawConstellationAnimation, 800);
-    setTimeout(showJourneyToast, 5000);
+    setTimeout(drawConstellationAnimation, 350);
+    setTimeout(showJourneyToast, 1100);
   }
 
   function checkVol1Finale() {
     if (finaleState.vol1) return;
     var vol1Locs = (window.LOCATIONS || []).filter(function(l) { return l.volume1; });
     var vol1Found = vol1Locs.filter(function(l) {
-      return !!discovered[l.id];
+      return isFullyDiscovered(l.id);
     }).length;
     if (vol1Found < vol1Locs.length || vol1Locs.length === 0) return;
     finaleState.vol1 = true;
@@ -1863,12 +2853,20 @@
       var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
       showGodRevealToast(m.name, m.role, typeLabel, !!m.guardian);
 
+      // Auto-open the medallion card after the toast has been visible
+      setTimeout(function() {
+        if (window.showMedallionCard) {
+          window.showMedallionCard(m);
+        }
+      }, 2500);
+
       // Pulsing attention ring on the medallion icon
       spawnMedallionPulse(m);
     }
 
-    // No permanent glow — just the reveal pulse animation
-    // if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
+    // Keep the frame medallion lit once its guardian has awakened.
+    if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
+    if (window.syncMedallionHotspots) window.syncMedallionHotspots();
 
     // Save to localStorage
     try {
@@ -1933,13 +2931,18 @@
       Object.keys(saved).forEach(function(name) {
         // Find the medallion def to check threshold
         var def = defs.find(function(m) { return m.name === name; });
-        if (def && def.unlock && currentCount >= def.unlock && !revealedGods[name]) {
+        if (def && def.unlock && currentCount >= def.unlock) {
           revealedGods[name] = true;
-          // No permanent glow on restore
-          // if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
         }
       });
     } catch(e) {}
+    // Silent catch-up for gods that meet threshold but were missed on init
+    var prevSuppress = suppressAnimations;
+    suppressAnimations = true;
+    checkGodReveals(currentCount);
+    suppressAnimations = prevSuppress;
+    if (window.syncMedallionHotspots) window.syncMedallionHotspots();
   }
 
   function showGodRevealToast(name, role, typeLabel, isGuardian) {
@@ -1964,29 +2967,34 @@
     var toast = document.createElement('div');
     toast.id = 'god-toast';
     toast.style.cssText =
-      'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);z-index:950;' +
+      'position:fixed;top:50%;left:28px;max-width:min(320px, 42vw);transform:translateY(-50%) scale(0.9);z-index:950;' +
       'background:radial-gradient(ellipse at center, rgba(15,12,8,0.97), rgba(10,12,16,0.95));' +
       'border:1px solid rgba(' + accentR + ',0.5);' +
-      'border-radius:12px;padding:30px 60px;text-align:center;pointer-events:none;' +
+      'border-radius:12px;padding:24px 32px;text-align:center;cursor:pointer;' +
       'opacity:0;transition:opacity 1.2s ease, transform 1.2s ease;' +
       'box-shadow:0 0 60px rgba(' + accentR + ',0.15), 0 0 20px rgba(0,0,0,0.8);';
     toast.innerHTML =
       '<div style="font-family:Cinzel,serif;font-size:10px;color:' + accentDim + ';text-transform:uppercase;letter-spacing:4px;margin-bottom:10px;opacity:0.8;">' + (typeLabel || 'THE FRAME STIRS') + '</div>' +
       '<div style="font-family:Cinzel,serif;font-size:28px;color:' + accentHex + ';letter-spacing:3px;text-shadow:0 0 20px rgba(' + accentR + ',0.4);">' + name + '</div>' +
       (role ? '<div style="font-family:EB Garamond,serif;font-size:14px;color:#bfb299;font-style:italic;margin-top:8px;letter-spacing:1px;">' + role + '</div>' : '') +
-      '<div style="font-family:EB Garamond,serif;font-size:12px;color:' + subtleHex + ';margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>';
+      '<div style="font-family:EB Garamond,serif;font-size:12px;color:' + subtleHex + ';margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>' +
+      '<div style="font-family:EB Garamond,serif;font-size:10px;color:' + subtleHex + ';margin-top:18px;opacity:0.5;font-style:italic;">tap to continue</div>';
     document.body.appendChild(toast);
+
+    function dismissGodToast() {
+      glow.style.opacity = '0';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-50%) scale(1.05)';
+      setTimeout(function() { toast.remove(); glow.remove(); }, 1500);
+    }
+
+    toast.addEventListener('click', dismissGodToast);
 
     requestAnimationFrame(function() {
       glow.style.opacity = '1';
       toast.style.opacity = '1';
-      toast.style.transform = 'translate(-50%,-50%) scale(1)';
-      setTimeout(function() {
-        glow.style.opacity = '0';
-        toast.style.opacity = '0';
-        toast.style.transform = 'translate(-50%,-50%) scale(1.05)';
-        setTimeout(function() { toast.remove(); glow.remove(); }, 1500);
-      }, 5000);
+      toast.style.transform = 'translateY(-50%) scale(1)';
+      setTimeout(dismissGodToast, 5000); // auto-dismiss after 5s
     });
   }
 
@@ -1994,6 +3002,7 @@
      RESET BUTTON
      ════════════════════════════════════════════════ */
   function addResetButton() {
+    if (document.getElementById('fog-reset-btn')) return;
     var btn = document.createElement('button');
     btn.id = 'fog-reset-btn';
     btn.textContent = '↺ Reset';
@@ -2004,15 +3013,10 @@
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
       if (confirm('Reset all discoveries and start over? This clears your entire journey.')) {
-        // Clear all intrepid-related state for a true fresh start
         var keysToRemove = [
-          LS_KEY,                        // discovered locations
-          LS_KEY + '_v',                 // version tracker
-          'revealedGods',                // medallion reveals
-          'intrepid_atlas_hinted',       // first-time hint
-          'intrepid_atlas_reveals',      // region reveal state
-          'intrepid_coord_unlocks',      // sigil coordinate unlocks
-          'intrepid_atlas_finales'       // finale animation state
+          LS_KEY, LS_KEY + '_v', 'revealedGods',
+          'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
+          'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales'
         ];
         keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
         location.reload();
@@ -2020,6 +3024,162 @@
     });
     document.body.appendChild(btn);
   }
+
+  /* ════════════════════════════════════════════════
+     GUIDE ME — finds next target and pans there
+     ════════════════════════════════════════════════ */
+  var guideTarget = null; // { lat, lng, endTime } for pulsing ring in draw()
+
+  function addGuideButton() {
+    var btn = document.createElement('button');
+    btn.id = 'fog-guide-btn';
+    btn.innerHTML = '&#9670; Guide Me';
+    btn.style.cssText =
+      'position:fixed;bottom:12px;left:calc(50% + 6px);transform:translateX(0);z-index:800;' +
+      'background:rgba(10,12,16,0.90);color:#c68d55;' +
+      'border:1px solid rgba(198,141,85,0.55);border-radius:6px;' +
+      'padding:6px 16px;font-size:11px;cursor:pointer;' +
+      'letter-spacing:2px;text-transform:uppercase;font-family:Cinzel,serif;' +
+      'box-shadow:0 2px 12px rgba(0,0,0,0.5);transition:border-color 0.2s,color 0.2s;';
+    btn.addEventListener('mouseenter', function() {
+      btn.style.borderColor = 'rgba(212,168,67,0.9)'; btn.style.color = '#d4a843';
+    });
+    btn.addEventListener('mouseleave', function() {
+      btn.style.borderColor = 'rgba(198,141,85,0.55)'; btn.style.color = '#c68d55';
+    });
+    btn.addEventListener('click', function(e) { e.stopPropagation(); runGuideMe(); });
+    document.body.appendChild(btn);
+  }
+
+  function runGuideMe() {
+    var locs = window.LOCATIONS || [];
+    var target = null;
+    var hintLine1 = '';
+    var hintLine2 = '';
+
+    // Priority 1: next unvisited journey step (finale excluded until map is complete)
+    var nextId = getNextPathLocation();
+    if (nextId) {
+      target = locs.find(function(l) { return l.id === nextId; });
+      if (target) {
+        hintLine1 = '\u201cElena\u2019s path leads here next.\u201d';
+        hintLine2 = target.type === 'story'
+          ? 'Find the \u2605 amber glow and use the chime to locate it.'
+          : 'Follow the golden glow to reveal this stop.';
+      }
+    }
+
+    // Priority 2: nearest currently glowing territory to map center
+    if (!target) {
+      var ctr = map.getCenter();
+      var best = Infinity;
+      locs.forEach(function(l) {
+        if (discovered[l.id] || !isTerritory(l) || !territoryHasGlow(l)) return;
+        var d = Math.sqrt(Math.pow(l.lat - ctr.lat, 2) + Math.pow(l.lng - ctr.lng, 2));
+        if (d < best) { best = d; target = l; }
+      });
+      if (target) {
+        hintLine1 = 'An uncharted territory lies ahead.';
+        hintLine2 = 'Click the orange shimmer in the fog to reveal it.';
+      }
+    }
+
+    // Priority 3: nearest undiscovered territory if the frontier rule ever
+    // leaves only far-flung map edges. This keeps late-game cleanup humane.
+    if (!target) {
+      var ctr2 = map.getCenter();
+      var best2 = Infinity;
+      locs.forEach(function(l) {
+        if (discovered[l.id] || !isTerritory(l)) return;
+        var d = Math.sqrt(Math.pow(l.lat - ctr2.lat, 2) + Math.pow(l.lng - ctr2.lng, 2));
+        if (d < best2) { best2 = d; target = l; }
+      });
+      if (target) {
+        hintLine1 = 'An uncharted territory remains at the edge of the archive.';
+        hintLine2 = 'Follow the guide ring, then click the orange shimmer.';
+      }
+    }
+
+    // Priority 4: nearest undiscovered cartographer site
+    if (!target) {
+      var ctr3 = map.getCenter();
+      var best3 = Infinity;
+      locs.forEach(function(l) {
+        if (discovered[l.id] || !l.cartographerSite) return;
+        var d = Math.sqrt(Math.pow(l.lat - ctr3.lat, 2) + Math.pow(l.lng - ctr3.lng, 2));
+        if (d < best3) { best3 = d; target = l; }
+      });
+      if (target) {
+        hintLine1 = 'A hidden site waits to be charted.';
+        hintLine2 = 'Click the \u2605 amber star to search with the chime.';
+      }
+    }
+
+    if (!target) {
+      showGuideHint('All Charted', 'Elena\u2019s journey is complete.', '');
+      return;
+    }
+
+    if (!discovered[FINAL_ELENA_STOP] && discovered['sinn'] && !explorationComplete()) {
+      hintLine1 = 'Indras Na stays sealed until the map is whole.';
+      if (!hintLine2) {
+        hintLine2 = 'Chart every territory and ancient site first.';
+      } else {
+        hintLine2 += ' Then Elena\u2019s final stop will appear.';
+      }
+    }
+
+    // Pan to target smoothly
+    map.panTo(getInteractionLatLng(target), { animate: true, duration: 1.4 });
+
+    // Trigger canvas pulsing ring for 4s after pan lands
+    setTimeout(function() {
+      guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4000 };
+    }, 900);
+
+    // Show hint toast
+    setTimeout(function() {
+      showGuideHint(
+        target.name + (target.sub ? ' \u2014 ' + target.sub : ''),
+        hintLine1,
+        hintLine2
+      );
+    }, 800);
+  }
+
+  function showGuideHint(title, line1, line2) {
+    var old = document.getElementById('guide-hint-toast');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.id = 'guide-hint-toast';
+    toast.style.cssText =
+      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:900;cursor:pointer;' +
+      'background:rgba(10,12,16,0.94);' +
+      'border:1px solid rgba(140,180,220,0.4);border-left:3px solid rgba(140,180,220,0.8);' +
+      'border-radius:0 8px 8px 0;padding:16px 18px;width:218px;' +
+      'font-family:"EB Garamond",serif;color:#efe7d2;' +
+      'opacity:0;transition:opacity 0.5s ease;' +
+      'box-shadow:0 6px 30px rgba(0,0,0,0.6);';
+    toast.innerHTML =
+      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;' +
+        'color:#8ab4d4;margin-bottom:8px;font-family:Cinzel,serif;">&#9670; Guide</div>' +
+      '<div style="font-size:14px;font-weight:600;color:#d4c89a;margin-bottom:8px;line-height:1.3;">' + title + '</div>' +
+      '<div style="font-size:12px;color:#9a8f7e;line-height:1.7;margin-bottom:4px;">' + line1 + '</div>' +
+      (line2 ? '<div style="font-size:11px;color:#c68d55;line-height:1.6;">' + line2 + '</div>' : '') +
+      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;">tap to dismiss</div>';
+    document.body.appendChild(toast);
+    function dismiss() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    }
+    toast.addEventListener('click', dismiss);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    setTimeout(dismiss, 8000);
+  }
+
+
 
   /* ════════════════════════════════════════════════
      DRIFT (continuous fog animation)
@@ -2034,12 +3194,25 @@
   /* ════════════════════════════════════════════════
      PUBLIC API
      ════════════════════════════════════════════════ */
+  // Early gesture unlock — landing, gate, and map clicks (before FogSystem.init)
+  loadAmbientPreference();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', updateAmbientButton);
+  } else {
+    updateAmbientButton();
+  }
+  document.addEventListener('click', function() { unlockAmbientOnGesture(); }, true);
+  document.addEventListener('keydown', function() { unlockAmbientOnGesture(); }, true);
+
   window.FogSystem = {
     init: init,
     draw: draw,
     registerMarker: registerMarker,
+    setMarkerHighlight: setMarkerHighlight,
     isDiscovered: isDiscovered,
     discover: discoverLocation,
+    bindLocationPanel: bindLocationPanel,
+    openLocationDetails: openLocationDetails,
     closeCard: closeDiscoveryCard,
     updateProgress: updateProgress,
     startDrift: startDrift,
@@ -2049,6 +3222,15 @@
     getNextLocation: getNextPathLocation,
     initTetradCircles: initTetradCircles,
     _revealedGods: revealedGods,
-    reset: function() { localStorage.removeItem(LS_KEY); localStorage.removeItem('revealedGods'); location.reload(); }
+    reset: function() {
+      var keysToRemove = [
+        LS_KEY, LS_KEY + '_v', 'revealedGods',
+        'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
+        'intrepid_atlas_reveals', 'intrepid_coord_unlocks',
+        'intrepid_atlas_finales'
+      ];
+      keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+      location.reload();
+    }
   };
 })();

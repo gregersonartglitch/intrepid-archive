@@ -1,0 +1,47 @@
+---
+description: Hollowlands Intrepid Map — project context and rules
+alwaysApply: true
+---
+
+# The Hollowlands Interactive Map
+
+## What This Is
+A fog-of-war interactive web map for the fantasy novel "The Hollowlands." Players explore a map shrouded in fog by discovering journey locations that reveal the world. Built in vanilla HTML/CSS/JS with Leaflet.js.
+
+## Core Files
+- `fog.js` — the entire game engine (~2770 lines, one IIFE)
+- `data.js` — all location data (coordinates, lore, journey path)
+- `index.html` — UI, CSS, Leaflet setup, region overlay renderer
+
+## Critical Rules
+
+### Never Break These Game Logic Rules
+1. **No glow = not clickable.** `isClickable()` in fog.js must stay in sync with beacon draw logic
+2. **Tutorial gate** = `!discovered['sabellas-hut']`. During tutorial ONLY `tutorialHintLoc.id` is clickable
+3. **Golden glow** (section 3 in draw()) = next journey step. Always visible post-tutorial
+4. **Orange beacon** = territory (region/water type). Unlocked by non-territory discovery within 500 units
+5. **Yellow beacon** = cartographerSite or journey path stop. Visible within 400 units of cleared fog
+
+### Code Style
+- All fog.js logic stays inside the existing IIFE — do NOT restructure to modules
+- Use `var` not `let/const` — the codebase is ES5 style for broad browser compat
+- Comment every major section clearly — the file is 2700+ lines
+- After any edit to fog.js, run: `node --check fog.js` to validate syntax
+
+### Coordinate System
+- `lat` = horizontal (left-right on screen). Higher lat = further right
+- `lng` = vertical (up-down on screen)  
+- Proximity distances are in map units (400 units ≈ nearby cluster)
+
+## Journey Path (in order)
+1. crossing-pool → 2. dawn-spear → 3. sabellas-hut (tutorial ends) → 4. mish → 5. monastery-wind → 6. tower-nine → 7. sinn → 8. indras-na (FINAL, requires all territories + sites)
+
+## Dev Server
+```
+npx http-server . -p 8080 --cors -c-1
+# http://localhost:8080
+# http://localhost:8080?edit  (drag-to-reposition locations)
+```
+
+## Build checkpoints
+- **build-50** — Stable Beta baseline; fog Pass 3 region reveal shelved. Tag `build-50`; return with `git checkout build-50`.

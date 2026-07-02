@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Dossier — Intrepid Dusk</title>
+<meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
+<meta name="robots" content="noindex,nofollow">
+<link rel="preload" as="image" href="character%20dossier_Elena.png" fetchpriority="high">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════ */
+:root {
+  --gold: #d4a843;
+  --gold-dim: rgba(198,141,85,0.6);
+  --bone: #bfb299;
+  --bone-dim: rgba(191,178,153,0.55);
+  --stone-dark: #0d0d12;
+  --amber: #c68d55;
+  --font-heading: 'Cinzel', serif;
+  --font-display: 'Cinzel Decorative', 'Cinzel', serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --ocean-deep: #080c14;
+  --cyan-glow: rgba(120,190,210,0.15);
+  --sidebar-w: 280px;
+}
+
+/* ═══════════════════════════════════════════
+   RESET + BASE
+   ═══════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font-body);
+  color: var(--bone);
+  background: var(--ocean-deep);
+}
+
+/* ═══════════════════════════════════════════
+   UNDERWATER BACKGROUND
+   ═══════════════════════════════════════════ */
+.ocean-bg {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 100%, rgba(10,22,40,0.8) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 60% at 30% 30%, rgba(15,35,60,0.4) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 70% 60%, var(--cyan-glow) 0%, transparent 50%),
+    linear-gradient(180deg, #060a12 0%, #0a1628 30%, #0c1a30 60%, #080c14 100%);
+}
+
+/* ── Bubbles ── */
+.bubbles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.bubble {
+  position: absolute; bottom: -20px; border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(180,220,240,0.12), rgba(120,190,210,0.04));
+  border: 1px solid rgba(180,220,240,0.06);
+  animation: rise linear infinite;
+}
+@keyframes rise {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { transform: translateY(-110vh) translateX(var(--drift)) scale(0.6); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   MASTER-DETAIL SHELL
+   ═══════════════════════════════════════════ */
+.dossier-shell {
+  position: relative; z-index: 10;
+  display: flex;
+  height: 100vh;
+}
+
+/* ── LEFT: Sidebar / Roster ── */
+.roster {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  border-right: 1px solid rgba(198,141,85,0.12);
+  display: flex;
+  flex-direction: column;
+  background: rgba(6,8,14,0.6);
+  backdrop-filter: blur(12px);
+}
+.roster-header {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(198,141,85,0.1);
+  flex-shrink: 0;
+}
+.roster-back {
+  display: inline-block;
+  font-family: var(--font-heading);
+  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--bone-dim);
+  text-decoration: none;
+  transition: color 0.3s;
+  margin-bottom: 12px;
+}
+.roster-back::before { content: '← '; }
+.roster-back:hover { color: var(--gold); }
+.roster-title {
+  font-family: var(--font-display);
+  font-size: 18px; font-weight: 400;
+  color: var(--gold);
+  letter-spacing: 2px;
+}
+.roster-subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--bone-dim);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ── Character List ── */
+.roster-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198,141,85,0.2) transparent;
+}
+.roster-list::-webkit-scrollbar { width: 4px; }
+.roster-list::-webkit-scrollbar-track { background: transparent; }
+.roster-list::-webkit-scrollbar-thumb { background: rgba(198,141,85,0.2); border-radius: 2px; }
+
+.roster-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.25s, border-color 0.25s;
+  border-left: 3px solid transparent;
+}
+.roster-item:hover {
+  background: rgba(198,141,85,0.05);
+}
+.roster-item.active {
+  background: rgba(198,141,85,0.08);
+  border-left-color: var(--gold);
+}
+.roster-item.active .ri-name { color: var(--gold); }
+
+.ri-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1.5px solid rgba(198,141,85,0.25);
+  flex-shrink: 0;
+  transition: border-color 0.3s;
+}
+.roster-item.active .ri-avatar,
+.roster-item:hover .ri-avatar { border-color: var(--gold); }
+.ri-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.ri-info { min-width: 0; }
+.ri-name {
+  font-family: var(--font-heading);
+  font-size: 12px; font-weight: 700;
+  color: var(--bone);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: color 0.25s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ri-role {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--bone-dim);
+  font-style: italic;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── RIGHT: Detail Panel ── */
+.detail {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px 40px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(198,141,85,0.2) transparent;
+}
+.detail::-webkit-scrollbar { width: 6px; }
+.detail::-webkit-scrollbar-track { background: transparent; }
+.detail::-webkit-scrollbar-thumb { background: rgba(198,141,85,0.2); border-radius: 3px; }
+
+.detail-inner {
+  max-width: 560px;
+  width: 100%;
+  animation: fadeUp 0.4s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.detail-portrait {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 28px;
+  border: 2px solid rgba(198,141,85,0.35);
+  box-shadow: 0 0 50px rgba(120,190,210,0.08), 0 8px 40px rgba(0,0,0,0.5);
+}
+.detail-portrait img { width: 100%; height: 100%; object-fit: cover; }
+
+.detail-name {
+  font-family: var(--font-display);
+  font-size: 32px; font-weight: 400;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.detail-role {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 28px;
+}
+.detail-divider {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+  margin: 0 auto 28px;
+}
+.detail-desc {
+  font-family: var(--font-body);
+  font-size: 18px;
+  color: var(--bone);
+  line-height: 1.75;
+  opacity: 0.9;
+  text-align: left;
+}
+.detail-lore {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--bone);
+  line-height: 1.7;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(198,141,85,0.1);
+  text-align: left;
+  opacity: 0.75;
+}
+
+/* ═══════════════════════════════════════════
+   MOBILE: stack layout
+   ═══════════════════════════════════════════ */
+@media (max-width: 700px) {
+  .dossier-shell { flex-direction: column; }
+  .roster {
+    width: 100%; min-width: 100%;
+    height: auto; max-height: 35vh;
+    border-right: none;
+    border-bottom: 1px solid rgba(198,141,85,0.12);
+  }
+  .roster-list { padding: 4px 0; }
+  .roster-item { padding: 8px 16px; gap: 10px; }
+  .ri-avatar { width: 36px; height: 36px; }
+  .detail { padding: 32px 20px; }
+  .detail-portrait { width: 160px; height: 160px; }
+  .detail-name { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Underwater Background -->
+<div class="ocean-bg"></div>
+<div class="bubbles" id="bubbles"></div>
+
+<!-- Master-Detail Shell -->
+<div class="dossier-shell">
+
+  <!-- LEFT: Roster Sidebar -->
+  <nav class="roster">
+    <div class="roster-header">
+      <a href="../" class="roster-back">Archive</a>
+      <div class="roster-title">Dossier</div>
+      <div class="roster-subtitle">Faces of the Hollowlands</div>
+    </div>
+    <div class="roster-list" id="roster-list"></div>
+  </nav>
+
+  <!-- RIGHT: Detail Panel -->
+  <main class="detail" id="detail">
+    <div class="detail-inner" id="detail-inner"></div>
+  </main>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CHARACTER DATA
+// ═══════════════════════════════════════════
+var CHARACTERS = [
+  {
+    name: 'Elena',
+    role: 'Wind Catcher \u00b7 Daughter of the Dawn',
+    img: 'character%20dossier_Elena.png',
+    desc: 'A young operative in the CIA\'s classified Intrepid program, where trained viewers project their consciousness across dimensions. She grew up in the shadow of her grandmother Sabella \u2014 the program\'s most legendary agent, now lying in a waking coma no doctor can explain.',
+    lore: 'Elena carries a scar she doesn\'t fully understand: a life of panic attacks, a feeling of being orphaned even with family still breathing, and a desperate need to prove she is more than Sabella\'s granddaughter. She is impulsive, warm-hearted, and haunted by a memory she can barely reach \u2014 a moment when Sabella grabbed her and whispered: "Find me before it\'s too late."'
+  },
+  {
+    name: 'Sabella',
+    role: 'Elena\u2019s Grandmother',
+    img: 'character%20dossier_Sabella.png',
+    desc: 'Sabella was the most powerful remote viewer the Intrepid program ever produced. During the Vietnam War, she oversaw operations from the astral plane \u2014 floating above jungles in a remote viewing bubble, seeing what no satellite could. Then she lost the one person she loved.',
+    lore: 'The grandmother Elena remembers \u2014 the woman who told her stories of Paradise, who put flowers on her mother\'s grave, who picked her up when she fell \u2014 may not be the woman Elena finds.'
+  },
+  {
+    name: 'Utu',
+    role: 'The Hollow Man \u00b7 Elena\'s Guide',
+    img: 'character%20dossier_Utu.png',
+    desc: 'A scarred warrior Elena meets in the Hollowlands, living near the ruins of what was once her grandmother\'s shelter. He is dark, brooding, and guarded \u2014 a man who has lost everyone he ever fought beside. He once led a small rebellion against the Dominion; his friends are all dead now.',
+    lore: 'Despite his distrust and his secrets, Utu is drawn to Elena\'s warmth. He becomes her reluctant guide through the Hollowlands \u2014 teaching her the laws of survival, warning her when to stay quiet, and fighting beside her when staying quiet is no longer an option. Whether he can be trusted is a question Elena carries with her every step of the journey.'
+  },
+  {
+    name: 'Melchior',
+    role: 'The Last Magus',
+    img: 'character%20dossier_Melchior.png',
+    desc: 'One of the last surviving Magus \u2014 an ancient order of eunuch scholars who once served as advisors to kings and keepers of all knowledge. The Magus organized a coup to overthrow the Dominion, and the empire responded with systematic extermination. Melchior has been running for twenty years.',
+    lore: 'When he sees Elena\'s cylinder spear, he recognizes it immediately \u2014 he knows the woman who once wielded it, and he knows what the weapon is called. He is helpful, knowledgeable, and always watching. Whatever Melchior is looking for, he hasn\'t found it yet.'
+  },
+  {
+    name: 'Orion',
+    role: 'Captain of the Watch \u00b7 Titan Warrior',
+    img: 'character%20dossier_Orion.png',
+    desc: 'A Titan \u2014 one of the superhuman offspring of the Nine \u2014 though his parentage remains unknown. His mother was human. Not all Titans are giants, but Orion stands seven feet tall with the strength to lift a man with one hand. He is a former imperial veteran who broke with the Dominion and now leads the Watch, a band of fighters who protect borderland villages.',
+    lore: 'He is heroic in bearing \u2014 a King Arthur figure in a world that has forgotten what kings are for. Orion is a man caught between his noble instincts and the darker heritage of his bloodline. What that blood carries, and what it may one day demand, is something Orion himself does not yet know.'
+  },
+  {
+    name: 'Namin',
+    role: 'Blood Priest of the Dominion',
+    img: 'character%20dossier_Namin.png',
+    desc: 'A powerful blood priest in the Dominion\'s religious hierarchy \u2014 the enforcement arm of Atrus Nul\'s empire. The blood priests conduct rituals, enforce imperial will, and hunt the empire\'s enemies. Namin commands an Inquest \u2014 a formal hunt for the last remaining Magus.',
+    lore: 'Namin is not simply a fanatic. He is ambitious. He serves the priesthood hierarchy, but his eye is on the high priests who serve Atrus Nul directly. While Atrus Nul is the cosmic power behind the Dominion, Namin is the human face of its cruelty \u2014 the priest who burns a village to find one fugitive.'
+  },
+  {
+    name: 'Atrus Nul',
+    role: 'Son of War \u00b7 Emperor of the Dominion',
+    img: 'character%20dossier_AtrusNul.png',
+    desc: 'The greatest emperor the Hollowlands have ever known \u2014 and the most terrifying. A Titan, son of Erra, the God of War. He rules through the Rod of Dusk, a weapon forged by the Nine that grants vast power. He has been patient. He has been planning for a very long time.',
+    lore: 'His reach is wider than the Hollowlands. He has been building toward something for a very long time, and the pieces are nearly in place. He knows Sabella. Now they are at war.'
+  },
+  {
+    name: 'Isin Ada',
+    role: 'High Priestess of the Wind \u00b7 The Oracle',
+    img: 'character%20dossier_IsinAda.png',
+    desc: 'High Priestess of the Wind Monastery, an ancient sanctuary carved into three mountainous rock outcroppings overlooking the plains. She is an oracle, a prophet, and a keeper of the Book of the Golden Tree, a sacred text that records the history of the Maxim, the Rod and Ring, and the Spear of Dawn.',
+    lore: 'She tends a garden in the monastery\'s inner courtyard, easily mistaken for a harmless old woman. This is by design. She recognizes Elena immediately \u2014 though Elena does not understand why.'
+  },
+  {
+    name: 'Asim',
+    role: 'Winged Lion of the Tetrad',
+    img: 'character%20dossier_Asim.png',
+    desc: 'A Lamassu \u2014 a winged lion from the sacred mountains near Dilmun, the eden-like paradise. Sacred creatures like Asim are only available to those the Tetrad chooses, and Asim has chosen Elena.',
+    lore: 'He is more than an animal. He is intelligent, loyal, and capable of independent action. He fights with ferocity and responds to Elena\'s emotional state with an almost human sensitivity. Asim has served before. Who he left, and why, is something he keeps to himself.'
+  },
+  {
+    name: 'Dr. Kusarek',
+    role: 'Director of the Intrepid Program',
+    img: 'character%20dossier_DrKusarek.png',
+    desc: 'Director of the CIA\'s classified Intrepid program \u2014 the remote viewing division that sends operatives\' consciousness across dimensions. He oversees operations from the Institute, monitoring vital signs and brain activity as viewers enter the Hollowlands.',
+    lore: 'Kusarek is a career intelligence officer and scientist. He recruited Elena into the program following Sabella\'s coma. He reports to senior leadership and manages a team of technicians who track viewer activity in real time.'
+  },
+  {
+    name: 'Nick',
+    role: 'Special Forces Operative',
+    img: 'character%20dossier_Nick.png',
+    desc: 'A special forces operative who served during the Vietnam War. Nick operated in the field while Sabella watched from above through the Intrepid program.',
+    lore: 'He and Sabella were engaged. His story is connected to hers in ways that the Intrepid program has never fully disclosed.'
+  }
+];
+
+// ═══════════════════════════════════════════
+// BUILD ROSTER
+// ═══════════════════════════════════════════
+var rosterList = document.getElementById('roster-list');
+var detailInner = document.getElementById('detail-inner');
+var activeIndex = 0;
+
+function buildRoster() {
+  CHARACTERS.forEach(function(c, i) {
+    var item = document.createElement('div');
+    item.className = 'roster-item' + (i === 0 ? ' active' : '');
+    item.setAttribute('data-index', i);
+    item.innerHTML =
+      '<div class="ri-avatar"><img src="' + c.img + '" alt="' + c.name + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '" decoding="async"></div>' +
+      '<div class="ri-info">' +
+        '<div class="ri-name">' + c.name + '</div>' +
+        '<div class="ri-role">' + c.role + '</div>' +
+      '</div>';
+    item.addEventListener('click', function() { selectCharacter(i); });
+    rosterList.appendChild(item);
+  });
+}
+
+function selectCharacter(index) {
+  activeIndex = index;
+  var c = CHARACTERS[index];
+
+  // Update active state in roster
+  var items = rosterList.querySelectorAll('.roster-item');
+  items.forEach(function(el) { el.classList.remove('active'); });
+  items[index].classList.add('active');
+
+  // Re-render detail with animation
+  detailInner.style.animation = 'none';
+  detailInner.offsetHeight; // reflow
+  detailInner.style.animation = '';
+
+  var html =
+    '<div class="detail-portrait"><img src="' + c.img + '" alt="' + c.name + '" loading="eager" decoding="async" fetchpriority="high"></div>' +
+    '<div class="detail-name">' + c.name + '</div>' +
+    '<div class="detail-role">' + c.role + '</div>' +
+    '<div class="detail-divider"></div>' +
+    '<div class="detail-desc">' + c.desc + '</div>';
+  if (c.lore) {
+    html += '<div class="detail-lore">' + c.lore + '</div>';
+  }
+  detailInner.innerHTML = html;
+
+  // Scroll detail to top
+  document.getElementById('detail').scrollTop = 0;
+  preloadNearbyPortraits(index);
+}
+
+function preloadNearbyPortraits(index) {
+  [index + 1, index - 1].forEach(function(i) {
+    if (!CHARACTERS[i] || CHARACTERS[i]._preloaded) return;
+    var img = new Image();
+    img.decoding = 'async';
+    img.src = CHARACTERS[i].img;
+    CHARACTERS[i]._preloaded = true;
+  });
+}
+
+// ═══════════════════════════════════════════
+// KEYBOARD NAVIGATION
+// ═══════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowDown' || e.key === 'j') {
+    e.preventDefault();
+    selectCharacter(Math.min(activeIndex + 1, CHARACTERS.length - 1));
+    scrollRosterIntoView();
+  } else if (e.key === 'ArrowUp' || e.key === 'k') {
+    e.preventDefault();
+    selectCharacter(Math.max(activeIndex - 1, 0));
+    scrollRosterIntoView();
+  }
+});
+
+function scrollRosterIntoView() {
+  var items = rosterList.querySelectorAll('.roster-item');
+  if (items[activeIndex]) {
+    items[activeIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+// ═══════════════════════════════════════════
+// BUBBLE PARTICLES
+// ═══════════════════════════════════════════
+(function() {
+  var container = document.getElementById('bubbles');
+  for (var i = 0; i < 20; i++) {
+    var b = document.createElement('div');
+    b.className = 'bubble';
+    var size = 3 + Math.random() * 8;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = Math.random() * 100 + '%';
+    var dur = 12 + Math.random() * 18;
+    b.style.animationDuration = dur + 's';
+    b.style.animationDelay = '-' + (Math.random() * dur) + 's';
+    b.style.setProperty('--drift', (Math.random() - 0.5) * 60 + 'px');
+    container.appendChild(b);
+  }
+})();
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+buildRoster();
+selectCharacter(0);
+</script>
+</body>
+</html>

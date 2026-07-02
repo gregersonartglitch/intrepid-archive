@@ -61,7 +61,6 @@ const epithets = {
   'monastery-wind': 'The Oracle\'s Sanctuary',
   'moon-stronghold': 'The Moon Queen\'s Fortress',
   'maxim-stone': 'The Barrier',
-  'lunar-clock': 'The Celestial Engine',
   'irridari-citadel': 'The Shining Fortress',
   
   // Sacred sites

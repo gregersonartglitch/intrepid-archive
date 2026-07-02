@@ -47,6 +47,91 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 input { font-family: inherit; }
 
 /* ═══════════════════════════════════════════
+   PUBLIC LANDING
+   ═══════════════════════════════════════════ */
+#landing {
+  position: fixed; inset: 0; z-index: 9500;
+  display: flex; align-items: center; justify-content: center;
+  padding: 36px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 45%, rgba(42,35,28,0.62) 0%, transparent 70%),
+    radial-gradient(ellipse 38% 42% at 20% 28%, rgba(198,141,85,0.12) 0%, transparent 70%),
+    radial-gradient(ellipse 34% 46% at 82% 72%, rgba(90,55,30,0.16) 0%, transparent 68%),
+    linear-gradient(175deg, #08070c 0%, #0d0d12 44%, #15100b 100%);
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+}
+#landing.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.landing-card {
+  position: relative;
+  width: min(760px, 94vw);
+  padding: 54px 50px 48px;
+  background: rgba(13,13,18,0.78);
+  border: 1px solid rgba(198,141,85,0.2);
+  border-radius: 8px;
+  box-shadow: 0 34px 90px rgba(0,0,0,0.58), 0 0 90px rgba(198,141,85,0.08);
+  text-align: center;
+  overflow: hidden;
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+}
+.landing-card::before {
+  content: '𒀭 𒂗 𒆳 𒁹 𒆳 𒂗 𒀭';
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  color: rgba(198,141,85,0.13); font-size: 11px; letter-spacing: 10px;
+  white-space: nowrap;
+}
+.landing-eyebrow {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 700;
+  color: var(--amber); letter-spacing: 4px; text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.landing-title {
+  font-family: var(--font-display); font-size: clamp(34px, 7vw, 62px);
+  font-weight: 400; color: var(--bone); line-height: 1.05;
+  text-shadow: 0 0 34px rgba(198,141,85,0.18);
+  margin-bottom: 18px;
+}
+.landing-rule {
+  width: 88px; height: 1px; margin: 0 auto 22px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+}
+.landing-subtitle {
+  max-width: 520px; margin: 0 auto 34px;
+  color: var(--bone-dim); font-size: 18px; line-height: 1.55;
+  font-style: italic;
+}
+.landing-actions {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+}
+.landing-action {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 58px; padding: 14px 16px;
+  border: 1px solid rgba(198,141,85,0.22);
+  border-radius: 4px;
+  background: rgba(198,141,85,0.055);
+  color: var(--bone);
+  font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; line-height: 1.35; text-transform: uppercase;
+  text-decoration: none;
+  transition: transform 0.18s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.landing-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232,169,106,0.68);
+  background: rgba(198,141,85,0.12);
+  box-shadow: 0 0 28px rgba(198,141,85,0.14);
+}
+.landing-action.primary {
+  background: linear-gradient(135deg, var(--amber) 0%, var(--copper) 100%);
+  color: var(--stone-dark);
+  border-color: transparent;
+}
+.landing-note {
+  margin-top: 22px; color: rgba(191,178,153,0.48);
+  font-family: var(--font-ui); font-size: 10px; letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
    PASSWORD GATE
    ═══════════════════════════════════════════ */
 #gate {
@@ -350,8 +435,9 @@ input { font-family: inherit; }
    ═══════════════════════════════════════════ */
 #frame { position: fixed; inset: 0; z-index: 500; pointer-events: none; }
 
+/* Legacy CSS frame bars — real frame is frame_original_02.png */
 .frame-bar {
-  position: absolute; background: #06050b;
+  display: none;
 }
 .frame-bar.top    { top: 0; left: 0; right: 0; height: 72px; border-bottom: 2px solid var(--frame-gold); }
 .frame-bar.bottom { bottom: 0; left: 0; right: 0; height: 72px; border-top: 2px solid var(--frame-gold); }
@@ -390,9 +476,9 @@ input { font-family: inherit; }
   -webkit-mask-image: radial-gradient(circle at -500px -500px, transparent 100%);
 }
 
-/* Corner medallions */
+/* Corner medallions — legacy SVG placeholders; real corners are in frame_original_02.png */
 .frame-corner {
-  position: absolute; width: 110px; height: 110px; z-index: 502;
+  display: none;
 }
 .frame-corner.tl { top: 17px; left: 17px; }
 .frame-corner.tr { top: 17px; right: 17px; }
@@ -431,7 +517,8 @@ input { font-family: inherit; }
 
 /* Medallion Hotspots */
 #medallion-hotspots {
-  position: fixed; inset: 0; z-index: 515; pointer-events: none;
+  position: fixed; inset: 0; z-index: 720; pointer-events: none;
+  overflow: visible;
 }
 /* DEBUG mode: Shift+D to toggle */
 body.debug-hotspots .medallion-hot {
@@ -464,61 +551,33 @@ body.debug-hotspots .medallion-hot::after {
   transform: scale(0.94);
 }
 
-/* Locked gods — pulsing sealed glow (no ? mark) */
-.medallion-hot.god-locked::after {
-  content: '';
-  position: absolute; inset: 0; border-radius: 50%;
-  background: radial-gradient(circle, rgba(198,141,85,0.08) 0%, transparent 70%);
-  border: 1px solid rgba(198,141,85,0.2);
-  animation: seal-pulse 3s ease-in-out infinite;
-  pointer-events: none;
-}
-@keyframes seal-pulse {
-  0%,100% { border-color: rgba(198,141,85,0.12); box-shadow: none; }
-  50%     { border-color: rgba(198,141,85,0.4); box-shadow: 0 0 14px rgba(198,141,85,0.2); }
-}
+/* Locked gods — invisible hit target only (no pulsing seal ring in normal play) */
 
-/* Reveal animation */
-.medallion-hot.god-revealing::after {
-  animation: god-awaken 1.5s ease-out forwards;
-}
-@keyframes god-awaken {
-  0%   { opacity: 1; box-shadow: none; }
-  40%  { opacity: 0.5; box-shadow: 0 0 40px rgba(212,168,67,0.8); }
-  100% { opacity: 0; }
-}
-
-/* Unlocked god — steady gold ring */
-.medallion-hot.god-unlocked::after {
-  content: '';
-  position: absolute; inset: -4px; border-radius: 50%;
-  background: transparent;
-  border: 1.5px solid rgba(212,168,67,0.5);
-  box-shadow: 0 0 16px rgba(212,168,67,0.25), inset 0 0 10px rgba(212,168,67,0.1);
-  pointer-events: none;
-}
+/* Revealed gods — invisible hit target only (no ambient gold ring; unlock pulse via spawnMedallionPulse) */
 
 /* Tooltip */
 .medallion-tip {
   position: fixed; z-index: 920; pointer-events: none;
+  left: 20px; top: 50%; transform: translateY(-50%);
   background: rgba(10, 12, 16, 0.95);
-  border: 1px solid rgba(198, 141, 85, 0.5);
-  border-radius: 8px; padding: 12px 16px;
-  max-width: 260px; min-width: 160px;
-  opacity: 0; transition: opacity 0.3s ease;
+  border: 1px solid rgba(198, 141, 85, 0.4);
+  border-left: 3px solid rgba(198, 141, 85, 0.7);
+  border-radius: 0 8px 8px 0; padding: 16px 18px;
+  width: 210px;
+  opacity: 0; transition: opacity 0.25s ease;
   font-family: 'EB Garamond', Georgia, serif;
 }
 .medallion-tip.visible { opacity: 1; }
 .medallion-tip .tip-name {
   font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700;
-  color: #d4a843; letter-spacing: 1px; margin-bottom: 2px;
+  color: #d4a843; letter-spacing: 1px; margin-bottom: 3px;
 }
 .medallion-tip .tip-role {
-  font-size: 11px; color: #c68d55; text-transform: uppercase;
-  letter-spacing: 2px; margin-bottom: 8px;
+  font-size: 10px; color: #c68d55; text-transform: uppercase;
+  letter-spacing: 2px; margin-bottom: 10px;
 }
 .medallion-tip .tip-lore {
-  font-size: 13px; color: #bfb299; line-height: 1.5;
+  font-size: 12px; color: #bfb299; line-height: 1.55;
   font-style: italic;
 }
 
@@ -571,7 +630,7 @@ body.debug-hotspots .medallion-hot::after {
   display: flex; align-items: center; justify-content: center;
   width: 100vw; height: 100vh;
   opacity: 0; pointer-events: none;
-  transition: opacity 1.5s ease;
+  transition: opacity 0.65s ease;
 }
 #finale-overlay.visible {
   opacity: 1; pointer-events: auto;
@@ -652,6 +711,63 @@ body.debug-hotspots .medallion-hot::after {
   pointer-events: none;
   background: linear-gradient(to bottom, rgba(13,13,18,0.92) 0%, rgba(13,13,18,0.6) 60%, transparent 100%);
   min-width: 320px;
+}
+.hdr-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+  pointer-events: auto;
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(198,141,85,0.28);
+  background: rgba(13,13,18,0.78);
+  color: var(--bone-dim);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+}
+.hdr-home-btn::before {
+  content: '←';
+  font-size: 11px;
+  line-height: 1;
+}
+.hdr-home-btn:hover {
+  color: var(--amber);
+  border-color: rgba(198,141,85,0.55);
+  background: rgba(13,13,18,0.94);
+}
+body:not(.map-session) #fog-guide-btn {
+  display: none !important;
+}
+#fog-reset-btn {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 800;
+  background: rgba(10,12,16,0.85);
+  color: #d4a843;
+  border: 1px solid rgba(198,141,85,0.4);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: inherit;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+#fog-reset-btn:hover {
+  border-color: var(--amber);
+  color: #fff;
+  background: rgba(10,12,16,0.95);
+}
+#app:not(.show) #fog-reset-btn {
+  display: none;
 }
 .hdr-title {
   font-family: var(--font-heading); font-size: 16px; font-weight: 600;
@@ -748,6 +864,49 @@ body.debug-hotspots .medallion-hot::after {
 }
 
 /* ═══════════════════════════════════════════
+   PROXIMITY WHISPER PANEL (fixed left, no cursor follow)
+   ═══════════════════════════════════════════ */
+#whisper-panel {
+  position: fixed; top: 280px; left: 82px; z-index: 700;
+  width: 166px;
+  background: rgba(13,13,18,0.88);
+  border: 1px solid var(--amber-dim);
+  border-left: 3px solid rgba(198,141,85,0.5);
+  border-radius: 0 4px 4px 0;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 12px 14px 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+#whisper-panel.visible {
+  visibility: visible;
+  opacity: 1;
+  animation: whisper-breathe 4s ease-in-out infinite;
+}
+@keyframes whisper-breathe {
+  0%, 100% { opacity: 0.88; }
+  50% { opacity: 1; }
+}
+.whisper-hdr {
+  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
+  color: var(--amber); letter-spacing: 3px;
+  margin-bottom: 6px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(198,141,85,0.12);
+}
+.whisper-loc {
+  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
+  color: var(--bone-dim); letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+.whisper-text {
+  font-family: var(--font-body); font-size: 13px; font-style: italic;
+  color: rgba(210, 200, 175, 0.92); line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════
    ZOOM CONTROLS
    ═══════════════════════════════════════════ */
 #zctl {
@@ -776,7 +935,10 @@ body.debug-hotspots .medallion-hot::after {
 /* ═══════════════════════════════════════════
    ANIMATED CLOUDS
    ═══════════════════════════════════════════ */
-#clouds { position: fixed; inset: 0; z-index: 400; pointer-events: none; overflow: hidden; }
+#clouds {
+  position: absolute; inset: 0; z-index: 460;
+  pointer-events: none; overflow: hidden;
+}
 .cloud {
   position: absolute;
   opacity: 0.12;
@@ -791,7 +953,22 @@ body.debug-hotspots .medallion-hot::after {
 /* ═══════════════════════════════════════════
    MARKERS — zoom-responsive labels via --label-scale
    ═══════════════════════════════════════════ */
-#map { --label-scale: 1; }
+#map { --label-scale: 1; --label-gap: 6px; }
+
+.mk-dot-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.mk-dot-wrap > * {
+  pointer-events: none;
+}
+body.edit-mode .mk-dot-wrap > * {
+  pointer-events: auto;
+}
 
 /* Region */
 .mk-region {
@@ -800,14 +977,47 @@ body.debug-hotspots .medallion-hot::after {
 }
 /* Labels hidden — map art has its own labels */
 .mk-region-lbl {
-  font-family: var(--font-heading); font-size: calc(36px * var(--label-scale)); font-weight: 700; color: #fff;
+  font-family: var(--font-heading); font-size: calc(20px * var(--label-scale)); font-weight: 700; color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 12px rgba(0,0,0,1), 0 0 30px rgba(0,0,0,0.9), 0 0 60px rgba(0,0,0,0.6);
-  white-space: nowrap; text-align: left;
-  letter-spacing: 4px;
+  white-space: normal; text-align: center;
+  line-height: 0.92;
+  letter-spacing: 3px;
   transition: font-size 0.2s ease;
   opacity: 1;
 }
+.mk-region-lbl .label-line {
+  display: block;
+}
+.mk-story-lbl .label-line,
+.mk-sacred-lbl .label-line,
+.mk-city-lbl .label-line,
+.mk-town-lbl .label-line {
+  display: block;
+}
 
+/* Tower cluster — split-line typography at tight coords */
+.mk-story-lbl.lbl-tower-nine {
+  white-space: normal;
+  line-height: 0.88;
+  font-size: calc(12px * var(--label-scale));
+  text-align: center;
+}
+.mk-story-lbl.lbl-tower-nine .label-line {
+  display: block;
+  line-height: 0.88;
+  white-space: nowrap;
+}
+.mk-story-lbl.lbl-maxim-stone {
+  white-space: normal;
+  line-height: 0.88;
+  font-size: calc(12px * var(--label-scale));
+  text-align: left;
+}
+.mk-story-lbl.lbl-maxim-stone .label-line {
+  display: block;
+  line-height: 0.88;
+  white-space: nowrap;
+}
 /* Capital */
 .mk-capital {
   width: 12px; height: 12px; border-radius: 50%;
@@ -820,7 +1030,7 @@ body.debug-hotspots .medallion-hot::after {
   50%     { box-shadow: 0 0 20px rgba(198,141,85,0.7), 0 0 40px rgba(198,141,85,0.2); }
 }
 .mk-capital-lbl {
-  font-family: var(--font-heading); font-size: calc(22px * var(--label-scale)); font-weight: 700; color: #fff;
+  font-family: var(--font-heading); font-size: calc(18px * var(--label-scale)); font-weight: 700; color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.9), 0 0 48px rgba(0,0,0,0.5);
   white-space: nowrap;
   transition: font-size 0.2s ease;
@@ -835,7 +1045,7 @@ body.debug-hotspots .medallion-hot::after {
 }
 .mk-city:hover { box-shadow: 0 0 12px rgba(198,141,85,0.5); }
 .mk-city-lbl {
-  font-family: var(--font-ui); font-size: calc(16px * var(--label-scale)); font-weight: 700; color: rgba(255,255,255,0.9);
+  font-family: var(--font-ui); font-size: calc(12px * var(--label-scale)); font-weight: 700; color: rgba(255,255,255,0.9);
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
@@ -855,7 +1065,7 @@ body.debug-hotspots .medallion-hot::after {
   box-shadow: 0 0 10px rgba(212,168,67,1), 0 0 20px rgba(212,168,67,0.5);
 }
 .mk-town-lbl {
-  font-family: var(--font-ui); font-size: calc(14px * var(--label-scale)); font-weight: 600; color: rgba(255,255,255,0.75);
+  font-family: var(--font-ui); font-size: calc(10px * var(--label-scale)); font-weight: 600; color: rgba(255,255,255,0.75);
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
@@ -873,7 +1083,7 @@ body.debug-hotspots .medallion-hot::after {
   50%     { transform: scale(1.3); box-shadow: 0 0 20px rgba(212,168,67,0.6), 0 0 40px rgba(212,168,67,0.15); }
 }
 .mk-story-lbl {
-  font-family: var(--font-heading); font-size: calc(18px * var(--label-scale)); font-weight: 700; color: var(--gold);
+  font-family: var(--font-heading); font-size: calc(14px * var(--label-scale)); font-weight: 700; color: var(--gold);
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5);
   white-space: nowrap;
   transition: font-size 0.2s ease;
@@ -888,21 +1098,98 @@ body.debug-hotspots .medallion-hot::after {
   box-shadow: 0 0 10px rgba(198,141,85,0.25);
 }
 .mk-sacred-lbl {
-  font-family: var(--font-heading); font-size: calc(16px * var(--label-scale)); font-weight: 600; font-style: italic;
-  color: var(--amber); text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 8px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.8);
+  font-family: var(--font-heading); font-size: calc(13px * var(--label-scale)); font-weight: 700; font-style: italic;
+  color: var(--gold);
+  text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.9), 0 0 40px rgba(0,0,0,0.5);
   white-space: nowrap;
   transition: font-size 0.2s ease;
 
 }
 
+.leaflet-div-icon.mk-marker-active .mk-sacred-lbl,
+.leaflet-div-icon.mk-marker-active .mk-story-lbl,
+.leaflet-div-icon.mk-marker-active .mk-city-lbl,
+.leaflet-div-icon.mk-marker-active .mk-town-lbl,
+.leaflet-div-icon.mk-marker-active .mk-capital-lbl {
+  color: #fff;
+  text-shadow:
+    0 0 8px rgba(212,168,67,1),
+    0 1px 2px rgba(0,0,0,1),
+    0 0 12px rgba(0,0,0,1),
+    0 0 24px rgba(0,0,0,1);
+}
+
 /* Water */
 .mk-water-lbl {
-  font-family: var(--font-body); font-size: calc(20px * var(--label-scale)); font-weight: 500; font-style: italic;
+  font-family: var(--font-body); font-size: calc(18px * var(--label-scale)); font-weight: 500; font-style: italic;
   color: rgba(150,180,210,0.7);
   text-shadow: 0 1px 2px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,1), 0 0 24px rgba(0,0,0,0.8);
   white-space: nowrap;
   transition: font-size 0.2s ease;
 
+}
+
+/* 1×1 anchor pin at lat/lng — Leaflet positions the pin; label offsets from pin */
+.mk-label-pin {
+  position: relative;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Leaflet collapses 0×0 divIcons — keep label overflow visible */
+.leaflet-div-icon.map-label-icon {
+  background: transparent !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.mk-capital-lbl,
+.mk-city-lbl,
+.mk-town-lbl,
+.mk-story-lbl,
+.mk-sacred-lbl,
+.mk-region-lbl,
+.mk-water-lbl {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-block;
+  transform: translate(-50%, calc(-100% - var(--label-gap, 6px)));
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Cluster / collision directions — short nudge from dot (not fan) */
+.lbl-dir-below-right {
+  transform: translate(var(--label-gap, 6px), var(--label-gap, 6px));
+  text-align: left;
+}
+.lbl-dir-below-left {
+  transform: translate(calc(-100% - var(--label-gap, 6px)), var(--label-gap, 6px));
+  text-align: right;
+}
+.lbl-dir-above-left {
+  transform: translate(calc(-100% - var(--label-gap, 6px)), calc(-100% - var(--label-gap, 6px)));
+  text-align: right;
+}
+.lbl-dir-above-right {
+  transform: translate(var(--label-gap, 6px), calc(-100% - var(--label-gap, 6px)));
+  text-align: left;
+}
+.lbl-dir-below {
+  transform: translate(-50%, var(--label-gap, 6px));
+  text-align: center;
+}
+.lbl-dir-right {
+  transform: translate(var(--label-gap, 6px), -50%);
+  text-align: left;
+}
+.lbl-dir-left {
+  transform: translate(calc(-100% - var(--label-gap, 6px)), -50%);
+  text-align: right;
 }
 
 /* Journey number */
@@ -1119,16 +1406,10 @@ body.debug-hotspots .medallion-hot::after {
    RESPONSIVE
    ═══════════════════════════════════════════ */
 @media (max-width: 767px) {
-  .frame-bar.top, .frame-bar.bottom { height: 40px; }
-  .frame-bar.left, .frame-bar.right { width: 40px; }
-  .frame-corner { width: 70px; height: 70px; }
-  .frame-corner.tl { top: 5px; left: 5px; }
-  .frame-corner.tr { top: 5px; right: 5px; }
-  .frame-corner.bl { bottom: 5px; left: 5px; }
-  .frame-corner.br { bottom: 5px; right: 5px; }
   .frame-cune { display: none; }
 
   #hdr { padding: 10px 14px 20px 52px; }
+  .hdr-home-btn { margin-bottom: 6px; padding: 5px 10px; font-size: 8px; }
   .hdr-title { font-size: 13px; }
   .hdr-sub { font-size: 8px; }
 
@@ -1142,8 +1423,12 @@ body.debug-hotspots .medallion-hot::after {
   #layers { top: 60px; left: 48px; width: 140px; padding: 10px 12px 8px; }
   .layers-hdr { font-size: 8px; }
   .layer-lbl { font-size: 9px; }
+  #whisper-panel { top: 210px; left: 48px; width: 140px; padding: 10px 12px 8px; }
+  .whisper-hdr { font-size: 8px; }
+  .whisper-text { font-size: 12px; }
 
   #zctl { bottom: 52px; right: 48px; }
+  #fog-reset-btn { bottom: 10px; right: 48px; }
   #zlvl { bottom: 48px; left: 48px; font-size: 8px; }
 
   #panel {
@@ -1158,9 +1443,12 @@ body.debug-hotspots .medallion-hot::after {
   .gate-title { font-size: 26px; }
   .gate-subtitle { font-size: 14px; }
   .gate-card { padding: 36px 28px 32px; }
+  .landing-card { padding: 42px 26px 34px; }
+  .landing-actions { grid-template-columns: 1fr; }
+  .landing-subtitle { font-size: 16px; }
 
   .welcome-title { font-size: 28px !important; }
-  .journey-fab { bottom: 52px; left: 48px; }
+  .journey-fab { bottom: 16px; left: calc(50% - 6px); transform: translateX(-100%); }
   .journey-toast { left: 48px; right: 48px; bottom: 52px; max-width: none; }
 }
 
@@ -1220,7 +1508,7 @@ body.debug-hotspots .medallion-hot::after {
    GUIDED JOURNEY CONTROLS
    ═══════════════════════════════════════════ */
 .journey-fab {
-  position: fixed; bottom: 24px; left: 24px; z-index: 850;
+  position: fixed; bottom: 20px; left: calc(50% - 6px); transform: translateX(-100%); z-index: 850;
   display: none; /* hidden until welcome dismissed */
   align-items: center; gap: 8px;
   padding: 10px 16px;
@@ -1232,6 +1520,7 @@ body.debug-hotspots .medallion-hot::after {
   letter-spacing: 1px; text-transform: uppercase;
   transition: border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
   cursor: pointer;
+  white-space: nowrap;
 }
 .journey-fab:hover { border-color: var(--amber); color: var(--amber); box-shadow: 0 0 20px rgba(198,141,85,0.15); }
 .journey-fab.visible { display: flex; }
@@ -1341,6 +1630,24 @@ body.debug-hotspots .medallion-hot::after {
   pointer-events: none;
 }
 
+/* Location labels render above fog (fog canvas = 450) */
+.leaflet-pane.leaflet-label-pane {
+  z-index: 680 !important;
+  pointer-events: none !important;
+}
+.leaflet-pane.leaflet-label-pane .leaflet-marker-icon.map-label-icon {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+.leaflet-pane.leaflet-label-pane .leaflet-marker-icon.map-label-icon:not(.leaflet-interactive) {
+  pointer-events: none !important;
+  cursor: default;
+}
+.leaflet-pane.leaflet-label-pane .leaflet-marker-icon.map-label-icon.fog-hidden {
+  pointer-events: none !important;
+  cursor: default;
+}
+
 /* Markers hidden behind fog */
 .fog-hidden {
   opacity: 0 !important;
@@ -1349,6 +1656,11 @@ body.debug-hotspots .medallion-hot::after {
 }
 .fog-revealed {
   opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: opacity 0.8s ease;
+}
+.fog-peek {
+  opacity: 0.92 !important;
   pointer-events: auto !important;
   transition: opacity 0.8s ease;
 }
@@ -1367,17 +1679,29 @@ body.debug-hotspots .medallion-hot::after {
   padding: 28px 24px 22px;
   z-index: 600;
   box-shadow: -8px 0 40px rgba(0,0,0,0.7), 0 0 60px rgba(198,141,85,0.08);
-  transition: right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: right 0.3s ease-in;
   font-family: var(--font-body);
 }
 #discovery-card.visible {
   right: 24px;
+  transition: right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .dc-art {
   width: 100%;
   border-radius: 8px;
   margin-bottom: 14px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+/* Circular medallion portraits — separate from 16/9 location photos */
+.dc-art.dc-art--medallion {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center center;
+  border: 1px solid rgba(198,141,85,0.3);
+  background-color: rgba(12,10,8,0.9);
 }
 .dc-type {
   font-family: var(--font-ui);
@@ -1416,15 +1740,56 @@ body.debug-hotspots .medallion-hot::after {
   margin-top: 4px;
 }
 .dc-close {
-  position: absolute; top: 12px; right: 14px;
-  font-size: 18px; color: var(--bone-dim);
-  background: none; border: none; cursor: pointer;
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  transition: background 0.2s;
+  position: absolute; top: 12px; right: 12px;
+  font-size: 11px;
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(212,168,67,0.85);
+  background: rgba(10,12,16,0.75);
+  border: 1px solid rgba(198,141,85,0.55);
+  cursor: pointer;
+  width: auto;
+  min-width: 80px;
+  height: 34px;
+  padding: 0 14px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 6px;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
-.dc-close:hover { background: rgba(255,255,255,0.08); color: var(--bone); }
+.dc-close:hover {
+  background: rgba(198,141,85,0.18);
+  border-color: var(--amber);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(212,168,67,0.25), 0 2px 10px rgba(0,0,0,0.5);
+}
+.dc-dismiss-bar {
+  display: block; width: 100%;
+  margin-top: 18px; padding: 10px 0;
+  background: none;
+  border: none; border-top: 1px solid rgba(198,141,85,0.15);
+  color: rgba(198,141,85,0.55);
+  font-family: var(--font-heading); font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; text-align: center;
+  transition: color 0.2s;
+}
+.dc-dismiss-bar:hover { color: var(--amber); }
+.dc-dismiss-btn {
+  display: block; width: 100%;
+  margin-top: 18px; padding: 10px 0;
+  background: none;
+  border: none; border-top: 1px solid rgba(198,141,85,0.15);
+  color: rgba(198,141,85,0.55);
+  font-family: var(--font-heading); font-size: 10px;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; text-align: center;
+  transition: color 0.2s;
+  position: static;
+}
+.dc-dismiss-btn:hover { color: var(--amber); }
 .dc-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
@@ -1466,8 +1831,9 @@ body.debug-hotspots .medallion-hot::after {
 
 /* ── Progress Bar ───────────────────────── */
 #progress-container {
+  display: none;
   position: fixed;
-  bottom: 12px; left: 12px;
+  bottom: 76px; left: 12px;
   z-index: 520;
   font-family: var(--font-ui);
   background: rgba(13, 13, 18, 0.92);
@@ -1477,6 +1843,9 @@ body.debug-hotspots .medallion-hot::after {
   min-width: 220px;
   backdrop-filter: blur(6px);
   box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+#app.show ~ #progress-container {
+  display: block;
 }
 #progress-title {
   font-family: var(--font-heading);
@@ -1497,16 +1866,19 @@ body.debug-hotspots .medallion-hot::after {
 }
 #progress-count span { color: var(--amber); font-size: 14px; opacity: 0.7; }
 .progress-row {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .progress-row:last-of-type { margin-bottom: 0; }
 .progress-row-label {
   font-family: var(--font-heading);
-  font-size: 9px;
-  color: rgba(198,141,85,0.6);
+  font-size: 10px;
+  color: rgba(198,141,85,0.85);
   letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 .progress-track {
   width: 100%; height: 8px;
@@ -1531,11 +1903,27 @@ body.debug-hotspots .medallion-hot::after {
   transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 0 8px rgba(120,180,200,0.4);
 }
+#progress-fill-cities {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #6a8f6a, #8cb88c, #a8d4a0);
+  border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 8px rgba(140,184,140,0.4);
+}
+#progress-count-regions, #progress-count-cities {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  color: #d4c5a0;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
 #progress-label {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--bone-dim);
   letter-spacing: 0.5px;
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 /* Coordinate Unlock */
@@ -1645,6 +2033,23 @@ body.debug-hotspots .medallion-hot::after {
 
 <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">The Hollowlands — Intrepid Dusk Cartographer Archive</h1>
 
+<!-- ═══════════ PUBLIC LANDING ═══════════ -->
+<div id="landing">
+  <div class="landing-card">
+    <div class="landing-eyebrow">Intrepid Dusk Archive</div>
+    <div class="landing-title">The Hollowlands</div>
+    <div class="landing-rule"></div>
+    <div class="landing-subtitle">Choose your path into the world: explore the interactive cartographer's map, read Volume 1, browse the character dossier, or return to the main Intrepid Dusk site.</div>
+    <div class="landing-actions">
+      <button id="landing-map" class="landing-action primary" type="button">Enter Interactive Map</button>
+      <button id="landing-reader" class="landing-action" type="button">Read Volume 1</button>
+      <a class="landing-action" href="/dossier/">Character Dossier</a>
+      <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
+    </div>
+    <div class="landing-note">Patron access may be required</div>
+  </div>
+</div>
+
 <!-- ═══════════ PASSWORD GATE ═══════════ -->
 <div id="gate">
   <div class="gate-card">
@@ -1671,7 +2076,9 @@ body.debug-hotspots .medallion-hot::after {
 
 <!-- ═══════════ APP ═══════════ -->
 <div id="app">
-  <div id="map"></div>
+  <div id="map">
+    <div id="clouds"></div>
+  </div>
 
   <!-- Edit Mode Panel (add ?edit to URL to activate) -->
   <div id="edit-panel">
@@ -1761,7 +2168,7 @@ body.debug-hotspots .medallion-hot::after {
   </svg>
   <!-- Torch overlay: on_state image revealed by CSS mask following mouse -->
   <div id="frame-torch-overlay"></div>
-  <!-- Medallion interactions handled via JS proximity detection (no hotspot divs needed) -->
+  <div id="medallion-hotspots"></div>
 
   <!-- AZU — Dragon of the Sun (center medallion, revealed on Vol1 completion) -->
   <div id="azu-medallion"
@@ -1775,24 +2182,25 @@ body.debug-hotspots .medallion-hot::after {
   <!-- Finale Overlay — Journey Complete -->
   <div id="finale-overlay">
     <div id="finale-content">
-      <div id="finale-label">The archive is complete</div>
-      <div id="finale-name">Cartographer</div>
-      <div id="finale-sub">The Hollowlands has been watching.</div>
-      <div id="finale-sub2">It sees you now.</div>
+      <div id="finale-label">Congratulations, Cartographer</div>
+      <div id="finale-name">The Archive Is Complete</div>
+      <div id="finale-sub">You have charted every hidden road, city, territory, and sacred sign.</div>
+      <div id="finale-sub2">The Hollowlands remembers your name.</div>
       <div class="finale-actions">
         <button id="finale-dismiss" class="finale-action">Continue Exploring →</button>
         <div class="finale-divider"></div>
-        <a class="finale-action" id="finale-volume" href="#" target="_blank" rel="noopener">📜 Read Volume 1</a>
-        <a class="finale-action secondary" id="finale-dossier" href="dossier.html" target="_blank" rel="noopener">🗓 Character Dossier</a>
+        <a class="finale-action" id="finale-volume" href="/reader/">📜 Read Volume 1</a>
+        <a class="finale-action secondary" id="finale-dossier" href="/dossier/" target="_blank" rel="noopener">🗓 Character Dossier</a>
         <button class="finale-action secondary" id="finale-reset" style="margin-top:8px;font-size:11px;opacity:0.6;">Begin Again</button>
       </div>
     </div>
   </div>
 
   <div id="hdr">
+    <button type="button" id="hdr-home-btn" class="hdr-home-btn" title="Return to archive menu">Archive</button>
     <div class="hdr-title">The Hollowlands</div>
     <div class="hdr-sub">Magus Scribes — Cartographer Access</div>
-    <a class="hdr-v1-btn" id="hdr-v1-btn" href="#" target="_blank" rel="noopener">📖 Get Volume 1</a>
+    <a class="hdr-v1-btn" id="hdr-v1-btn" href="/reader/">📖 Read Volume 1</a>
   </div>
 
   <!-- Compass Rose -->
@@ -1810,6 +2218,13 @@ body.debug-hotspots .medallion-hot::after {
     <div id="layers-list"></div>
   </div>
 
+  <!-- Proximity whisper (fixed left; content driven by fog.js) -->
+  <div id="whisper-panel" aria-live="polite">
+    <div class="whisper-hdr">WHISPER</div>
+    <div class="whisper-loc" id="whisper-loc"></div>
+    <div class="whisper-text" id="whisper-text"></div>
+  </div>
+
   <!-- Zoom Controls -->
   <div id="zctl">
     <button class="zctl-btn" id="z-in" title="Zoom in">+</button>
@@ -1820,9 +2235,6 @@ body.debug-hotspots .medallion-hot::after {
   <!-- Zoom Level -->
   <div id="zlvl">Z 0</div>
 
-  <!-- Clouds -->
-  <div id="clouds"></div>
-
   <!-- Detail Panel -->
   <div id="panel">
     <button class="panel-close" id="panel-close">✕</button>
@@ -1831,15 +2243,15 @@ body.debug-hotspots .medallion-hot::after {
 
   <!-- Ambient Audio Toggle -->
   <button id="ambient-toggle" title="Toggle ambient music" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">🔊</button>
+  <button type="button" id="fog-reset-btn" title="Reset all discoveries">↺ Reset</button>
   <!-- VIP Welcome Cinematic (plays once after gate) -->
   <div id="welcome" class="welcome-overlay">
     <div class="welcome-inner">
-      <div class="welcome-line welcome-fade" data-delay="0">You have entered</div>
-      <div class="welcome-title welcome-fade" data-delay="600">The Hollowlands</div>
+      <div class="welcome-line welcome-fade" data-delay="0">Welcome,</div>
+      <div class="welcome-title welcome-fade" data-delay="600">Cartographer</div>
       <div class="welcome-rule welcome-fade" data-delay="1200"></div>
-      <div class="welcome-sub welcome-fade" data-delay="1600">A living atlas, charted for the Council of Patrons.<br>Explore freely. Tap any landmark to uncover its story.</div>
-      <button id="welcome-explore" class="welcome-btn welcome-fade" data-delay="2200">Explore the Map</button>
-      <button id="welcome-journey" class="welcome-btn-alt welcome-fade" data-delay="2400">Follow Elena's Journey</button>
+      <div class="welcome-sub welcome-fade" data-delay="1600">The Hollowlands await.<br>Follow the light to chart your first discovery.</div>
+      <button id="welcome-explore" class="welcome-btn welcome-fade" data-delay="2200">Begin</button>
     </div>
   </div>
 
@@ -1870,7 +2282,7 @@ body.debug-hotspots .medallion-hot::after {
 
 <!-- Discovery Card (fog system) -->
 <div id="discovery-card">
-  <button class="dc-close" aria-label="Close">✕</button>
+  <button class="dc-close" aria-label="Close">✕ Close</button>
   <div class="dc-art" style="display:none"></div>
   <div class="dc-type"></div>
   <div class="dc-name"></div>
@@ -1878,6 +2290,7 @@ body.debug-hotspots .medallion-hot::after {
   <div class="dc-divider"></div>
   <div class="dc-desc"></div>
   <div class="dc-lore" style="display:none"></div>
+  <button class="dc-dismiss-btn" aria-label="Close">✕ Close</button>
 </div>
 
 <!-- Progress Bar (fog system) -->
@@ -1896,6 +2309,12 @@ body.debug-hotspots .medallion-hot::after {
     <div class="progress-track"><div id="progress-fill-regions"></div></div>
   </div>
 
+  <div class="progress-row">
+    <div class="progress-row-label">Cities &amp; Sites</div>
+    <div id="progress-count-cities">0 <span>/ 0</span></div>
+    <div class="progress-track"><div id="progress-fill-cities"></div></div>
+  </div>
+
   <div id="progress-label"></div>
 
   <!-- Coordinate / Sigil Unlock -->
@@ -1909,11 +2328,16 @@ body.debug-hotspots .medallion-hot::after {
   </div>
 </div>
 
-<script src="data.js?v=5"></script>
+<script>
+// Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
+window.INTREPID_BUILD = 50;
+console.log('[Intrepid Map] build', window.INTREPID_BUILD);
+</script>
+<script src="data.js?v=7"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
-  var CURRENT_VERSION = 18;
+  var CURRENT_VERSION = 20;
   var vKey = 'intrepid_atlas_discovered_v';
   var dKey = 'intrepid_atlas_discovered';
   var stored = parseInt(localStorage.getItem(vKey) || '0');
@@ -1921,12 +2345,14 @@ body.debug-hotspots .medallion-hot::after {
     localStorage.removeItem(dKey);
     localStorage.removeItem('revealedGods');
     localStorage.removeItem('intrepid_atlas_finales');
+    localStorage.removeItem('intrepid_atlas_welcomed');
+    localStorage.removeItem('intrepid_atlas_hinted');
     localStorage.setItem(vKey, CURRENT_VERSION);
-    console.log('[INIT] Cleared fog state (v' + stored + ' → v' + CURRENT_VERSION + ')');
+    console.log('[INIT] Full reset (v' + stored + ' → v' + CURRENT_VERSION + ')');
   }
 })();
 </script>
-<script src="fog.js?v=18"></script>
+<script src="fog.js?v=50"></script>
 <script>
 (function() {
   'use strict';
@@ -1936,16 +2362,15 @@ body.debug-hotspots .medallion-hot::after {
      ═══════════════════════════════════════════ */
   // Tier-aware access codes
   const ACCESS_CODES = {
-    'hollowlands': { tier: 'A', label: 'Patron' },         // Legacy — full access
-    'cartographer': { tier: 'A', label: 'Cartographer' },   // Map tier
-    'explorer': { tier: 'A', label: 'Explorer' },           // Map tier
-    'patron': { tier: 'A', label: 'Patron' }                // Map tier
+    'hollowlands9': { tier: 'A', label: 'Patron' },          // VIP / full access
+    'scribe4':       { tier: 'B', label: 'Backer' }          // Backer access
   };
   const LS_KEY = 'intrepid_atlas_auth';
   const LS_TIER_KEY = 'intrepid_atlas_tier';
   const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
 
   let map, imageBounds, layerGroups = {}, activeMarkerEl = null;
+  let mapInitialized = false;
   let currentTier = 'C';  // Default: public (most restricted)
   let regionsData = null; // GeoJSON FeatureCollection
   let revealsData = null; // World state from reveals.json
@@ -1954,13 +2379,19 @@ body.debug-hotspots .medallion-hot::after {
   /* ═══════════════════════════════════════════
      PASSWORD GATE
      ═══════════════════════════════════════════ */
+  const landing  = document.getElementById('landing');
+  const landingMapBtn = document.getElementById('landing-map');
+  const landingReaderBtn = document.getElementById('landing-reader');
   const gate     = document.getElementById('gate');
+  var postAuthRedirect = null;
   const gateBtn  = document.getElementById('gate-btn');
   const gatePw   = document.getElementById('gate-pw');
   const gateErr  = document.getElementById('gate-err');
+  gate.style.display = 'none';
 
   // Sequential fade-in of gate elements
   function animateGateIn() {
+    gate.style.display = 'flex';
     const els = gate.querySelectorAll('.gate-fade');
     els.forEach(el => {
       const delay = parseInt(el.dataset.delay, 10) || 0;
@@ -1968,13 +2399,65 @@ body.debug-hotspots .medallion-hot::after {
     });
   }
 
-  function checkGate() {
-    // BYPASS: auto-grant for testing
-    setTier('A', 'Cartographer');
+  function hasDirectArchiveIntent() {
+    const params = new URLSearchParams(window.location.search);
+    return params.has('key') || params.has('scan') || params.has('edit') || params.has('map') || params.has('reader');
+  }
+
+  function enterArchiveFlow() {
+    postAuthRedirect = null;
+    if (landing) landing.classList.add('hidden');
+    checkGate();
+  }
+
+  function enterReaderFlow() {
+    postAuthRedirect = '/reader/';
+    if (landing) landing.classList.add('hidden');
+    checkGate();
+  }
+
+  function completeAuth(scanCode) {
+    if (postAuthRedirect) {
+      var dest = postAuthRedirect;
+      postAuthRedirect = null;
+      gate.style.display = 'none';
+      window.location.href = dest;
+      return;
+    }
     gate.style.display = 'none';
-    launch((new URLSearchParams(window.location.search)).get('scan'));
-    return;
-    // --- original gate logic below (inactive) ---
+    launch(scanCode);
+  }
+
+  function returnToArchiveHome() {
+    postAuthRedirect = null;
+    var app = document.getElementById('app');
+    var progress = document.getElementById('progress-container');
+    var card = document.getElementById('discovery-card');
+    var journeyToast = document.getElementById('journey-toast');
+
+    if (typeof closePanel === 'function') closePanel();
+    if (window.FogSystem && window.FogSystem.closeCard) window.FogSystem.closeCard();
+
+    if (app) app.classList.remove('show');
+    document.body.classList.remove('map-session');
+
+    if (card) card.classList.remove('visible');
+    if (journeyToast) journeyToast.classList.remove('visible');
+    if (progress) progress.style.display = '';
+
+    if (landing) {
+      landing.style.display = 'flex';
+      landing.classList.remove('hidden');
+    }
+    gate.style.display = 'none';
+    gate.classList.add('hidden');
+
+    var loader = document.getElementById('loader');
+    if (loader) loader.classList.add('hidden');
+    if (window.FogSystem && window.FogSystem.stopDrift) window.FogSystem.stopDrift();
+  }
+
+  function checkGate() {
     // Check URL for key param (Cartographer private links)
     const params = new URLSearchParams(window.location.search);
     const urlKey = params.get('key');
@@ -1992,8 +2475,7 @@ body.debug-hotspots .medallion-hot::after {
     const storedTier = localStorage.getItem(LS_TIER_KEY);
     if (storedTier && localStorage.getItem(LS_KEY) === 'granted') {
       currentTier = storedTier;
-      gate.style.display = 'none';
-      launch(scanCode);
+      completeAuth(scanCode);
       return;
     }
 
@@ -2016,7 +2498,7 @@ body.debug-hotspots .medallion-hot::after {
       setTier(access.tier, access.label);
       gate.classList.add('hidden');
       const scanCode = new URLSearchParams(window.location.search).get('scan');
-      setTimeout(() => launch(scanCode), 850);
+      completeAuth(scanCode);
     } else {
       gateErr.textContent = 'The archive does not recognize that word.';
       gateErr.classList.add('show');
@@ -2030,6 +2512,9 @@ body.debug-hotspots .medallion-hot::after {
 
   gateBtn.addEventListener('click', submitPassword);
   gatePw.addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
+  landingMapBtn.addEventListener('click', enterArchiveFlow);
+  if (landingReaderBtn) landingReaderBtn.addEventListener('click', enterReaderFlow);
+  document.getElementById('hdr-home-btn').addEventListener('click', returnToArchiveHome);
 
   // Show/hide password toggle
   const gateEye = document.getElementById('gate-eye');
@@ -2048,8 +2533,26 @@ body.debug-hotspots .medallion-hot::after {
     const app    = document.getElementById('app');
     const loader = document.getElementById('loader');
 
+    document.body.classList.add('map-session');
+    if (landing) landing.classList.add('hidden');
     app.classList.add('show');
-    loader.classList.remove('hidden');
+
+    // Re-entry: map already built — reveal UI without re-initing Leaflet
+    if (mapInitialized && map) {
+      if (loader) loader.classList.add('hidden');
+      if (window.FogSystem) {
+        window.FogSystem.draw();
+        if (window.FogSystem.updateProgress) window.FogSystem.updateProgress();
+        if (window.FogSystem.startDrift) window.FogSystem.startDrift();
+      }
+      setTimeout(function() { map.invalidateSize(); }, 50);
+      showWelcome();
+      tryLoadFrameImage();
+      updateFrameRect();
+      return;
+    }
+
+    if (loader) loader.classList.remove('hidden');
 
     // Load region + reveal data, then init map
     Promise.all([
@@ -2065,9 +2568,12 @@ body.debug-hotspots .medallion-hot::after {
       }
 
       initMap(() => {
-        loader.classList.add('hidden');
+        if (loader) loader.classList.add('hidden');
         showWelcome();
       });
+    }).catch(function(err) {
+      console.error('[MAP] launch failed:', err);
+      if (loader) loader.classList.add('hidden');
     });
 
     // initClouds(); // disabled — translucent ovals are distracting
@@ -2076,7 +2582,6 @@ body.debug-hotspots .medallion-hot::after {
 
     // Resize — update frame, clip-path, and gaps immediately on every event
     window.addEventListener('resize', updateFrameRect);
-    initMedallionTooltips();
 
     // ── Torch effect + proximity card detection ──────────────────────────
     (function() {
@@ -2090,40 +2595,40 @@ body.debug-hotspots .medallion-hot::after {
         // ── Cardinals ──────────────────────────────────────────────────────
         { name: 'Utu',           cx: 0.4906, cy: 0.1852, r: 188, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png',
           role: 'Bull of Heaven · Tetrad North',
-          lore: 'UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
+          lore: 'Guardian of the North and the turning seasons. UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
         { name: 'Rapha',         cx: 0.7320, cy: 0.4384, r: 184, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png',
           role: 'Lion of Justice · Tetrad East',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Mish',          cx: 0.4802, cy: 0.7410, r: 216, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png',
+        { name: 'Mish',          cx: 0.4802, cy: 0.7410, r: 216, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png', artPosition: 'center 54%',
           role: 'The Defender · Tetrad South',
-          lore: 'The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
+          lore: 'Guardian of the South and the far horizon. The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
         { name: 'Gu',            cx: 0.2410, cy: 0.4421, r: 224, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png',
           role: 'Water Bearer · Tetrad West',
-          lore: 'Before the gods shaped the world, Water was already moving. GU is associated with the West, Sky and Dusk — Over all the Powers.' },
+          lore: 'Guardian of the West, Sky, and Dusk. Before the gods shaped the world, Water was already moving. GU stands over all the powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
         { name: 'Sham & Mash',  cx: 0.7248, cy: 0.1919, r: 136, unlock: 10, spriteFile: 'assets/medallions/twins.png',
-          role: 'The Great Twins · Gemini',
+          role: 'The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
         { name: 'Elil',          cx: 0.7959, cy: 0.3417, r: 144, unlock: 14, spriteFile: 'assets/medallions/crab.png',
-          role: 'The Shapeshifter · Cancer',
+          role: 'The Shapeshifter',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
         { name: 'Ningal',        cx: 0.8053, cy: 0.5823, r: 140, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
-          role: 'Queen of the Underworld · Virgo',
+          role: 'Queen of the Underworld',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
         { name: 'An',            cx: 0.7144, cy: 0.7912, r: 176, unlock: 22, spriteFile: 'assets/medallions/fate.png',
-          role: 'Lord of Flight · Libra',
+          role: 'Lord of Flight',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Belu',          cx: 0.2597, cy: 0.7816, r: 164, unlock: 26, spriteFile: 'assets/medallions/goatfish.png',
-          role: 'God of Storm · Capricorn',
+        { name: 'Belu',          cx: 0.1776, cy: 0.5897, r: 128, unlock: 26, spriteFile: 'assets/medallions/goatfish.png', artPosition: '42% 52%',
+          role: 'God of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Nin',           cx: 0.1776, cy: 0.5897, r: 128, unlock: 30, spriteFile: 'assets/medallions/scorpion.png',
-          role: 'God of Earth · Scorpio',
+        { name: 'Nin',           cx: 0.2597, cy: 0.7816, r: 164, unlock: 30, spriteFile: 'assets/medallions/scorpion.png', artPosition: '100% 62%',
+          role: 'God of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Ae',            cx: 0.1782, cy: 0.3491, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png',
-          role: 'Lord of the Divine River · Pisces',
+        { name: 'Ae',            cx: 0.1782, cy: 0.3491, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png', artPosition: '100% 54%',
+          role: 'Lord of the Divine River',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Irra',          cx: 0.2493, cy: 0.1941, r: 128, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png',
-          role: 'God of War · Aries',
+        { name: 'Irra',          cx: 0.1350, cy: 0.1780, r: 170, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png', artPosition: '24% 54%',
+          role: 'God of War',
           lore: 'War is not his purpose — it is his nature. IRRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
 
@@ -2162,6 +2667,21 @@ body.debug-hotspots .medallion-hot::after {
       // Card show/hide helpers
       var card = document.getElementById('discovery-card');
       var activeCard = null;
+
+      function applyMedallionArt(artEl, m, isRevealed) {
+        if (!artEl || !m.spriteFile) return;
+        artEl.classList.add('dc-art--medallion');
+        artEl.style.display = 'block';
+        artEl.style.backgroundPosition = m.artPosition || 'center center';
+        if (isRevealed) {
+          artEl.style.filter = 'none';
+          artEl.style.backgroundImage = 'url(' + m.spriteFile + ')';
+        } else {
+          artEl.style.filter = 'grayscale(0.6) brightness(0.7)';
+          artEl.style.backgroundImage = 'url(assets/question_mark.png)';
+        }
+      }
+
       function showProximityCard(m) {
         if (!card || activeCard === m.name) return;
         // Medallion cards take priority — overwrite any existing location/region card
@@ -2180,22 +2700,8 @@ body.debug-hotspots .medallion-hot::after {
         var descEl = card.querySelector('.dc-desc');
         var loreEl = card.querySelector('.dc-lore');
 
-        // Show medallion image
-        if (artEl && m.spriteFile) {
-          artEl.style.display = 'block';
-          artEl.style.width = '100%';
-          artEl.style.aspectRatio = '1';
-          artEl.style.backgroundImage = 'url(' + m.spriteFile + ')';
-          artEl.style.backgroundSize = 'cover';
-          artEl.style.backgroundPosition = 'center';
-          artEl.style.borderRadius = '50%';
-          artEl.style.border = '1px solid rgba(198,141,85,0.3)';
-          if (isRevealed) {
-            artEl.style.filter = 'none';
-          } else {
-            artEl.style.filter = 'brightness(0.15) contrast(1.2)';
-          }
-        }
+        // Show medallion image (cover fills circle — no rectangular sprite edges)
+        applyMedallionArt(artEl, m, isRevealed);
 
         if (isRevealed) {
           var type = m.guardian ? 'Tetrad · Guardian' : 'Apkallu · Awakened';
@@ -2208,7 +2714,10 @@ body.debug-hotspots .medallion-hot::after {
           if (typeEl) typeEl.textContent = sealedType;
           if (nameEl) nameEl.textContent = '???';
           if (subEl)  subEl.textContent  = '';
-          if (descEl) descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this guardian.';
+          if (descEl) {
+            var sealedLabel = m.guardian ? 'guardian' : 'sigil';
+            descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this ' + sealedLabel + '.';
+          }
         }
         if (loreEl) loreEl.style.display = 'none';
         card.classList.add('visible');
@@ -2219,36 +2728,87 @@ body.debug-hotspots .medallion-hot::after {
         card.classList.remove('visible');
       }
 
-      var lastMx = '-500px', lastMy = '-500px';
+      // Invisible hotspot circles — reliable hover/click targets on frame art
+      var hotspotContainer = document.getElementById('medallion-hotspots');
+      var hotspotWired = false;
 
-      document.addEventListener('mousemove', function(e) {
-        // Convert viewport mouse coords to overlay-relative coords
-        // (the overlay is positioned at _frameRect.left/top, not 0,0)
+      function isMedallionRevealed(name) {
+        if (window.FogSystem && window.FogSystem._revealedGods && window.FogSystem._revealedGods[name]) return true;
+        try { return !!JSON.parse(localStorage.getItem('revealedGods') || '{}')[name]; } catch (e) { return false; }
+      }
+
+      function syncMedallionHotspots() {
+        if (!hotspotContainer) return;
+        var fr = window._frameRect;
+        if (!fr) return;
+        var radiusScale = fr.w / 2400;
+
+        MEDALLIONS.forEach(function(m) {
+          var hot = hotspotContainer.querySelector('.medallion-hot[data-name="' + m.name + '"]');
+          if (!hot) {
+            hot = document.createElement('div');
+            hot.className = 'medallion-hot';
+            hot.dataset.name = m.name;
+            hot.dataset.role = m.role;
+            hot.dataset.lore = m.lore;
+            hot.dataset.unlock = m.unlock;
+            if (!m.guardian) hot.dataset.god = '1';
+            hot.addEventListener('mouseenter', function() { showProximityCard(m); });
+            hot.addEventListener('mouseleave', function() { hideProximityCard(); });
+            hotspotContainer.appendChild(hot);
+          }
+
+          var pos = getMedallionScreenPos(m.cx, m.cy);
+          var size = (m.r || 80) * radiusScale;
+          hot.style.position = 'fixed';
+          hot.style.left = (pos.x - size / 2) + 'px';
+          hot.style.top = (pos.y - size / 2) + 'px';
+          hot.style.width = size + 'px';
+          hot.style.height = size + 'px';
+          hot.style.pointerEvents = 'auto';
+
+          hot.classList.remove('god-locked', 'god-unlocked', 'god-revealing');
+          if (isMedallionRevealed(m.name)) {
+            hot.classList.add('god-unlocked');
+          } else {
+            hot.classList.add('god-locked');
+          }
+        });
+
+        if (!hotspotWired) {
+          hotspotWired = true;
+          initMedallionTooltips();
+        }
+      }
+
+      var lastMx = '-500px', lastMy = '-500px';
+      var torchMaskPending = false;
+      var torchClientX = 0;
+      var torchClientY = 0;
+
+      function applyTorchMask() {
+        torchMaskPending = false;
         var rect = overlay.getBoundingClientRect();
-        lastMx = (e.clientX - rect.left) + 'px';
-        lastMy = (e.clientY - rect.top) + 'px';
+        lastMx = (torchClientX - rect.left) + 'px';
+        lastMy = (torchClientY - rect.top) + 'px';
         var mask = buildMask(lastMx, lastMy);
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
+      }
 
-        // Proximity check — find nearest medallion within its scaled radius
-        var nearest = null, nearestDist = Infinity;
-        var fr = window._frameRect;
-        var radiusScale = fr ? fr.w / 2400 : 1; // scale r relative to native image width
-        MEDALLIONS.forEach(function(m) {
-          var pos = getMedallionScreenPos(m.cx, m.cy);
-          var dx = e.clientX - pos.x;
-          var dy = e.clientY - pos.y;
-          var dist = Math.sqrt(dx*dx + dy*dy);
-          var threshold = ((m.r || 80) * radiusScale) / 2;
-          if (dist < threshold && dist < nearestDist) { nearestDist = dist; nearest = m; }
-        });
-        if (nearest) {
-          showProximityCard(nearest);
-        } else {
-          hideProximityCard();
-        }
+      document.addEventListener('mousemove', function(e) {
+        torchClientX = e.clientX;
+        torchClientY = e.clientY;
+        if (torchMaskPending) return;
+        torchMaskPending = true;
+        requestAnimationFrame(applyTorchMask);
       });
+
+      syncMedallionHotspots();
+      window.syncMedallionHotspots = syncMedallionHotspots;
+      window.hideMedallionCard = hideProximityCard;
+      // Refresh god-locked/unlocked state after fog.js restores saved reveals
+      setTimeout(function() { syncMedallionHotspots(); }, 1200);
 
       // Expose for fog.js permanent unlocks
       window.addPermanentMedallionGlow = function(name) {
@@ -2259,6 +2819,9 @@ body.debug-hotspots .medallion-hot::after {
       };
       // Expose MEDALLIONS so fog.js can look up unlock thresholds
       window.MEDALLION_DEFS = MEDALLIONS;
+      window.showMedallionCard = showProximityCard;
+      window.hideMedallionCard = hideProximityCard;
+      window.applyMedallionArt = applyMedallionArt;
     })();
 
     // ── Medallion Position Editor (Shift+M to toggle) ──────────────────
@@ -2576,9 +3139,9 @@ body.debug-hotspots .medallion-hot::after {
        }
      }, 800);
 
-     // Wire Get Volume 1 button
+     // Volume 1 reader — auth gate at /reader/ handles access
      var v1Btn = document.getElementById('hdr-v1-btn');
-     if (v1Btn && window.MAP_CONFIG && window.MAP_CONFIG.ksLink) v1Btn.href = window.MAP_CONFIG.ksLink;
+     if (v1Btn) v1Btn.href = '/reader/';
    }
 
    /* ═══════════════════════════════════════════
@@ -2632,6 +3195,11 @@ body.debug-hotspots .medallion-hot::after {
      MAP INITIALIZATION
      ═══════════════════════════════════════════ */
   function initMap(onReady) {
+    if (mapInitialized && map) {
+      if (onReady) onReady();
+      return;
+    }
+
     const cfg = window.MAP_CONFIG;
     imageBounds = [[0, 0], [cfg.height, cfg.width]];
 
@@ -2715,15 +3283,29 @@ body.debug-hotspots .medallion-hot::after {
     bindZoomControls();
     initCompass();
     bindPanel();
+    bindResetButton();
     updateZoomLevel();
     updateLabelScale();
     map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
 
     // Initialize fog system (after markers are built)
-    if (window.FogSystem && !EDIT_MODE) {
-      window.FogSystem.init(map, cfg);
-      window.FogSystem.startDrift(); // subtle animated fog glow
+    if (!EDIT_MODE) {
+      if (window.FogSystem) {
+        try {
+          window.FogSystem.bindLocationPanel(function(loc, marker) {
+            openPanel(loc, marker || null);
+          });
+          window.FogSystem.init(map, cfg);
+          window.FogSystem.startDrift();
+        } catch (fogErr) {
+          console.error('[FOG] Init failed:', fogErr);
+        }
+      } else {
+        console.error('[FOG] fog.js did not load — window.FogSystem is missing');
+      }
     }
+
+    mapInitialized = true;
 
     // Finale dismiss button
     var finaleBtn = document.getElementById('finale-dismiss');
@@ -2903,9 +3485,11 @@ body.debug-hotspots .medallion-hot::after {
      ═══════════════════════════════════════════ */
   // ── Edit Mode ──
   const EDIT_MODE = (new URLSearchParams(window.location.search)).has('edit');
+  window.EDIT_MODE = EDIT_MODE;
   const editedCoords = {}; // { locationId: { lat, lng } }
 
   if (EDIT_MODE) {
+    document.body.classList.add('edit-mode');
     document.getElementById('edit-panel').classList.add('active');
     // Hide the frame in edit mode for clearer positioning
     const frameEl = document.getElementById('frame-img');
@@ -2934,6 +3518,11 @@ body.debug-hotspots .medallion-hot::after {
   };
 
   function buildMarkers() {
+    if (!map.getPane('labelPane')) {
+      map.createPane('labelPane');
+      map.getPane('labelPane').classList.add('leaflet-label-pane');
+    }
+
     const locs = window.LOCATIONS || [];
 
     // Map location types to layer group IDs
@@ -2947,37 +3536,47 @@ body.debug-hotspots .medallion-hot::after {
 
     let editCount = 0;
 
+    function handleLocationActivate(loc, dotMarker, e) {
+      if (EDIT_MODE) return;
+      L.DomEvent.stopPropagation(e);
+      if (window.FogSystem && !window.FogSystem.isDiscovered(loc.id)) {
+        window.FogSystem.discover(loc);
+      } else {
+        openPanel(loc, dotMarker || null);
+      }
+    }
+
     locs.forEach(loc => {
       // In fog mode, render all markers but hide undiscovered ones
       // Regions and water are geography — always visible
       const isFogDiscovered = window.FogSystem && window.FogSystem.isDiscovered(loc.id);
       const alwaysVisible = (loc.type === 'region' || loc.type === 'water');
-      const fogHiddenClass = (!EDIT_MODE && window.FogSystem && !isFogDiscovered && !alwaysVisible) ? ' fog-hidden' : '';
+      const fogHiddenClass = (!EDIT_MODE && !alwaysVisible && (!window.FogSystem || !isFogDiscovered)) ? ' fog-hidden' : '';
       const t = loc.type || 'city';
       const pos = [loc.lat, loc.lng];
       const groupId = layerFor(t);
       const group = layerGroups[groupId];
       if (!group && t !== 'water') return;
 
-      let marker = null; // hoisted so label can reference it in edit mode
+      let marker = null;
 
       // ── Dot marker (except water) ──
       if (t !== 'water') {
         const dotSize = { region: [72,72], capital: [48,48], city: [48,48], town: [16,16], story: [48,48], sacred: [44,44] }[t] || [44,44];
-
-        // In edit mode, use bigger dots for easier grabbing
         const editDotSize = EDIT_MODE ? [Math.max(dotSize[0], 24), Math.max(dotSize[1], 24)] : dotSize;
 
         const dotIcon = L.divIcon({
           className: '' + fogHiddenClass,
-          html: '<div class="mk-' + t + '"' + (EDIT_MODE ? ' style="min-width:20px;min-height:20px;border:2px solid gold;cursor:grab;"' : '') + '></div>',
+          html: '<div class="mk-dot-wrap"><div class="mk-' + t + '"' + (EDIT_MODE ? ' style="min-width:20px;min-height:20px;border:2px solid gold;cursor:grab;"' : '') + '></div></div>',
           iconSize: editDotSize,
           iconAnchor: [editDotSize[0]/2, editDotSize[1]/2]
         });
 
         marker = L.marker(pos, {
           icon: dotIcon,
-          interactive: true,
+          // Fog mode: discovery uses fog.js proximity resolver (closest glow).
+          // Interactive dots in dense clusters steal clicks via z-order.
+          interactive: EDIT_MODE,
           draggable: EDIT_MODE
         });
         marker.locationData = loc;
@@ -3001,34 +3600,44 @@ body.debug-hotspots .medallion-hot::after {
         }
 
         marker.on('click', function(e) {
-          if (!EDIT_MODE) {
-            // Only open panel if location is discovered (or fog system not active)
-            if (!window.FogSystem || window.FogSystem.isDiscovered(loc.id)) {
-              L.DomEvent.stopPropagation(e);
-              openPanel(loc, this);
-            }
-          }
+          handleLocationActivate(loc, this, e);
         });
         if (group) marker.addTo(group);
-        // Register with fog system
         if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'dot', marker);
       }
 
       // ── Label ──
       const lblClass = 'mk-' + t + '-lbl';
+      const labelSplits = {
+        'tower-nine': ['Tower of', 'the Nine'],
+        'maxim-stone': ['The Maxim', 'Stone'],
+        'moon-stronghold': ['Moon Queen\'s', 'Stronghold']
+      };
+      const labelClusterClass = {
+        'tower-nine': ' lbl-tower-nine',
+        'maxim-stone': ' lbl-maxim-stone'
+      };
+      // Short directional nudge from dot — only for genuine label collisions
+      const labelDirections = {
+        'maxim-stone': 'below-right'
+      };
+      const labelHtml = labelSplits[loc.id]
+        ? labelSplits[loc.id].map(line => '<span class="label-line">' + line + '</span>').join('')
+        : (t === 'region' && / Utu$/i.test(loc.name))
+          ? '<span class="label-line">' + loc.name.replace(/\s+Utu$/i, '') + '</span><span class="label-line">UTU</span>'
+          : loc.name;
+      const dirClass = labelDirections[loc.id] ? ' lbl-dir-' + labelDirections[loc.id] : '';
       const lblIcon = L.divIcon({
-        className: '' + fogHiddenClass,
-        html: '<div class="' + lblClass + '" style="white-space:nowrap;">' + loc.name + '</div>',
-        iconSize: [0, 0],
-        iconAnchor: [-12, 6]
+        className: 'map-label-icon' + fogHiddenClass,
+        html: '<div class="mk-label-pin"><div class="' + lblClass + (labelClusterClass[loc.id] || '') + dirClass + '">' + labelHtml + '</div></div>',
+        iconSize: [1, 1],
+        iconAnchor: [0, 0]
       });
-      const lbl = L.marker(pos, { icon: lblIcon, interactive: false });
+      const lbl = L.marker(pos, { icon: lblIcon, interactive: EDIT_MODE, pane: 'labelPane' });
       const lblGroup = (t === 'water') ? layerGroups['regions'] : group;
       if (lblGroup) lbl.addTo(lblGroup);
-      // Register label with fog system
       if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'label', lbl);
 
-      // In edit mode, link the label to the dot so it follows during drag
       if (EDIT_MODE && t !== 'water' && marker) {
         marker.on('drag', function(e) {
           lbl.setLatLng(e.target.getLatLng());
@@ -3268,18 +3877,33 @@ body.debug-hotspots .medallion-hot::after {
      ═══════════════════════════════════════════ */
   const panel     = document.getElementById('panel');
   const panelBody = document.getElementById('panel-body');
+  var activePanelLocId = null;
+
+  function setMarkerHighlight(locId, on) {
+    if (!window.FogSystem || !window.FogSystem.setMarkerHighlight) return;
+    window.FogSystem.setMarkerHighlight(locId, on);
+  }
 
   function openPanel(loc, marker) {
+    // Close discovery card if a medallion/sigil left it open
+    var card = document.getElementById('discovery-card');
+    if (card) card.classList.remove('visible');
+
     // Clear previous active
+    if (activePanelLocId) setMarkerHighlight(activePanelLocId, false);
     if (activeMarkerEl) {
       const prev = activeMarkerEl.getElement();
       if (prev) prev.classList.remove('mk-active');
     }
 
     // Mark active
-    activeMarkerEl = marker;
-    const el = marker.getElement();
-    if (el) el.classList.add('mk-active');
+    activeMarkerEl = marker || null;
+    activePanelLocId = loc.id || null;
+    if (marker) {
+      const el = marker.getElement();
+      if (el) el.classList.add('mk-active');
+    }
+    if (loc.id) setMarkerHighlight(loc.id, true);
 
     // Type labels
     const typeLabels = {
@@ -3295,7 +3919,7 @@ body.debug-hotspots .medallion-hot::after {
       html += '<div class="panel-art"><img src="' + artPath + '" alt="' + (loc.name || '') + '"></div>';
     }
 
-    html += '<div class="panel-eyebrow">' + (typeLabels[loc.type] || loc.type) + '</div>';
+    html += '<div class="panel-eyebrow">' + (loc.panelEyebrow || typeLabels[loc.type] || loc.type) + '</div>';
     html += '<div class="panel-name">' + (loc.name || '') + '</div>';
     if (loc.sub) html += '<div class="panel-sub">' + loc.sub + '</div>';
     if (loc.desc) html += '<div class="panel-desc">' + loc.desc + '</div>';
@@ -3321,11 +3945,35 @@ body.debug-hotspots .medallion-hot::after {
 
   function closePanel() {
     panel.classList.remove('open');
+    if (activePanelLocId) {
+      setMarkerHighlight(activePanelLocId, false);
+      activePanelLocId = null;
+    }
     if (activeMarkerEl) {
       const el = activeMarkerEl.getElement();
       if (el) el.classList.remove('mk-active');
       activeMarkerEl = null;
     }
+  }
+
+  window.openLocationPanel = function(loc, marker) {
+    openPanel(loc, marker || null);
+  };
+  window.closeLocationPanel = closePanel;
+
+  function bindResetButton() {
+    var btn = document.getElementById('fog-reset-btn');
+    if (!btn || btn._bound) return;
+    btn._bound = true;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!confirm('Reset all discoveries and start over? This clears your entire journey.')) return;
+      if (window.FogSystem && window.FogSystem.reset) {
+        window.FogSystem.reset();
+        return;
+      }
+      location.reload();
+    });
   }
 
   function bindPanel() {
@@ -3449,10 +4097,16 @@ body.debug-hotspots .medallion-hot::after {
       if (el) el.style.clipPath = clipVal;
     });
 
-    // Tell Leaflet the container changed size
+    // Tell Leaflet the container changed size, then redraw fog to match
     if (window._leafletMap) {
       window._leafletMap.invalidateSize({ animate: false });
+      if (window.FogSystem && window.FogSystem.draw) {
+        window.FogSystem.draw();
+      }
     }
+
+    // Keep medallion hover targets aligned with frame art
+    if (window.syncMedallionHotspots) window.syncMedallionHotspots();
   }
 
   // cx/cy are fractions of the frame IMAGE (2400x1792), not viewport fractions.
@@ -3472,11 +4126,15 @@ body.debug-hotspots .medallion-hot::after {
     const hotspots = document.querySelectorAll('.medallion-hot');
     if (!hotspots.length) return;
 
-    // Create single tooltip element
-    const tip = document.createElement('div');
-    tip.className = 'medallion-tip';
-    tip.innerHTML = '<div class="tip-name"></div><div class="tip-role"></div><div class="tip-lore"></div>';
-    document.body.appendChild(tip);
+    // Create single tooltip element (once)
+    var tip = document.getElementById('medallion-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'medallion-tip';
+      tip.className = 'medallion-tip';
+      tip.innerHTML = '<div class="tip-name"></div><div class="tip-role"></div><div class="tip-lore"></div>';
+      document.body.appendChild(tip);
+    }
 
     let activeHot = null;
 
@@ -3484,27 +4142,25 @@ body.debug-hotspots .medallion-hot::after {
       const name = hot.dataset.name || '';
       const role = hot.dataset.role || '';
       const lore = hot.dataset.lore || '';
-      tip.querySelector('.tip-name').textContent = name;
-      tip.querySelector('.tip-role').textContent = role;
-      tip.querySelector('.tip-lore').textContent = lore;
-
-      // Position near the hotspot
-      const rect = hot.getBoundingClientRect();
-      let tx = rect.left + rect.width / 2;
-      let ty = rect.bottom + 8;
-
-      // If too close to bottom, show above
-      if (ty + 120 > window.innerHeight) {
-        ty = rect.top - 8;
-        tip.style.transform = 'translate(-50%, -100%)';
+      const isLocked = hot.classList.contains('god-locked');
+      const unlock = hot.dataset.unlock || '';
+      if (isLocked) {
+        var isGuardianTip = !hot.dataset.god;
+        tip.querySelector('.tip-name').textContent = '???';
+        tip.querySelector('.tip-role').textContent = isGuardianTip ? 'Tetrad · Sealed' : 'Apkallu · Sealed';
+        tip.querySelector('.tip-lore').textContent = unlock
+          ? ('Discover ' + unlock + ' locations to awaken this ' + (isGuardianTip ? 'guardian' : 'sigil') + '.')
+          : (isGuardianTip ? 'This guardian remains sealed.' : 'This sigil remains sealed.');
       } else {
-        tip.style.transform = 'translate(-50%, 0)';
+        tip.querySelector('.tip-name').textContent = name;
+        tip.querySelector('.tip-role').textContent = role;
+        tip.querySelector('.tip-lore').textContent = lore;
       }
-      // Clamp horizontal
-      tx = Math.max(140, Math.min(window.innerWidth - 140, tx));
 
-      tip.style.left = tx + 'px';
-      tip.style.top = ty + 'px';
+      // Fixed left panel — content only, no cursor/hotspot tracking
+      tip.style.left = '';
+      tip.style.top = '';
+      tip.style.transform = '';
       tip.classList.add('visible');
       activeHot = hot;
     }
@@ -3515,48 +4171,21 @@ body.debug-hotspots .medallion-hot::after {
     }
 
     hotspots.forEach(function(hot) {
+      if (hot.dataset.tipBound) return;
+      hot.dataset.tipBound = '1';
       hot.addEventListener('mouseenter', function() {
         showTip(hot);
-        // Glow this medallion
-        var hname = hot.dataset.name || '';
-        if (window.FogSystem && window.FogSystem.animateMedallionClip) {
-          window.FogSystem.animateMedallionClip(hname, 0, 0.07, 400);
-        }
-        // Show dummy info card
-        var card = document.getElementById('discovery-card');
-        if (card) {
-          var isGuardian = !hot.dataset.god;
-          card.querySelector('.dc-type').textContent = isGuardian ? 'Tetrad \u00b7 Guardian' : 'Apkallu \u00b7 Revealed';
-          card.querySelector('.dc-name').textContent = hname;
-          card.querySelector('.dc-sub').textContent = hot.dataset.role || '';
-          card.querySelector('.dc-desc').textContent = hot.dataset.lore || '';
-          var loreEl = card.querySelector('.dc-lore'); if (loreEl) loreEl.style.display = 'none';
-          card.classList.add('active');
-        }
       });
       hot.addEventListener('mouseleave', function() {
         hideTip();
-        // Fade glow back
-        var hname = hot.dataset.name || '';
-        if (window.FogSystem && window.FogSystem.animateMedallionClip) {
-          window.FogSystem.animateMedallionClip(hname, 0.07, 0, 350);
-        }
-        var card = document.getElementById('discovery-card');
-        if (card) card.classList.remove('active');
       });
-      // Click: open discovery card with guardian info
+      // Click: open discovery card via shared medallion renderer
       hot.addEventListener('click', function(e) {
         e.stopPropagation();
         hideTip();
-        var card = document.getElementById('discovery-card');
-        if (!card) return;
-        var name = hot.dataset.name || '';
-                var role = hot.dataset.role || '';
-        var lore = hot.dataset.lore || '';
-        var isGuardian = !hot.dataset.god;
-        var isLocked = hot.classList.contains('god-locked');
+        var mDef = (window.MEDALLION_DEFS || []).find(function(d) { return d.name === (hot.dataset.name || ''); });
+        if (!mDef || !window.showMedallionCard) return;
 
-        // Brief gold flash on the medallion
         hot.style.transition = 'none';
         hot.style.background = 'rgba(212,168,67,0.25)';
         setTimeout(function() {
@@ -3564,28 +4193,7 @@ body.debug-hotspots .medallion-hot::after {
           hot.style.background = '';
         }, 140);
 
-        if (isGuardian) {
-          card.querySelector('.dc-type').textContent = 'Tetrad \u00b7 Guardian';
-          card.querySelector('.dc-name').textContent = name;
-          card.querySelector('.dc-sub').textContent = role;
-          card.querySelector('.dc-desc').textContent = lore;
-        } else if (isLocked) {
-          card.querySelector('.dc-type').textContent = 'Apkallu \u00b7 Sealed';
-          card.querySelector('.dc-name').textContent = name;
-          card.querySelector('.dc-sub').textContent = role;
-          card.querySelector('.dc-desc').textContent = 'This sigil remains sealed. The god whose face it bears has not yet made itself known to you. Continue charting the Hollowlands \u2014 some truths only open when you have walked far enough to deserve them.';
-        } else {
-          card.querySelector('.dc-type').textContent = 'Apkallu \u00b7 Revealed';
-          card.querySelector('.dc-name').textContent = name;
-          card.querySelector('.dc-sub').textContent = role;
-          card.querySelector('.dc-desc').textContent = lore;
-        }
-
-        var loreEl = card.querySelector('.dc-lore');
-        if (loreEl) loreEl.style.display = 'none';
-        var artEl = card.querySelector('.dc-art');
-        if (artEl) artEl.style.display = 'none';
-        card.classList.add('visible');
+        window.showMedallionCard(mDef);
       });
     });
 
@@ -3692,14 +4300,10 @@ body.debug-hotspots .medallion-hot::after {
       setTimeout(() => el.classList.add('vis'), 300 + delay);
     });
 
-    // Button handlers
+    // Button handler
     document.getElementById('welcome-explore').addEventListener('click', () => {
       dismissWelcome();
       showHint();
-    });
-    document.getElementById('welcome-journey').addEventListener('click', () => {
-      dismissWelcome();
-      setTimeout(startJourney, 600);
     });
   }
 
@@ -3815,7 +4419,12 @@ body.debug-hotspots .medallion-hot::after {
      INIT
      ═══════════════════════════════════════════ */
   bindJourneyControls();
-  checkGate();
+  if (hasDirectArchiveIntent()) {
+    if (landing) landing.style.display = 'none';
+    var initParams = new URLSearchParams(window.location.search);
+    if (initParams.has('reader')) postAuthRedirect = '/reader/';
+    checkGate();
+  }
 })();
 </script>
 </body>

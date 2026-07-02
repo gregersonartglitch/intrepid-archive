@@ -1,0 +1,53 @@
+---
+description: Rules for editing fog.js safely
+globs: ["fog.js"]
+alwaysApply: false
+---
+
+# fog.js Editing Rules
+
+## Structure
+fog.js is one large IIFE. Key sections in order:
+1. Constants & state variables
+2. Canvas / Leaflet setup
+3. Canvas click handler (lines ~310-430) — contains isClickable() call + golden-glow bypass
+4. Tutorial system (advanceTutorial, TUTORIAL_DEFS)
+5. Path logic (getNextPathLocation, isOnPath, isClickable)
+6. draw() loop — section 3 (golden glow), section 3b (orange/yellow beacons), section 4 (clear holes)
+7. Discovery system (instantDiscover, startSearchMode, completeDiscovery)
+8. Guide Me button (addGuideButton, runGuideMe)
+
+## Critical Functions — Do Not Break
+- `isClickable(locId)` — gating logic, must match beacon draw proximity exactly
+- `getNextPathLocation()` — iterates journeyPath, returns first undiscovered step ID
+- `draw()` — RAF loop, don't add expensive operations inside it
+- `completeDiscovery(loc)` — clears searchMode, triggers fog reveal
+
+## After Every Edit
+```bash
+node --check fog.js
+```
+
+## Common Patterns
+
+### Proximity check (standard 400-unit gate):
+```js
+var nearCleared = false;
+Object.keys(discovered).forEach(function(dId) {
+  if (nearCleared) return;
+  var dLoc = allLocs.find(function(l) { return l.id === dId; });
+  if (!dLoc) return;
+  var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+  if (Math.sqrt(dx * dx + dy * dy) < 400) nearCleared = true;
+});
+```
+
+### Find location by ID:
+```js
+var loc = (window.LOCATIONS || []).find(function(l) { return l.id === 'some-id'; });
+```
+
+### Convert map coord to screen pixel:
+```js
+var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+```

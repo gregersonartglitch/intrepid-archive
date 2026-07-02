@@ -1,0 +1,620 @@
+{
+  "id": "intrepid-dusk-volume-1-reader-test",
+  "title": "Intrepid Dusk Volume 1",
+  "createdAt": "2026-06-30T19:33:18.465850+00:00",
+  "format": "legendist.reader-assets.v0",
+  "pages": [
+    {
+      "id": "page-001",
+      "issue": "001",
+      "issuePage": 1,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-001.webp",
+      "fallback": "./pages/page-001.jpg"
+    },
+    {
+      "id": "page-002",
+      "issue": "001",
+      "issuePage": 2,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-002.webp",
+      "fallback": "./pages/page-002.jpg"
+    },
+    {
+      "id": "page-003",
+      "issue": "001",
+      "issuePage": 3,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-003.webp",
+      "fallback": "./pages/page-003.jpg"
+    },
+    {
+      "id": "page-004",
+      "issue": "001",
+      "issuePage": 4,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-004.webp",
+      "fallback": "./pages/page-004.jpg"
+    },
+    {
+      "id": "page-005",
+      "issue": "001",
+      "issuePage": 5,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-005.webp",
+      "fallback": "./pages/page-005.jpg"
+    },
+    {
+      "id": "page-006",
+      "issue": "001",
+      "issuePage": 6,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-006.webp",
+      "fallback": "./pages/page-006.jpg"
+    },
+    {
+      "id": "page-007",
+      "issue": "001",
+      "issuePage": 7,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-007.webp",
+      "fallback": "./pages/page-007.jpg"
+    },
+    {
+      "id": "page-008",
+      "issue": "001",
+      "issuePage": 8,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-008.webp",
+      "fallback": "./pages/page-008.jpg"
+    },
+    {
+      "id": "page-009",
+      "issue": "001",
+      "issuePage": 9,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-009.webp",
+      "fallback": "./pages/page-009.jpg"
+    },
+    {
+      "id": "page-010",
+      "issue": "001",
+      "issuePage": 10,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-010.webp",
+      "fallback": "./pages/page-010.jpg"
+    },
+    {
+      "id": "page-011",
+      "issue": "001",
+      "issuePage": 11,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-011.webp",
+      "fallback": "./pages/page-011.jpg"
+    },
+    {
+      "id": "page-012",
+      "issue": "001",
+      "issuePage": 12,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-012.webp",
+      "fallback": "./pages/page-012.jpg"
+    },
+    {
+      "id": "page-013",
+      "issue": "001",
+      "issuePage": 13,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-013.webp",
+      "fallback": "./pages/page-013.jpg"
+    },
+    {
+      "id": "page-014",
+      "issue": "001",
+      "issuePage": 14,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-014.webp",
+      "fallback": "./pages/page-014.jpg"
+    },
+    {
+      "id": "page-015",
+      "issue": "001",
+      "issuePage": 15,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-015.webp",
+      "fallback": "./pages/page-015.jpg"
+    },
+    {
+      "id": "page-016",
+      "issue": "001",
+      "issuePage": 16,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-016.webp",
+      "fallback": "./pages/page-016.jpg"
+    },
+    {
+      "id": "page-017",
+      "issue": "001",
+      "issuePage": 17,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-017.webp",
+      "fallback": "./pages/page-017.jpg"
+    },
+    {
+      "id": "page-018",
+      "issue": "001",
+      "issuePage": 18,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-018.webp",
+      "fallback": "./pages/page-018.jpg"
+    },
+    {
+      "id": "page-019",
+      "issue": "001",
+      "issuePage": 19,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-019.webp",
+      "fallback": "./pages/page-019.jpg"
+    },
+    {
+      "id": "page-020",
+      "issue": "001",
+      "issuePage": 20,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-020.webp",
+      "fallback": "./pages/page-020.jpg"
+    },
+    {
+      "id": "page-021",
+      "issue": "001",
+      "issuePage": 21,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-021.webp",
+      "fallback": "./pages/page-021.jpg"
+    },
+    {
+      "id": "page-022",
+      "issue": "002",
+      "issuePage": 1,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-022.webp",
+      "fallback": "./pages/page-022.jpg"
+    },
+    {
+      "id": "page-023",
+      "issue": "002",
+      "issuePage": 2,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-023.webp",
+      "fallback": "./pages/page-023.jpg"
+    },
+    {
+      "id": "page-024",
+      "issue": "002",
+      "issuePage": 3,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-024.webp",
+      "fallback": "./pages/page-024.jpg"
+    },
+    {
+      "id": "page-025",
+      "issue": "002",
+      "issuePage": 4,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-025.webp",
+      "fallback": "./pages/page-025.jpg"
+    },
+    {
+      "id": "page-026",
+      "issue": "002",
+      "issuePage": 5,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-026.webp",
+      "fallback": "./pages/page-026.jpg"
+    },
+    {
+      "id": "page-027",
+      "issue": "002",
+      "issuePage": 6,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-027.webp",
+      "fallback": "./pages/page-027.jpg"
+    },
+    {
+      "id": "page-028",
+      "issue": "002",
+      "issuePage": 7,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-028.webp",
+      "fallback": "./pages/page-028.jpg"
+    },
+    {
+      "id": "page-029",
+      "issue": "002",
+      "issuePage": 8,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-029.webp",
+      "fallback": "./pages/page-029.jpg"
+    },
+    {
+      "id": "page-030",
+      "issue": "002",
+      "issuePage": 9,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-030.webp",
+      "fallback": "./pages/page-030.jpg"
+    },
+    {
+      "id": "page-031",
+      "issue": "002",
+      "issuePage": 10,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-031.webp",
+      "fallback": "./pages/page-031.jpg"
+    },
+    {
+      "id": "page-032",
+      "issue": "002",
+      "issuePage": 11,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-032.webp",
+      "fallback": "./pages/page-032.jpg"
+    },
+    {
+      "id": "page-033",
+      "issue": "002",
+      "issuePage": 12,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-033.webp",
+      "fallback": "./pages/page-033.jpg"
+    },
+    {
+      "id": "page-034",
+      "issue": "002",
+      "issuePage": 13,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-034.webp",
+      "fallback": "./pages/page-034.jpg"
+    },
+    {
+      "id": "page-035",
+      "issue": "002",
+      "issuePage": 14,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-035.webp",
+      "fallback": "./pages/page-035.jpg"
+    },
+    {
+      "id": "page-036",
+      "issue": "002",
+      "issuePage": 15,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-036.webp",
+      "fallback": "./pages/page-036.jpg"
+    },
+    {
+      "id": "page-037",
+      "issue": "002",
+      "issuePage": 16,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-037.webp",
+      "fallback": "./pages/page-037.jpg"
+    },
+    {
+      "id": "page-038",
+      "issue": "002",
+      "issuePage": 17,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-038.webp",
+      "fallback": "./pages/page-038.jpg"
+    },
+    {
+      "id": "page-039",
+      "issue": "002",
+      "issuePage": 18,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-039.webp",
+      "fallback": "./pages/page-039.jpg"
+    },
+    {
+      "id": "page-040",
+      "issue": "002",
+      "issuePage": 19,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-040.webp",
+      "fallback": "./pages/page-040.jpg"
+    },
+    {
+      "id": "page-041",
+      "issue": "002",
+      "issuePage": 20,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-041.webp",
+      "fallback": "./pages/page-041.jpg"
+    },
+    {
+      "id": "page-042",
+      "issue": "002",
+      "issuePage": 21,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-042.webp",
+      "fallback": "./pages/page-042.jpg"
+    },
+    {
+      "id": "page-043",
+      "issue": "003",
+      "issuePage": 1,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-043.webp",
+      "fallback": "./pages/page-043.jpg"
+    },
+    {
+      "id": "page-044",
+      "issue": "003",
+      "issuePage": 2,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-044.webp",
+      "fallback": "./pages/page-044.jpg"
+    },
+    {
+      "id": "page-045",
+      "issue": "003",
+      "issuePage": 3,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-045.webp",
+      "fallback": "./pages/page-045.jpg"
+    },
+    {
+      "id": "page-046",
+      "issue": "003",
+      "issuePage": 4,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-046.webp",
+      "fallback": "./pages/page-046.jpg"
+    },
+    {
+      "id": "page-047",
+      "issue": "003",
+      "issuePage": 5,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-047.webp",
+      "fallback": "./pages/page-047.jpg"
+    },
+    {
+      "id": "page-048",
+      "issue": "003",
+      "issuePage": 6,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-048.webp",
+      "fallback": "./pages/page-048.jpg"
+    },
+    {
+      "id": "page-049",
+      "issue": "003",
+      "issuePage": 7,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-049.webp",
+      "fallback": "./pages/page-049.jpg"
+    },
+    {
+      "id": "page-050",
+      "issue": "003",
+      "issuePage": 8,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-050.webp",
+      "fallback": "./pages/page-050.jpg"
+    },
+    {
+      "id": "page-051",
+      "issue": "003",
+      "issuePage": 9,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-051.webp",
+      "fallback": "./pages/page-051.jpg"
+    },
+    {
+      "id": "page-052",
+      "issue": "003",
+      "issuePage": 10,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-052.webp",
+      "fallback": "./pages/page-052.jpg"
+    },
+    {
+      "id": "page-053",
+      "issue": "003",
+      "issuePage": 11,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-053.webp",
+      "fallback": "./pages/page-053.jpg"
+    },
+    {
+      "id": "page-054",
+      "issue": "003",
+      "issuePage": 12,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-054.webp",
+      "fallback": "./pages/page-054.jpg"
+    },
+    {
+      "id": "page-055",
+      "issue": "003",
+      "issuePage": 13,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-055.webp",
+      "fallback": "./pages/page-055.jpg"
+    },
+    {
+      "id": "page-056",
+      "issue": "003",
+      "issuePage": 14,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-056.webp",
+      "fallback": "./pages/page-056.jpg"
+    },
+    {
+      "id": "page-057",
+      "issue": "003",
+      "issuePage": 15,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-057.webp",
+      "fallback": "./pages/page-057.jpg"
+    },
+    {
+      "id": "page-058",
+      "issue": "003",
+      "issuePage": 16,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-058.webp",
+      "fallback": "./pages/page-058.jpg"
+    },
+    {
+      "id": "page-059",
+      "issue": "003",
+      "issuePage": 17,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-059.webp",
+      "fallback": "./pages/page-059.jpg"
+    },
+    {
+      "id": "page-060",
+      "issue": "003",
+      "issuePage": 18,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-060.webp",
+      "fallback": "./pages/page-060.jpg"
+    },
+    {
+      "id": "page-061",
+      "issue": "003",
+      "issuePage": 19,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-061.webp",
+      "fallback": "./pages/page-061.jpg"
+    },
+    {
+      "id": "page-062",
+      "issue": "003",
+      "issuePage": 20,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-062.webp",
+      "fallback": "./pages/page-062.jpg"
+    },
+    {
+      "id": "page-063",
+      "issue": "003",
+      "issuePage": 21,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-063.webp",
+      "fallback": "./pages/page-063.jpg"
+    },
+    {
+      "id": "page-064",
+      "issue": "003",
+      "issuePage": 22,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-064.webp",
+      "fallback": "./pages/page-064.jpg"
+    },
+    {
+      "id": "page-065",
+      "issue": "003",
+      "issuePage": 23,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-065.webp",
+      "fallback": "./pages/page-065.jpg"
+    },
+    {
+      "id": "page-066",
+      "issue": "003",
+      "issuePage": 24,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-066.webp",
+      "fallback": "./pages/page-066.jpg"
+    },
+    {
+      "id": "page-067",
+      "issue": "003",
+      "issuePage": 25,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-067.webp",
+      "fallback": "./pages/page-067.jpg"
+    },
+    {
+      "id": "page-068",
+      "issue": "003",
+      "issuePage": 26,
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/page-068.webp",
+      "fallback": "./pages/page-068.jpg"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Volume 1 Reader — Intrepid Dusk</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1410;
+    color: #e8dcc8;
+    font-family: Georgia, 'Times New Roman', serif;
+    padding: 2rem;
+    box-sizing: border-box;
+  }
+  .panel {
+    max-width: 32rem;
+    text-align: center;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.4rem; font-weight: normal; margin: 0 0 1rem; }
+  p { margin: 0 0 1rem; opacity: 0.9; }
+  a { color: #c9a227; }
+  code { font-size: 0.9em; }
+</style>
+</head>
+<body>
+<div id="deploy-msg" class="panel" hidden>
+  <h1>Volume 1 reader not deployed</h1>
+  <p>The reader package has not been copied into this site yet.</p>
+  <p>Place <code>intrepid-dusk-volume-1-reader-upload.zip</code> in the project root and run <code>integrate-reader.ps1</code>.</p>
+  <p><a href="/">Return to archive home</a></p>
+</div>
+<script>
+(function() {
+  'use strict';
+  var LS_KEY = 'intrepid_atlas_auth';
+  var LS_TIER_KEY = 'intrepid_atlas_tier';
+  var READER_PATH = '/reader/intrepid-dusk-volume-1/';
+
+  function showDeployError() {
+    document.getElementById('deploy-msg').hidden = false;
+  }
+
+  function enterReader() {
+    fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
+      .then(function(res) {
+        if (res.ok) {
+          window.location.replace(READER_PATH);
+          return;
+        }
+        showDeployError();
+      })
+      .catch(showDeployError);
+  }
+
+  if (localStorage.getItem(LS_KEY) !== 'granted' || !localStorage.getItem(LS_TIER_KEY)) {
+    window.location.replace('/?reader=1');
+    return;
+  }
+  enterReader();
+})();
+</script>
+<noscript>
+  <div class="panel">
+    <p>JavaScript is required to open the Volume 1 reader.</p>
+    <p><a href="/">Return to archive home</a></p>
+  </div>
+</noscript>
+</body>
+</html>

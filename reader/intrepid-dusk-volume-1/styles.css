@@ -1,0 +1,304 @@
+:root {
+  --ink: #070706;
+  --panel: rgba(15, 13, 10, 0.78);
+  --line: rgba(238, 229, 206, 0.14);
+  --bone: #efe7d2;
+  --muted: #b9ac91;
+  --gold: #c68d55;
+  color: var(--bone);
+  background: var(--ink);
+  font: 16px/1.4 Aptos, "Segoe UI", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100vw;
+  height: 100svh;
+  height: 100dvh;
+  max-height: 100svh;
+  max-height: 100dvh;
+  background:
+    radial-gradient(ellipse at 34% 38%, rgba(178, 74, 47, 0.16), transparent 38%),
+    radial-gradient(ellipse at 76% 72%, rgba(60, 111, 100, 0.16), transparent 35%),
+    #070706;
+}
+
+.reader-header {
+  position: relative;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+  flex-shrink: 0;
+  padding:
+    max(12px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    14px
+    max(18px, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+  background: rgba(6, 5, 4, 0.92);
+  backdrop-filter: blur(14px);
+}
+
+.reader-header-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 231, 210, 0.16);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.06);
+  color: var(--bone);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.home-link:hover {
+  border-color: rgba(198, 141, 85, 0.5);
+  background: rgba(198, 141, 85, 0.14);
+  color: var(--gold);
+}
+
+.ambient-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(239, 231, 210, 0.16);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.06);
+  color: var(--bone);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.ambient-toggle:hover {
+  border-color: rgba(198, 141, 85, 0.5);
+  background: rgba(198, 141, 85, 0.14);
+  color: var(--gold);
+}
+
+.reader-title {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin: 0 0 3px;
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.build-label {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.reader-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-counter {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid rgba(239, 231, 210, 0.12);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.04);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.page-counter-label {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.page-counter strong {
+  color: var(--bone);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.controls button {
+  padding: 8px 11px;
+  border: 1px solid rgba(239, 231, 210, 0.16);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.08);
+  color: var(--bone);
+  cursor: pointer;
+}
+
+.controls button:hover {
+  border-color: rgba(198, 141, 85, 0.5);
+  background: rgba(198, 141, 85, 0.16);
+}
+
+.reader-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  padding: clamp(14px, 2.5svh, 28px) clamp(18px, 3vw, 36px);
+}
+
+.reader-stage::before {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(239, 231, 210, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(239, 231, 210, 0.014) 1px, transparent 1px);
+  background-size: 30px 30px;
+  content: "";
+  mask-image: radial-gradient(ellipse at center, black, transparent 76%);
+  pointer-events: none;
+}
+
+.book {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 1;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  filter: drop-shadow(0 28px 70px rgba(0, 0, 0, 0.62));
+}
+
+.book canvas {
+  border: none;
+  background: transparent;
+}
+
+/* Hide subpixel gap between facing pages in landscape spread */
+.stf__parent,
+.sft__wrapper,
+.stf__block {
+  background: #000;
+}
+
+.reader-page {
+  overflow: hidden;
+  background: #000;
+}
+
+.reader-page--blank {
+  background:
+    radial-gradient(ellipse at center, rgba(239, 231, 210, 0.035), transparent 56%),
+    #070706;
+}
+
+.reader-page img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Overlap facing pages 1px to hide center hairline (StPageFlip --left / --right) */
+.book .reader-page.--left img {
+  width: calc(100% + 1px);
+  max-width: none;
+}
+
+.book .reader-page.--right img {
+  width: calc(100% + 1px);
+  max-width: none;
+  margin-left: -1px;
+}
+
+@media (max-width: 720px) {
+  body {
+    overflow: auto;
+  }
+
+  .reader {
+    height: auto;
+    min-height: 100svh;
+  }
+
+  .reader-header {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .reader-meta {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .reader-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+}
