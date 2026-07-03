@@ -14,6 +14,8 @@
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 5000;     // ms before key starts hinting
+  var POST_TUTORIAL_HINT_LS = 'intrepid_post_tutorial_hinted';
+  var POST_TUTORIAL_HINT_TIMEOUT = 15000;
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
   var BREATH_AMP = 0.06;     // how much the edges expand/contract (fraction)
   // Proximity whispers — incomplete cartographer's notes at the fog edge
@@ -70,6 +72,8 @@
   var whisperLocEl = null;
   var whisperTextEl = null;
   var currentWhisperId = null;
+  var postTutorialHintTimer = null;
+  var postTutorialHintPending = false;
 
   // When a journey site is found, its nearby companions become visible + glow.
   var SITE_CLUSTERS = {
@@ -165,7 +169,9 @@
 
   function updateAmbientButton() {
     var btn = document.getElementById('ambient-toggle');
-    if (btn) btn.textContent = ambientEnabled ? '\uD83D\uDD0A' : '\uD83D\uDD07';
+    if (!btn) return;
+    btn.setAttribute('aria-pressed', ambientEnabled ? 'true' : 'false');
+    btn.classList.toggle('is-off', !ambientEnabled);
   }
 
   function ensureAmbientAudio() {
@@ -333,6 +339,10 @@
     tutorialStep = Object.keys(discovered).length;
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
+    }
+
+    if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
+      setTimeout(schedulePostTutorialHint, 2000);
     }
 
     if (discovered['tower-nine']) {
@@ -747,6 +757,7 @@
     if (tutorialStep >= TUTORIAL_STEPS) {
       removeTutorialHint();
       console.log('[TUTORIAL] Complete!');
+      schedulePostTutorialHint();
       return;
     }
 
@@ -825,6 +836,103 @@
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 800);
     }, 3500);
+  }
+
+  /* ════════════════════════════════════════════════
+     POST-TUTORIAL HINT — glow legend after Sabella's Hut
+     ════════════════════════════════════════════════ */
+  function shouldShowPostTutorialHint() {
+    if (localStorage.getItem(POST_TUTORIAL_HINT_LS) === 'yes') return false;
+    return isFullyDiscovered('sabellas-hut');
+  }
+
+  function dismissPostTutorialHint(save) {
+    if (postTutorialHintTimer) {
+      clearTimeout(postTutorialHintTimer);
+      postTutorialHintTimer = null;
+    }
+    postTutorialHintPending = false;
+    var toast = document.getElementById('post-tutorial-hint');
+    if (toast) {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    }
+    if (save) {
+      try { localStorage.setItem(POST_TUTORIAL_HINT_LS, 'yes'); } catch (e) {}
+    }
+  }
+
+  function showPostTutorialHint() {
+    if (!shouldShowPostTutorialHint()) return;
+    if (document.getElementById('post-tutorial-hint')) return;
+
+    if (!document.getElementById('tut-toast-style')) {
+      var s = document.createElement('style');
+      s.id = 'tut-toast-style';
+      s.textContent = '@keyframes tutBorderPulse { 0%,100%{border-color:rgba(198,141,85,0.4)} 50%{border-color:rgba(212,168,67,0.9)} }';
+      document.head.appendChild(s);
+    }
+
+    var toast = document.createElement('div');
+    toast.id = 'post-tutorial-hint';
+    toast.style.cssText =
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
+      'background:rgba(8,10,14,0.97);' +
+      'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
+      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,141,85,0.12);' +
+      'animation:tutBorderPulse 2s ease-in-out infinite;' +
+      'opacity:0;transition:opacity 0.5s ease;';
+    toast.innerHTML =
+      '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
+        'margin-bottom:12px;font-family:Cinzel,serif;">Cartographer\u2019s Charge</div>' +
+      '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:14px;">' +
+        'Seek the glowing marks on the map \u2014 click each one to chart what lies hidden.</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;text-align:left;display:inline-block;">' +
+        '<span style="color:#d4a843;">\u25cf</span> Gold \u2014 Elena\u2019s next step<br>' +
+        '<span style="color:#e08a40;">\u25cf</span> Orange \u2014 uncharted territories<br>' +
+        '<span style="color:#e8c840;">\u25cf</span> Amber \u2014 cartographer sites</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;' +
+        'font-family:EB Garamond,serif;">tap to dismiss</div>';
+    toast.addEventListener('click', function() { dismissPostTutorialHint(true); });
+    document.body.appendChild(toast);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    postTutorialHintTimer = setTimeout(function() {
+      dismissPostTutorialHint(true);
+    }, POST_TUTORIAL_HINT_TIMEOUT);
+  }
+
+  function schedulePostTutorialHint() {
+    if (!shouldShowPostTutorialHint()) return;
+    if (postTutorialHintPending || document.getElementById('post-tutorial-hint')) return;
+    postTutorialHintPending = true;
+
+    function tryShow() {
+      var panelEl = document.getElementById('panel');
+      var cardEl = document.getElementById('discovery-card');
+      var panelOpen = panelEl && panelEl.classList.contains('open');
+      var cardOpen = cardEl && cardEl.classList.contains('visible');
+      var tutToast = document.getElementById('tutorial-persistent-toast');
+
+      if (panelOpen || cardOpen || tutToast) {
+        setTimeout(tryShow, 400);
+        return;
+      }
+      postTutorialHintPending = false;
+      showPostTutorialHint();
+    }
+
+    setTimeout(tryShow, 800);
+  }
+
+  function maybeDismissPostTutorialOnDiscover(loc) {
+    if (!document.getElementById('post-tutorial-hint')) return;
+    if (isTerritory(loc) || loc.cartographerSite) {
+      dismissPostTutorialHint(true);
+    }
   }
 
   /* ════════════════════════════════════════════════
@@ -2111,6 +2219,7 @@
       updateProgress();
       showDiscoveryToast(loc);
       updateProximityWhispers();
+      maybeDismissPostTutorialOnDiscover(loc);
       return;
     }
 
@@ -2146,6 +2255,7 @@
     updateProgress();
     showDiscoveryToast(loc);
     updateProximityWhispers();
+    maybeDismissPostTutorialOnDiscover(loc);
 
     // Special unlock celebration for Sham & Mash
     if (loc.id === 'mash' || loc.id === 'sham-territory') {
@@ -2279,6 +2389,7 @@
     if (!(loc.id === FINAL_ELENA_STOP && isPathComplete())) {
       showDiscoveryToast(loc);
     }
+    maybeDismissPostTutorialOnDiscover(loc);
 
     // Advance tutorial if in search steps
     if (tutorialStep < TUTORIAL_STEPS) {
@@ -3016,6 +3127,7 @@
         var keysToRemove = [
           LS_KEY, LS_KEY + '_v', 'revealedGods',
           'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
+          POST_TUTORIAL_HINT_LS,
           'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales'
         ];
         keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
@@ -3226,6 +3338,7 @@
       var keysToRemove = [
         LS_KEY, LS_KEY + '_v', 'revealedGods',
         'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
+        POST_TUTORIAL_HINT_LS,
         'intrepid_atlas_reveals', 'intrepid_coord_unlocks',
         'intrepid_atlas_finales'
       ];

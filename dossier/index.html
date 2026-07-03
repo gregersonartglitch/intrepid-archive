@@ -6,7 +6,7 @@
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="preload" as="image" href="character%20dossier_Elena.png" fetchpriority="high">
+<link rel="preload" as="image" href="character%20dossier_Elena.png?v=2" fetchpriority="high">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -151,10 +151,27 @@ body {
   border: 1.5px solid rgba(198,141,85,0.25);
   flex-shrink: 0;
   transition: border-color 0.3s;
+  position: relative;
+  background: rgba(198,141,85,0.06);
 }
 .roster-item.active .ri-avatar,
 .roster-item:hover .ri-avatar { border-color: var(--gold); }
-.ri-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ri-avatar img {
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.ri-avatar img.is-loaded { opacity: 1; }
+.ri-avatar.is-loading::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(198,141,85,0.14), transparent);
+  animation: avatarShimmer 1.1s ease-in-out infinite;
+}
+@keyframes avatarShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
 
 .ri-info { min-width: 0; }
 .ri-name {
@@ -212,7 +229,15 @@ body {
   border: 2px solid rgba(198,141,85,0.35);
   box-shadow: 0 0 50px rgba(120,190,210,0.08), 0 8px 40px rgba(0,0,0,0.5);
 }
-.detail-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.detail-portrait img {
+  width: 100%; height: 100%; object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.detail-portrait img.is-loaded { opacity: 1; }
+.detail-portrait.is-loading {
+  background: rgba(198,141,85,0.06);
+}
 
 .detail-name {
   font-family: var(--font-display);
@@ -306,6 +331,33 @@ body {
 // ═══════════════════════════════════════════
 // CHARACTER DATA
 // ═══════════════════════════════════════════
+var CACHE_V = '2';
+
+function thumbSrc(imgPath) {
+  var name = decodeURIComponent(imgPath).replace(/\.png$/i, '');
+  return 'thumbs/' + name.replace(/ /g, '_') + '.webp?v=' + CACHE_V;
+}
+
+function fullSrc(imgPath) {
+  return imgPath + '?v=' + CACHE_V;
+}
+
+function bindPortraitLoad(img, container) {
+  if (container) container.classList.add('is-loading');
+  function done() {
+    img.classList.add('is-loaded');
+    if (container) container.classList.remove('is-loading');
+  }
+  if (img.complete && img.naturalWidth) {
+    done();
+  } else {
+    img.addEventListener('load', done, { once: true });
+    img.addEventListener('error', function() {
+      if (container) container.classList.remove('is-loading');
+    }, { once: true });
+  }
+}
+
 var CHARACTERS = [
   {
     name: 'Elena',
@@ -398,12 +450,28 @@ function buildRoster() {
     var item = document.createElement('div');
     item.className = 'roster-item' + (i === 0 ? ' active' : '');
     item.setAttribute('data-index', i);
-    item.innerHTML =
-      '<div class="ri-avatar"><img src="' + c.img + '" alt="' + c.name + '" loading="' + (i < 3 ? 'eager' : 'lazy') + '" decoding="async"></div>' +
-      '<div class="ri-info">' +
-        '<div class="ri-name">' + c.name + '</div>' +
-        '<div class="ri-role">' + c.role + '</div>' +
-      '</div>';
+
+    var avatar = document.createElement('div');
+    avatar.className = 'ri-avatar';
+
+    var img = document.createElement('img');
+    img.src = thumbSrc(c.img);
+    img.alt = c.name;
+    img.width = 96;
+    img.height = 96;
+    img.loading = i < 4 ? 'eager' : 'lazy';
+    img.decoding = 'async';
+    bindPortraitLoad(img, avatar);
+    avatar.appendChild(img);
+
+    var info = document.createElement('div');
+    info.className = 'ri-info';
+    info.innerHTML =
+      '<div class="ri-name">' + c.name + '</div>' +
+      '<div class="ri-role">' + c.role + '</div>';
+
+    item.appendChild(avatar);
+    item.appendChild(info);
     item.addEventListener('click', function() { selectCharacter(i); });
     rosterList.appendChild(item);
   });
@@ -424,7 +492,7 @@ function selectCharacter(index) {
   detailInner.style.animation = '';
 
   var html =
-    '<div class="detail-portrait"><img src="' + c.img + '" alt="' + c.name + '" loading="eager" decoding="async" fetchpriority="high"></div>' +
+    '<div class="detail-portrait is-loading"><img src="' + fullSrc(c.img) + '" alt="' + c.name + '" loading="eager" decoding="async" fetchpriority="high"></div>' +
     '<div class="detail-name">' + c.name + '</div>' +
     '<div class="detail-role">' + c.role + '</div>' +
     '<div class="detail-divider"></div>' +
@@ -433,6 +501,10 @@ function selectCharacter(index) {
     html += '<div class="detail-lore">' + c.lore + '</div>';
   }
   detailInner.innerHTML = html;
+
+  var portraitWrap = detailInner.querySelector('.detail-portrait');
+  var portraitImg = portraitWrap && portraitWrap.querySelector('img');
+  if (portraitImg) bindPortraitLoad(portraitImg, portraitWrap);
 
   // Scroll detail to top
   document.getElementById('detail').scrollTop = 0;
@@ -444,7 +516,7 @@ function preloadNearbyPortraits(index) {
     if (!CHARACTERS[i] || CHARACTERS[i]._preloaded) return;
     var img = new Image();
     img.decoding = 'async';
-    img.src = CHARACTERS[i].img;
+    img.src = fullSrc(CHARACTERS[i].img);
     CHARACTERS[i]._preloaded = true;
   });
 }

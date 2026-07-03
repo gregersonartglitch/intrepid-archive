@@ -148,10 +148,32 @@ function invalidateWarmCache() {
   warmedPages.clear();
 }
 
+function canAccessPageIndex(pageIndex) {
+  if (!window.ReaderAccess) return true;
+  var issue = window.ReaderAccess.getIssueForPageIndex(pageIndex);
+  return window.ReaderAccess.isIssueUnlocked(issue);
+}
+
 function handlePageTurn(pageIndex) {
+  if (!canAccessPageIndex(pageIndex)) {
+    var blockedIssue = window.ReaderAccess.getIssueForPageIndex(pageIndex);
+    if (window.ReaderGate) window.ReaderGate.show(blockedIssue);
+    return false;
+  }
   lastPageIndex = pageIndex;
   setPageLabel(pageIndex);
   preloadAround(pageIndex);
+  return true;
+}
+
+function requestPageTurn(targetIndex) {
+  if (!canAccessPageIndex(targetIndex)) {
+    if (window.ReaderGate) {
+      window.ReaderGate.show(window.ReaderAccess.getIssueForPageIndex(targetIndex));
+    }
+    return false;
+  }
+  return true;
 }
 
 function warmFlipTargetFromPointer(event) {
@@ -219,7 +241,10 @@ function createPageFlip() {
   });
 
   pageFlip.on("flip", (event) => {
-    handlePageTurn(event.data);
+    var target = event.data;
+    if (!handlePageTurn(target)) {
+      pageFlip.turnToPage(lastPageIndex);
+    }
   });
 
   pageFlip.loadFromHTML(pageElements);
@@ -244,11 +269,25 @@ if (typeof ResizeObserver !== "undefined") {
 elements.book.addEventListener(
   "pointerdown",
   (event) => {
+    var rect = elements.book.getBoundingClientRect();
+    if (rect.width) {
+      var clickOnRight = event.clientX - rect.left > rect.width / 2;
+      if (clickOnRight && !requestPageTurn(lastPageIndex + 1)) {
+        event.stopImmediatePropagation();
+        return;
+      }
+    }
     warmFlipTargetFromPointer(event);
     triggerPageFlipAudio();
   },
   true,
 );
+
+if (window.ReaderGate) {
+  window.ReaderGate.onUnlocked = function () {
+    pageFlip.flipNext("bottom");
+  };
+}
 
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
@@ -285,6 +324,7 @@ elements.controls.addEventListener("click", (event) => {
     pageFlip.flipPrev("bottom");
   }
   if (action === "next") {
+    if (!requestPageTurn(lastPageIndex + 1)) return;
     warmPageImage(lastPageIndex + 1);
     warmPageImage(lastPageIndex + 2);
     pageFlip.flipNext("bottom");

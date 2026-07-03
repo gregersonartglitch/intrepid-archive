@@ -12,9 +12,12 @@
      that don't have a loc.art field.
      ════════════════════════════════════════════════ */
   var LANDMARK_ART = {
+    'crossing-pool':   'crossing-pool.jpg',
     'tower-nine':      'tower-nine.jpg',
     'sabellas-hut':    'sabellas-hut.jpg',
     'monastery-wind':  'monastery-wind.jpg',
+    'ashal':           'ashal.jpg',
+    'maxim-stone':     'maxim-stone.jpg',
     'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
     'hollowgate':      'landmarks/hollowgate.png',
     'belu':            'landmarks/belu_dragon_head.png'

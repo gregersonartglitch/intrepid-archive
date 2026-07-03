@@ -39,36 +39,27 @@
 <script>
 (function() {
   'use strict';
-  var LS_KEY = 'intrepid_atlas_auth';
-  var LS_TIER_KEY = 'intrepid_atlas_tier';
   var READER_PATH = '/reader/intrepid-dusk-volume-1/';
 
   function showDeployError() {
     document.getElementById('deploy-msg').hidden = false;
   }
 
-  function enterReader() {
-    fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
-      .then(function(res) {
-        if (res.ok) {
-          window.location.replace(READER_PATH);
-          return;
-        }
-        showDeployError();
-      })
-      .catch(showDeployError);
-  }
-
-  if (localStorage.getItem(LS_KEY) !== 'granted' || !localStorage.getItem(LS_TIER_KEY)) {
-    window.location.replace('/?reader=1');
-    return;
-  }
-  enterReader();
+  fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
+    .then(function(res) {
+      if (res.ok) {
+        window.location.replace(READER_PATH);
+        return;
+      }
+      showDeployError();
+    })
+    .catch(showDeployError);
 })();
 </script>
 <noscript>
   <div class="panel">
     <p>JavaScript is required to open the Volume 1 reader.</p>
+    <p><a href="/reader/intrepid-dusk-volume-1/">Open reader directly</a></p>
     <p><a href="/">Return to archive home</a></p>
   </div>
 </noscript>

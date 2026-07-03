@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Hollowlands — Intrepid Dusk Cartographer Archive</title>
-<meta name="description" content="Explore the ancient world of the Hollowlands. An interactive cartographer's archive for Intrepid Dusk Volume 1 patrons.">
+<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 and the character dossier are open; the Cartographer's Atlas is included with the Hollowlands pledge.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,7 +129,17 @@ input { font-family: inherit; }
   margin-top: 22px; color: rgba(191,178,153,0.48);
   font-family: var(--font-ui); font-size: 10px; letter-spacing: 1.7px;
   text-transform: uppercase;
+  line-height: 1.65;
 }
+.landing-badge {
+  display: block;
+  margin-top: 6px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  opacity: 0.72;
+}
+.landing-action.primary .landing-badge { color: rgba(13,13,18,0.65); }
 
 /* ═══════════════════════════════════════════
    PASSWORD GATE
@@ -228,11 +238,16 @@ input { font-family: inherit; }
 .gate-toggle {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
-  color: rgba(191,178,153,0.3); font-size: 15px; border-radius: 50%;
+  padding: 0; border: none; background: transparent;
+  color: rgba(191,178,153,0.35); border-radius: 50%;
   transition: color 0.2s ease, background 0.2s ease; cursor: pointer;
 }
 .gate-toggle:hover { color: var(--amber); background: rgba(198,141,85,0.08); }
 .gate-toggle.showing { color: var(--amber-glow); }
+.gate-toggle svg { display: block; pointer-events: none; }
+.gate-toggle .pw-toggle-icon--hide { display: none; }
+.gate-toggle.showing .pw-toggle-icon--show { display: none; }
+.gate-toggle.showing .pw-toggle-icon--hide { display: block; }
 
 .gate-btn {
   display: inline-block;
@@ -1018,6 +1033,17 @@ body.edit-mode .mk-dot-wrap > * {
   line-height: 0.88;
   white-space: nowrap;
 }
+.mk-story-lbl.lbl-moon-stronghold {
+  white-space: normal;
+  line-height: 0.88;
+  font-size: calc(12px * var(--label-scale));
+  text-align: left;
+}
+.mk-story-lbl.lbl-moon-stronghold .label-line {
+  display: block;
+  line-height: 0.88;
+  white-space: nowrap;
+}
 /* Capital */
 .mk-capital {
   width: 12px; height: 12px; border-radius: 50%;
@@ -1529,15 +1555,18 @@ body.edit-mode .mk-dot-wrap > * {
 /* Ambient audio toggle */
 #ambient-toggle {
   position: fixed; bottom: 92px; right: 130px; z-index: 700;
-  width: 36px; height: 36px;
+  min-width: 36px; height: 36px;
+  padding: 0 10px;
   background: rgba(13,13,18,0.8);
   border: 1px solid rgba(198,141,85,0.15);
   border-radius: 4px; color: var(--bone-dim);
-  font-size: 16px; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
+  transition: border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
 }
 #ambient-toggle:hover { border-color: var(--amber); color: var(--amber); }
+#ambient-toggle.is-off { opacity: 0.45; }
 
 .journey-toast {
   position: fixed; bottom: 24px; left: 24px; z-index: 860;
@@ -2039,14 +2068,14 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle">Choose your path into the world: explore the interactive cartographer's map, read Volume 1, browse the character dossier, or return to the main Intrepid Dusk site.</div>
+    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 and the character dossier are open to all. The Cartographer's Atlas is included with the Hollowlands pledge.</div>
     <div class="landing-actions">
-      <button id="landing-map" class="landing-action primary" type="button">Enter Interactive Map</button>
-      <button id="landing-reader" class="landing-action" type="button">Read Volume 1</button>
-      <a class="landing-action" href="/dossier/">Character Dossier</a>
+      <button id="landing-reader" class="landing-action primary" type="button">Read Issue 1<span class="landing-badge">Free to start</span></button>
+      <a class="landing-action" href="/dossier/">Character Dossier<span class="landing-badge">Open to all</span></a>
+      <button id="landing-map" class="landing-action" type="button">Cartographer's Atlas<span class="landing-badge">Hollowlands pledge · $60+</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
     </div>
-    <div class="landing-note">Patron access may be required</div>
+    <div class="landing-note">Issues 2 &amp; 3 unlock inside the reader for Kickstarter backers</div>
   </div>
 </div>
 
@@ -2056,15 +2085,18 @@ body.edit-mode .mk-dot-wrap > * {
     <span class="gate-corner-tr">◆</span>
     <span class="gate-corner-bl">◆</span>
     <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
-    <div class="gate-eyebrow gate-fade" data-delay="0">INTREPID DUSK — PATRON ARCHIVE</div>
+    <div class="gate-eyebrow gate-fade" data-delay="0">INTREPID DUSK — CARTOGRAPHER'S ATLAS</div>
     <div class="gate-title gate-fade" data-delay="200">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600">This cartographer's archive has been sealed for the Council of Patrons.<br>Your word grants passage.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600">This interactive archive is included with the Hollowlands pledge.<br>Enter your Cartographer access word to begin charting.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="gate-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false">
-      <button type="button" id="gate-eye" class="gate-toggle" title="Show password">&#9673;</button>
+      <button type="button" id="gate-eye" class="gate-toggle" aria-label="Show password">
+        <svg class="pw-toggle-icon pw-toggle-icon--show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="pw-toggle-icon pw-toggle-icon--hide" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
+      </button>
     </div>
-    <button id="gate-btn" class="gate-btn gate-fade" data-delay="1000">Enter the Archive</button>
+    <button id="gate-btn" class="gate-btn gate-fade" data-delay="1000">Chart the Hollowlands</button>
     <div id="gate-err" class="gate-error"></div>
   </div>
 </div>
@@ -2242,7 +2274,7 @@ body.edit-mode .mk-dot-wrap > * {
   </div>
 
   <!-- Ambient Audio Toggle -->
-  <button id="ambient-toggle" title="Toggle ambient music" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">🔊</button>
+  <button id="ambient-toggle" type="button" aria-pressed="true" title="Toggle ambient music" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">Ambient</button>
   <button type="button" id="fog-reset-btn" title="Reset all discoveries">↺ Reset</button>
   <!-- VIP Welcome Cinematic (plays once after gate) -->
   <div id="welcome" class="welcome-overlay">
@@ -2330,10 +2362,10 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 50;
+window.INTREPID_BUILD = 57;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
-<script src="data.js?v=7"></script>
+<script src="data.js?v=11"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
@@ -2347,12 +2379,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     localStorage.removeItem('intrepid_atlas_finales');
     localStorage.removeItem('intrepid_atlas_welcomed');
     localStorage.removeItem('intrepid_atlas_hinted');
+    localStorage.removeItem('intrepid_post_tutorial_hinted');
     localStorage.setItem(vKey, CURRENT_VERSION);
     console.log('[INIT] Full reset (v' + stored + ' → v' + CURRENT_VERSION + ')');
   }
 })();
 </script>
-<script src="fog.js?v=50"></script>
+<script src="fog.js?v=54"></script>
 <script>
 (function() {
   'use strict';
@@ -2360,14 +2393,31 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   /* ═══════════════════════════════════════════
      CONSTANTS & STATE
      ═══════════════════════════════════════════ */
-  // Tier-aware access codes
-  const ACCESS_CODES = {
-    'hollowlands9': { tier: 'A', label: 'Patron' },          // VIP / full access
-    'scribe4':       { tier: 'B', label: 'Backer' }          // Backer access
-  };
+  // Cartographer access — Hollowlands pledge ($60+) only
+  const CARTOGRAPHER_CODE = 'hollowlands9';
+  const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
   const LS_KEY = 'intrepid_atlas_auth';
   const LS_TIER_KEY = 'intrepid_atlas_tier';
   const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
+
+  function hasCartographerAccess() {
+    if (localStorage.getItem(LS_CARTOGRAPHER_KEY) === 'granted') return true;
+    // Migrate legacy Tier A patrons
+    if (localStorage.getItem(LS_KEY) === 'granted' &&
+        localStorage.getItem(LS_TIER_KEY) === 'A') {
+      localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
+      return true;
+    }
+    return false;
+  }
+
+  function grantCartographerAccess(label) {
+    localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
+    localStorage.setItem(LS_KEY, 'granted');
+    localStorage.setItem(LS_TIER_KEY, 'A');
+    if (label) localStorage.setItem('intrepid_atlas_label', label);
+    currentTier = 'A';
+  }
 
   let map, imageBounds, layerGroups = {}, activeMarkerEl = null;
   let mapInitialized = false;
@@ -2383,7 +2433,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const landingMapBtn = document.getElementById('landing-map');
   const landingReaderBtn = document.getElementById('landing-reader');
   const gate     = document.getElementById('gate');
-  var postAuthRedirect = null;
   const gateBtn  = document.getElementById('gate-btn');
   const gatePw   = document.getElementById('gate-pw');
   const gateErr  = document.getElementById('gate-err');
@@ -2401,35 +2450,24 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function hasDirectArchiveIntent() {
     const params = new URLSearchParams(window.location.search);
-    return params.has('key') || params.has('scan') || params.has('edit') || params.has('map') || params.has('reader');
+    return params.has('key') || params.has('scan') || params.has('edit') || params.has('map');
   }
 
   function enterArchiveFlow() {
-    postAuthRedirect = null;
     if (landing) landing.classList.add('hidden');
     checkGate();
   }
 
   function enterReaderFlow() {
-    postAuthRedirect = '/reader/';
-    if (landing) landing.classList.add('hidden');
-    checkGate();
+    window.location.href = '/reader/';
   }
 
   function completeAuth(scanCode) {
-    if (postAuthRedirect) {
-      var dest = postAuthRedirect;
-      postAuthRedirect = null;
-      gate.style.display = 'none';
-      window.location.href = dest;
-      return;
-    }
     gate.style.display = 'none';
     launch(scanCode);
   }
 
   function returnToArchiveHome() {
-    postAuthRedirect = null;
     var app = document.getElementById('app');
     var progress = document.getElementById('progress-container');
     var card = document.getElementById('discovery-card');
@@ -2464,17 +2502,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     const scanCode = params.get('scan');
 
     if (urlKey && urlKey.startsWith('CART-')) {
-      // Cartographer direct link
-      setTier('A', 'Cartographer');
+      grantCartographerAccess('Cartographer');
       gate.style.display = 'none';
       launch(scanCode);
       return;
     }
 
-    // Check localStorage for existing session
-    const storedTier = localStorage.getItem(LS_TIER_KEY);
-    if (storedTier && localStorage.getItem(LS_KEY) === 'granted') {
-      currentTier = storedTier;
+    if (hasCartographerAccess()) {
+      currentTier = 'A';
       completeAuth(scanCode);
       return;
     }
@@ -2483,24 +2518,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     animateGateIn();
   }
 
-  function setTier(tier, label) {
-    currentTier = tier;
-    localStorage.setItem(LS_KEY, 'granted');
-    localStorage.setItem(LS_TIER_KEY, tier);
-    if (label) localStorage.setItem('intrepid_atlas_label', label);
-  }
-
   function submitPassword() {
     const val = gatePw.value.trim().toLowerCase();
-    const access = ACCESS_CODES[val];
 
-    if (access) {
-      setTier(access.tier, access.label);
+    if (val === CARTOGRAPHER_CODE) {
+      grantCartographerAccess('Patron');
       gate.classList.add('hidden');
       const scanCode = new URLSearchParams(window.location.search).get('scan');
       completeAuth(scanCode);
     } else {
-      gateErr.textContent = 'The archive does not recognize that word.';
+      gateErr.textContent = 'That word is not on the Cartographer roster. Check your Hollowlands pledge confirmation.';
       gateErr.classList.add('show');
       const card = gate.querySelector('.gate-card');
       card.classList.remove('shake');
@@ -3615,11 +3642,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       };
       const labelClusterClass = {
         'tower-nine': ' lbl-tower-nine',
-        'maxim-stone': ' lbl-maxim-stone'
+        'maxim-stone': ' lbl-maxim-stone',
+        'moon-stronghold': ' lbl-moon-stronghold'
       };
       // Short directional nudge from dot — only for genuine label collisions
       const labelDirections = {
-        'maxim-stone': 'below-right'
+        'maxim-stone': 'below-right',
+        'moon-stronghold': 'below-right',
+        'sinn': 'below-left'
       };
       const labelHtml = labelSplits[loc.id]
         ? labelSplits[loc.id].map(line => '<span class="label-line">' + line + '</span>').join('')
@@ -3773,9 +3803,12 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      Images in landmarks/ folder for easy swap with pro art.
      ═══════════════════════════════════════════ */
   const LANDMARK_ART = {
+    'crossing-pool':   'crossing-pool.jpg',
     'tower-nine':      'tower-nine.jpg',
     'sabellas-hut':    'sabellas-hut.jpg',
     'monastery-wind':  'monastery-wind.jpg',
+    'ashal':           'ashal.jpg',
+    'maxim-stone':     'maxim-stone.jpg',
     'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
     'hollowgate':      'landmarks/hollowgate.png',
     'belu':            'landmarks/belu_dragon_head.png'
@@ -4421,9 +4454,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   bindJourneyControls();
   if (hasDirectArchiveIntent()) {
     if (landing) landing.style.display = 'none';
-    var initParams = new URLSearchParams(window.location.search);
-    if (initParams.has('reader')) postAuthRedirect = '/reader/';
     checkGate();
+  }
+
+  // Legacy ?reader= links — Issue 1 is open, no gate required
+  var initParams = new URLSearchParams(window.location.search);
+  if (initParams.has('reader')) {
+    window.location.replace('/reader/');
   }
 })();
 </script>

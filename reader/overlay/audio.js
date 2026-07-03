@@ -1,36 +1,56 @@
 (function () {
   var AMBIENT_LS_KEY = "intrepid_ambient_enabled";
+  var SFX_LS_KEY = "intrepid_sfx_enabled";
   var AMBIENT_SRC = "./assets/audio/ambient.mp3";
   var FLIP_SRC = "./assets/page-flip.mp3";
   var AMBIENT_VOLUME = 0.2;
   var AMBIENT_FADE_MS = 2500;
-  var FLIP_VOLUME = 0.55;
+  var FLIP_VOLUME = 0.8;
 
   var ambientAudio = null;
   var flipAudio = null;
   var ambientEnabled = true;
+  var sfxEnabled = true;
   var ambientFadeRAF = null;
 
-  function loadPreference() {
+  function readStoredBoolean(key, fallback) {
     try {
-      var stored = localStorage.getItem(AMBIENT_LS_KEY);
+      var stored = localStorage.getItem(key);
       if (stored === null) {
-        ambientEnabled = true;
-      } else {
-        ambientEnabled = stored === "true";
+        return fallback;
       }
+      return stored === "true";
     } catch (e) {
-      ambientEnabled = true;
+      return fallback;
     }
   }
 
-  function updateToggleButton() {
+  function loadPreferences() {
+    ambientEnabled = readStoredBoolean(AMBIENT_LS_KEY, true);
+    sfxEnabled = readStoredBoolean(SFX_LS_KEY, true);
+  }
+
+  function updateAmbientButton() {
     var btn = document.querySelector('[data-action="ambient"]');
     if (!btn) {
       return;
     }
-    btn.textContent = ambientEnabled ? "\uD83D\uDD0A" : "\uD83D\uDD07";
     btn.setAttribute("aria-pressed", ambientEnabled ? "true" : "false");
+    btn.classList.toggle("is-off", !ambientEnabled);
+  }
+
+  function updateSfxButton() {
+    var btn = document.querySelector('[data-action="sfx"]');
+    if (!btn) {
+      return;
+    }
+    btn.setAttribute("aria-pressed", sfxEnabled ? "true" : "false");
+    btn.classList.toggle("is-off", !sfxEnabled);
+  }
+
+  function updateToggleButtons() {
+    updateAmbientButton();
+    updateSfxButton();
   }
 
   function ensureAmbientAudio() {
@@ -117,7 +137,7 @@
     } catch (e) {
       /* private browsing */
     }
-    updateToggleButton();
+    updateAmbientButton();
     if (ambientEnabled) {
       playAmbient();
     } else {
@@ -125,7 +145,20 @@
     }
   }
 
+  function toggleSfx() {
+    sfxEnabled = !sfxEnabled;
+    try {
+      localStorage.setItem(SFX_LS_KEY, sfxEnabled ? "true" : "false");
+    } catch (e) {
+      /* private browsing */
+    }
+    updateSfxButton();
+  }
+
   function playPageFlip() {
+    if (!sfxEnabled) {
+      return;
+    }
     var audio = ensureFlipAudio();
     audio.currentTime = 0;
     var playPromise = audio.play();
@@ -137,9 +170,13 @@
   }
 
   function bindControls() {
-    var btn = document.querySelector('[data-action="ambient"]');
-    if (btn) {
-      btn.addEventListener("click", toggleAmbient);
+    var ambientBtn = document.querySelector('[data-action="ambient"]');
+    if (ambientBtn) {
+      ambientBtn.addEventListener("click", toggleAmbient);
+    }
+    var sfxBtn = document.querySelector('[data-action="sfx"]');
+    if (sfxBtn) {
+      sfxBtn.addEventListener("click", toggleSfx);
     }
   }
 
@@ -149,8 +186,8 @@
     }
   }
 
-  loadPreference();
-  updateToggleButton();
+  loadPreferences();
+  updateToggleButtons();
   bindControls();
   ensureAmbientAudio();
   ensureFlipAudio();
@@ -161,6 +198,7 @@
   window.ReaderAudio = {
     onPageFlip: playPageFlip,
     toggleAmbient: toggleAmbient,
+    toggleSfx: toggleSfx,
     unlock: unlock,
   };
 })();

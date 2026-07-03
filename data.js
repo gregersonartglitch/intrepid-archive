@@ -80,8 +80,8 @@ window.LOCATIONS = [
     name: 'Kingdom of the Moon Queen',
     sub: 'Western Territories',
     type: 'region',
-    lat: 4460,
-    lng: 1288,
+    lat: 3804,
+    lng: 1222,
     desc: 'The last sovereign territory not claimed by Titan or Empire. The Moon Queen\'s domain exists in a state of perpetual silver dusk, the sky overhead cycling through lunar phases regardless of the true moon\'s position. Records indicate the kingdom appeared approximately forty years ago, carved from wilderness by a woman who spoke with a strange accent and stranger authority.',
     lore: '"She came from nowhere with nothing and built a kingdom that the Titans cannot enter. Ask yourself what manner of woman accomplishes this."',
     journeyStep: null,
@@ -301,8 +301,8 @@ window.LOCATIONS = [
     type: 'sacred',
     lat: 3420,
     lng: 2900,
-    desc: 'The mountain called Denegoth rises from the broken hills northeast of Mish like a clenched fist. The locals say it was here that the last Mish king made his final stand before Atrus Nul dragged him down. Whether that is history or myth depends on who you ask. What is certain is that the mountain has never been fully explored. The passes that wind through its lower slopes are treacherous, and the upper reaches are shrouded in a perpetual haze that the Mish call the Breath. Traders avoid it. Soldiers avoid it. The mountain does not care either way.',
-    lore: '"Denegoth does not sleep. It waits."'
+    desc: 'The mountain called Denegoth rises from the broken hills northeast of Mish like a clenched fist. Imperial histories record without dispute what the Mish still argue in whispers: here, on the heights overlooking the Plains of Yahor, Atrus Nul stood with ten thousand warriors and broke the last army of the Mish warrior-kings. Lugal Esugar — styled a pretender by the chroniclers, a king by those who mourn him — made his final stand on these slopes until the line gave way and he was brought before the Titan on his knees. He begged for his life. Atrus Nul dragged him down anyway. The warrior-kings ended on Denegoth. The passes that wind through its lower slopes remain treacherous, and the upper reaches are shrouded in a perpetual haze the Mish call the Breath. Traders avoid it. Soldiers avoid it. The mountain does not care either way.',
+    lore: '"Denegoth remembers ten thousand warriors on its heights, one king on his knees, and the silence after. The mountain does not sleep. It waits."'
   },
   {
     id: 'belu',
@@ -522,7 +522,8 @@ window.LOCATIONS = [
     desc: 'A still, black pool of water no wider than a room, ringed by stones that bear the scorch marks of repeated transit. This is where Elena surfaced — gasping, disoriented, in a world that was not hers and yet recognized her with the familiarity of a mirror. The Crossing Pool is warm regardless of season, and those who kneel beside it sometimes see a reflection that moves independently of the viewer.',
     lore: '"The pool does not connect two places. It connects two versions of one place that forgot it was whole."',
     journeyStep: 1,
-    volume1: true
+    volume1: true,
+    art: 'crossing-pool.jpg'
   },
   {
     id: 'dawn-spear',
@@ -574,7 +575,8 @@ window.LOCATIONS = [
     desc: 'The settlement at the base of the peak that holds the Monastery of the Wind — the last inhabited place before the climb begins. Ashal is where pilgrims leave behind what they cannot carry up: excess gear, pets, second-guessing. The town has grown entirely around the needs of those passing through it, and its people have a reputation for being extraordinarily helpful without asking a single question about where you are going or why. They have learned that the answers are never the business of the town.',
     lore: '"Leave what you cannot carry. Take only what the Oracle can see through. Ashal asks nothing else of you."',
     journeyStep: null,
-    volume1: true
+    volume1: true,
+    art: 'ashal.jpg'
   },
   {
     id: 'moon-stronghold',
@@ -611,7 +613,8 @@ window.LOCATIONS = [
     desc: 'The monolith that holds the two halves of the world apart. The Maxim Stone is not large — it stands only as tall as a person — but its presence distorts everything around it: light bends, sound delays, and anyone who approaches feels the weight of two realities pressing against each other through a crack no wider than a heartbeat. This is where Elena\'s first journey ended. This is where the prophecy began to prove itself.',
     lore: '"The Stone does not separate the worlds. The Stone is the wound\'s suture. Remove it and the wound reopens. The wound is the size of everything."',
     journeyStep: null,
-    volume1: true
+    volume1: true,
+    art: 'maxim-stone.jpg'
   },
 
   // ─────────────────────────────────────────────────────────────
