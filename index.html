@@ -2362,7 +2362,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 57;
+window.INTREPID_BUILD = 59;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2385,7 +2385,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 })();
 </script>
-<script src="fog.js?v=54"></script>
+<script src="fog.js?v=59"></script>
 <script>
 (function() {
   'use strict';
@@ -2396,25 +2396,15 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   // Cartographer access — Hollowlands pledge ($60+) only
   const CARTOGRAPHER_CODE = 'hollowlands9';
   const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
-  const LS_KEY = 'intrepid_atlas_auth';
-  const LS_TIER_KEY = 'intrepid_atlas_tier';
   const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
 
   function hasCartographerAccess() {
-    if (localStorage.getItem(LS_CARTOGRAPHER_KEY) === 'granted') return true;
-    // Migrate legacy Tier A patrons
-    if (localStorage.getItem(LS_KEY) === 'granted' &&
-        localStorage.getItem(LS_TIER_KEY) === 'A') {
-      localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
-      return true;
-    }
-    return false;
+    // Only hollowlands9 (or CART- private link) may set this key — never scribe4 / reader tier B
+    return localStorage.getItem(LS_CARTOGRAPHER_KEY) === 'granted';
   }
 
   function grantCartographerAccess(label) {
     localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
-    localStorage.setItem(LS_KEY, 'granted');
-    localStorage.setItem(LS_TIER_KEY, 'A');
     if (label) localStorage.setItem('intrepid_atlas_label', label);
     currentTier = 'A';
   }
@@ -2440,6 +2430,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   // Sequential fade-in of gate elements
   function animateGateIn() {
+    gate.classList.remove('hidden');
     gate.style.display = 'flex';
     const els = gate.querySelectorAll('.gate-fade');
     els.forEach(el => {
@@ -2455,6 +2446,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function enterArchiveFlow() {
     if (landing) landing.classList.add('hidden');
+    gateErr.classList.remove('show');
+    gateErr.textContent = '';
+    gatePw.value = '';
     checkGate();
   }
 

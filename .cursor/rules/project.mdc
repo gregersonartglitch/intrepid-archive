@@ -43,5 +43,15 @@ npx http-server . -p 8080 --cors -c-1
 # http://localhost:8080?edit  (drag-to-reposition locations)
 ```
 
+## Agent handoff
+Full onboarding (repos, auth, deploy, reader integrate, don't-break rules): **`AGENT-HANDOFF.md`** at repo root.  
+Cursor skill: `.cursor/skills/intrepid-map/SKILL.md`
+
 ## Build checkpoints
-- **build-50** — Stable Beta baseline; fog Pass 3 region reveal shelved. Tag `build-50`; return with `git checkout build-50`.
+| Tag | Notes |
+|-----|-------|
+| **build-50** | Stable beta baseline; fog Pass 3 region reveal shelved. `git checkout build-50` to return. |
+| **build-57** | Beta go-live |
+| **build-59** | Cartographer gate fix, Sharon reader pages, agent handoff (current) |
+
+Bump `INTREPID_BUILD` in `index.html` and sync `fog.js?v=` on every deploy-worthy change.
