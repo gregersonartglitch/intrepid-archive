@@ -14,6 +14,8 @@
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 5000;     // ms before key starts hinting
+  var CHIME_ESCAPE_MS = 60000;    // after 60s in search mode, boost hints
+  var CHIME_ESCAPE_CLICKS = 20;   // or after N map clicks during search
   var POST_TUTORIAL_HINT_LS = 'intrepid_post_tutorial_hinted';
   var POST_TUTORIAL_HINT_TIMEOUT = 15000;
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
@@ -483,9 +485,12 @@
 
       // During search mode: check for key click first
       if (searchMode) {
+        searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
+        maybeChimeEscapeHint();
+        var clickRadius = searchMode.escapeBoost ? KEY_CLICK_RADIUS * 1.6 : KEY_CLICK_RADIUS;
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
-        if (keyDist < KEY_CLICK_RADIUS) {
+        if (keyDist < clickRadius) {
           e.stopPropagation();
           e.preventDefault();
           completeDiscovery(searchMode.loc);
@@ -572,9 +577,12 @@
       });
       // During search mode: check for key tap first
       if (searchMode) {
+        searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
+        maybeChimeEscapeHint();
+        var touchClickRadius = searchMode.escapeBoost ? (KEY_CLICK_RADIUS + 18) : (KEY_CLICK_RADIUS + 10);
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
-        if (keyDist < KEY_CLICK_RADIUS + 10) { // slightly larger for touch
+        if (keyDist < touchClickRadius) { // slightly larger for touch
           e.preventDefault();
           completeDiscovery(searchMode.loc);
           return;
@@ -957,7 +965,8 @@
   function getNextPathLocation() {
     for (var i = 0; i < journeyPath.length; i++) {
       var stepId = journeyPath[i].locationId;
-      if (!discovered[stepId]) {
+      // Must match updateProgress / isFullyDiscovered — searching phase is not complete
+      if (!isFullyDiscovered(stepId)) {
         // Final Elena beat stays sealed until the map is fully charted
         if (stepId === FINAL_ELENA_STOP && !explorationComplete()) {
           return null;
@@ -1708,6 +1717,7 @@
 
     // ── 4b. Spotlight with divining rod effect ──
     if (searchMode && spotlightPos) {
+      maybeChimeEscapeHint();
       var kpt2 = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
       var distToKey = Math.sqrt(Math.pow(spotlightPos.x - kpt2.x, 2) + Math.pow(spotlightPos.y - kpt2.y, 2));
 
@@ -1771,18 +1781,21 @@
       var kDist = spotlightPos ?
         Math.sqrt(Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2)) : 9999;
       var elapsed = Date.now() - searchMode.startTime;
+      var findRadius = searchMode.escapeBoost ? KEY_FIND_RADIUS * 2.2 : KEY_FIND_RADIUS;
 
       // Always show a faint pulse so key is findable
-      var basePulse = 0.12 + 0.08 * Math.sin(time * 2.5);
+      var basePulse = searchMode.escapeBoost ? 0.22 : 0.12;
+      basePulse += (searchMode.escapeBoost ? 0.14 : 0.08) * Math.sin(time * 2.5);
 
-      // After HINT_DELAY, pulse gets much stronger
+      // After HINT_DELAY, pulse gets much stronger (immediate when escape boost active)
       var hintAlpha = basePulse;
-      if (elapsed > HINT_DELAY) {
-        hintAlpha = Math.min(0.7, basePulse + (elapsed - HINT_DELAY) / 8000) * (0.5 + 0.5 * Math.sin(time * 3));
+      if (searchMode.escapeBoost || elapsed > HINT_DELAY) {
+        var boostElapsed = searchMode.escapeBoost ? elapsed : (elapsed - HINT_DELAY);
+        hintAlpha = Math.min(0.85, basePulse + boostElapsed / 6000) * (0.5 + 0.5 * Math.sin(time * 3));
       }
 
-      var keyVisible = kDist < KEY_FIND_RADIUS;
-      var keyNear = kDist < KEY_FIND_RADIUS * 2;
+      var keyVisible = kDist < findRadius;
+      var keyNear = kDist < findRadius * 2;
       var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.4 : hintAlpha);
       var kSize = keyVisible ? 10 : (keyNear ? 7 : 5);
 
@@ -2358,7 +2371,10 @@
       loc: loc,
       keyLat: loc.lat + Math.sin(angle) * dist,
       keyLng: loc.lng + Math.cos(angle) * dist,
-      startTime: Date.now()
+      startTime: Date.now(),
+      mapClicks: 0,
+      escapeBoost: false,
+      escapeHintShown: false
     };
 
     // Initialize spotlight at the pinhole center so it works immediately
@@ -2367,6 +2383,47 @@
     clearWhisperPanel();
 
     console.log('[FOG] Search mode: find the key for', loc.name);
+  }
+
+  // After prolonged search, widen the key hit area and show explicit guidance
+  function maybeChimeEscapeHint() {
+    if (!searchMode || searchMode.escapeHintShown) return;
+    var elapsed = Date.now() - searchMode.startTime;
+    var clicks = searchMode.mapClicks || 0;
+    if (elapsed < CHIME_ESCAPE_MS && clicks < CHIME_ESCAPE_CLICKS) return;
+
+    searchMode.escapeHintShown = true;
+    searchMode.escapeBoost = true;
+
+    var old = document.getElementById('chime-escape-hint');
+    if (old) old.remove();
+    var toast = document.createElement('div');
+    toast.id = 'chime-escape-hint';
+    toast.style.cssText =
+      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
+      'background:rgba(10,12,16,0.95);border:1px solid rgba(212,168,67,0.45);' +
+      'border-left:4px solid rgba(212,168,67,0.9);border-radius:0 10px 10px 0;' +
+      'padding:16px 20px;width:240px;font-family:Cinzel,serif;color:#efe7d2;' +
+      'opacity:0;transition:opacity 0.5s ease;' +
+      'box-shadow:0 8px 40px rgba(0,0,0,0.7);';
+    toast.innerHTML =
+      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Still searching?</div>' +
+      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. Faster chimes mean you are closer — look for the glowing sigil in the fog.</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+    document.body.appendChild(toast);
+    toast.addEventListener('click', function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    });
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { toast.style.opacity = '1'; });
+    });
+    setTimeout(function() {
+      if (toast.parentNode) {
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.remove(); }, 500);
+      }
+    }, 12000);
   }
 
   function completeDiscovery(loc) {
@@ -3244,7 +3301,7 @@
       'position:fixed;bottom:12px;left:calc(50% + 6px);transform:translateX(0);z-index:800;' +
       'background:rgba(10,12,16,0.90);color:#c68d55;' +
       'border:1px solid rgba(198,141,85,0.55);border-radius:6px;' +
-      'padding:6px 16px;font-size:11px;cursor:pointer;' +
+      'min-height:44px;min-width:44px;padding:10px 16px;font-size:11px;cursor:pointer;' +
       'letter-spacing:2px;text-transform:uppercase;font-family:Cinzel,serif;' +
       'box-shadow:0 2px 12px rgba(0,0,0,0.5);transition:border-color 0.2s,color 0.2s;';
     btn.addEventListener('mouseenter', function() {

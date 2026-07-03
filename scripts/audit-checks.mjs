@@ -10,7 +10,7 @@
  */
 
 const BASE = (process.env.AUDIT_BASE || 'http://localhost:8080').replace(/\/$/, '');
-const EXPECTED_BUILD = parseInt(process.env.EXPECTED_BUILD || '62', 10);
+const EXPECTED_BUILD_ENV = process.env.EXPECTED_BUILD;
 
 /** @type {{ name: string, status: 'pass'|'fail'|'warn', detail: string }[]} */
 const checks = [];
@@ -54,6 +54,10 @@ async function main() {
 
   // ── Build stamp ─────────────────────────────────────────────────────
   const buildMatch = html.match(/window\.INTREPID_BUILD\s*=\s*(\d+)/);
+  const parsedBuild = buildMatch ? parseInt(buildMatch[1], 10) : null;
+  const EXPECTED_BUILD = EXPECTED_BUILD_ENV
+    ? parseInt(EXPECTED_BUILD_ENV, 10)
+    : (parsedBuild != null ? parsedBuild : 62);
   if (!buildMatch) {
     record('intrepid_build_present', 'fail', 'window.INTREPID_BUILD not found in index.html');
   } else {

@@ -15,16 +15,17 @@
   var ISSUE_BOUNDARIES = [
     { issue: "001", startIndex: 0, endIndex: 20 },
     { issue: "002", startIndex: 21, endIndex: 41 },
-    { issue: "003", startIndex: 43, endIndex: 999 },
+    { issue: "003", startIndex: 42, endIndex: 999 },
   ];
 
   var ISSUE_COPY = {
     "002": {
-      eyebrow: "Issue 2 — Backer Preview",
-      title: "Thank you for backing Intrepid Dusk",
+      eyebrow: "You've finished Issue 1",
+      title: "Issue 2 awaits our backers",
       body:
         "Issues 2 and 3 are reserved for our Kickstarter backers. Enter the access word from your backer update to continue reading.",
       cta: "Unlock Issue 2",
+      previewPage: "./assets/pages/page-022.webp",
     },
     "003": {
       eyebrow: "Issue 3 — Backer Preview",
@@ -84,13 +85,16 @@
     overlay.className = "reader-backer-gate";
     overlay.hidden = true;
     overlay.innerHTML =
+      '<div class="reader-backer-gate-preview" id="reader-gate-preview" hidden aria-hidden="true">' +
+      '  <img id="reader-gate-preview-img" class="reader-backer-gate-preview-img" alt="" />' +
+      "</div>" +
       '<div class="reader-backer-gate-card" role="dialog" aria-modal="true" aria-labelledby="reader-gate-title">' +
       '  <p class="reader-backer-gate-eyebrow" id="reader-gate-eyebrow"></p>' +
       '  <h2 class="reader-backer-gate-title" id="reader-gate-title"></h2>' +
       '  <p class="reader-backer-gate-body" id="reader-gate-body"></p>' +
       '  <div class="reader-backer-gate-input-wrap">' +
-      '    <input id="reader-gate-pw" class="reader-backer-gate-input" type="password" placeholder="Enter backer access word" autocomplete="off" spellcheck="false">' +
-      '  </div>' +
+      '    <input id="reader-gate-pw" class="reader-backer-gate-input" type="password" placeholder="Enter backer access word" autocomplete="off" spellcheck="false" aria-label="Backer access word">' +
+      "  </div>" +
       '  <button type="button" id="reader-gate-submit" class="reader-backer-gate-btn"></button>' +
       '  <p id="reader-gate-err" class="reader-backer-gate-error" aria-live="polite"></p>' +
       '  <button type="button" id="reader-gate-close" class="reader-backer-gate-dismiss">Continue reading Issue 1</button>' +
@@ -113,6 +117,8 @@
     pendingIssue = null;
     var err = document.getElementById("reader-gate-err");
     if (err) err.textContent = "";
+    var preview = document.getElementById("reader-gate-preview");
+    if (preview) preview.hidden = true;
   }
 
   function showGate(issueId) {
@@ -124,6 +130,21 @@
     document.getElementById("reader-gate-title").textContent = copy.title;
     document.getElementById("reader-gate-body").textContent = copy.body;
     document.getElementById("reader-gate-submit").textContent = copy.cta;
+
+    var previewWrap = document.getElementById("reader-gate-preview");
+    var previewImg = document.getElementById("reader-gate-preview-img");
+    if (previewWrap && previewImg) {
+      if (copy.previewPage) {
+        previewImg.src = copy.previewPage;
+        previewImg.alt = "Blurred preview of the next page";
+        previewWrap.hidden = false;
+        previewWrap.setAttribute("aria-hidden", "false");
+      } else {
+        previewWrap.hidden = true;
+        previewWrap.setAttribute("aria-hidden", "true");
+        previewImg.removeAttribute("src");
+      }
+    }
 
     var pw = document.getElementById("reader-gate-pw");
     pw.value = "";
