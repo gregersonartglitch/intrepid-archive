@@ -23,7 +23,8 @@ Bump `INTREPID_BUILD` in `index.html` and sync `fog.js?v=N` on every deploy-wort
 |-----|-------|
 | build-50 | Stable baseline; Pass 3 fog reverted |
 | build-57 | Beta go-live |
-| build-59 | Gate fix + Sharon pages (current) |
+| build-59 | Gate fix + Sharon pages |
+| build-62 | Landing grid, CART key, journey counter (current) |
 
 ## Auth (never cross keys)
 
@@ -58,3 +59,24 @@ Cartographer gate: only `intrepid_cartographer_unlocked === 'granted'`. No legac
 ```bash
 npx http-server . -p 8080 --cors -c-1
 ```
+
+## Fable audit
+
+External audit (Fable / Claude Code) uses a dedicated packet — not deploy workflow.
+
+| Resource | Path |
+|----------|------|
+| Audit brief | `AUDIT-BRIEF.md` |
+| Local test steps | `docs/FABLE-LOCAL-TEST.md` |
+| Smoke script | `scripts/audit-checks.mjs` |
+| One-shot runner | `scripts/run-local-audit.ps1` |
+
+```powershell
+# Terminal 1
+npx -y http-server . -p 8080 --cors -c-1
+
+# Terminal 2
+node scripts/audit-checks.mjs
+```
+
+Build 59 focus: cartographer gate must require `hollowlands9` in incognito; `scribe4` must not unlock map. Full auth matrix and 15-minute play script are in `AUDIT-BRIEF.md`.

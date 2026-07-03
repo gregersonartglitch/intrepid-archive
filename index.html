@@ -103,7 +103,8 @@ input { font-family: inherit; }
   display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
 }
 .landing-action {
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
   min-height: 58px; padding: 14px 16px;
   border: 1px solid rgba(198,141,85,0.22);
   border-radius: 4px;
@@ -113,6 +114,11 @@ input { font-family: inherit; }
   letter-spacing: 2px; line-height: 1.35; text-transform: uppercase;
   text-decoration: none;
   transition: transform 0.18s ease, border-color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+.landing-action-title {
+  display: block;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .landing-action:hover {
   transform: translateY(-2px);
@@ -133,10 +139,11 @@ input { font-family: inherit; }
 }
 .landing-badge {
   display: block;
-  margin-top: 6px;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 1.4px;
+  line-height: 1.2;
+  text-transform: none;
   opacity: 0.72;
 }
 .landing-action.primary .landing-badge { color: rgba(13,13,18,0.65); }
@@ -568,7 +575,39 @@ body.debug-hotspots .medallion-hot::after {
 
 /* Locked gods — invisible hit target only (no pulsing seal ring in normal play) */
 
-/* Revealed gods — invisible hit target only (no ambient gold ring; unlock pulse via spawnMedallionPulse) */
+/* Revealed gods — invisible hit target only (no ambient ring in steady state) */
+
+/* Announcement pulse — big glow when guardian/god first awakens (fog.js markMedallionRevealing) */
+.medallion-hot.god-revealing {
+  z-index: 945;
+}
+.medallion-hot.god-revealing::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 360px; height: 360px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: god-hotspot-pulse 1.7s ease-in-out 3;
+}
+.medallion-hot.god-revealing:not([data-god="1"])::after {
+  background: radial-gradient(circle,
+    rgba(255,240,180,0.45) 0%, rgba(212,168,67,0.35) 25%,
+    rgba(198,141,85,0.15) 50%, transparent 70%);
+  box-shadow: 0 0 60px rgba(212,168,67,0.5), 0 0 120px rgba(212,168,67,0.25);
+}
+.medallion-hot.god-revealing[data-god="1"]::after {
+  width: 320px; height: 320px;
+  background: radial-gradient(circle,
+    rgba(200,190,255,0.45) 0%, rgba(120,100,220,0.35) 25%,
+    rgba(90,70,180,0.15) 50%, transparent 70%);
+  box-shadow: 0 0 60px rgba(120,100,220,0.5), 0 0 120px rgba(120,100,220,0.25);
+}
+@keyframes god-hotspot-pulse {
+  0%, 100% { opacity: 0.25; transform: translate(-50%, -50%) scale(0.85); }
+  50%       { opacity: 0.95; transform: translate(-50%, -50%) scale(1.12); }
+}
 
 /* Tooltip */
 .medallion-tip {
@@ -2068,11 +2107,11 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 and the character dossier are open to all. The Cartographer's Atlas is included with the Hollowlands pledge.</div>
+    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for $12.00+ backers. The character dossier is open to all. The Cartographer's Atlas is included with the Hollowlands pledge.</div>
     <div class="landing-actions">
-      <button id="landing-reader" class="landing-action primary" type="button">Read Issue 1<span class="landing-badge">Free to start</span></button>
-      <a class="landing-action" href="/dossier/">Character Dossier<span class="landing-badge">Open to all</span></a>
-      <button id="landing-map" class="landing-action" type="button">Cartographer's Atlas<span class="landing-badge">Hollowlands pledge · $60+</span></button>
+      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge">$12.00+ backers only</span></button>
+      <a class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge">Open to all</span></a>
+      <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">$60.00+ tier backer</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
     </div>
     <div class="landing-note">Issues 2 &amp; 3 unlock inside the reader for Kickstarter backers</div>
@@ -2362,7 +2401,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 59;
+window.INTREPID_BUILD = 62;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2385,7 +2424,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 })();
 </script>
-<script src="fog.js?v=59"></script>
+<script src="fog.js?v=62"></script>
 <script>
 (function() {
   'use strict';
@@ -2397,6 +2436,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const CARTOGRAPHER_CODE = 'hollowlands9';
   const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
   const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
+  // Private Cartographer links: ?key=CART-XXXXXXXX (8–24 uppercase letters/digits after prefix)
+  const CART_LINK_KEY_RE = /^CART-[A-Z0-9]{8,24}$/;
+
+  function isValidCartographerLinkKey(key) {
+    if (!key || typeof key !== 'string') return false;
+    return CART_LINK_KEY_RE.test(key.trim().toUpperCase());
+  }
 
   function hasCartographerAccess() {
     // Only hollowlands9 (or CART- private link) may set this key — never scribe4 / reader tier B
@@ -2495,10 +2541,17 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     const urlKey = params.get('key');
     const scanCode = params.get('scan');
 
-    if (urlKey && urlKey.startsWith('CART-')) {
+    if (urlKey && isValidCartographerLinkKey(urlKey)) {
       grantCartographerAccess('Cartographer');
       gate.style.display = 'none';
       launch(scanCode);
+      return;
+    }
+
+    if (urlKey && urlKey.trim().toUpperCase().startsWith('CART-')) {
+      gateErr.textContent = 'That Cartographer link is incomplete or invalid. Expected format: CART- plus 8–24 letters or digits.';
+      gateErr.classList.add('show');
+      animateGateIn();
       return;
     }
 

@@ -18,6 +18,10 @@
   var POST_TUTORIAL_HINT_TIMEOUT = 15000;
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
   var BREATH_AMP = 0.06;     // how much the edges expand/contract (fraction)
+  // Medallion reveal announcement — much larger than normal site reveal (80 map units)
+  var GUARDIAN_REVEAL_GLOW_MIN = 360;  // px — Tetrad guardians (Utu, Rapha, Mish, Gu)
+  var GOD_REVEAL_GLOW_MIN = 300;       // px — The Eight Apkallu sigils
+  var MEDALLION_REVEAL_MS = 5200;      // how long the announcing pulse runs
   // Proximity whispers — incomplete cartographer's notes at the fog edge
   var WHISPERS = {
     'tower-nine':       'Nine windows. Only three face —',
@@ -970,7 +974,16 @@
 
   function isFullyDiscovered(locId) {
     var d = discovered[locId];
-    return !!d && d.phase !== 'searching';
+    if (!d) return false;
+    if (d.phase === 'searching') return false;
+    // Journey stops (chime search) only count after phase:'complete'
+    if (isOnPath(locId)) {
+      return d.phase === 'complete' || (!d.phase && d.at);
+    }
+    // Other locations: mist reveal or legacy saves without phase
+    if (d.phase === 'mist' || d.phase === 'complete') return true;
+    if (!d.phase) return true;
+    return false;
   }
 
   function isPathComplete() {
@@ -2971,8 +2984,10 @@
         }
       }, 2500);
 
-      // Pulsing attention ring on the medallion icon
+      // Big pulsing announcement on the frame medallion
       spawnMedallionPulse(m);
+      spawnGodRevealVignette(!!m.guardian);
+      markMedallionRevealing(m.name);
     }
 
     // Keep the frame medallion lit once its guardian has awakened.
@@ -2987,50 +3002,129 @@
     } catch(e) {}
   }
 
-  function spawnMedallionPulse(m) {
-    // Inject keyframes once
-    if (!document.getElementById('medallion-pulse-style')) {
-      var style = document.createElement('style');
-      style.id = 'medallion-pulse-style';
-      style.textContent =
-        '@keyframes med-warm-pulse {' +
-        '  0%   { opacity: 0; }' +
-        '  25%  { opacity: 0.6; }' +
-        '  50%  { opacity: 0.1; }' +
-        '  75%  { opacity: 0.6; }' +
-        '  100% { opacity: 0; }' +
-        '}';
-      document.head.appendChild(style);
-    }
+  function getMedallionRevealGlowPx(m) {
+    var base = m.r || 80;
+    if (m.guardian) return Math.max(GUARDIAN_REVEAL_GLOW_MIN, Math.round(base * 2.2));
+    return Math.max(GOD_REVEAL_GLOW_MIN, Math.round(base * 1.9));
+  }
 
-    // Use frame-aware positioning if available (blended frame mode)
-    var px, py;
+  function injectMedallionRevealStyles() {
+    if (document.getElementById('medallion-pulse-style')) return;
+    var style = document.createElement('style');
+    style.id = 'medallion-pulse-style';
+    style.textContent =
+      '@keyframes med-reveal-burst {' +
+      '  0%   { transform: translate(-50%,-50%) scale(0.35); opacity: 0.95; }' +
+      '  35%  { transform: translate(-50%,-50%) scale(1.0);  opacity: 0.75; }' +
+      '  65%  { transform: translate(-50%,-50%) scale(1.2);  opacity: 0.4; }' +
+      '  100% { transform: translate(-50%,-50%) scale(1.55); opacity: 0; }' +
+      '}' +
+      '@keyframes med-reveal-ring {' +
+      '  0%   { transform: translate(-50%,-50%) scale(0.5); opacity: 0.85; }' +
+      '  100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }' +
+      '}' +
+      '@keyframes med-reveal-sustain {' +
+      '  0%, 100% { opacity: 0.2;  transform: translate(-50%,-50%) scale(1); }' +
+      '  50%       { opacity: 0.65; transform: translate(-50%,-50%) scale(1.06); }' +
+      '}';
+    document.head.appendChild(style);
+  }
+
+  function getMedallionScreenPx(m) {
     if (window.getMedallionScreenPos) {
       var pos = window.getMedallionScreenPos(m.cx, m.cy);
-      px = pos.x + 'px';
-      py = pos.y + 'px';
-    } else {
-      px = (m.cx * 100) + 'vw';
-      py = (m.cy * 100) + 'vh';
+      return { x: pos.x + 'px', y: pos.y + 'px' };
     }
-    var glowSize = (m.r || 80) * 1.2 + 'px';
+    return { x: (m.cx * 100) + 'vw', y: (m.cy * 100) + 'vh' };
+  }
+
+  function spawnGodRevealVignette(isGuardian) {
+    var rgb = isGuardian ? '212,168,67' : '120,100,220';
+    var glow = document.createElement('div');
+    glow.className = 'god-reveal-vignette';
+    glow.style.cssText =
+      'position:fixed;inset:0;z-index:938;pointer-events:none;' +
+      'box-shadow:inset 0 0 180px rgba(' + rgb + ',0.55), inset 0 0 90px rgba(' + rgb + ',0.25);' +
+      'opacity:0;transition:opacity 0.6s ease;';
+    document.body.appendChild(glow);
+    requestAnimationFrame(function() {
+      glow.style.opacity = '1';
+      setTimeout(function() {
+        glow.style.transition = 'opacity 2.2s ease';
+        glow.style.opacity = '0';
+        setTimeout(function() { glow.remove(); }, 2300);
+      }, 900);
+    });
+  }
+
+  function markMedallionRevealing(name) {
+    var hot = document.querySelector('.medallion-hot[data-name="' + name + '"]');
+    if (!hot) return;
+    hot.classList.remove('god-locked', 'god-unlocked');
+    hot.classList.add('god-revealing');
+    setTimeout(function() {
+      hot.classList.remove('god-revealing');
+      hot.classList.add('god-unlocked');
+    }, MEDALLION_REVEAL_MS);
+  }
+
+  function spawnMedallionPulse(m) {
+    injectMedallionRevealStyles();
+
+    var screen = getMedallionScreenPx(m);
+    var glowPx = getMedallionRevealGlowPx(m);
+    var isGuardian = !!m.guardian;
 
     // Guardian = gold, The Eight = blue-violet
-    var glowColor = m.guardian
-      ? 'radial-gradient(circle, rgba(212,168,67,0.35) 0%, rgba(198,141,85,0.15) 40%, transparent 70%)'
-      : 'radial-gradient(circle, rgba(120,100,220,0.35) 0%, rgba(90,70,180,0.15) 40%, transparent 70%)';
+    var coreRgb = isGuardian ? '255,240,180' : '180,170,255';
+    var midRgb  = isGuardian ? '212,168,67'  : '120,100,220';
+    var outerRgb = isGuardian ? '198,141,85' : '90,70,180';
+    var ringBorder = isGuardian
+      ? 'rgba(212,168,67,0.75)'
+      : 'rgba(140,120,230,0.75)';
 
-    // Soft glow — no ring, no border, just light
-    var glow = document.createElement('div');
-    glow.style.cssText =
-      'position:fixed;left:' + px + ';top:' + py + ';z-index:939;pointer-events:none;' +
-      'width:' + glowSize + ';height:' + glowSize + ';' +
-      'background:' + glowColor + ';' +
-      'border-radius:50%;transform:translate(-50%,-50%);' +
-      'animation: med-warm-pulse 1.6s ease-in-out forwards;';
-    document.body.appendChild(glow);
+    var burstGrad =
+      'radial-gradient(circle, rgba(' + coreRgb + ',0.55) 0%, ' +
+      'rgba(' + midRgb + ',0.38) 28%, rgba(' + outerRgb + ',0.18) 55%, transparent 72%)';
 
-    setTimeout(function() { glow.remove(); }, 2000);
+    // Sustained pulsing core — 3 beats over ~5s
+    var sustain = document.createElement('div');
+    sustain.style.cssText =
+      'position:fixed;left:' + screen.x + ';top:' + screen.y + ';z-index:939;pointer-events:none;' +
+      'width:' + glowPx + 'px;height:' + glowPx + 'px;' +
+      'background:' + burstGrad + ';border-radius:50%;' +
+      'transform:translate(-50%,-50%);' +
+      'animation: med-reveal-sustain 1.7s ease-in-out 3 forwards;';
+    document.body.appendChild(sustain);
+
+    // Main expanding burst
+    var burst = document.createElement('div');
+    burst.style.cssText =
+      'position:fixed;left:' + screen.x + ';top:' + screen.y + ';z-index:940;pointer-events:none;' +
+      'width:' + glowPx + 'px;height:' + glowPx + 'px;' +
+      'background:' + burstGrad + ';border-radius:50%;' +
+      'transform:translate(-50%,-50%);' +
+      'animation: med-reveal-burst 1.4s ease-out forwards;';
+    document.body.appendChild(burst);
+
+    // Two staggered shockwave rings
+    [0, 280].forEach(function(delay) {
+      setTimeout(function() {
+        var ring = document.createElement('div');
+        var ringSize = Math.round(glowPx * 0.55);
+        ring.style.cssText =
+          'position:fixed;left:' + screen.x + ';top:' + screen.y + ';z-index:941;pointer-events:none;' +
+          'width:' + ringSize + 'px;height:' + ringSize + 'px;' +
+          'border:3px solid ' + ringBorder + ';border-radius:50%;' +
+          'box-shadow:0 0 24px ' + ringBorder + ', inset 0 0 16px ' + ringBorder + ';' +
+          'transform:translate(-50%,-50%);' +
+          'animation: med-reveal-ring 1.6s ease-out forwards;';
+        document.body.appendChild(ring);
+        setTimeout(function() { ring.remove(); }, 1700);
+      }, delay);
+    });
+
+    setTimeout(function() { burst.remove(); sustain.remove(); }, MEDALLION_REVEAL_MS);
   }
 
   function initTetradCircles() {
