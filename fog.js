@@ -313,8 +313,8 @@
     fogTexture.onerror = function() { textureReady = false; draw(); };
     fogTexture.src = 'fog_texture.png';
 
-    // Remove any stale fog canvas (e.g. from older builds that used fogPane)
-    var staleFog = map.getContainer().querySelectorAll('.fog-canvas');
+    // Remove any stale fog canvas (e.g. from older builds that used fogPane or beacon split)
+    var staleFog = map.getContainer().querySelectorAll('.fog-canvas, .beacon-canvas');
     for (var si = 0; si < staleFog.length; si++) staleFog[si].remove();
 
     // Create fog canvas on the map container (must not live in a 0×0 Leaflet pane)
@@ -2984,8 +2984,23 @@
      GOD REVEALS — driven by MEDALLION_DEFS array
      ════════════════════════════════════════════════ */
 
+  // Legacy spellings saved in revealedGods before build 66
+  var MEDALLION_LEGACY_NAMES = { 'Irra': 'Erra', 'irra': 'Erra' };
+  function resolveMedallionName(name) {
+    return MEDALLION_LEGACY_NAMES[name] || name;
+  }
+
+  function migrateRevealedGods(saved) {
+    var migrated = {};
+    Object.keys(saved || {}).forEach(function(name) {
+      if (!saved[name]) return;
+      migrated[resolveMedallionName(name)] = true;
+    });
+    return migrated;
+  }
+
   // Restore revealed gods immediately to prevent re-reveal race condition
-  var revealedGods = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+  var revealedGods = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
   var suppressAnimations = true; // suppress toasts/pulses during initial load restoration
 
   function checkGodReveals(count) {
@@ -3053,7 +3068,7 @@
 
     // Save to localStorage
     try {
-      var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+      var saved = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
       saved[m.name] = true;
       localStorage.setItem('revealedGods', JSON.stringify(saved));
     } catch(e) {}
@@ -3189,13 +3204,14 @@
     var currentCount = Object.keys(discovered).length;
     var defs = window.MEDALLION_DEFS || [];
     try {
-      var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+      var saved = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
       Object.keys(saved).forEach(function(name) {
+        var canon = resolveMedallionName(name);
         // Find the medallion def to check threshold
-        var def = defs.find(function(m) { return m.name === name; });
+        var def = defs.find(function(m) { return m.name === canon; });
         if (def && def.unlock && currentCount >= def.unlock) {
-          revealedGods[name] = true;
-          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+          revealedGods[canon] = true;
+          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(canon);
         }
       });
     } catch(e) {}

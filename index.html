@@ -1709,6 +1709,47 @@ body.edit-mode .mk-dot-wrap > * {
   z-index: 680 !important;
   pointer-events: none !important;
 }
+
+/* Tower cluster dots — above beacon glow, below labels */
+.leaflet-pane.leaflet-tower-dot-pane {
+  z-index: 735 !important;
+  pointer-events: none !important;
+}
+
+/* Tower cluster labels — top of map effects stack (above fog/storm/clouds/beacons) */
+.leaflet-pane.leaflet-tower-label-pane {
+  z-index: 750 !important;
+  pointer-events: none !important;
+}
+.leaflet-pane.leaflet-tower-label-pane .leaflet-marker-icon.map-label-icon {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+.leaflet-pane.leaflet-tower-label-pane .leaflet-marker-icon.map-label-icon:not(.leaflet-interactive) {
+  pointer-events: none !important;
+  cursor: default;
+}
+.leaflet-pane.leaflet-tower-label-pane .leaflet-marker-icon.map-label-icon.fog-hidden {
+  pointer-events: none !important;
+  cursor: default;
+}
+.leaflet-pane.leaflet-tower-dot-pane .leaflet-marker-icon.fog-peek,
+.leaflet-pane.leaflet-tower-dot-pane .leaflet-marker-icon.fog-revealed,
+.leaflet-pane.leaflet-tower-label-pane .leaflet-marker-icon.fog-peek,
+.leaflet-pane.leaflet-tower-label-pane .leaflet-marker-icon.fog-revealed {
+  opacity: 1 !important;
+}
+.leaflet-pane.leaflet-tower-label-pane .mk-story-lbl {
+  -webkit-text-stroke: 0.4px rgba(0, 0, 0, 0.85);
+  paint-order: stroke fill;
+  text-shadow:
+    0 0 1px rgba(0, 0, 0, 1),
+    0 1px 2px rgba(0, 0, 0, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 0 14px rgba(0, 0, 0, 1),
+    0 0 28px rgba(0, 0, 0, 0.95),
+    0 0 48px rgba(0, 0, 0, 0.7);
+}
 .leaflet-pane.leaflet-label-pane .leaflet-marker-icon.map-label-icon {
   pointer-events: auto !important;
   cursor: pointer;
@@ -2407,7 +2448,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 62;
+window.INTREPID_BUILD = 76;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2430,7 +2471,49 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 })();
 </script>
-<script src="fog.js?v=62"></script>
+<script src="tower-storm.js?v=69"></script>
+<script>
+/* ── FPS meter — ?perf only, zero cost otherwise ─────────────────────────
+   Usage: append &perf (or ?perf) to any URL, e.g. /?map&perf
+   Shows: current FPS / 5s average / 5s worst frame (ms).
+   Main-thread RAF cadence — reflects total paint cost incl. fog draw().   */
+(function () {
+  if (!new URLSearchParams(location.search).has('perf')) return;
+  var el = document.createElement('div');
+  el.id = 'perf-meter';
+  el.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;' +
+    'background:rgba(0,0,0,0.75);color:#7fdc7f;font:12px/1.5 monospace;' +
+    'padding:6px 10px;border-radius:6px;pointer-events:none;white-space:pre';
+  document.body.appendChild(el);
+  var frames = [];       // timestamps of recent frames
+  var worst = 0;         // worst frame gap in current window
+  var last = performance.now();
+  function tick(now) {
+    var gap = now - last;
+    last = now;
+    frames.push(now);
+    if (gap > worst) worst = gap;
+    // keep 5s window
+    while (frames.length && frames[0] < now - 5000) frames.shift();
+    // update readout ~4×/s
+    if (!tick._next || now > tick._next) {
+      tick._next = now + 250;
+      var avg = frames.length > 1
+        ? 1000 / ((frames[frames.length - 1] - frames[0]) / (frames.length - 1)) : 0;
+      var cur = gap > 0 ? 1000 / gap : 0;
+      el.textContent =
+        'FPS ' + cur.toFixed(0).padStart(3) +
+        ' | avg ' + avg.toFixed(1) +
+        ' | worst ' + worst.toFixed(0) + 'ms';
+      el.style.color = avg >= 50 ? '#7fdc7f' : avg >= 30 ? '#e8c765' : '#e87965';
+      worst = 0;
+    }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+</script>
+<script src="fog.js?v=76"></script>
 <script>
 (function() {
   'use strict';
@@ -2525,7 +2608,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (app) app.classList.remove('show');
     document.body.classList.remove('map-session');
 
-    if (card) card.classList.remove('visible');
+    if (window.hideMedallionCard) window.hideMedallionCard();
+    else if (card) card.classList.remove('visible');
     if (journeyToast) journeyToast.classList.remove('visible');
     if (progress) progress.style.display = '';
 
@@ -2680,44 +2764,51 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       // cx/cy = fraction of frame image (2400×1792) — window-size-independent
       var MEDALLIONS = [
         // ── Cardinals ──────────────────────────────────────────────────────
-        { name: 'Utu',           cx: 0.4906, cy: 0.1852, r: 188, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png',
+        // Positions image-calibrated against frame_original_02.png (build 66)
+        { name: 'Utu',           cx: 0.4820, cy: 0.2100, r: 188, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png',
           role: 'Bull of Heaven · Tetrad North',
           lore: 'Guardian of the North and the turning seasons. UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Rapha',         cx: 0.7320, cy: 0.4384, r: 184, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png',
+        { name: 'Rapha',         cx: 0.7220, cy: 0.4150, r: 184, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png',
           role: 'Lion of Justice · Tetrad East',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Mish',          cx: 0.4802, cy: 0.7410, r: 216, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png', artPosition: 'center 54%',
+        { name: 'Mish',          cx: 0.4720, cy: 0.7220, r: 216, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png', artPosition: 'center 54%',
           role: 'The Defender · Tetrad South',
           lore: 'Guardian of the South and the far horizon. The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Gu',            cx: 0.2410, cy: 0.4421, r: 224, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png',
+        { name: 'Gu',            cx: 0.3000, cy: 0.4220, r: 224, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png',
           role: 'Water Bearer · Tetrad West',
           lore: 'Guardian of the West, Sky, and Dusk. Before the gods shaped the world, Water was already moving. GU stands over all the powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
-        { name: 'Sham & Mash',  cx: 0.7248, cy: 0.1919, r: 136, unlock: 10, spriteFile: 'assets/medallions/twins.png',
+        { name: 'Sham & Mash',  cx: 0.7040, cy: 0.1670, r: 136, unlock: 10, spriteFile: 'assets/medallions/twins.png',
           role: 'The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Elil',          cx: 0.7959, cy: 0.3417, r: 144, unlock: 14, spriteFile: 'assets/medallions/crab.png',
+        { name: 'Elil',          cx: 0.8210, cy: 0.3190, r: 144, unlock: 14, spriteFile: 'assets/medallions/crab.png',
           role: 'The Shapeshifter',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Ningal',        cx: 0.8053, cy: 0.5823, r: 140, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
+        { name: 'Ningal',        cx: 0.7820, cy: 0.5730, r: 140, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
           role: 'Queen of the Underworld',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'An',            cx: 0.7144, cy: 0.7912, r: 176, unlock: 22, spriteFile: 'assets/medallions/fate.png',
+        { name: 'An',            cx: 0.7130, cy: 0.7840, r: 176, unlock: 22, spriteFile: 'assets/medallions/fate.png',
           role: 'Lord of Flight',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Belu',          cx: 0.1776, cy: 0.5897, r: 128, unlock: 26, spriteFile: 'assets/medallions/goatfish.png', artPosition: '42% 52%',
-          role: 'God of Storm',
-          lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Nin',           cx: 0.2597, cy: 0.7816, r: 164, unlock: 30, spriteFile: 'assets/medallions/scorpion.png', artPosition: '100% 62%',
+        { name: 'Nin',           cx: 0.2630, cy: 0.7850, r: 164, unlock: 26, spriteFile: 'assets/medallions/scorpion.png', artPosition: '100% 62%',
           role: 'God of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Ae',            cx: 0.1782, cy: 0.3491, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png', artPosition: '100% 54%',
+        { name: 'Belu',          cx: 0.2010, cy: 0.5790, r: 128, unlock: 30, spriteFile: 'assets/medallions/goatfish.png', artPosition: '42% 52%',
+          role: 'God of Storm',
+          lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
+        { name: 'Ae',            cx: 0.2790, cy: 0.4150, r: 128, unlock: 34, spriteFile: 'assets/medallions/fish.png', artPosition: '100% 54%',
           role: 'Lord of the Divine River',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Irra',          cx: 0.1350, cy: 0.1780, r: 170, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png', artPosition: '24% 54%',
+        { name: 'Erra',          cx: 0.2810, cy: 0.1590, r: 170, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png', artPosition: '24% 54%',
           role: 'God of War',
-          lore: 'War is not his purpose — it is his nature. IRRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
+          lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
+
+      // Legacy localStorage keys from older builds (Irra spelling)
+      var MEDALLION_LEGACY_NAMES = { 'Irra': 'Erra', 'irra': 'Erra' };
+      function resolveMedallionName(name) {
+        return MEDALLION_LEGACY_NAMES[name] || name;
+      }
 
       window._permanentGlows = window._permanentGlows || {};
 
@@ -2754,6 +2845,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       // Card show/hide helpers
       var card = document.getElementById('discovery-card');
       var activeCard = null;
+      var syncingMedallionHotspots = false;
+      window._syncingMedallionHotspots = false;
 
       function applyMedallionArt(artEl, m, isRevealed) {
         if (!artEl || !m.spriteFile) return;
@@ -2770,7 +2863,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       }
 
       function showProximityCard(m) {
-        if (!card || activeCard === m.name) return;
+        if (!card) return;
+        // Skip only when this medallion is already showing — stale activeCard after
+        // external dismiss (map click, panel open) must not block re-hover.
+        if (activeCard === m.name && card.classList.contains('visible')) return;
         // Medallion cards take priority — overwrite any existing location/region card
         activeCard = m.name;
 
@@ -2811,8 +2907,21 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       }
       function hideProximityCard() {
         if (!card || !activeCard) return;
+        if (syncingMedallionHotspots) return;
         activeCard = null;
         card.classList.remove('visible');
+      }
+
+      function refreshMedallionHoverState() {
+        if (window._lastPointerX == null || window._lastPointerY == null) return;
+        var over = document.elementFromPoint(window._lastPointerX, window._lastPointerY);
+        if (!over || !over.closest) return;
+        var hot = over.closest('.medallion-hot');
+        if (!hot) return;
+        var name = hot.dataset.name;
+        var m = MEDALLIONS.find(function(d) { return d.name === name; });
+        if (m) showProximityCard(m);
+        if (window._refreshMedallionTip) window._refreshMedallionTip(hot);
       }
 
       // Invisible hotspot circles — reliable hover/click targets on frame art
@@ -2820,14 +2929,22 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       var hotspotWired = false;
 
       function isMedallionRevealed(name) {
-        if (window.FogSystem && window.FogSystem._revealedGods && window.FogSystem._revealedGods[name]) return true;
-        try { return !!JSON.parse(localStorage.getItem('revealedGods') || '{}')[name]; } catch (e) { return false; }
+        var canonical = resolveMedallionName(name);
+        if (window.FogSystem && window.FogSystem._revealedGods) {
+          if (window.FogSystem._revealedGods[canonical] || window.FogSystem._revealedGods[name]) return true;
+        }
+        try {
+          var saved = JSON.parse(localStorage.getItem('revealedGods') || '{}');
+          return !!(saved[canonical] || saved[name]);
+        } catch (e) { return false; }
       }
 
       function syncMedallionHotspots() {
         if (!hotspotContainer) return;
         var fr = window._frameRect;
         if (!fr) return;
+        syncingMedallionHotspots = true;
+        window._syncingMedallionHotspots = true;
         var radiusScale = fr.w / 2400;
 
         MEDALLIONS.forEach(function(m) {
@@ -2866,6 +2983,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           hotspotWired = true;
           initMedallionTooltips();
         }
+
+        syncingMedallionHotspots = false;
+        window._syncingMedallionHotspots = false;
+        refreshMedallionHoverState();
       }
 
       var lastMx = '-500px', lastMy = '-500px';
@@ -2886,6 +3007,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       document.addEventListener('mousemove', function(e) {
         torchClientX = e.clientX;
         torchClientY = e.clientY;
+        window._lastPointerX = e.clientX;
+        window._lastPointerY = e.clientY;
         if (torchMaskPending) return;
         torchMaskPending = true;
         requestAnimationFrame(applyTorchMask);
@@ -2899,7 +3022,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
       // Expose for fog.js permanent unlocks
       window.addPermanentMedallionGlow = function(name) {
-        window._permanentGlows[name] = true;
+        var canonical = resolveMedallionName(name);
+        window._permanentGlows[canonical] = true;
         var mask = buildMask(lastMx, lastMy);
         overlay.style.maskImage = mask;
         overlay.style.webkitMaskImage = mask;
@@ -3609,6 +3733,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       map.createPane('labelPane');
       map.getPane('labelPane').classList.add('leaflet-label-pane');
     }
+    if (!map.getPane('towerDotPane')) {
+      map.createPane('towerDotPane');
+      map.getPane('towerDotPane').classList.add('leaflet-tower-dot-pane');
+    }
+    if (!map.getPane('towerLabelPane')) {
+      map.createPane('towerLabelPane');
+      map.getPane('towerLabelPane').classList.add('leaflet-tower-label-pane');
+    }
 
     const locs = window.LOCATIONS || [];
 
@@ -3664,7 +3796,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           // Fog mode: discovery uses fog.js proximity resolver (closest glow).
           // Interactive dots in dense clusters steal clicks via z-order.
           interactive: EDIT_MODE,
-          draggable: EDIT_MODE
+          draggable: EDIT_MODE,
+          // 'markerPane' is Leaflet's default — an explicit `undefined` here
+          // overrides the default and crashes _initIcon (fog P0, build 76)
+          pane: (loc.id === 'tower-nine' || loc.id === 'maxim-stone') ? 'towerDotPane' : 'markerPane'
         });
         marker.locationData = loc;
 
@@ -3723,7 +3858,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         iconSize: [1, 1],
         iconAnchor: [0, 0]
       });
-      const lbl = L.marker(pos, { icon: lblIcon, interactive: EDIT_MODE, pane: 'labelPane' });
+      const lbl = L.marker(pos, {
+        icon: lblIcon,
+        interactive: EDIT_MODE,
+        pane: (loc.id === 'tower-nine' || loc.id === 'maxim-stone') ? 'towerLabelPane' : 'labelPane'
+      });
       const lblGroup = (t === 'water') ? layerGroups['regions'] : group;
       if (lblGroup) lbl.addTo(lblGroup);
       if (window.FogSystem) window.FogSystem.registerMarker(loc.id, 'label', lbl);
@@ -3979,8 +4118,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function openPanel(loc, marker) {
     // Close discovery card if a medallion/sigil left it open
-    var card = document.getElementById('discovery-card');
-    if (card) card.classList.remove('visible');
+    if (window.hideMedallionCard) window.hideMedallionCard();
+    else {
+      var card = document.getElementById('discovery-card');
+      if (card) card.classList.remove('visible');
+    }
 
     // Clear previous active
     if (activePanelLocId) setMarkerHighlight(activePanelLocId, false);
@@ -4259,9 +4401,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
 
     function hideTip() {
+      if (window._syncingMedallionHotspots) return;
       tip.classList.remove('visible');
       activeHot = null;
     }
+
+    window._refreshMedallionTip = function(hot) {
+      if (hot) showTip(hot);
+    };
 
     hotspots.forEach(function(hot) {
       if (hot.dataset.tipBound) return;
