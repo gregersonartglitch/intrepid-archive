@@ -370,6 +370,7 @@
     var mouseDownX = 0, mouseDownY = 0;
     // UI chrome — bail before audio init or proximity scans (capture phase runs first)
     var FOG_UI_SKIP = '#layers, #panel, #discovery-card, #progress-container, .leaflet-control-zoom, ' +
+      '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
@@ -3045,16 +3046,12 @@
         osc2.stop(audioCtx.currentTime + 2.5);
       }
 
-      // Show celebration toast
-      var typeLabel = m.guardian ? 'GUARDIAN AWAKENED' : 'THE FRAME STIRS';
-      showGodRevealToast(m.name, m.role, typeLabel, !!m.guardian);
-
-      // Auto-open the medallion card after the toast has been visible
+      // Open medallion discovery card (brief delay so pulse starts first)
       setTimeout(function() {
         if (window.showMedallionCard) {
           window.showMedallionCard(m);
         }
-      }, 2500);
+      }, 600);
 
       // Big pulsing announcement on the frame medallion
       spawnMedallionPulse(m);
@@ -3221,59 +3218,6 @@
     checkGodReveals(currentCount);
     suppressAnimations = prevSuppress;
     if (window.syncMedallionHotspots) window.syncMedallionHotspots();
-  }
-
-  function showGodRevealToast(name, role, typeLabel, isGuardian) {
-    var old = document.getElementById('god-toast');
-    if (old) old.remove();
-
-    // Guardian = gold, The Eight = blue-violet
-    var accentR = isGuardian ? '212,168,67' : '120,100,220';
-    var accentHex = isGuardian ? '#d4a843' : '#7864dc';
-    var accentDim = isGuardian ? '#c68d55' : '#9080cc';
-    var subtleHex = isGuardian ? '#8a7d6b' : '#7a7599';
-
-    // Screen-edge glow
-    var glow = document.createElement('div');
-    glow.id = 'god-toast-glow';
-    glow.style.cssText =
-      'position:fixed;inset:0;z-index:949;pointer-events:none;' +
-      'box-shadow:inset 0 0 120px rgba(' + accentR + ',0.4), inset 0 0 60px rgba(' + accentR + ',0.2);' +
-      'opacity:0;transition:opacity 1.5s ease;';
-    document.body.appendChild(glow);
-
-    var toast = document.createElement('div');
-    toast.id = 'god-toast';
-    toast.style.cssText =
-      'position:fixed;top:50%;left:28px;max-width:min(320px, 42vw);transform:translateY(-50%) scale(0.9);z-index:950;' +
-      'background:radial-gradient(ellipse at center, rgba(15,12,8,0.97), rgba(10,12,16,0.95));' +
-      'border:1px solid rgba(' + accentR + ',0.5);' +
-      'border-radius:12px;padding:24px 32px;text-align:center;cursor:pointer;' +
-      'opacity:0;transition:opacity 1.2s ease, transform 1.2s ease;' +
-      'box-shadow:0 0 60px rgba(' + accentR + ',0.15), 0 0 20px rgba(0,0,0,0.8);';
-    toast.innerHTML =
-      '<div style="font-family:Cinzel,serif;font-size:10px;color:' + accentDim + ';text-transform:uppercase;letter-spacing:4px;margin-bottom:10px;opacity:0.8;">' + (typeLabel || 'THE FRAME STIRS') + '</div>' +
-      '<div style="font-family:Cinzel,serif;font-size:28px;color:' + accentHex + ';letter-spacing:3px;text-shadow:0 0 20px rgba(' + accentR + ',0.4);">' + name + '</div>' +
-      (role ? '<div style="font-family:EB Garamond,serif;font-size:14px;color:#bfb299;font-style:italic;margin-top:8px;letter-spacing:1px;">' + role + '</div>' : '') +
-      '<div style="font-family:EB Garamond,serif;font-size:12px;color:' + subtleHex + ';margin-top:14px;letter-spacing:2px;text-transform:uppercase;">has awakened</div>' +
-      '<div style="font-family:EB Garamond,serif;font-size:10px;color:' + subtleHex + ';margin-top:18px;opacity:0.5;font-style:italic;">tap to continue</div>';
-    document.body.appendChild(toast);
-
-    function dismissGodToast() {
-      glow.style.opacity = '0';
-      toast.style.opacity = '0';
-      toast.style.transform = 'translateY(-50%) scale(1.05)';
-      setTimeout(function() { toast.remove(); glow.remove(); }, 1500);
-    }
-
-    toast.addEventListener('click', dismissGodToast);
-
-    requestAnimationFrame(function() {
-      glow.style.opacity = '1';
-      toast.style.opacity = '1';
-      toast.style.transform = 'translateY(-50%) scale(1)';
-      setTimeout(dismissGodToast, 5000); // auto-dismiss after 5s
-    });
   }
 
   /* ════════════════════════════════════════════════
