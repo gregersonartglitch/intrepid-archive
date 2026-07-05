@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Hollowlands — Intrepid Dusk Cartographer Archive</title>
-<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 and the character dossier are open; the Cartographer's Atlas is reserved for Cartographer tier and above.">
+<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 is for Wanderer tier and above; the character dossier is open to all; the Cartographer's Atlas is reserved for Cartographer tier and above.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -950,49 +950,6 @@ body:not(.map-session) #fog-guide-btn {
 }
 
 /* ═══════════════════════════════════════════
-   PROXIMITY WHISPER PANEL (fixed left, no cursor follow)
-   ═══════════════════════════════════════════ */
-#whisper-panel {
-  position: fixed; top: 280px; left: 82px; z-index: 700;
-  width: 166px;
-  background: rgba(13,13,18,0.88);
-  border: 1px solid var(--amber-dim);
-  border-left: 3px solid rgba(198,141,85,0.5);
-  border-radius: 0 4px 4px 0;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  padding: 12px 14px 10px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.45s ease, visibility 0.45s ease;
-}
-#whisper-panel.visible {
-  visibility: visible;
-  opacity: 1;
-  animation: whisper-breathe 4s ease-in-out infinite;
-}
-@keyframes whisper-breathe {
-  0%, 100% { opacity: 0.88; }
-  50% { opacity: 1; }
-}
-.whisper-hdr {
-  font-family: var(--font-ui); font-size: 9px; font-weight: 700;
-  color: var(--amber); letter-spacing: 3px;
-  margin-bottom: 6px; padding-bottom: 6px;
-  border-bottom: 1px solid rgba(198,141,85,0.12);
-}
-.whisper-loc {
-  font-family: var(--font-ui); font-size: 10px; font-weight: 600;
-  color: var(--bone-dim); letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-.whisper-text {
-  font-family: var(--font-body); font-size: 13px; font-style: italic;
-  color: rgba(210, 200, 175, 0.92); line-height: 1.55;
-}
-
-/* ═══════════════════════════════════════════
    ZOOM CONTROLS
    ═══════════════════════════════════════════ */
 #zctl {
@@ -1527,10 +1484,6 @@ body.edit-mode .mk-dot-wrap > * {
   #layers { top: 48px; right: 48px; left: auto; width: 140px; padding: 10px 12px 8px; }
   .layers-hdr { font-size: 8px; }
   .layer-lbl { font-size: 9px; }
-  #whisper-panel { top: 210px; left: 48px; width: 140px; padding: 10px 12px 8px; }
-  .whisper-hdr { font-size: 8px; }
-  .whisper-text { font-size: 12px; }
-
   #zctl { bottom: 52px; right: 48px; }
   #fog-reset-btn { bottom: 10px; right: 48px; }
   #zlvl { bottom: 48px; left: 48px; font-size: 8px; }
@@ -2166,9 +2119,9 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for $12.00+ backers. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
+    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
     <div class="landing-actions">
-      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge">$12.00+ backers only</span></button>
+      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge">Wanderer tier and above</span></button>
       <a class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge">Open to all</span></a>
       <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
@@ -2350,13 +2303,6 @@ body.edit-mode .mk-dot-wrap > * {
     <div id="layers-list"></div>
   </div>
 
-  <!-- Proximity whisper (fixed left; content driven by fog.js) -->
-  <div id="whisper-panel" aria-live="polite">
-    <div class="whisper-hdr">WHISPER</div>
-    <div class="whisper-loc" id="whisper-loc"></div>
-    <div class="whisper-text" id="whisper-text"></div>
-  </div>
-
   <!-- Zoom Controls -->
   <div id="zctl">
     <button class="zctl-btn" id="z-in" title="Zoom in">+</button>
@@ -2464,7 +2410,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 90;
+window.INTREPID_BUILD = 94;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2482,8 +2428,19 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     localStorage.removeItem('intrepid_atlas_welcomed');
     localStorage.removeItem('intrepid_atlas_hinted');
     localStorage.removeItem('intrepid_post_tutorial_hinted');
+    localStorage.removeItem('intrepid_cartographer_unlocked');
+    localStorage.removeItem('intrepid_atlas_label');
+    localStorage.removeItem('intrepid_atlas_auth');
+    localStorage.removeItem('intrepid_atlas_tier');
     localStorage.setItem(vKey, CURRENT_VERSION);
     console.log('[INIT] Full reset (v' + stored + ' → v' + CURRENT_VERSION + ')');
+    if (location.search.indexOf('reset') > -1) {
+      try {
+        var resetUrl = new URL(window.location.href);
+        resetUrl.searchParams.delete('reset');
+        history.replaceState(null, '', resetUrl.pathname + resetUrl.search + resetUrl.hash);
+      } catch (e) {}
+    }
   }
 })();
 </script>
@@ -2529,7 +2486,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="fog.js?v=90"></script>
+<script src="fog.js?v=94"></script>
 <script>
 (function() {
   'use strict';
@@ -4525,7 +4482,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     btn._bound = true;
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (!confirm('Reset all discoveries and start over? This clears your entire journey.')) return;
+      if (!confirm('Reset all discoveries and start over? This clears your entire journey and Cartographer access.')) return;
       if (window.FogSystem && window.FogSystem.reset) {
         window.FogSystem.reset();
         return;

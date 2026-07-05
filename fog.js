@@ -24,34 +24,6 @@
   var GUARDIAN_REVEAL_GLOW_MIN = 360;  // px — Tetrad guardians (Utu, Rapha, Mish, Gu)
   var GOD_REVEAL_GLOW_MIN = 300;       // px — The Eight Apkallu sigils
   var MEDALLION_REVEAL_MS = 5200;      // how long the announcing pulse runs
-  // Proximity whispers — incomplete cartographer's notes at the fog edge
-  var WHISPERS = {
-    'tower-nine':       'Nine windows. Only three face —',
-    'crossing-pool':    'The water remembers every face that —',
-    'sabellas-hut':     'Larger inside. She warned me not to measure —',
-    'monastery':        'The monks stopped writing three days before —',
-    'star-clearing':    'The constellations here do not match any —',
-    'dawn':             'Light arrives before the sun. I cannot explain —',
-    'atras-empire':     'Every road leads to Nin. No road leads —',
-    'kur-north':        'The border moved south again. On the fourth expedition we —',
-    'kur-south':        'The ground is warm. Bones surface without —',
-    'golden-wastes':    'The sand sings at dusk. I recorded the pitch but my —',
-    'western-expanse':  'The cartographers who mapped this did not come back the same —',
-    'emerald-coast':    'The tides follow a calendar we haven\u2019t —',
-    'nin':              'The capital does not expand. It remembers territory it has not yet —',
-    'azu':              'Port city. Ships arrive from directions that should be —',
-    'ddr':              'The silence here is not absence. It is —',
-    'wellspring':       'The water rises but the source is below the underworld\u2019s —',
-    'ironhearth':       'I heard the forges before I saw them. Three days before —',
-    'vael':             'A city that insists it was never —',
-    'tidemark':         'The high-water line changes with the moon but also with —',
-    'broken-gate':      'The gate was not broken from outside. Something inside —',
-    'obsidian-spire':   'The stone absorbs light. I lit a torch and it —',
-    'waters-of-kur':    'I came back from here twice before I —',
-    'the-threshold':    'The bridge holds but —',
-    'hollow-gate':      'Entry is not refused. It is —'
-  };
-
   // State
   var discovered = {};
   var markerRefs = {};
@@ -71,13 +43,8 @@
   // Spotlight search state
   var searchMode = null;  // { locId, loc, keyLat, keyLng, startTime }
   var spotlightPos = null; // { x, y } container coords (null = no spotlight)
-  var towerForeshadowTime = 0; // timestamp when tower foreshadow was triggered (0 = inactive)
   var clusterPeek = {};        // undiscovered cluster siblings made visible after parent find
   var locationPanelFn = null;  // set by index.html — all location lore uses the right sidebar
-  var whisperPanelEl = null;
-  var whisperLocEl = null;
-  var whisperTextEl = null;
-  var currentWhisperId = null;
   var postTutorialHintTimer = null;
   var postTutorialHintPending = false;
 
@@ -330,10 +297,8 @@
 
     // Redraw on map events
     map.on('move zoom viewreset resize zoomend', draw);
-    map.on('moveend zoomend', updateProximityWhispers);
     window.addEventListener('resize', draw);
     draw();
-    updateProximityWhispers();
 
     // UI
     updateProgress();
@@ -523,14 +488,6 @@
           e.stopPropagation();
           e.preventDefault();
           showDiscoveryCard(discLoc);
-        } else {
-          // Check if player clicked near a LOCKED location — show helpful message
-          var lockedLoc = findLockedLocationNear(x, y);
-          if (lockedLoc) {
-            e.stopPropagation();
-            e.preventDefault();
-            showLockedFeedback(lockedLoc);
-          }
         }
       }
     }, true); // CAPTURE PHASE
@@ -611,13 +568,6 @@
         if (discLoc) {
           e.preventDefault();
           showDiscoveryCard(discLoc);
-        } else {
-          // Check if player tapped near a LOCKED location
-          var lockedLoc = findLockedLocationNear(x, y);
-          if (lockedLoc) {
-            e.preventDefault();
-            showLockedFeedback(lockedLoc);
-          }
         }
       }
     }, true);
@@ -1211,169 +1161,6 @@
       requestAnimationFrame(function() { el.style.opacity = '1'; });
     });
     setTimeout(dismiss, 7000);
-  }
-
-  // Left-side whisper toast for locked locations (matches discovery/guide hints)
-  function showLockedHintToast(title, message) {
-    var old = document.getElementById('locked-hint-toast');
-    if (old) old.remove();
-
-    var toast = document.createElement('div');
-    toast.id = 'locked-hint-toast';
-    toast.style.cssText =
-      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
-      'background:rgba(10,12,16,0.94);' +
-      'border:1px solid rgba(198,141,85,0.35);border-left:3px solid rgba(198,141,85,0.7);' +
-      'border-radius:0 8px 8px 0;padding:16px 18px;width:218px;' +
-      'font-family:"EB Garamond",serif;color:#efe7d2;' +
-      'opacity:0;transition:opacity 0.5s ease;' +
-      'box-shadow:0 6px 30px rgba(0,0,0,0.6);';
-    toast.innerHTML =
-      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;' +
-        'color:#c68d55;margin-bottom:8px;font-family:Cinzel,serif;">Not Yet</div>' +
-      (title ? '<div style="font-size:14px;font-weight:600;color:#d4c89a;margin-bottom:8px;line-height:1.3;">' + title + '</div>' : '') +
-      '<div style="font-size:12px;color:#9a8f7e;line-height:1.7;">' + message + '</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;">tap to dismiss</div>';
-    document.body.appendChild(toast);
-
-    function dismiss() {
-      toast.style.opacity = '0';
-      setTimeout(function() { toast.remove(); }, 500);
-    }
-    toast.addEventListener('click', dismiss);
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { toast.style.opacity = '1'; });
-    });
-    setTimeout(dismiss, 5000);
-  }
-
-  // Fixed left-side whisper panel — proximity notes, no cursor follow
-  function getWhisperElements() {
-    if (!whisperPanelEl) {
-      whisperPanelEl = document.getElementById('whisper-panel');
-      whisperLocEl = document.getElementById('whisper-loc');
-      whisperTextEl = document.getElementById('whisper-text');
-    }
-    return whisperPanelEl;
-  }
-
-  function clearWhisperPanel() {
-    var panel = getWhisperElements();
-    if (!panel) return;
-    panel.classList.remove('visible');
-    currentWhisperId = null;
-  }
-
-  function updateWhisperPanel(closestWhisper) {
-    var panel = getWhisperElements();
-    if (!panel) return;
-
-    if (!closestWhisper) {
-      if (currentWhisperId) clearWhisperPanel();
-      return;
-    }
-
-    var id = closestWhisper.loc.id;
-    if (id !== currentWhisperId) {
-      currentWhisperId = id;
-      if (whisperLocEl) {
-        whisperLocEl.textContent = closestWhisper.loc.name || '';
-        whisperLocEl.style.display = closestWhisper.loc.name ? 'block' : 'none';
-      }
-      if (whisperTextEl) {
-        whisperTextEl.textContent = '\u201c' + closestWhisper.whisper + '\u201d';
-      }
-    }
-
-    panel.classList.add('visible');
-  }
-
-  // Proximity whispers — keyed to viewport center (what you're looking at), not cursor
-  function getMapViewportCenter() {
-    if (!map) return null;
-    var container = map.getContainer();
-    return { x: container.clientWidth / 2, y: container.clientHeight / 2 };
-  }
-
-  function updateProximityWhispers() {
-    if (!map || searchMode || tutorialStep < TUTORIAL_STEPS) {
-      clearWhisperPanel();
-      return;
-    }
-
-    var anchor = getMapViewportCenter();
-    if (!anchor) {
-      clearWhisperPanel();
-      return;
-    }
-
-    var locs = window.LOCATIONS || [];
-    var whisperRange = 220;
-    var closestWhisper = null;
-    var closestWhisperDist = whisperRange;
-
-    locs.forEach(function(loc) {
-      if (discovered[loc.id]) return;
-      var whisper = WHISPERS[loc.id];
-      if (!whisper) return;
-      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
-      var d = Math.sqrt(Math.pow(anchor.x - pt.x, 2) + Math.pow(anchor.y - pt.y, 2));
-      if (d < closestWhisperDist && d > 30) {
-        closestWhisperDist = d;
-        closestWhisper = { loc: loc, whisper: whisper };
-      }
-    });
-
-    if (closestWhisper) {
-      updateWhisperPanel(closestWhisper);
-    } else {
-      clearWhisperPanel();
-    }
-  }
-
-  function showLockedFeedback(loc) {
-    if (!loc) return;
-    if (loc.id === FINAL_ELENA_STOP) {
-      showLockedMessage();
-      return;
-    }
-    if (isOnPath(loc.id) && loc.id !== getNextPathLocation()) {
-      showLockedHintToast(
-        loc.name,
-        'Elena\u2019s path leads elsewhere first. Follow the golden glow.'
-      );
-      return;
-    }
-    if (loc.cartographerSite) {
-      showLockedHintToast(
-        loc.name,
-        'This site stays sealed until its territory is charted. Claim the nearest orange shimmer first.'
-      );
-      return;
-    }
-    if (isTerritory(loc)) {
-      showLockedHintToast(
-        loc.name,
-        'The fog still hides this territory. Chart nearer discoveries first.'
-      );
-      return;
-    }
-    showLockedHintToast(
-      loc.name,
-      'This place remains hidden. Chart nearer discoveries first.'
-    );
-  }
-
-  function findLockedLocationNear(x, y) {
-    var lockedLoc = null, lockedDist = Infinity;
-    (window.LOCATIONS || []).forEach(function(loc) {
-      if (discovered[loc.id]) return;
-      if (isClickable(loc.id)) return;
-      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
-      var d = Math.sqrt(Math.pow(x - pt.x, 2) + Math.pow(y - pt.y, 2));
-      if (d < clickRadiusFor(loc) && d < lockedDist) { lockedLoc = loc; lockedDist = d; }
-    });
-    return lockedLoc;
   }
 
 
@@ -2217,10 +2004,7 @@
      DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
-    if (!discovered[loc.id] && !isClickable(loc.id)) {
-      showLockedFeedback(loc);
-      return;
-    }
+    if (!discovered[loc.id] && !isClickable(loc.id)) return;
 
     // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
     var isTutorial = tutorialStep < TUTORIAL_STEPS;
@@ -2244,7 +2028,6 @@
       playDiscoveryChime();
       setTimeout(function() { openLocationDetails(loc); }, 600);
       updateProgress();
-      updateProximityWhispers();
       maybeDismissPostTutorialOnDiscover(loc);
       return;
     }
@@ -2279,7 +2062,6 @@
     playDiscoveryChime();
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
-    updateProximityWhispers();
     maybeDismissPostTutorialOnDiscover(loc);
 
     // Special unlock celebration for Sham & Mash
@@ -2379,7 +2161,6 @@
     // Initialize spotlight at the pinhole center so it works immediately
     var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
     spotlightPos = { x: pt.x, y: pt.y };
-    clearWhisperPanel();
 
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
@@ -2443,7 +2224,6 @@
       // Clear search mode AFTER the reveal animation completes
       searchMode = null;
       spotlightPos = null;
-      updateProximityWhispers();
     });
     showCelebration(loc);
     playDiscoveryChime();
@@ -2460,29 +2240,6 @@
     // Advance tutorial if in search steps
     if (tutorialStep < TUTORIAL_STEPS) {
       advanceTutorial();
-    }
-
-    // Foreshadow the Tower of Nine after Sabella's Hut is found
-    if (loc.id === 'sabellas-hut' && !discovered['tower-nine']) {
-      setTimeout(function() {
-        towerForeshadowTime = Date.now();
-        // Left-side whisper hint
-        var hint = document.createElement('div');
-        hint.style.cssText =
-          'position:fixed;left:20px;top:42%;z-index:900;pointer-events:none;' +
-          'border-left:3px solid rgba(198,141,85,0.5);padding:10px 14px;width:200px;' +
-          'font-family:"EB Garamond",serif;font-size:12px;font-style:italic;' +
-          'color:#a09070;opacity:0;transition:opacity 1s ease;line-height:1.6;';
-        hint.textContent = '\u201cSomething to the north stirs in the dark\u2026\u201d';
-        document.body.appendChild(hint);
-        requestAnimationFrame(function() {
-          requestAnimationFrame(function() { hint.style.opacity = '1'; });
-        });
-        setTimeout(function() {
-          hint.style.opacity = '0';
-          setTimeout(function() { hint.remove(); }, 1000);
-        }, 5000);
-      }, 1500); // delay so it fires after the reveal animation settles
     }
 
     // Tower cluster: reveal companion site (Maxim Stone)
@@ -2935,6 +2692,7 @@
 
     var resetBtn = document.getElementById('finale-reset');
     if (resetBtn) resetBtn.onclick = function() {
+      if (!confirm('Reset all discoveries and start over? This clears your entire journey and Cartographer access.')) return;
       if (window.FogSystem && window.FogSystem.reset) window.FogSystem.reset();
     };
   }
@@ -3184,6 +2942,31 @@
   }
 
   /* ════════════════════════════════════════════════
+     PROGRESS RESET — shared by map button, finale, ?reset, future home link
+     Clears map progress + cartographer auth; keeps reader backer keys.
+     ════════════════════════════════════════════════ */
+  var PROGRESS_LS_KEYS = [
+    LS_KEY, LS_KEY + '_v', 'revealedGods',
+    'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
+    POST_TUTORIAL_HINT_LS,
+    'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales',
+    'intrepid_cartographer_unlocked', 'intrepid_atlas_label',
+    'intrepid_atlas_auth', 'intrepid_atlas_tier'
+  ];
+
+  function clearProgressStorage() {
+    PROGRESS_LS_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+  }
+
+  function stripArchiveParamsFromUrl() {
+    try {
+      var u = new URL(window.location.href);
+      ['map', 'edit', 'scan', 'key', 'reset'].forEach(function(p) { u.searchParams.delete(p); });
+      history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) {}
+  }
+
+  /* ════════════════════════════════════════════════
      RESET BUTTON
      ════════════════════════════════════════════════ */
   function addResetButton() {
@@ -3197,16 +2980,8 @@
       'letter-spacing:1px;text-transform:uppercase;font-family:inherit;';
     btn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (confirm('Reset all discoveries and start over? This clears your entire journey.')) {
-        var keysToRemove = [
-          LS_KEY, LS_KEY + '_v', 'revealedGods',
-          'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
-          POST_TUTORIAL_HINT_LS,
-          'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales'
-        ];
-        keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
-        location.reload();
-      }
+      if (!confirm('Reset all discoveries and start over? This clears your entire journey and Cartographer access.')) return;
+      if (window.FogSystem && window.FogSystem.reset) window.FogSystem.reset();
     });
     document.body.appendChild(btn);
   }
@@ -3408,15 +3183,10 @@
     getNextLocation: getNextPathLocation,
     initTetradCircles: initTetradCircles,
     _revealedGods: revealedGods,
+    clearProgress: clearProgressStorage,
     reset: function() {
-      var keysToRemove = [
-        LS_KEY, LS_KEY + '_v', 'revealedGods',
-        'intrepid_atlas_welcomed', 'intrepid_atlas_hinted',
-        POST_TUTORIAL_HINT_LS,
-        'intrepid_atlas_reveals', 'intrepid_coord_unlocks',
-        'intrepid_atlas_finales'
-      ];
-      keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+      clearProgressStorage();
+      stripArchiveParamsFromUrl();
       location.reload();
     }
   };
