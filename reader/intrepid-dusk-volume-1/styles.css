@@ -256,7 +256,8 @@ h1 {
 
 .reader-page {
   overflow: hidden;
-  background: #000;
+  aspect-ratio: 1100 / 1674;
+  background: #070706;
 }
 
 .reader-page--blank {
@@ -271,8 +272,15 @@ h1 {
   height: 100%;
   object-fit: cover;
   object-position: center;
+  background-color: #070706;
+  opacity: 0;
+  transition: opacity 0.18s ease;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.reader-page img.is-ready {
+  opacity: 1;
 }
 
 /* Overlap facing pages 1px to hide center hairline (StPageFlip --left / --right) */

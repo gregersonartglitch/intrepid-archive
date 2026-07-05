@@ -101,8 +101,38 @@ function triggerPageFlipAudio() {
 
 function decodePageImage(image) {
   if (typeof image.decode === "function") {
-    image.decode().catch(() => {});
+    return image.decode().catch(function () {});
   }
+  return Promise.resolve();
+}
+
+function markPageReady(image) {
+  image.classList.add("is-ready");
+}
+
+function whenPageImageReady(image) {
+  if (image.classList.contains("is-ready")) {
+    return Promise.resolve();
+  }
+
+  if (image.complete && image.naturalWidth > 0) {
+    return decodePageImage(image).then(function () {
+      markPageReady(image);
+    });
+  }
+
+  return new Promise(function (resolve) {
+    image.addEventListener(
+      "load",
+      function () {
+        decodePageImage(image).then(function () {
+          markPageReady(image);
+          resolve();
+        });
+      },
+      { once: true },
+    );
+  });
 }
 
 function warmPageImage(pageIndex) {
@@ -122,20 +152,12 @@ function warmPageImage(pageIndex) {
   image.loading = "eager";
 
   if (warmedPages.has(pageIndex)) {
-    if (image.complete && image.naturalWidth > 0) {
-      decodePageImage(image);
-    }
+    whenPageImageReady(image);
     return;
   }
 
   warmedPages.add(pageIndex);
-
-  if (image.complete && image.naturalWidth > 0) {
-    decodePageImage(image);
-    return;
-  }
-
-  image.addEventListener("load", () => decodePageImage(image), { once: true });
+  whenPageImageReady(image);
 }
 
 function preloadAround(centerIndex) {
@@ -203,10 +225,16 @@ function createPageFlip() {
     const image = document.createElement("img");
     image.src = entry.src;
     image.alt = `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
+    image.width = NATIVE_PAGE_WIDTH;
+    image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";
     image.loading = index < 6 ? "eager" : "lazy";
     image.draggable = false;
     pageImages[index] = image;
+
+    if (index < 6) {
+      whenPageImageReady(image);
+    }
 
     page.append(image);
     return page;

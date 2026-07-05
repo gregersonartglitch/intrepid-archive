@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Hollowlands — Intrepid Dusk Cartographer Archive</title>
-<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 and the character dossier are open; the Cartographer's Atlas is included with the Hollowlands pledge.">
+<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 and the character dossier are open; the Cartographer's Atlas is reserved for Cartographer tier and above.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1816,10 +1816,10 @@ body.edit-mode .mk-dot-wrap > * {
 /* ── Discovery Card ─────────────────────── */
 #discovery-card {
   position: fixed;
-  top: 272px; left: -420px;
+  top: 200px; left: -420px;
   transform: none;
   width: 340px; max-width: 85vw;
-  max-height: calc(100vh - 512px);
+  max-height: calc(100vh - 432px);
   overflow-y: auto;
   background: linear-gradient(160deg, #1a1612 0%, #12100e 60%, #0d0a08 100%);
   border: 1px solid rgba(198, 141, 85, 0.35);
@@ -1847,10 +1847,12 @@ body.edit-mode .mk-dot-wrap > * {
   border-radius: 50%;
   overflow: hidden;
   background-repeat: no-repeat;
-  background-size: cover;
+  /* 125% zoom gives crop headroom so per-sprite artPosition can center carvings */
+  background-size: 125%;
   background-position: center center;
   border: 1px solid rgba(198,141,85,0.3);
   background-color: rgba(12,10,8,0.9);
+  box-shadow: 0 0 0 1px rgba(198,141,85,0.15), 0 4px 16px rgba(0,0,0,0.5);
 }
 .dc-type {
   font-family: var(--font-ui);
@@ -2106,8 +2108,8 @@ body.edit-mode .mk-dot-wrap > * {
 }
 
 @media (max-width: 767px) {
-  #discovery-card { width: 90vw; left: -95vw; padding: 20px 16px 16px; top: 210px; bottom: auto; max-height: calc(100vh - 340px); transform: none; }
-  #discovery-card.visible { top: 210px; bottom: auto; left: 50%; transform: translateX(-50%); }
+  #discovery-card { width: 90vw; left: -95vw; padding: 20px 16px 16px; top: 180px; bottom: auto; max-height: calc(100vh - 308px); transform: none; }
+  #discovery-card.visible { top: 180px; bottom: auto; left: 50%; transform: translateX(-50%); }
   .dc-name { font-size: 18px; }
   .dc-desc { font-size: 15px; }
   #progress-container { bottom: 8px; left: 8px; padding: 8px 10px; min-width: 140px; }
@@ -2164,11 +2166,11 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for $12.00+ backers. The character dossier is open to all. The Cartographer's Atlas is included with the Hollowlands pledge.</div>
+    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for $12.00+ backers. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
     <div class="landing-actions">
       <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge">$12.00+ backers only</span></button>
       <a class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge">Open to all</span></a>
-      <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">$60.00+ tier backer</span></button>
+      <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
     </div>
     <div class="landing-note">Issues 2 &amp; 3 unlock inside the reader for Kickstarter backers</div>
@@ -2184,7 +2186,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="gate-eyebrow gate-fade" data-delay="0">INTREPID DUSK — CARTOGRAPHER'S ATLAS</div>
     <div class="gate-title gate-fade" data-delay="200" id="gate-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600">This interactive archive is included with the Hollowlands pledge.<br>Enter your Cartographer access word to begin charting.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600">This interactive archive is reserved for Cartographer tier and above.<br>Enter your Cartographer access word to begin charting.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="gate-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Cartographer access word">
       <button type="button" id="gate-eye" class="gate-toggle" aria-label="Show password">
@@ -2462,7 +2464,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 83;
+window.INTREPID_BUILD = 90;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2527,7 +2529,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="fog.js?v=83"></script>
+<script src="fog.js?v=90"></script>
 <script>
 (function() {
   'use strict';
@@ -2778,41 +2780,41 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       // cx/cy = fraction of frame image (2400×1792) — window-size-independent
       var MEDALLIONS = [
         // ── Cardinals ──────────────────────────────────────────────────────
-        { name: 'Utu',           cx: 0.4909, cy: 0.1898, r: 216, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png',
+        { name: 'Utu',           cx: 0.4909, cy: 0.1898, r: 216, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png', artPosition: '5% 100%', artZoom: '136%',
           role: 'Bull of Heaven · Tetrad North',
           lore: 'Guardian of the North and the turning seasons. UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Rapha',         cx: 0.7308, cy: 0.4517, r: 224, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png',
+        { name: 'Rapha',         cx: 0.7308, cy: 0.4517, r: 224, guardian: true, unlock: 9, spriteFile: 'assets/medallions/lion.png', artPosition: '68% 96%',
           role: 'Lion of Justice · Tetrad East',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Mish',          cx: 0.4818, cy: 0.7386, r: 268, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png', artPosition: 'center 54%',
+        { name: 'Mish',          cx: 0.4818, cy: 0.7386, r: 268, guardian: true, unlock: 13, spriteFile: 'assets/medallions/defender.png', artPosition: '100% 100%',
           role: 'The Defender · Tetrad South',
           lore: 'Guardian of the South and the far horizon. The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
-        { name: 'Gu',            cx: 0.2442, cy: 0.4448, r: 224, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png',
+        { name: 'Gu',            cx: 0.2442, cy: 0.4448, r: 224, guardian: true, unlock: 17, spriteFile: 'assets/medallions/water.png', artPosition: '20% 92%',
           role: 'Water Bearer · Tetrad West',
           lore: 'Guardian of the West, Sky, and Dusk. Before the gods shaped the world, Water was already moving. GU stands over all the powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
-        { name: 'Sham & Mash',  cx: 0.7250, cy: 0.1920, r: 152, unlock: 10, spriteFile: 'assets/medallions/twins.png',
+        { name: 'Sham & Mash',  cx: 0.7250, cy: 0.1920, r: 152, unlock: 10, spriteFile: 'assets/medallions/twins.png', artPosition: '100% 65%', artZoom: '136%',
           role: 'The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Elil',          cx: 0.7978, cy: 0.3436, r: 160, unlock: 14, spriteFile: 'assets/medallions/crab.png',
+        { name: 'Elil',          cx: 0.7978, cy: 0.3436, r: 160, unlock: 14, spriteFile: 'assets/medallions/crab.png', artPosition: '59% 57%',
           role: 'The Shapeshifter',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Ningal',        cx: 0.8050, cy: 0.5820, r: 164, unlock: 18, spriteFile: 'assets/medallions/furrow.png',
+        { name: 'Ningal',        cx: 0.8050, cy: 0.5820, r: 164, unlock: 18, spriteFile: 'assets/medallions/furrow.png', artPosition: '14% 25%',
           role: 'Queen of the Underworld',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'An',            cx: 0.7130, cy: 0.7840, r: 176, unlock: 22, spriteFile: 'assets/medallions/fate.png',
+        { name: 'An',            cx: 0.7130, cy: 0.7840, r: 176, unlock: 22, spriteFile: 'assets/medallions/fate.png', artPosition: '19% 49%',
           role: 'Lord of Flight',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
-        { name: 'Nin',           cx: 0.2630, cy: 0.7850, r: 164, unlock: 26, spriteFile: 'assets/medallions/scorpion.png', artPosition: '100% 62%',
+        { name: 'Nin',           cx: 0.2630, cy: 0.7850, r: 164, unlock: 26, spriteFile: 'assets/medallions/scorpion.png', artPosition: '0% 58%', artZoom: '142%',
           role: 'God of Earth',
           lore: 'That which claws and cuts. NIN holds dominion over Earth. His sting is not venom — it is memory. Those he marks remember what they were before the crossing.' },
-        { name: 'Belu',          cx: 0.1760, cy: 0.5856, r: 164, unlock: 30, spriteFile: 'assets/medallions/goatfish.png', artPosition: '42% 52%',
+        { name: 'Belu',          cx: 0.1760, cy: 0.5856, r: 164, unlock: 30, spriteFile: 'assets/medallions/goatfish.png', artPosition: '60% 25%',
           role: 'God of Storm',
           lore: 'Half-creature of land, half-creature of sea. BELU commands the storm because the storm cannot decide which world it belongs to either.' },
-        { name: 'Ae',            cx: 0.1783, cy: 0.3459, r: 152, unlock: 34, spriteFile: 'assets/medallions/fish.png', artPosition: '100% 54%',
+        { name: 'Ae',            cx: 0.1783, cy: 0.3459, r: 152, unlock: 34, spriteFile: 'assets/medallions/fish.png', artPosition: '0% 29%', artZoom: '154%',
           role: 'Lord of the Divine River',
           lore: "The first thing that moved in the deep. AE's servant, older than worship. It swims between worlds without crossing — it was never on one side." },
-        { name: 'Erra',          cx: 0.2499, cy: 0.1974, r: 170, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png', artPosition: '24% 54%',
+        { name: 'Erra',          cx: 0.2499, cy: 0.1974, r: 170, unlock: 38, spriteFile: 'assets/medallions/firesatyr.png', artPosition: '100% 19%', artZoom: '137%',
           role: 'God of War',
           lore: 'War is not his purpose — it is his nature. ERRA does not choose sides. He chooses fire, and the sides arrange themselves around it.' }
       ];
@@ -2872,6 +2874,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         if (!artEl || !m.spriteFile) return;
         artEl.classList.add('dc-art--medallion');
         artEl.style.display = 'block';
+        artEl.removeAttribute('src');
+        artEl.innerHTML = '';
+        artEl.style.backgroundSize = m.artZoom || '125%';
+        artEl.style.backgroundRepeat = 'no-repeat';
         artEl.style.backgroundPosition = m.artPosition || 'center center';
         if (isRevealed) {
           artEl.style.filter = 'none';
@@ -3247,7 +3253,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     // ── ?calibrate mode: visual medallion position editor ──────────────
     // Dots are positioned as % of the frame IMAGE (2400×1792), not the viewport.
     // Resize the window and dots stay locked to the art.
-    if (window.location.search.indexOf('calibrate') !== -1) {
+    if (window.location.search.indexOf('calibrate-art') === -1 &&
+        window.location.search.indexOf('calibrate') !== -1) {
       (function() {
         var defs = window.MEDALLION_DEFS;
         if (!defs) return;
@@ -3389,6 +3396,273 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         });
 
         console.log('%c🎯 CALIBRATE MODE — dots track the frame image at any window size',
+          'color: #d4a843; font-size: 14px; font-weight: bold;');
+      })();
+    }
+
+    // ── ?calibrate-art mode: medallion sprite crop in discovery card ───
+    // Live preview uses the same .dc-art--medallion CSS as the discovery card.
+    if (window.location.search.indexOf('calibrate-art') !== -1) {
+      (function() {
+        var defs = window.MEDALLION_DEFS;
+        if (!defs) return;
+
+        var PREVIEW_W = 292; // discovery card content width (340px − 48px padding)
+        var DEFAULT_ZOOM = 125;
+
+        function parseArtPosition(pos) {
+          if (!pos) return { x: 50, y: 50 };
+          var parts = String(pos).trim().split(/\s+/);
+          function partVal(p, fallback) {
+            if (!p || p === 'center') return fallback;
+            if (p.indexOf('%') !== -1) return parseFloat(p);
+            return fallback;
+          }
+          return { x: partVal(parts[0], 50), y: partVal(parts[1], 50) };
+        }
+
+        function formatArtPosition(x, y) {
+          return Math.round(x) + '% ' + Math.round(y) + '%';
+        }
+
+        function parseArtZoom(zoom) {
+          if (!zoom) return DEFAULT_ZOOM;
+          return parseFloat(String(zoom).replace('%', '')) || DEFAULT_ZOOM;
+        }
+
+        var artState = [];
+        defs.forEach(function(m) {
+          var p = parseArtPosition(m.artPosition);
+          artState.push({ x: p.x, y: p.y, zoom: parseArtZoom(m.artZoom) });
+        });
+
+        var currentIdx = 0;
+        var dragging = false;
+        var dragStartX = 0;
+        var dragStartY = 0;
+        var dragOrigX = 0;
+        var dragOrigY = 0;
+
+        var panel = document.createElement('div');
+        panel.id = 'calibrate-art-panel';
+        panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10000;' +
+          'background:rgba(0,0,0,0.94);border:2px solid #d4a843;border-radius:12px;padding:20px 24px;' +
+          'font-family:monospace;color:#ddd;pointer-events:auto;max-height:95vh;overflow-y:auto;' +
+          'box-shadow:0 8px 40px rgba(0,0,0,0.8);';
+
+        var title = document.createElement('div');
+        title.style.cssText = 'color:#d4a843;font-weight:bold;font-size:14px;margin-bottom:12px;letter-spacing:1px;';
+        title.textContent = 'CALIBRATE ART — discovery card medallion crop';
+        panel.appendChild(title);
+
+        var hint = document.createElement('div');
+        hint.style.cssText = 'color:#888;font-size:11px;margin-bottom:14px;line-height:1.4;';
+        hint.textContent = 'Drag preview to pan · scroll to zoom · sliders for fine-tune';
+        panel.appendChild(hint);
+
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;';
+
+        var leftCol = document.createElement('div');
+        leftCol.style.cssText = 'flex:0 0 auto;';
+
+        var selectLabel = document.createElement('label');
+        selectLabel.style.cssText = 'display:block;color:#aaa;font-size:11px;margin-bottom:4px;';
+        selectLabel.textContent = 'Medallion';
+        leftCol.appendChild(selectLabel);
+
+        var select = document.createElement('select');
+        select.style.cssText = 'background:#1a1612;color:#fff;border:1px solid #d4a843;border-radius:4px;' +
+          'padding:6px 10px;font-family:monospace;font-size:12px;width:220px;margin-bottom:14px;';
+        defs.forEach(function(m, i) {
+          var opt = document.createElement('option');
+          opt.value = String(i);
+          opt.textContent = m.name + (m.guardian ? ' · Tetrad' : '');
+          select.appendChild(opt);
+        });
+        leftCol.appendChild(select);
+
+        var previewWrap = document.createElement('div');
+        previewWrap.style.cssText = 'background:linear-gradient(160deg,#1a1612,#0d0a08);' +
+          'border:1px solid rgba(198,141,85,0.35);border-radius:8px;padding:16px;';
+
+        var preview = document.createElement('div');
+        preview.className = 'dc-art dc-art--medallion';
+        preview.style.width = PREVIEW_W + 'px';
+        preview.style.marginBottom = '0';
+        preview.style.cursor = 'grab';
+        previewWrap.appendChild(preview);
+        leftCol.appendChild(previewWrap);
+
+        var cardNote = document.createElement('div');
+        cardNote.style.cssText = 'color:#666;font-size:10px;margin-top:8px;text-align:center;';
+        cardNote.textContent = 'Preview matches discovery card circle';
+        leftCol.appendChild(cardNote);
+        row.appendChild(leftCol);
+
+        var rightCol = document.createElement('div');
+        rightCol.style.cssText = 'flex:1 1 200px;min-width:200px;';
+
+        function makeSlider(labelText, min, max, step, onInput) {
+          var wrap = document.createElement('div');
+          wrap.style.marginBottom = '12px';
+          var lbl = document.createElement('label');
+          lbl.style.cssText = 'display:flex;justify-content:space-between;color:#aaa;font-size:11px;margin-bottom:4px;';
+          var lblName = document.createElement('span');
+          lblName.textContent = labelText;
+          var lblVal = document.createElement('span');
+          lblVal.style.color = '#d4a843';
+          lbl.appendChild(lblName);
+          lbl.appendChild(lblVal);
+          wrap.appendChild(lbl);
+          var input = document.createElement('input');
+          input.type = 'range';
+          input.min = String(min);
+          input.max = String(max);
+          input.step = String(step);
+          input.style.cssText = 'width:100%;accent-color:#d4a843;';
+          input.addEventListener('input', function() {
+            lblVal.textContent = input.value + (labelText === 'Zoom' ? '%' : '%');
+            onInput(parseFloat(input.value));
+          });
+          wrap.appendChild(input);
+          wrap._valEl = lblVal;
+          wrap._input = input;
+          return wrap;
+        }
+
+        var sliderX = makeSlider('Position X', 0, 100, 1, function(v) {
+          artState[currentIdx].x = v;
+          applyPreview();
+        });
+        var sliderY = makeSlider('Position Y', 0, 100, 1, function(v) {
+          artState[currentIdx].y = v;
+          applyPreview();
+        });
+        var sliderZ = makeSlider('Zoom', 80, 200, 1, function(v) {
+          artState[currentIdx].zoom = v;
+          applyPreview();
+        });
+        rightCol.appendChild(sliderX);
+        rightCol.appendChild(sliderY);
+        rightCol.appendChild(sliderZ);
+
+        var readout = document.createElement('div');
+        readout.style.cssText = 'background:#0d0a08;border:1px solid #444;border-radius:4px;padding:8px 10px;' +
+          'font-size:11px;color:#7fdc7f;margin-bottom:14px;line-height:1.5;';
+        rightCol.appendChild(readout);
+
+        row.appendChild(rightCol);
+        panel.appendChild(row);
+
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:10px;margin-top:16px;justify-content:flex-end;';
+
+        var copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy Values';
+        copyBtn.style.cssText = 'background:#d4a843;color:#000;border:none;padding:8px 16px;border-radius:4px;' +
+          'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
+        copyBtn.onclick = function() {
+          var lines = [
+            '// Medallion card art — paste artPosition (and artZoom if not 125%) into MEDALLIONS',
+            ''
+          ];
+          defs.forEach(function(m, i) {
+            var s = artState[i];
+            var zoomPart = s.zoom !== DEFAULT_ZOOM ? ", artZoom: '" + Math.round(s.zoom) + "%'" : '';
+            lines.push("        { name: '" + m.name + "', artPosition: '" +
+              formatArtPosition(s.x, s.y) + "'" + zoomPart + ' },');
+          });
+          navigator.clipboard.writeText(lines.join('\n')).then(function() {
+            copyBtn.textContent = 'Copied!';
+            copyBtn.style.background = '#44ff44';
+            setTimeout(function() {
+              copyBtn.textContent = 'Copy Values';
+              copyBtn.style.background = '#d4a843';
+            }, 1500);
+          });
+        };
+        btnRow.appendChild(copyBtn);
+
+        var exitBtn = document.createElement('button');
+        exitBtn.textContent = 'Exit';
+        exitBtn.style.cssText = 'background:#633;color:#fff;border:none;padding:8px 16px;border-radius:4px;' +
+          'cursor:pointer;font-weight:bold;font-family:monospace;font-size:12px;';
+        exitBtn.onclick = function() { panel.remove(); };
+        btnRow.appendChild(exitBtn);
+        panel.appendChild(btnRow);
+        document.body.appendChild(panel);
+
+        function syncSliders() {
+          var s = artState[currentIdx];
+          sliderX._input.value = String(s.x);
+          sliderX._valEl.textContent = Math.round(s.x) + '%';
+          sliderY._input.value = String(s.y);
+          sliderY._valEl.textContent = Math.round(s.y) + '%';
+          sliderZ._input.value = String(s.zoom);
+          sliderZ._valEl.textContent = Math.round(s.zoom) + '%';
+        }
+
+        function updateReadout() {
+          var s = artState[currentIdx];
+          var m = defs[currentIdx];
+          var zoomLine = s.zoom !== DEFAULT_ZOOM ? "\nartZoom: '" + Math.round(s.zoom) + "%'" : '';
+          readout.textContent = m.name + '\nartPosition: \'' + formatArtPosition(s.x, s.y) + '\'' + zoomLine;
+        }
+
+        function applyPreview() {
+          var s = artState[currentIdx];
+          var m = defs[currentIdx];
+          preview.style.backgroundImage = 'url(' + m.spriteFile + ')';
+          preview.style.backgroundRepeat = 'no-repeat';
+          preview.style.backgroundPosition = formatArtPosition(s.x, s.y);
+          preview.style.backgroundSize = Math.round(s.zoom) + '%';
+          syncSliders();
+          updateReadout();
+        }
+
+        select.addEventListener('change', function() {
+          currentIdx = parseInt(select.value, 10) || 0;
+          applyPreview();
+        });
+
+        preview.addEventListener('mousedown', function(e) {
+          dragging = true;
+          dragStartX = e.clientX;
+          dragStartY = e.clientY;
+          dragOrigX = artState[currentIdx].x;
+          dragOrigY = artState[currentIdx].y;
+          preview.style.cursor = 'grabbing';
+          e.preventDefault();
+        });
+        document.addEventListener('mousemove', function(e) {
+          if (!dragging) return;
+          var dx = e.clientX - dragStartX;
+          var dy = e.clientY - dragStartY;
+          var s = artState[currentIdx];
+          s.x = Math.max(0, Math.min(100, dragOrigX - (dx / PREVIEW_W) * 100));
+          s.y = Math.max(0, Math.min(100, dragOrigY - (dy / PREVIEW_W) * 100));
+          applyPreview();
+        });
+        document.addEventListener('mouseup', function() {
+          if (dragging) {
+            dragging = false;
+            preview.style.cursor = 'grab';
+          }
+        });
+
+        preview.addEventListener('wheel', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var delta = e.deltaY > 0 ? -2 : 2;
+          var s = artState[currentIdx];
+          s.zoom = Math.max(80, Math.min(200, s.zoom + delta));
+          applyPreview();
+        }, { passive: false });
+
+        applyPreview();
+
+        console.log('%c🖼 CALIBRATE ART — drag preview to pan, scroll to zoom',
           'color: #d4a843; font-size: 14px; font-weight: bold;');
       })();
     }

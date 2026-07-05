@@ -2244,7 +2244,6 @@
       playDiscoveryChime();
       setTimeout(function() { openLocationDetails(loc); }, 600);
       updateProgress();
-      showDiscoveryToast(loc);
       updateProximityWhispers();
       maybeDismissPostTutorialOnDiscover(loc);
       return;
@@ -2280,7 +2279,6 @@
     playDiscoveryChime();
     setTimeout(function() { showDiscoveryCard(loc); }, 600);
     updateProgress();
-    showDiscoveryToast(loc);
     updateProximityWhispers();
     maybeDismissPostTutorialOnDiscover(loc);
 
@@ -2457,9 +2455,6 @@
       openLocationDetails(loc);
     }, 600);
     updateProgress();
-    if (!(loc.id === FINAL_ELENA_STOP && isPathComplete())) {
-      showDiscoveryToast(loc);
-    }
     maybeDismissPostTutorialOnDiscover(loc);
 
     // Advance tutorial if in search steps
@@ -2518,38 +2513,6 @@
       var rect = container.getBoundingClientRect();
       spotlightPos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
     }, { passive: true });
-  }
-
-  function showDiscoveryToast(loc) {
-    var total = (window.LOCATIONS || []).length;
-    var found = Object.keys(discovered).length;
-
-    var old = document.getElementById('discovery-toast');
-    if (old) old.remove();
-
-    var toast = document.createElement('div');
-    toast.id = 'discovery-toast';
-    toast.style.cssText =
-      'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:900;' +
-      'background:rgba(10,12,16,0.92);' +
-      'border:1px solid rgba(198,141,85,0.35);border-left:3px solid rgba(198,141,85,0.7);' +
-      'border-radius:0 8px 8px 0;padding:14px 20px;width:200px;' +
-      'font-family:"Cinzel",serif;color:#efe7d2;pointer-events:none;' +
-      'opacity:0;transition:opacity 0.5s ease;';
-
-    toast.innerHTML =
-      '<div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#c68d55;margin-bottom:4px;">Location Discovered</div>' +
-      '<div style="font-size:15px;font-weight:600;">' + loc.name + '</div>' +
-      '<div style="font-size:12px;color:#bfb299;margin-top:6px;">' + found + ' of ' + total + ' locations charted</div>';
-
-    document.body.appendChild(toast);
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { toast.style.opacity = '1'; });
-    });
-    setTimeout(function() {
-      toast.style.opacity = '0';
-      setTimeout(function() { toast.remove(); }, 600);
-    }, 3000);
   }
 
   /* ════════════════════════════════════════════════
