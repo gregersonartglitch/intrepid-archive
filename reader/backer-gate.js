@@ -17,7 +17,8 @@
   var COVER_SPREAD_PAGES = 2;
   var ISSUE_PAGE_COUNTS = [21, 21, 26];
   var ISSUE_002_START = COVER_SPREAD_PAGES + ISSUE_PAGE_COUNTS[0];
-  var ISSUE_003_START = ISSUE_002_START + ISSUE_PAGE_COUNTS[1];
+  var ISSUE_003_START =
+    ISSUE_002_START + ISSUE_PAGE_COUNTS[1] + 1;
 
   var ISSUE_BOUNDARIES = [
     { issue: "001", startIndex: 0, endIndex: ISSUE_002_START - 1 },
@@ -47,7 +48,16 @@
     localStorage.setItem(LS_ISSUE_PREFIX + issueId, "granted");
   }
 
+  var LS_CARTOGRAPHER_KEY = "intrepid_cartographer_unlocked";
+
   function grantAllBackerIssues() {
+    if (
+      window.IntrepidArchiveAccess &&
+      window.IntrepidArchiveAccess.grantReaderBackerAccess
+    ) {
+      window.IntrepidArchiveAccess.grantReaderBackerAccess();
+      return;
+    }
     localStorage.setItem(LS_BACKER_KEY, "granted");
     grantIssue("002");
     grantIssue("003");
@@ -56,6 +66,14 @@
   function isIssueUnlocked(issueId) {
     if (issueId === "001") return true;
     if (localStorage.getItem(LS_BACKER_KEY) === "granted") return true;
+    if (localStorage.getItem(LS_CARTOGRAPHER_KEY) === "granted") return true;
+    if (
+      window.IntrepidArchiveAccess &&
+      window.IntrepidArchiveAccess.hasReaderBackerAccess &&
+      window.IntrepidArchiveAccess.hasReaderBackerAccess()
+    ) {
+      return true;
+    }
     return localStorage.getItem(LS_ISSUE_PREFIX + issueId) === "granted";
   }
 
@@ -79,6 +97,14 @@
   }
 
   function submitBackerPassword(pw) {
+    if (
+      window.IntrepidArchiveAccess &&
+      window.IntrepidArchiveAccess.submitArchiveCode
+    ) {
+      var result = window.IntrepidArchiveAccess.submitArchiveCode(pw);
+      if (result.ok && result.reader) return true;
+      return false;
+    }
     var code = BACKER_CODES[String(pw || "").trim().toLowerCase()];
     if (!code) return false;
     grantAllBackerIssues();
