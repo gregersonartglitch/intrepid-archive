@@ -1,0 +1,230 @@
+/* Intrepid Reader Magnify plugin — handheld landscape lens (V3) */
+
+.book[data-magnify-zone="center"],
+.book[data-magnify-zone="center"] * {
+  cursor: zoom-in !important;
+}
+
+.book[data-magnify-zone="left"],
+.book[data-magnify-zone="left"] * {
+  cursor: w-resize !important;
+}
+
+.book[data-magnify-zone="right"],
+.book[data-magnify-zone="right"] * {
+  cursor: e-resize !important;
+}
+
+.reader-magnify-root {
+  --reader-magnify-z: 9000;
+}
+
+.reader-magnify-toggle,
+.reader-magnify-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(239, 231, 210, 0.12);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.05);
+  color: rgba(239, 231, 210, 0.82);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0.78;
+}
+
+.reader-magnify-toggle.is-on {
+  border-color: rgba(198, 141, 85, 0.45);
+  color: rgba(239, 231, 210, 0.92);
+}
+
+.reader-magnify-toggle:not(.is-on) {
+  opacity: 0.55;
+}
+
+.reader-magnify-button-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.reader-magnify-toggle:hover,
+.reader-magnify-button:hover {
+  border-color: rgba(198, 141, 85, 0.5);
+  background: rgba(198, 141, 85, 0.16);
+}
+
+.reader-magnify-button.is-active {
+  border-color: rgba(198, 141, 85, 0.72);
+  background: rgba(198, 141, 85, 0.28);
+  color: #c68d55;
+}
+
+.reader-magnify-button[hidden] {
+  display: none !important;
+}
+
+.reader-magnify-button svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.reader-magnify-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--reader-magnify-z, 9000);
+  pointer-events: none;
+  touch-action: manipulation;
+}
+
+.reader-magnify-overlay[hidden] {
+  display: none !important;
+}
+
+.reader-magnify-dismiss-layer {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  pointer-events: auto;
+  cursor: default;
+}
+
+/* Landscape handheld lens — ~2:1 width:height */
+.reader-magnify-lens {
+  position: fixed;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid rgba(198, 141, 85, 0.65);
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    rgba(20, 18, 16, 0.92) 0%,
+    rgba(10, 9, 8, 0.96) 100%
+  );
+  box-shadow:
+    0 14px 44px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(239, 231, 210, 0.12),
+    0 0 0 1px rgba(239, 231, 210, 0.06);
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.reader-magnify-lens:active {
+  cursor: grabbing;
+}
+
+.reader-magnify-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
+  border-radius: 12px 12px 0 0;
+  background: #070706;
+}
+
+.reader-magnify-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  transform-origin: 0 0;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.reader-magnify-zoom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-top: 1px solid rgba(239, 231, 210, 0.06);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.reader-magnify-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(239, 231, 210, 0.1);
+  border-radius: 5px;
+  background: rgba(239, 231, 210, 0.04);
+  color: rgba(239, 231, 210, 0.88);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reader-magnify-zoom-btn:hover:not(:disabled) {
+  border-color: rgba(198, 141, 85, 0.35);
+  background: rgba(198, 141, 85, 0.1);
+  color: rgba(198, 141, 85, 0.92);
+}
+
+.reader-magnify-zoom-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.reader-magnify-zoom-label {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(198, 141, 85, 0.85);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.reader-magnify-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(239, 231, 210, 0.22);
+  border-radius: 999px;
+  background: rgba(8, 7, 6, 0.88);
+  color: #efe7d2;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.reader-magnify-close:hover {
+  border-color: rgba(198, 141, 85, 0.55);
+  color: #c68d55;
+}

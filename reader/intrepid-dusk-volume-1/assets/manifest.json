@@ -5,6 +5,14 @@
   "format": "legendist.reader-assets.v0",
   "pages": [
     {
+      "id": "cover-hardcover",
+      "role": "cover",
+      "width": 2200,
+      "height": 3348,
+      "webp": "./pages/cover-hardcover.webp",
+      "fallback": "./pages/cover-hardcover.jpg"
+    },
+    {
       "id": "page-001",
       "issue": "001",
       "issuePage": 1,

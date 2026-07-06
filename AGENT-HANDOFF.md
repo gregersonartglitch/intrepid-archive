@@ -2,6 +2,20 @@
 
 Onboarding for any agent working on **intrepid-map** (deploy site) and its integration with **Legendist reader R&D** (Codex repo).
 
+### Fable / external audit
+
+| Doc | Purpose |
+|-----|---------|
+| [`AUDIT-BRIEF.md`](AUDIT-BRIEF.md) | Fable audit packet — invariants, auth matrix, 15-min play script, system prompt |
+| [`docs/FABLE-LOCAL-TEST.md`](docs/FABLE-LOCAL-TEST.md) | Step-by-step local audit workflow for Claude Code |
+| `scripts/audit-checks.mjs` | Automated smoke checks against `localhost:8080` |
+| `scripts/run-local-audit.ps1` | Starts server (if needed) + runs audit checks |
+
+```powershell
+npx -y http-server . -p 8080 --cors -c-1   # terminal 1
+node scripts/audit-checks.mjs               # terminal 2
+```
+
 ---
 
 ## Two Repos, One Product
@@ -22,7 +36,8 @@ Onboarding for any agent working on **intrepid-map** (deploy site) and its integ
 |-----|--------|-------|
 | `build-50` | Stable beta baseline | Fog Pass 3 region reveal **reverted**. Return with `git checkout build-50`. |
 | `build-57` | Beta go-live | Reader preload, labels, Pass 3 still shelved |
-| `build-59` | Current target | Cartographer gate fix, Sharon reader page rebuilds, agent handoff |
+| `build-59` | Stable | Cartographer gate fix, Sharon reader page rebuilds, agent handoff |
+| `build-95` | Current target | Reader magnify plugin (opt-in via localStorage `intrepid_reader_magnify_enabled=1`), hardcover cover spread assets |
 
 ### Version stamps (must stay in sync)
 
@@ -89,6 +104,9 @@ crossing-pool → dawn-spear → sabellas-hut (tutorial ends) → mish → monas
 ---
 
 ## Reader Integration
+
+**Magnify (build 95):** eader/plugins/magnify/ loaded when ENABLE_READER_MAGNIFY is true in spike.js; default **off** until the user enables it (intrepid_reader_magnify_enabled = 1). Cache bust magnify-plugin.js?v=10.
+
 
 Full workflow: `reader/README.md`
 

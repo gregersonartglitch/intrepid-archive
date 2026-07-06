@@ -13,9 +13,9 @@
   var LS_BACKER_KEY = "intrepid_reader_backer";
 
   var ISSUE_BOUNDARIES = [
-    { issue: "001", startIndex: 0, endIndex: 20 },
-    { issue: "002", startIndex: 21, endIndex: 41 },
-    { issue: "003", startIndex: 42, endIndex: 999 },
+    { issue: "001", startIndex: 0, endIndex: 22 },
+    { issue: "002", startIndex: 23, endIndex: 43 },
+    { issue: "003", startIndex: 44, endIndex: 999 },
   ];
 
   var ISSUE_COPY = {

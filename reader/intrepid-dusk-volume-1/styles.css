@@ -318,6 +318,7 @@ h1 {
   transform: scale(1.08);
   opacity: 0.55;
 }
+
 .reader-backer-gate[hidden] {
   display: none !important;
 }
