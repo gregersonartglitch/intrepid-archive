@@ -26,7 +26,7 @@ node scripts/audit-checks.mjs               # terminal 2
 | **legendist** (Codex) | `C:\Users\tanja\Documents\Codex\legendist` | Reader R&D — page-curl spike, PDF→WebP scripts, handoff zips |
 
 **Live site:** https://archive.intrepidgraphicnovel.com  
-**Netlify site:** `aesthetic-salmiakki-cf6713` — deploy from repo root: `netlify deploy --prod --dir .`
+**Netlify site:** `aesthetic-salmiakki-cf6713` — deploy from repo root: `netlify deploy --prod --dir .` (if Forbidden: `netlify deploy --dir .` then `netlify api restoreSiteDeploy` — see `.planning/debug/ship-triage-build95.md`)
 
 ---
 
@@ -53,18 +53,22 @@ Console on live: `[Intrepid Map] build 59`
 
 ## Auth Tiers
 
-Three entry paths on the landing page. **Never cross-contaminate localStorage keys.**
+Single **archive access code** on the landing page unlocks everything that tier is eligible for. Issue 1 and the dossier stay public with no password.
 
-| Tier | Password | Access | localStorage key |
-|------|----------|--------|------------------|
+| Tier | Password | Access | localStorage keys |
+|------|----------|--------|-------------------|
 | **Public** | *(none)* | Issue 1 reader, Character Dossier | — |
-| **Reader backer** | `scribe4` | Issues 2 & 3 | `intrepid_reader_backer`, `intrepid_reader_issue_*` |
-| **Cartographer** | `hollowlands9` | Interactive fog map ($60+ Hollowlands pledge) | `intrepid_cartographer_unlocked` |
+| **Reader backer** | `scribe4` | Issues 2 & 3 (reader only) | `intrepid_reader_backer`, `intrepid_reader_issue_002`, `intrepid_reader_issue_003` |
+| **Cartographer** | `hollowlands9` | Interactive map + reader Issues 2–3 | `intrepid_cartographer_unlocked`, plus reader keys above |
+
+Router: `archive-access.js` (`IntrepidArchiveAccess.submitArchiveCode`). Loaded on home and in the reader.
 
 ### Critical gate rules
 
-- **Cartographer gate** (`index.html`): Only `intrepid_cartographer_unlocked === 'granted'` grants map access. Set only by `hollowlands9` or `?key=CART-*` URL. **No legacy auto-migrate** from old `intrepid_atlas_auth` + tier A — that was a bypass bug fixed in build-59.
-- **Reader gate** (`reader/backer-gate.js`): `scribe4` unlocks issues 2–3 only. Does **not** grant cartographer access.
+- **Landing** (`index.html`): Archive access code field sets tier keys once; map and reader gates read them and do not re-prompt.
+- **Cartographer gate** (`index.html`): Only `intrepid_cartographer_unlocked === 'granted'` grants map access. Set by `hollowlands9` or `?key=CART-*` URL. **No legacy auto-migrate** from old `intrepid_atlas_auth` + tier A.
+- **Reader gate** (`reader/backer-gate.js`): Skips if reader or cartographer keys already granted. Issue boundaries account for cover spread (+2) and Ch.3 spacer.
+- **Map reset** (`fog.js`): Clears cartographer auth and map progress; **keeps** reader backer keys.
 - Issue 1 is always open — no password.
 
 ---
@@ -105,7 +109,8 @@ crossing-pool → dawn-spear → sabellas-hut (tutorial ends) → mish → monas
 
 ## Reader Integration
 
-**Magnify (build 95):** eader/plugins/magnify/ loaded when ENABLE_READER_MAGNIFY is true in spike.js; default **off** until the user enables it (intrepid_reader_magnify_enabled = 1). Cache bust magnify-plugin.js?v=10.
+**Magnify (build 95):** 
+eader/plugins/magnify/ loaded when ENABLE_READER_MAGNIFY is true in spike.js; default **off** until the user enables it (intrepid_reader_magnify_enabled = 1). Cache bust magnify-plugin.js?v=10.
 
 
 Full workflow: `reader/README.md`
@@ -175,7 +180,7 @@ npx http-server . -p 8080 --cors -c-1
 4. Test reader: Issue 1 open; issues 2–3 gated behind `scribe4`
 5. Commit deploy-worthy files (not `.tmp/`, upload zips, or scratch scripts)
 6. Tag: `git tag build-N`
-7. Deploy: `netlify deploy --prod --dir .`
+7. Deploy: `netlify deploy --prod --dir .` (Forbidden workaround: draft deploy + `netlify api restoreSiteDeploy`)
 8. Verify live: console build stamp, gate behavior, reader pages
 
 ---

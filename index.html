@@ -137,6 +137,71 @@ input { font-family: inherit; }
   text-transform: uppercase;
   line-height: 1.65;
 }
+.landing-access {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(198,141,85,0.12);
+}
+.landing-access-label {
+  display: block;
+  margin-bottom: 10px;
+  color: rgba(191,178,153,0.62);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.landing-access-row {
+  display: flex;
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+.landing-access-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  background: rgba(8,8,12,0.55);
+  border: 1px solid rgba(198,141,85,0.22);
+  border-radius: 4px;
+  color: var(--bone);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.4px;
+}
+.landing-access-input::placeholder { color: rgba(191,178,153,0.35); }
+.landing-access-input:focus {
+  outline: none;
+  border-color: rgba(198,141,85,0.45);
+}
+.landing-access-btn {
+  padding: 10px 14px;
+  background: rgba(198,141,85,0.14);
+  border: 1px solid rgba(198,141,85,0.28);
+  border-radius: 4px;
+  color: var(--amber-glow);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.landing-access-btn:hover {
+  background: rgba(198,141,85,0.22);
+  border-color: rgba(198,141,85,0.42);
+}
+.landing-access-msg {
+  margin: 12px 0 0;
+  min-height: 1.2em;
+  color: rgba(198,141,85,0.85);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+}
+.landing-access-msg.is-error { color: rgba(220,120,90,0.9); }
 .landing-badge {
   display: block;
   font-size: 9px;
@@ -2126,7 +2191,15 @@ body.edit-mode .mk-dot-wrap > * {
       <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
     </div>
-    <div class="landing-note">Issues 2 &amp; 3 unlock inside the reader for Kickstarter backers</div>
+    <div class="landing-note">Issue 1 and the dossier are open to all. Backers unlock the full archive below.</div>
+    <div class="landing-access">
+      <label class="landing-access-label" for="landing-access-pw">Archive access code</label>
+      <div class="landing-access-row">
+        <input id="landing-access-pw" class="landing-access-input" type="password" placeholder="Enter your access word" autocomplete="off" spellcheck="false" aria-describedby="landing-access-msg">
+        <button id="landing-access-btn" class="landing-access-btn" type="button">Unlock</button>
+      </div>
+      <p id="landing-access-msg" class="landing-access-msg" aria-live="polite"></p>
+    </div>
   </div>
 </div>
 
@@ -2410,7 +2483,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 96;
+window.INTREPID_BUILD = 97;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2486,6 +2559,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
+<script src="archive-access.js?v=97"></script>
 <script src="fog.js?v=94"></script>
 <script>
 (function() {
@@ -2494,8 +2568,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   /* ═══════════════════════════════════════════
      CONSTANTS & STATE
      ═══════════════════════════════════════════ */
-  // Cartographer access — Hollowlands pledge ($60+) only
-  const CARTOGRAPHER_CODE = 'hollowlands9';
   const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
   const LS_REVEALS_KEY = 'intrepid_atlas_reveals';
   // Private Cartographer links: ?key=CART-XXXXXXXX (8–24 uppercase letters/digits after prefix)
@@ -2507,13 +2579,19 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function hasCartographerAccess() {
-    // Only hollowlands9 (or CART- private link) may set this key — never scribe4 / reader tier B
+    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.hasCartographerAccess) {
+      return window.IntrepidArchiveAccess.hasCartographerAccess();
+    }
     return localStorage.getItem(LS_CARTOGRAPHER_KEY) === 'granted';
   }
 
   function grantCartographerAccess(label) {
-    localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
-    if (label) localStorage.setItem('intrepid_atlas_label', label);
+    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.grantCartographerAccess) {
+      window.IntrepidArchiveAccess.grantCartographerAccess(label);
+    } else {
+      localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
+      if (label) localStorage.setItem('intrepid_atlas_label', label);
+    }
     currentTier = 'A';
   }
 
@@ -2636,22 +2714,37 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function submitPassword() {
-    const val = gatePw.value.trim().toLowerCase();
+    const val = gatePw.value.trim();
+    const access = window.IntrepidArchiveAccess
+      ? window.IntrepidArchiveAccess.submitArchiveCode(val)
+      : null;
 
-    if (val === CARTOGRAPHER_CODE) {
-      grantCartographerAccess('Patron');
+    if (access && access.ok && access.cartographer) {
+      currentTier = 'A';
       gate.classList.add('hidden');
       const scanCode = new URLSearchParams(window.location.search).get('scan');
       completeAuth(scanCode);
-    } else {
-      gateErr.textContent = 'That word is not on the Cartographer roster. Check your Hollowlands pledge confirmation.';
+      return;
+    }
+
+    if (access && access.ok && access.reader && !access.cartographer) {
+      gateErr.textContent = 'That code unlocks the reader only. Cartographer tier access is required for the atlas.';
       gateErr.classList.add('show');
       const card = gate.querySelector('.gate-card');
       card.classList.remove('shake');
-      void card.offsetWidth; // force reflow
+      void card.offsetWidth;
       card.classList.add('shake');
-      setTimeout(() => gateErr.classList.remove('show'), 3000);
+      setTimeout(() => gateErr.classList.remove('show'), 4000);
+      return;
     }
+
+    gateErr.textContent = 'That word is not on the Cartographer roster. Check your Hollowlands pledge confirmation.';
+    gateErr.classList.add('show');
+    const card = gate.querySelector('.gate-card');
+    card.classList.remove('shake');
+    void card.offsetWidth;
+    card.classList.add('shake');
+    setTimeout(() => gateErr.classList.remove('show'), 3000);
   }
 
   gateBtn.addEventListener('click', submitPassword);
@@ -2659,6 +2752,55 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   landingMapBtn.addEventListener('click', enterArchiveFlow);
   if (landingReaderBtn) landingReaderBtn.addEventListener('click', enterReaderFlow);
   document.getElementById('hdr-home-btn').addEventListener('click', returnToArchiveHome);
+
+  /* ═══════════════════════════════════════════
+     LANDING ARCHIVE ACCESS (unified password)
+     ═══════════════════════════════════════════ */
+  const landingAccessPw = document.getElementById('landing-access-pw');
+  const landingAccessBtn = document.getElementById('landing-access-btn');
+  const landingAccessMsg = document.getElementById('landing-access-msg');
+
+  function formatLandingUnlockMessage(status) {
+    if (status.cartographer && status.reader) {
+      return 'Cartographer archive unlocked — map and Issues 2–3 are ready.';
+    }
+    if (status.reader) {
+      return 'Reader unlocked — Issues 2 and 3 are ready when you read Volume 1.';
+    }
+    if (status.cartographer) {
+      return 'Cartographer atlas unlocked.';
+    }
+    return '';
+  }
+
+  function refreshLandingAccessMessage() {
+    if (!landingAccessMsg || !window.IntrepidArchiveAccess) return;
+    const status = window.IntrepidArchiveAccess.getUnlockStatus();
+    const msg = formatLandingUnlockMessage(status);
+    landingAccessMsg.textContent = msg;
+    landingAccessMsg.classList.toggle('is-error', false);
+  }
+
+  function submitLandingAccess() {
+    if (!landingAccessPw || !window.IntrepidArchiveAccess) return;
+    const result = window.IntrepidArchiveAccess.submitArchiveCode(landingAccessPw.value);
+    if (result.ok) {
+      landingAccessPw.value = '';
+      landingAccessMsg.classList.remove('is-error');
+      refreshLandingAccessMessage();
+      return;
+    }
+    if (landingAccessMsg) {
+      landingAccessMsg.textContent = 'That access word was not recognized. Check your Kickstarter update.';
+      landingAccessMsg.classList.add('is-error');
+    }
+  }
+
+  if (landingAccessBtn) landingAccessBtn.addEventListener('click', submitLandingAccess);
+  if (landingAccessPw) {
+    landingAccessPw.addEventListener('keydown', e => { if (e.key === 'Enter') submitLandingAccess(); });
+  }
+  refreshLandingAccessMessage();
 
   // Show/hide password toggle
   const gateEye = document.getElementById('gate-eye');
