@@ -12,10 +12,17 @@
   var LS_ISSUE_PREFIX = "intrepid_reader_issue_";
   var LS_BACKER_KEY = "intrepid_reader_backer";
 
+  // Must match reader spike.js pageEntries:
+  // coverSpread (2) + issue1 (21) + issue2 (21) + ch3 spacer (1) + issue3 (26)
+  var COVER_SPREAD_PAGES = 2;
+  var ISSUE_PAGE_COUNTS = [21, 21, 26];
+  var ISSUE_002_START = COVER_SPREAD_PAGES + ISSUE_PAGE_COUNTS[0];
+  var ISSUE_003_START = ISSUE_002_START + ISSUE_PAGE_COUNTS[1];
+
   var ISSUE_BOUNDARIES = [
-    { issue: "001", startIndex: 0, endIndex: 22 },
-    { issue: "002", startIndex: 23, endIndex: 43 },
-    { issue: "003", startIndex: 44, endIndex: 999 },
+    { issue: "001", startIndex: 0, endIndex: ISSUE_002_START - 1 },
+    { issue: "002", startIndex: ISSUE_002_START, endIndex: ISSUE_003_START - 1 },
+    { issue: "003", startIndex: ISSUE_003_START, endIndex: 999 },
   ];
 
   var ISSUE_COPY = {
@@ -52,10 +59,19 @@
     return localStorage.getItem(LS_ISSUE_PREFIX + issueId) === "granted";
   }
 
+  function normalizePageIndex(pageIndex) {
+    if (pageIndex && typeof pageIndex === "object") {
+      return pageIndex.page;
+    }
+    return Number(pageIndex);
+  }
+
   function getIssueForPageIndex(pageIndex) {
+    var index = normalizePageIndex(pageIndex);
+    if (isNaN(index)) return "001";
     var i;
     for (i = ISSUE_BOUNDARIES.length - 1; i >= 0; i -= 1) {
-      if (pageIndex >= ISSUE_BOUNDARIES[i].startIndex) {
+      if (index >= ISSUE_BOUNDARIES[i].startIndex) {
         return ISSUE_BOUNDARIES[i].issue;
       }
     }
@@ -63,20 +79,23 @@
   }
 
   function submitBackerPassword(pw) {
-    var code = BACKER_CODES[pw.trim().toLowerCase()];
+    var code = BACKER_CODES[String(pw || "").trim().toLowerCase()];
     if (!code) return false;
     grantAllBackerIssues();
     return true;
   }
 
-  function migrateLegacyAuth() {
-    if (localStorage.getItem(LS_BACKER_KEY) === "granted") return;
+  function purgeMigratedLegacyAuth() {
+    if (localStorage.getItem("intrepid_reader_legacy_purged") === "yes") return;
     if (
+      localStorage.getItem(LS_BACKER_KEY) === "granted" &&
       localStorage.getItem("intrepid_atlas_auth") === "granted" &&
-      localStorage.getItem("intrepid_atlas_tier") === "B"
+      localStorage.getItem("intrepid_atlas_tier") === "B" &&
+      localStorage.getItem(LS_ISSUE_PREFIX + "002") !== "granted"
     ) {
-      grantAllBackerIssues();
+      localStorage.removeItem(LS_BACKER_KEY);
     }
+    localStorage.setItem("intrepid_reader_legacy_purged", "yes");
   }
 
   function buildGateOverlay() {
@@ -122,6 +141,7 @@
   }
 
   function showGate(issueId) {
+    if (isIssueUnlocked(issueId)) return;
     var copy = ISSUE_COPY[issueId] || ISSUE_COPY["002"];
     var el = getGateEl();
     pendingIssue = issueId;
@@ -167,7 +187,8 @@
         }
         return;
       }
-      err.textContent = "That word doesn't match our backer records. Check your Kickstarter update.";
+      err.textContent =
+        "That word doesn't match our backer records. Check your Kickstarter update.";
       el.querySelector(".reader-backer-gate-card").classList.remove("shake");
       void el.querySelector(".reader-backer-gate-card").offsetWidth;
       el.querySelector(".reader-backer-gate-card").classList.add("shake");
@@ -183,7 +204,7 @@
     });
   }
 
-  migrateLegacyAuth();
+  purgeMigratedLegacyAuth();
   bindGateEvents();
 
   window.ReaderAccess = {

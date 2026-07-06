@@ -231,6 +231,10 @@ function warmPageImage(pageIndex) {
     return;
   }
 
+  if (!canAccessPageIndex(pageIndex)) {
+    return;
+  }
+
   if (pageEntries[pageIndex].blank) {
     return;
   }
@@ -374,7 +378,10 @@ function createPageFlip() {
   });
 
   pageFlip.on("flip", (event) => {
-    var target = event.data;
+    var target =
+      event.data && typeof event.data === "object"
+        ? event.data.page
+        : event.data;
     if (!handlePageTurn(target)) {
       pageFlip.turnToPage(lastPageIndex);
     }
