@@ -124,13 +124,11 @@ function initReaderMagnify() {
         if (!requestPageTurn(lastPageIndex + 1)) {
           return;
         }
-        warmPageImage(lastPageIndex + 1);
-        warmPageImage(lastPageIndex + 2);
+        warmFlipTargetsFromDirection(true);
         pageFlip.flipNext("bottom");
         return;
       }
-      warmPageImage(lastPageIndex - 1);
-      warmPageImage(lastPageIndex - 2);
+      warmFlipTargetsFromDirection(false);
       pageFlip.flipPrev("bottom");
     },
   });
@@ -207,10 +205,11 @@ function whenPageImageReady(image) {
     return Promise.resolve();
   }
 
+  // Already cached: show immediately so flip does not reveal empty page.
+  // First paint still waits for load + decode below.
   if (image.complete && image.naturalWidth > 0) {
-    return decodePageImage(image).then(function () {
-      markPageReady(image);
-    });
+    markPageReady(image);
+    return decodePageImage(image);
   }
 
   return new Promise(function (resolve) {
@@ -293,6 +292,13 @@ function requestPageTurn(targetIndex) {
   return true;
 }
 
+function warmFlipTargetsFromDirection(forward) {
+  const step = forward ? 1 : -1;
+  warmPageImage(lastPageIndex + step);
+  warmPageImage(lastPageIndex + step * 2);
+  preloadAround(lastPageIndex + step);
+}
+
 function warmFlipTargetFromPointer(event) {
   const rect = elements.book.getBoundingClientRect();
   if (!rect.width) {
@@ -300,9 +306,7 @@ function warmFlipTargetFromPointer(event) {
   }
 
   const clickOnRight = event.clientX - rect.left > rect.width / 2;
-  const targetIndex = clickOnRight ? lastPageIndex + 1 : lastPageIndex - 1;
-  warmPageImage(targetIndex);
-  warmPageImage(targetIndex + (clickOnRight ? 1 : -1));
+  warmFlipTargetsFromDirection(clickOnRight);
 }
 
 function createPageFlip() {
@@ -374,6 +378,13 @@ function createPageFlip() {
     if (!handlePageTurn(target)) {
       pageFlip.turnToPage(lastPageIndex);
     }
+  });
+
+  pageFlip.on("changeState", (event) => {
+    if (event.data !== "flipping") {
+      return;
+    }
+    preloadAround(lastPageIndex);
   });
 
   pageFlip.loadFromHTML(pageElements);
@@ -652,8 +663,7 @@ elements.controls.addEventListener("click", (event) => {
     if (window.IntrepidReaderMagnify) {
       window.IntrepidReaderMagnify.unmount();
     }
-    warmPageImage(lastPageIndex - 1);
-    warmPageImage(lastPageIndex - 2);
+    warmFlipTargetsFromDirection(false);
     pageFlip.flipPrev("bottom");
   }
   if (action === "next") {
@@ -661,8 +671,7 @@ elements.controls.addEventListener("click", (event) => {
     if (window.IntrepidReaderMagnify) {
       window.IntrepidReaderMagnify.unmount();
     }
-    warmPageImage(lastPageIndex + 1);
-    warmPageImage(lastPageIndex + 2);
+    warmFlipTargetsFromDirection(true);
     pageFlip.flipNext("bottom");
   }
   if (action === "reset") {
