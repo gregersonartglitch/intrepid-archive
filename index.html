@@ -47,9 +47,53 @@ button { cursor: pointer; border: none; background: none; font-family: inherit; 
 input { font-family: inherit; }
 
 /* ═══════════════════════════════════════════
-   PUBLIC LANDING
+   ARCHIVE ENTRY (first screen)
    ═══════════════════════════════════════════ */
-#landing {
+#archive-entry {
+  position: fixed; inset: 0; z-index: 9600;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 55%, rgba(42,35,28,0.55) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 30% 40%, rgba(58,42,24,0.25) 0%, transparent 60%),
+    radial-gradient(ellipse 35% 45% at 75% 60%, rgba(50,36,22,0.2) 0%, transparent 55%),
+    linear-gradient(175deg, #0a090e 0%, #0d0d12 40%, #12100e 100%);
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+}
+#archive-entry.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.entry-guest-btn {
+  display: inline-block;
+  margin-top: 18px;
+  min-height: 44px;
+  padding: 12px 28px;
+  border: 1px solid rgba(198,141,85,0.28);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--bone-dim);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+}
+.entry-guest-btn:hover {
+  border-color: rgba(198,141,85,0.45);
+  color: var(--bone);
+  background: rgba(198,141,85,0.06);
+}
+.entry-guest-note {
+  margin-top: 14px;
+  color: rgba(191,178,153,0.42);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  line-height: 1.6;
+}
+
+/* ═══════════════════════════════════════════
+   ARCHIVE HOME
+   ═══════════════════════════════════════════ */
+#archive-home {
   position: fixed; inset: 0; z-index: 9500;
   display: flex; align-items: center; justify-content: center;
   padding: 36px;
@@ -60,7 +104,7 @@ input { font-family: inherit; }
     linear-gradient(175deg, #08070c 0%, #0d0d12 44%, #15100b 100%);
   transition: opacity 0.55s ease, visibility 0.55s ease;
 }
-#landing.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#archive-home.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 .landing-card {
   position: relative;
   width: min(760px, 94vw);
@@ -157,10 +201,16 @@ input { font-family: inherit; }
   max-width: 320px;
   margin: 0 auto;
 }
-.landing-access-input {
+.landing-access-input-wrap {
+  position: relative;
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
+}
+.landing-access-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 36px 10px 12px;
   background: rgba(8,8,12,0.55);
   border: 1px solid rgba(198,141,85,0.22);
   border-radius: 4px;
@@ -174,6 +224,30 @@ input { font-family: inherit; }
   outline: none;
   border-color: rgba(198,141,85,0.45);
 }
+.landing-access-toggle {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(191,178,153,0.35);
+  border-radius: 4px;
+  transition: color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+}
+.landing-access-toggle:hover { color: var(--amber); background: rgba(198,141,85,0.08); }
+.landing-access-toggle.showing { color: var(--amber-glow); }
+.landing-access-toggle svg { display: block; pointer-events: none; }
+.landing-access-toggle .pw-toggle-icon--hide { display: none; }
+.landing-access-toggle.showing .pw-toggle-icon--show { display: none; }
+.landing-access-toggle.showing .pw-toggle-icon--hide { display: block; }
 .landing-access-btn {
   padding: 10px 14px;
   background: rgba(198,141,85,0.14);
@@ -2178,8 +2252,32 @@ body.edit-mode .mk-dot-wrap > * {
 
 <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">The Hollowlands — Intrepid Dusk Cartographer Archive</h1>
 
-<!-- ═══════════ PUBLIC LANDING ═══════════ -->
-<div id="landing">
+<!-- ═══════════ ARCHIVE ENTRY (first screen) ═══════════ -->
+<div id="archive-entry" class="hidden">
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="entry-title">
+    <span class="gate-corner-tr">◆</span>
+    <span class="gate-corner-bl">◆</span>
+    <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
+    <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
+    <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
+    <div class="gate-rule gate-fade" data-delay="400"></div>
+    <div class="gate-subtitle gate-fade" data-delay="600">Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.</div>
+    <div class="gate-input-wrap gate-fade" data-delay="800">
+      <input id="entry-access-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Archive access word" aria-describedby="entry-access-msg">
+      <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access code">
+        <svg class="pw-toggle-icon pw-toggle-icon--show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="pw-toggle-icon pw-toggle-icon--hide" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
+      </button>
+    </div>
+    <button id="entry-access-btn" class="gate-btn gate-fade" data-delay="1000" type="button">Unlock Archive</button>
+    <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
+    <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button">Continue as guest</button>
+    <p class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
+  </div>
+</div>
+
+<!-- ═══════════ ARCHIVE HOME ═══════════ -->
+<div id="archive-home" class="hidden">
   <div class="landing-card">
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
@@ -2190,15 +2288,6 @@ body.edit-mode .mk-dot-wrap > * {
       <a class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge">Open to all</span></a>
       <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
-    </div>
-    <div class="landing-note">Issue 1 and the dossier are open to all. Backers unlock the full archive below.</div>
-    <div class="landing-access">
-      <label class="landing-access-label" for="landing-access-pw">Archive access code</label>
-      <div class="landing-access-row">
-        <input id="landing-access-pw" class="landing-access-input" type="password" placeholder="Enter your access word" autocomplete="off" spellcheck="false" aria-describedby="landing-access-msg">
-        <button id="landing-access-btn" class="landing-access-btn" type="button">Unlock</button>
-      </div>
-      <p id="landing-access-msg" class="landing-access-msg" aria-live="polite"></p>
     </div>
   </div>
 </div>
@@ -2483,7 +2572,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 97;
+window.INTREPID_BUILD = 99;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2559,8 +2648,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=97"></script>
-<script src="fog.js?v=94"></script>
+<script src="archive-access.js?v=99"></script>
+<script src="fog.js?v=99"></script>
 <script>
 (function() {
   'use strict';
@@ -2603,9 +2692,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   let veilLayers = {};    // region_id -> L.polygon overlay
 
   /* ═══════════════════════════════════════════
-     PASSWORD GATE
+     ARCHIVE ENTRY + HOME + MAP GATE
      ═══════════════════════════════════════════ */
-  const landing  = document.getElementById('landing');
+  const archiveEntry = document.getElementById('archive-entry');
+  const archiveHome  = document.getElementById('archive-home');
   const landingMapBtn = document.getElementById('landing-map');
   const landingReaderBtn = document.getElementById('landing-reader');
   const gate     = document.getElementById('gate');
@@ -2614,8 +2704,68 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const gateErr  = document.getElementById('gate-err');
   gate.style.display = 'none';
 
-  // Sequential fade-in of gate elements
+  function shouldSkipArchiveEntry() {
+    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.shouldSkipArchiveEntry) {
+      return window.IntrepidArchiveAccess.shouldSkipArchiveEntry();
+    }
+    return sessionStorage.getItem('intrepid_archive_entered') === '1';
+  }
+
+  function markArchiveEntered() {
+    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.setArchiveEntered) {
+      window.IntrepidArchiveAccess.setArchiveEntered();
+    } else {
+      sessionStorage.setItem('intrepid_archive_entered', '1');
+    }
+  }
+
+  function showArchiveEntry() {
+    if (archiveHome) {
+      archiveHome.style.display = 'none';
+      archiveHome.classList.add('hidden');
+    }
+    if (archiveEntry) {
+      archiveEntry.classList.remove('hidden');
+      archiveEntry.style.display = 'flex';
+      const els = archiveEntry.querySelectorAll('.gate-fade');
+      els.forEach(function(el) {
+        el.classList.remove('vis');
+        const delay = parseInt(el.dataset.delay, 10) || 0;
+        setTimeout(function() { el.classList.add('vis'); }, 100 + delay);
+      });
+    }
+  }
+
+  function showArchiveHome() {
+    if (archiveEntry) {
+      archiveEntry.style.display = 'none';
+      archiveEntry.classList.add('hidden');
+    }
+    if (archiveHome) {
+      archiveHome.style.display = 'flex';
+      archiveHome.classList.remove('hidden');
+    }
+  }
+
+  function enterArchiveHome() {
+    markArchiveEntered();
+    showArchiveHome();
+  }
+
+  function hideArchiveScreens() {
+    if (archiveHome) {
+      archiveHome.style.display = 'none';
+      archiveHome.classList.add('hidden');
+    }
+    if (archiveEntry) {
+      archiveEntry.style.display = 'none';
+      archiveEntry.classList.add('hidden');
+    }
+  }
+
+  // Sequential fade-in of map gate elements
   function animateGateIn() {
+    hideArchiveScreens();
     gate.classList.remove('hidden');
     gate.style.display = 'flex';
     const els = gate.querySelectorAll('.gate-fade');
@@ -2631,7 +2781,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function enterArchiveFlow() {
-    if (landing) landing.classList.add('hidden');
+    hideArchiveScreens();
+    const scanCode = new URLSearchParams(window.location.search).get('scan');
+    // Entry unlock already set intrepid_cartographer_unlocked — skip second gate
+    if (hasCartographerAccess()) {
+      currentTier = 'A';
+      completeAuth(scanCode);
+      return;
+    }
     gateErr.classList.remove('show');
     gateErr.textContent = '';
     gatePw.value = '';
@@ -2643,7 +2800,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function completeAuth(scanCode) {
+    hideArchiveScreens();
     gate.style.display = 'none';
+    gate.classList.add('hidden');
     launch(scanCode);
   }
 
@@ -2664,9 +2823,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (journeyToast) journeyToast.classList.remove('visible');
     if (progress) progress.style.display = '';
 
-    if (landing) {
-      landing.style.display = 'flex';
-      landing.classList.remove('hidden');
+    if (archiveHome) {
+      archiveHome.style.display = 'flex';
+      archiveHome.classList.remove('hidden');
+    }
+    if (archiveEntry) {
+      archiveEntry.style.display = 'none';
+      archiveEntry.classList.add('hidden');
     }
     gate.style.display = 'none';
     gate.classList.add('hidden');
@@ -2749,18 +2912,19 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   gateBtn.addEventListener('click', submitPassword);
   gatePw.addEventListener('keydown', e => { if (e.key === 'Enter') submitPassword(); });
-  landingMapBtn.addEventListener('click', enterArchiveFlow);
+  if (landingMapBtn) landingMapBtn.addEventListener('click', enterArchiveFlow);
   if (landingReaderBtn) landingReaderBtn.addEventListener('click', enterReaderFlow);
   document.getElementById('hdr-home-btn').addEventListener('click', returnToArchiveHome);
 
   /* ═══════════════════════════════════════════
-     LANDING ARCHIVE ACCESS (unified password)
+     ARCHIVE ENTRY ACCESS (unified password)
      ═══════════════════════════════════════════ */
-  const landingAccessPw = document.getElementById('landing-access-pw');
-  const landingAccessBtn = document.getElementById('landing-access-btn');
-  const landingAccessMsg = document.getElementById('landing-access-msg');
+  const entryAccessPw = document.getElementById('entry-access-pw');
+  const entryAccessBtn = document.getElementById('entry-access-btn');
+  const entryAccessMsg = document.getElementById('entry-access-msg');
+  const entryGuestBtn = document.getElementById('entry-guest-btn');
 
-  function formatLandingUnlockMessage(status) {
+  function formatEntryUnlockMessage(status) {
     if (status.cartographer && status.reader) {
       return 'Cartographer archive unlocked — map and Issues 2–3 are ready.';
     }
@@ -2773,34 +2937,49 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     return '';
   }
 
-  function refreshLandingAccessMessage() {
-    if (!landingAccessMsg || !window.IntrepidArchiveAccess) return;
-    const status = window.IntrepidArchiveAccess.getUnlockStatus();
-    const msg = formatLandingUnlockMessage(status);
-    landingAccessMsg.textContent = msg;
-    landingAccessMsg.classList.toggle('is-error', false);
-  }
-
-  function submitLandingAccess() {
-    if (!landingAccessPw || !window.IntrepidArchiveAccess) return;
-    const result = window.IntrepidArchiveAccess.submitArchiveCode(landingAccessPw.value);
+  function submitEntryAccess() {
+    if (!entryAccessPw || !window.IntrepidArchiveAccess) return;
+    const result = window.IntrepidArchiveAccess.submitArchiveCode(entryAccessPw.value);
     if (result.ok) {
-      landingAccessPw.value = '';
-      landingAccessMsg.classList.remove('is-error');
-      refreshLandingAccessMessage();
+      entryAccessPw.value = '';
+      if (result.cartographer) grantCartographerAccess(result.label);
+      if (entryAccessMsg) {
+        const status = window.IntrepidArchiveAccess.getUnlockStatus();
+        entryAccessMsg.textContent = formatEntryUnlockMessage(status);
+        entryAccessMsg.classList.remove('show');
+        entryAccessMsg.classList.remove('is-error');
+      }
+      enterArchiveHome();
       return;
     }
-    if (landingAccessMsg) {
-      landingAccessMsg.textContent = 'That access word was not recognized. Check your Kickstarter update.';
-      landingAccessMsg.classList.add('is-error');
+    if (entryAccessMsg) {
+      entryAccessMsg.textContent = 'That access word was not recognized. Check your Kickstarter update.';
+      entryAccessMsg.classList.add('show');
+      const card = archiveEntry && archiveEntry.querySelector('.gate-card');
+      if (card) {
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+      }
     }
   }
 
-  if (landingAccessBtn) landingAccessBtn.addEventListener('click', submitLandingAccess);
-  if (landingAccessPw) {
-    landingAccessPw.addEventListener('keydown', e => { if (e.key === 'Enter') submitLandingAccess(); });
+  if (entryAccessBtn) entryAccessBtn.addEventListener('click', submitEntryAccess);
+  if (entryAccessPw) {
+    entryAccessPw.addEventListener('keydown', e => { if (e.key === 'Enter') submitEntryAccess(); });
   }
-  refreshLandingAccessMessage();
+  if (entryGuestBtn) entryGuestBtn.addEventListener('click', enterArchiveHome);
+
+  const entryAccessEye = document.getElementById('entry-access-eye');
+  if (entryAccessEye && entryAccessPw) {
+    entryAccessEye.addEventListener('click', () => {
+      const isPassword = entryAccessPw.type === 'password';
+      entryAccessPw.type = isPassword ? 'text' : 'password';
+      entryAccessEye.classList.toggle('showing', isPassword);
+      entryAccessEye.setAttribute('aria-label', isPassword ? 'Hide access code' : 'Show access code');
+      entryAccessPw.focus();
+    });
+  }
 
   // Show/hide password toggle
   const gateEye = document.getElementById('gate-eye');
@@ -2820,7 +2999,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     const loader = document.getElementById('loader');
 
     document.body.classList.add('map-session');
-    if (landing) landing.classList.add('hidden');
+    hideArchiveScreens();
     app.classList.add('show');
 
     // Re-entry: map already built — reveal UI without re-initing Leaflet
@@ -4999,8 +5178,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      ═══════════════════════════════════════════ */
   bindJourneyControls();
   if (hasDirectArchiveIntent()) {
-    if (landing) landing.style.display = 'none';
+    if (archiveEntry) archiveEntry.style.display = 'none';
+    if (archiveHome) archiveHome.style.display = 'none';
     checkGate();
+  } else if (shouldSkipArchiveEntry()) {
+    showArchiveHome();
+  } else {
+    showArchiveEntry();
   }
 
   // Legacy ?reader= links — Issue 1 is open, no gate required

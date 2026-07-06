@@ -14,6 +14,7 @@
   var LS_ATLAS_LABEL = "intrepid_atlas_label";
   var LS_BACKER_KEY = "intrepid_reader_backer";
   var LS_ISSUE_PREFIX = "intrepid_reader_issue_";
+  var SS_ARCHIVE_ENTERED = "intrepid_archive_entered";
 
   function grantCartographerAccess(label) {
     localStorage.setItem(LS_CARTOGRAPHER_KEY, "granted");
@@ -64,6 +65,21 @@
     };
   }
 
+  function hasArchiveEntered() {
+    return sessionStorage.getItem(SS_ARCHIVE_ENTERED) === "1";
+  }
+
+  function setArchiveEntered() {
+    sessionStorage.setItem(SS_ARCHIVE_ENTERED, "1");
+  }
+
+  function shouldSkipArchiveEntry() {
+    if (hasArchiveEntered()) return true;
+    if (hasCartographerAccess()) return true;
+    if (hasReaderBackerAccess()) return true;
+    return false;
+  }
+
   global.IntrepidArchiveAccess = {
     submitArchiveCode: submitArchiveCode,
     grantCartographerAccess: grantCartographerAccess,
@@ -71,7 +87,11 @@
     hasCartographerAccess: hasCartographerAccess,
     hasReaderBackerAccess: hasReaderBackerAccess,
     getUnlockStatus: getUnlockStatus,
+    hasArchiveEntered: hasArchiveEntered,
+    setArchiveEntered: setArchiveEntered,
+    shouldSkipArchiveEntry: shouldSkipArchiveEntry,
     LS_CARTOGRAPHER_KEY: LS_CARTOGRAPHER_KEY,
     LS_BACKER_KEY: LS_BACKER_KEY,
+    SS_ARCHIVE_ENTERED: SS_ARCHIVE_ENTERED,
   };
 })(typeof window !== "undefined" ? window : this);

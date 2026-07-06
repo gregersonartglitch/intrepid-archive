@@ -53,20 +53,21 @@ Console on live: `[Intrepid Map] build 59`
 
 ## Auth Tiers
 
-Single **archive access code** on the landing page unlocks everything that tier is eligible for. Issue 1 and the dossier stay public with no password.
+**Entry screen** (`#archive-entry`) is the first visit gate: backers enter a code; guests choose **Continue as guest** for Issue 1 + dossier. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
 
 | Tier | Password | Access | localStorage keys |
 |------|----------|--------|-------------------|
-| **Public** | *(none)* | Issue 1 reader, Character Dossier | — |
+| **Public** | *(none — Continue as guest)* | Issue 1 reader, Character Dossier | `intrepid_archive_entered` (session) |
 | **Reader backer** | `scribe4` | Issues 2 & 3 (reader only) | `intrepid_reader_backer`, `intrepid_reader_issue_002`, `intrepid_reader_issue_003` |
 | **Cartographer** | `hollowlands9` | Interactive map + reader Issues 2–3 | `intrepid_cartographer_unlocked`, plus reader keys above |
 
-Router: `archive-access.js` (`IntrepidArchiveAccess.submitArchiveCode`). Loaded on home and in the reader.
+Router: `archive-access.js` (`IntrepidArchiveAccess.submitArchiveCode`, `shouldSkipArchiveEntry`). Loaded on home and in the reader.
 
 ### Critical gate rules
 
-- **Landing** (`index.html`): Archive access code field sets tier keys once; map and reader gates read them and do not re-prompt.
-- **Cartographer gate** (`index.html`): Only `intrepid_cartographer_unlocked === 'granted'` grants map access. Set by `hollowlands9` or `?key=CART-*` URL. **No legacy auto-migrate** from old `intrepid_atlas_auth` + tier A.
+- **Entry** (`index.html`): Archive access code + guest path; sets tier keys once, then shows home.
+- **Home** (`index.html`): Tile grid only — no second password field.
+- **Cartographer gate** (`index.html`): Only `intrepid_cartographer_unlocked === 'granted'` grants map access. Skipped if already unlocked on entry. Set by `hollowlands9` or `?key=CART-*` URL.
 - **Reader gate** (`reader/backer-gate.js`): Skips if reader or cartographer keys already granted. Issue boundaries account for cover spread (+2) and Ch.3 spacer.
 - **Map reset** (`fog.js`): Clears cartographer auth and map progress; **keeps** reader backer keys.
 - Issue 1 is always open — no password.
@@ -189,7 +190,7 @@ npx http-server . -p 8080 --cors -c-1
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Landing, cartographer gate, map shell, INTREPID_BUILD |
+| `index.html` | Archive entry, home tiles, cartographer gate, map shell, INTREPID_BUILD |
 | `fog.js` | Entire map game engine |
 | `data.js` | Location coordinates, lore, journey path |
 | `reader/README.md` | Reader integration workflow |
