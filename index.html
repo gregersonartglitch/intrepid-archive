@@ -77,10 +77,32 @@ input { font-family: inherit; }
   text-transform: uppercase;
   transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
 }
+.entry-guest-btn-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.entry-guest-lock-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  color: rgba(212, 168, 67, 0.95);
+}
 .entry-guest-btn:hover {
   border-color: rgba(198,141,85,0.45);
   color: var(--bone);
   background: rgba(198,141,85,0.06);
+}
+.entry-guest-btn.is-locked {
+  border-color: rgba(212, 168, 67, 0.45);
+  color: rgba(212, 168, 67, 0.95);
+  background: rgba(212, 168, 67, 0.08);
+}
+.entry-guest-btn.is-locked:hover {
+  border-color: rgba(212, 168, 67, 0.45);
+  color: rgba(212, 168, 67, 0.95);
+  background: rgba(212, 168, 67, 0.08);
 }
 .entry-guest-note {
   margin-top: 14px;
@@ -89,6 +111,9 @@ input { font-family: inherit; }
   font-size: 10px;
   letter-spacing: 1.4px;
   line-height: 1.6;
+}
+.entry-guest-note.is-countdown {
+  color: rgba(212, 168, 67, 0.85);
 }
 
 /* ═══════════════════════════════════════════
@@ -287,6 +312,38 @@ input { font-family: inherit; }
   opacity: 0.72;
 }
 .landing-action.primary .landing-badge { color: rgba(13,13,18,0.65); }
+.landing-action.is-guest-locked {
+  opacity: 0.42;
+  pointer-events: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.landing-action.is-guest-locked:hover {
+  transform: none;
+  border-color: rgba(198,141,85,0.22);
+  background: rgba(198,141,85,0.055);
+  box-shadow: none;
+}
+.landing-reset-access {
+  display: inline-block;
+  margin-top: 28px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(191,178,153,0.38);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+.landing-reset-access:hover {
+  color: rgba(191,178,153,0.72);
+  text-decoration: underline;
+}
 
 /* ═══════════════════════════════════════════
    PASSWORD GATE
@@ -409,14 +466,21 @@ input { font-family: inherit; }
 .gate-btn:hover { box-shadow: 0 0 24px rgba(198,141,85,0.35); transform: translateY(-1px); }
 .gate-btn:active { transform: translateY(0); }
 
-/* Cuneiform dual-layer button — active only when html.cuneiform-buttons-on (flag + localStorage) */
+/* Cuneiform dual-layer button — proximity glitch reveal (html.cuneiform-buttons-on only) */
+html.cuneiform-buttons-on .gate-btn-cuneiform-zone {
+  display: inline-block;
+  position: relative;
+}
 html.cuneiform-buttons-on .gate-btn.cuneiform-btn {
   position: relative;
   min-width: 11.5rem;
+  overflow: hidden;
 }
 html.cuneiform-buttons-on .cuneiform-btn__layer {
   display: block;
-  transition: opacity 0.4s ease;
+}
+html.cuneiform-buttons-on .cuneiform-btn__layer--latin {
+  opacity: 0.1;
 }
 html.cuneiform-buttons-on .cuneiform-btn__layer--cuneiform {
   position: absolute;
@@ -425,19 +489,43 @@ html.cuneiform-buttons-on .cuneiform-btn__layer--cuneiform {
   align-items: center;
   justify-content: center;
   font-family: var(--font-cuneiform);
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 400;
-  letter-spacing: 4px;
+  letter-spacing: -2px;
   text-transform: none;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
 }
-html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--latin { opacity: 0; }
-html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--cuneiform { opacity: 1; }
+@keyframes cuneiform-wedge-glitch {
+  0%   { opacity: 1; transform: translate(0, 0); clip-path: inset(0 0 0 0); text-shadow: none; }
+  25%  { opacity: 0.9; transform: translate(-2px, 1px); clip-path: inset(2px 0 0 4px); text-shadow: 2px 0 rgba(255, 60, 60, 0.55), -2px 0 rgba(60, 200, 255, 0.55); }
+  50%  { opacity: 0.45; transform: translate(2px, -1px); clip-path: inset(0 3px 2px 0); text-shadow: -2px 0 rgba(255, 60, 60, 0.65), 2px 0 rgba(60, 200, 255, 0.65); }
+  75%  { opacity: 0.12; transform: translate(-1px, 0); clip-path: inset(1px 2px 0 1px); text-shadow: 1px 0 rgba(255, 80, 80, 0.4), -1px 0 rgba(80, 200, 255, 0.4); }
+  100% { opacity: 0; transform: translate(0, 0); clip-path: inset(0 0 0 0); text-shadow: none; }
+}
+@keyframes cuneiform-latin-glitch-in {
+  0%   { opacity: 0; transform: translate(2px, -1px); clip-path: inset(4px 0 2px 0); text-shadow: 2px 0 rgba(255, 60, 60, 0.55), -2px 0 rgba(60, 200, 255, 0.55); }
+  33%  { opacity: 0.45; transform: translate(-2px, 1px); clip-path: inset(0 2px 4px 0); text-shadow: -2px 0 rgba(255, 60, 60, 0.65), 2px 0 rgba(60, 200, 255, 0.65); }
+  66%  { opacity: 0.82; transform: translate(1px, 0); clip-path: inset(1px 0 0 0); text-shadow: 1px 0 rgba(255, 80, 80, 0.35), -1px 0 rgba(80, 200, 255, 0.35); }
+  100% { opacity: 1; transform: translate(0, 0); clip-path: inset(0 0 0 0); text-shadow: none; }
+}
+html.cuneiform-buttons-on .cuneiform-btn.is-glitching .cuneiform-btn__layer--cuneiform {
+  animation: cuneiform-wedge-glitch 480ms steps(4) forwards;
+}
+html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--cuneiform {
+  opacity: 0;
+  visibility: hidden;
+}
+html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--latin {
+  animation: cuneiform-latin-glitch-in 420ms steps(3) forwards;
+}
 @media (prefers-reduced-motion: reduce) {
-  html.cuneiform-buttons-on .cuneiform-btn__layer { transition: none; }
-  html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--latin { opacity: 1; }
-  html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--cuneiform { opacity: 0; }
+  html.cuneiform-buttons-on .cuneiform-btn.is-glitching .cuneiform-btn__layer--cuneiform,
+  html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--latin {
+    animation: none;
+  }
+  html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--latin { opacity: 1; }
+  html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--cuneiform { opacity: 0; visibility: hidden; }
 }
 
 .gate-error {
@@ -951,7 +1039,7 @@ body.debug-hotspots .medallion-hot::after {
   padding: 20px 24px 56px 96px;
   pointer-events: none;
   /* Wide fade zone — radial from top-left avoids rectangular panel cutoff */
-  width: min(540px, 52vw);
+  width: min(640px, 72vw);
   max-width: 100%;
   background:
     radial-gradient(
@@ -962,36 +1050,51 @@ body.debug-hotspots .medallion-hot::after {
       rgba(13,13,18,0.08) 82%,
       rgba(13,13,18,0) 100%);
 }
-.hdr-home-btn {
+.hdr-nav-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  flex-wrap: nowrap;
+  margin-bottom: 10px;
+}
+.hdr-nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+.hdr-home-btn,
+.hdr-v1-btn,
+.hdr-dossier-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  margin-bottom: 10px;
   pointer-events: auto;
   min-height: 44px;
-  min-width: 44px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: 4px;
-  border: 1px solid rgba(198,141,85,0.28);
-  background: rgba(13,13,18,0.78);
-  color: var(--bone-dim);
-  font-family: var(--font-ui);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 2px;
+  background: transparent;
+  border: 1px solid rgba(198,141,85,0.4);
+  color: #d4a843;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
   cursor: pointer;
 }
-.hdr-home-btn::before {
-  content: '←';
-  font-size: 11px;
-  line-height: 1;
-}
-.hdr-home-btn:hover {
-  color: var(--amber);
-  border-color: rgba(198,141,85,0.55);
-  background: rgba(13,13,18,0.94);
+.hdr-home-btn:hover,
+.hdr-v1-btn:hover,
+.hdr-dossier-btn:hover {
+  background: rgba(198,141,85,0.15);
+  border-color: var(--amber);
+  color: #fff;
 }
 body:not(.map-session) #fog-guide-btn {
   display: none !important;
@@ -1031,19 +1134,6 @@ body:not(.map-session) #fog-guide-btn {
 .hdr-sub {
   font-family: var(--font-ui); font-size: 10px; font-weight: 700;
   color: var(--amber); letter-spacing: 2px; text-transform: uppercase;
-}
-.hdr-v1-btn {
-  display: inline-block; margin-top: 10px; pointer-events: auto;
-  min-height: 44px;
-  padding: 10px 16px; border-radius: 4px;
-  background: rgba(198,141,85,0.15); border: 1px solid rgba(198,141,85,0.4);
-  color: #d4a843; font-family: var(--font-heading); font-size: 11px;
-  font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
-  text-decoration: none; transition: all 0.2s ease;
-}
-.hdr-v1-btn:hover {
-  background: rgba(198,141,85,0.3); border-color: var(--amber);
-  color: #fff;
 }
 
 /* ═══════════════════════════════════════════
@@ -1640,8 +1730,12 @@ body.edit-mode .mk-dot-wrap > * {
 @media (max-width: 767px) {
   .frame-cune { display: none; }
 
-  #hdr { padding: 10px 14px 20px 52px; width: min(420px, 72vw); }
-  .hdr-home-btn { margin-bottom: 6px; padding: 5px 10px; font-size: 8px; }
+  #hdr { padding: 10px 14px 20px 52px; width: min(480px, 92vw); }
+  .hdr-nav-row { margin-bottom: 6px; gap: 8px; }
+  .hdr-nav-actions { gap: 6px; }
+  .hdr-home-btn,
+  .hdr-v1-btn,
+  .hdr-dossier-btn { padding: 6px 10px; font-size: 8px; letter-spacing: 1px; }
   .hdr-title { font-size: 13px; }
   .hdr-sub { font-size: 8px; }
 
@@ -2293,7 +2387,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600">Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="entry-access-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Archive access word" aria-describedby="entry-access-msg">
       <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access code">
@@ -2301,13 +2395,15 @@ body.edit-mode .mk-dot-wrap > * {
         <svg class="pw-toggle-icon pw-toggle-icon--hide" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
       </button>
     </div>
-    <button id="entry-access-btn" class="gate-btn gate-fade cuneiform-btn" data-delay="1000" type="button" aria-label="Unlock Archive">
-      <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Unlock Archive</span>
-      <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D; &#x12297; &#x122B3; &#x12279;</span>
-    </button>
+    <div class="gate-btn-cuneiform-zone">
+      <button id="entry-access-btn" class="gate-btn gate-fade cuneiform-btn" data-delay="1000" type="button" aria-label="Unlock Archive">
+        <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Unlock Archive</span>
+        <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;&#x122B3;&#x12279;</span>
+      </button>
+    </div>
     <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
-    <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button">Continue as guest</button>
-    <p class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
+    <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button"><span class="entry-guest-btn-label">Continue as guest</span></button>
+    <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
   </div>
 </div>
 
@@ -2317,13 +2413,14 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
+    <div class="landing-subtitle" id="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
     <div class="landing-actions">
-      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge">Wanderer tier and above</span></button>
-      <a class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge">Open to all</span></a>
+      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge" id="landing-reader-badge">Wanderer tier and above</span></button>
+      <a id="landing-dossier" class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge" id="landing-dossier-badge">Open to all</span></a>
       <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
       <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
     </div>
+    <button type="button" id="archive-reset-access" class="landing-reset-access">Reset access</button>
   </div>
 </div>
 
@@ -2479,10 +2576,17 @@ body.edit-mode .mk-dot-wrap > * {
   </div>
 
   <div id="hdr">
-    <button type="button" id="hdr-home-btn" class="hdr-home-btn" title="Return to archive menu">Archive</button>
-    <div class="hdr-title">The Hollowlands</div>
-    <div class="hdr-sub">Magus Scribes — Cartographer Access</div>
-    <a class="hdr-v1-btn" id="hdr-v1-btn" href="/reader/">📖 Read Volume 1</a>
+    <div class="hdr-nav-row">
+      <button type="button" id="hdr-home-btn" class="hdr-home-btn" title="Return to archive home" aria-label="Return to archive home">← Home</button>
+      <div class="hdr-nav-actions">
+        <a class="hdr-v1-btn" id="hdr-v1-btn" href="/reader/">📖 Read Volume 1</a>
+        <a class="hdr-dossier-btn" id="hdr-dossier-btn" href="/dossier/">🗓 Character Dossier</a>
+      </div>
+    </div>
+    <div class="hdr-brand">
+      <div class="hdr-title">The Hollowlands</div>
+      <div class="hdr-sub">Magus Scribes — Cartographer Access</div>
+    </div>
   </div>
 
   <!-- Compass Rose -->
@@ -2607,7 +2711,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 99;
+window.INTREPID_BUILD = 127;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2683,8 +2787,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=99"></script>
-<script src="fog.js?v=99"></script>
+<script src="archive-access.js?v=127"></script>
+<script src="fog.js?v=127"></script>
 <script>
 (function() {
   'use strict';
@@ -2693,7 +2797,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      CONSTANTS & STATE
      ═══════════════════════════════════════════ */
   // Cuneiform button hover crossfade — default OFF until Jon approves (docs/guardians/CUNEIFORM-FONT-NOTES.md)
-  const ENABLE_CUNEIFORM_BUTTONS = false;
+  const ENABLE_CUNEIFORM_BUTTONS = true; // local demo only — revert to false before prod deploy
   const CUNEIFORM_BUTTONS_ENABLED_KEY = 'intrepid_cuneiform_buttons_enabled';
   const CUNEIFORM_BUTTONS_DISABLE_KEY = 'intrepid_cuneiform_buttons_disabled';
 
@@ -2701,9 +2805,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (!ENABLE_CUNEIFORM_BUTTONS) return false;
     try {
       if (localStorage.getItem(CUNEIFORM_BUTTONS_DISABLE_KEY) === '1') return false;
-      return localStorage.getItem(CUNEIFORM_BUTTONS_ENABLED_KEY) === '1';
+      return true;
     } catch (e) {
-      return false;
+      return true;
     }
   }
 
@@ -2720,6 +2824,95 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (!isCuneiformButtonsEnabled()) return;
     loadNotoSansCuneiformFont();
     document.documentElement.classList.add('cuneiform-buttons-on');
+    initCuneiformProximityReveal();
+  }
+
+  function initCuneiformProximityReveal() {
+    var btn = document.getElementById('entry-access-btn');
+    if (!btn || !btn.classList.contains('cuneiform-btn')) return;
+
+    var PROXIMITY_RADIUS = 100;
+    var GLITCH_MS = 480;
+    var REVEAL_DELAY_MS = 180;
+    var isProximate = false;
+    var isRevealed = false;
+    var isGlitching = false;
+    var glitchTimer = null;
+    var revealTimer = null;
+    var rafPending = false;
+    var lastX = 0;
+    var lastY = 0;
+    var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function clearTimers() {
+      if (glitchTimer) { clearTimeout(glitchTimer); glitchTimer = null; }
+      if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+    }
+
+    function resetToCuneiform() {
+      clearTimers();
+      isGlitching = false;
+      isRevealed = false;
+      btn.classList.remove('is-glitching', 'is-revealed');
+    }
+
+    function startGlitchReveal() {
+      if (isGlitching || isRevealed) return;
+      isGlitching = true;
+      btn.classList.add('is-glitching');
+      if (reducedMotion) {
+        isGlitching = false;
+        isRevealed = true;
+        btn.classList.remove('is-glitching');
+        btn.classList.add('is-revealed');
+        return;
+      }
+      revealTimer = setTimeout(function() {
+        isRevealed = true;
+        btn.classList.add('is-revealed');
+      }, REVEAL_DELAY_MS);
+      glitchTimer = setTimeout(function() {
+        isGlitching = false;
+        btn.classList.remove('is-glitching');
+      }, GLITCH_MS);
+    }
+
+    function distanceToButton(clientX, clientY) {
+      var rect = btn.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var dx = clientX - cx;
+      var dy = clientY - cy;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function evaluateProximity() {
+      rafPending = false;
+      var dist = distanceToButton(lastX, lastY);
+      var near = dist <= PROXIMITY_RADIUS;
+      if (near && !isProximate) {
+        isProximate = true;
+        startGlitchReveal();
+      } else if (!near && isProximate) {
+        isProximate = false;
+        resetToCuneiform();
+      }
+    }
+
+    function onPointerMove(e) {
+      lastX = e.clientX;
+      lastY = e.clientY;
+      if (!rafPending) {
+        rafPending = true;
+        requestAnimationFrame(evaluateProximity);
+      }
+    }
+
+    document.addEventListener('mousemove', onPointerMove, { passive: true });
+    document.addEventListener('mouseleave', function() {
+      isProximate = false;
+      resetToCuneiform();
+    });
   }
 
   const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
@@ -2763,6 +2956,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const archiveHome  = document.getElementById('archive-home');
   const landingMapBtn = document.getElementById('landing-map');
   const landingReaderBtn = document.getElementById('landing-reader');
+  const landingDossierLink = document.getElementById('landing-dossier');
   const gate     = document.getElementById('gate');
   const gateBtn  = document.getElementById('gate-btn');
   const gatePw   = document.getElementById('gate-pw');
@@ -2812,9 +3006,18 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
   }
 
-  function enterArchiveHome() {
+  function enterArchiveHome(source) {
+    if (source === 'guest' && !isGuestEntryEnabled()) {
+      if (entryAccessMsg) {
+        entryAccessMsg.textContent = 'Guest preview is temporarily paused for a backer-first window.';
+        entryAccessMsg.classList.add('show');
+        entryAccessMsg.classList.remove('is-error');
+      }
+      return;
+    }
     markArchiveEntered();
     showArchiveHome();
+    renderHubPublicContentState();
   }
 
   function hideArchiveScreens() {
@@ -2861,6 +3064,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function enterReaderFlow() {
+    if (!hasPublicContentAccess()) {
+      if (entryAccessMsg) {
+        entryAccessMsg.textContent = 'Reader access requires a backer code while guest preview is paused.';
+        entryAccessMsg.classList.add('show');
+        entryAccessMsg.classList.remove('is-error');
+      }
+      showArchiveEntry();
+      renderGuestEntryState();
+      return;
+    }
     window.location.href = '/reader/';
   }
 
@@ -2888,20 +3101,20 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (journeyToast) journeyToast.classList.remove('visible');
     if (progress) progress.style.display = '';
 
-    if (archiveHome) {
-      archiveHome.style.display = 'flex';
-      archiveHome.classList.remove('hidden');
-    }
-    if (archiveEntry) {
-      archiveEntry.style.display = 'none';
-      archiveEntry.classList.add('hidden');
-    }
     gate.style.display = 'none';
     gate.classList.add('hidden');
 
     var loader = document.getElementById('loader');
     if (loader) loader.classList.add('hidden');
     if (window.FogSystem && window.FogSystem.stopDrift) window.FogSystem.stopDrift();
+
+    if (shouldSkipArchiveEntry()) {
+      showArchiveHome();
+      renderHubPublicContentState();
+    } else {
+      showArchiveEntry();
+      renderGuestEntryState();
+    }
   }
 
   function checkGate() {
@@ -2981,13 +3194,182 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   if (landingReaderBtn) landingReaderBtn.addEventListener('click', enterReaderFlow);
   document.getElementById('hdr-home-btn').addEventListener('click', returnToArchiveHome);
 
+  const archiveResetBtn = document.getElementById('archive-reset-access');
+  if (archiveResetBtn) {
+    archiveResetBtn.addEventListener('click', function() {
+      if (!window.confirm('Clear all archive access on this device? Map progress is kept; reader and cartographer codes are removed.')) return;
+      if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.resetArchiveAccess) {
+        window.IntrepidArchiveAccess.resetArchiveAccess();
+      }
+      currentTier = 'C';
+      if (entryAccessPw) entryAccessPw.value = '';
+      if (entryAccessMsg) {
+        entryAccessMsg.textContent = isGuestEntryEnabled()
+          ? 'Access cleared. Continue as guest or enter a new code.'
+          : 'Access cleared. Enter your backer code to continue.';
+        entryAccessMsg.classList.add('show');
+        entryAccessMsg.classList.remove('is-error');
+      }
+      var app = document.getElementById('app');
+      var loader = document.getElementById('loader');
+      if (app) app.classList.remove('show');
+      document.body.classList.remove('map-session');
+      if (loader) loader.classList.add('hidden');
+      gate.style.display = 'none';
+      gate.classList.add('hidden');
+      if (window.FogSystem && window.FogSystem.stopDrift) window.FogSystem.stopDrift();
+      showArchiveEntry();
+      renderGuestEntryState();
+    });
+  }
+
   /* ═══════════════════════════════════════════
      ARCHIVE ENTRY ACCESS (unified password)
      ═══════════════════════════════════════════ */
+  const LOCK_ICON_SVG = '<svg class="entry-guest-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg>';
+  var guestUnlockCountdownTimer = null;
   const entryAccessPw = document.getElementById('entry-access-pw');
   const entryAccessBtn = document.getElementById('entry-access-btn');
   const entryAccessMsg = document.getElementById('entry-access-msg');
   const entryGuestBtn = document.getElementById('entry-guest-btn');
+  const entryGuestNote = document.getElementById('entry-guest-note');
+
+  function isGuestEntryEnabled() {
+    if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.canEnterAsGuest) return false;
+    return window.IntrepidArchiveAccess.canEnterAsGuest();
+  }
+
+  function hasPublicContentAccess() {
+    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.hasPublicContentAccess) {
+      return window.IntrepidArchiveAccess.hasPublicContentAccess();
+    }
+    return isGuestEntryEnabled();
+  }
+
+  function formatDurationCompact(ms) {
+    var totalMinutes = Math.max(0, Math.ceil(ms / 60000));
+    var days = Math.floor(totalMinutes / (24 * 60));
+    var hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    var minutes = totalMinutes % 60;
+    if (days > 0) return days + 'd ' + hours + 'h ' + minutes + 'm';
+    if (hours > 0) return hours + 'h ' + minutes + 'm';
+    return minutes + 'm';
+  }
+
+  function getWandererUnlockWindow() {
+    if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.getWandererUnlockWindow) {
+      return null;
+    }
+    return window.IntrepidArchiveAccess.getWandererUnlockWindow();
+  }
+
+  function stopGuestUnlockCountdown() {
+    if (guestUnlockCountdownTimer) {
+      clearInterval(guestUnlockCountdownTimer);
+      guestUnlockCountdownTimer = null;
+    }
+  }
+
+  function startGuestUnlockCountdownIfNeeded() {
+    var windowState = getWandererUnlockWindow();
+    if (!windowState || windowState.isGuestEnabled || windowState.isTimeReached || !windowState.hasValidUnlockTime) {
+      stopGuestUnlockCountdown();
+      return;
+    }
+    if (guestUnlockCountdownTimer) return;
+    guestUnlockCountdownTimer = setInterval(function() {
+      renderGuestEntryState();
+    }, 60000);
+  }
+
+  function renderGuestEntryState() {
+    if (!entryGuestBtn && !entryGuestNote) return;
+    var entrySubtitle = document.getElementById('entry-subtitle');
+    var unlockWindow = getWandererUnlockWindow();
+    var isGuestEnabled = isGuestEntryEnabled();
+    var hasValidUnlockTime = unlockWindow && unlockWindow.hasValidUnlockTime;
+    var isCountdownActive = !isGuestEnabled && hasValidUnlockTime && !unlockWindow.isTimeReached;
+    if (isGuestEnabled) {
+      stopGuestUnlockCountdown();
+      if (entryGuestBtn) {
+        entryGuestBtn.hidden = false;
+        entryGuestBtn.disabled = false;
+        entryGuestBtn.setAttribute('aria-hidden', 'false');
+        entryGuestBtn.setAttribute('aria-disabled', 'false');
+        entryGuestBtn.classList.remove('is-locked');
+        entryGuestBtn.innerHTML = '<span class="entry-guest-btn-label">Continue as guest</span>';
+      }
+      if (entryGuestNote) {
+        entryGuestNote.classList.remove('is-countdown');
+        entryGuestNote.textContent = 'Guests can read Issue 1 and browse the dossier without a code.';
+      }
+      if (entrySubtitle) {
+        entrySubtitle.innerHTML = 'Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.';
+      }
+      return;
+    }
+    startGuestUnlockCountdownIfNeeded();
+    if (entryGuestBtn) {
+      entryGuestBtn.hidden = false;
+      entryGuestBtn.disabled = true;
+      entryGuestBtn.setAttribute('aria-hidden', 'false');
+      entryGuestBtn.setAttribute('aria-disabled', 'true');
+      entryGuestBtn.classList.add('is-locked');
+      entryGuestBtn.innerHTML = '<span class="entry-guest-btn-label">' + LOCK_ICON_SVG + '<span>Continue as guest</span></span>';
+    }
+    if (entryGuestNote) {
+      if (isCountdownActive) {
+        entryGuestNote.classList.add('is-countdown');
+        entryGuestNote.textContent = 'Guest access opens in ' + formatDurationCompact(unlockWindow.remainingMs) + '.';
+      } else if (hasValidUnlockTime && unlockWindow.isTimeReached) {
+        entryGuestNote.classList.remove('is-countdown');
+        entryGuestNote.textContent = 'Wanderer window reached, but guest access is still paused until ENABLE_GUEST_ENTRY is set to true.';
+      } else {
+        entryGuestNote.classList.remove('is-countdown');
+        entryGuestNote.textContent = 'Guest preview is temporarily paused for a backer-first window.';
+      }
+    }
+    if (entrySubtitle) {
+      entrySubtitle.innerHTML = isCountdownActive
+        ? 'Enter your backer access word to unlock the archive.<br>Guest preview is paused for a backer-first window.'
+        : 'Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.';
+    }
+  }
+
+  function renderHubPublicContentState() {
+    var canBrowse = hasPublicContentAccess();
+    var landingSubtitle = document.getElementById('landing-subtitle');
+    var readerBadge = document.getElementById('landing-reader-badge');
+    var dossierBadge = document.getElementById('landing-dossier-badge');
+
+    if (landingReaderBtn) {
+      landingReaderBtn.disabled = !canBrowse;
+      landingReaderBtn.classList.toggle('is-guest-locked', !canBrowse);
+      landingReaderBtn.setAttribute('aria-disabled', canBrowse ? 'false' : 'true');
+    }
+    if (landingDossierLink) {
+      if (canBrowse) {
+        landingDossierLink.href = '/dossier/';
+        landingDossierLink.classList.remove('is-guest-locked');
+        landingDossierLink.removeAttribute('aria-disabled');
+      } else {
+        landingDossierLink.removeAttribute('href');
+        landingDossierLink.classList.add('is-guest-locked');
+        landingDossierLink.setAttribute('aria-disabled', 'true');
+      }
+    }
+    if (readerBadge) {
+      readerBadge.textContent = canBrowse ? 'Wanderer tier and above' : 'Backer code required';
+    }
+    if (dossierBadge) {
+      dossierBadge.textContent = canBrowse ? 'Open to all' : 'Backer code required';
+    }
+    if (landingSubtitle) {
+      landingSubtitle.textContent = canBrowse
+        ? "Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above."
+        : "Backer-first window — enter your access password to open the reader and dossier. The Cartographer's Atlas remains reserved for Cartographer tier and above.";
+    }
+  }
 
   function formatEntryUnlockMessage(status) {
     if (status.cartographer && status.reader) {
@@ -3033,7 +3415,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   if (entryAccessPw) {
     entryAccessPw.addEventListener('keydown', e => { if (e.key === 'Enter') submitEntryAccess(); });
   }
-  if (entryGuestBtn) entryGuestBtn.addEventListener('click', enterArchiveHome);
+  if (entryGuestBtn) entryGuestBtn.addEventListener('click', function() { enterArchiveHome('guest'); });
   initCuneiformButtons();
 
   const entryAccessEye = document.getElementById('entry-access-eye');
@@ -5243,14 +5625,19 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      INIT
      ═══════════════════════════════════════════ */
   bindJourneyControls();
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.purgeStaleGuestSession) {
+    window.IntrepidArchiveAccess.purgeStaleGuestSession();
+  }
   if (hasDirectArchiveIntent()) {
     if (archiveEntry) archiveEntry.style.display = 'none';
     if (archiveHome) archiveHome.style.display = 'none';
     checkGate();
   } else if (shouldSkipArchiveEntry()) {
     showArchiveHome();
+    renderHubPublicContentState();
   } else {
     showArchiveEntry();
+    renderGuestEntryState();
   }
 
   // Legacy ?reader= links — Issue 1 is open, no gate required
