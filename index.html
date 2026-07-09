@@ -471,13 +471,21 @@ html.cuneiform-buttons-on .gate-btn-cuneiform-zone {
   display: inline-block;
   position: relative;
 }
+html.cuneiform-buttons-on .cuneiform-btn {
+  position: relative;
+  overflow: hidden;
+}
 html.cuneiform-buttons-on .gate-btn.cuneiform-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   min-width: 11.5rem;
-  overflow: hidden;
+}
+html.cuneiform-buttons-on .landing-action.cuneiform-btn .landing-action-title {
+  position: relative;
+  display: block;
+  min-width: 7.5rem;
+  min-height: 1.2em;
 }
 html.cuneiform-buttons-on .cuneiform-btn__layer {
   display: block;
@@ -494,7 +502,6 @@ html.cuneiform-buttons-on .cuneiform-btn__layer--cuneiform {
   align-items: center;
   justify-content: center;
   font-family: var(--font-cuneiform);
-  font-size: 20px;
   font-weight: 400;
   line-height: 1;
   letter-spacing: -2px;
@@ -503,6 +510,16 @@ html.cuneiform-buttons-on .cuneiform-btn__layer--cuneiform {
   pointer-events: none;
   /* Noto Sans Cuneiform glyphs sit low in em box — optical center on gold button */
   transform: translateY(-3px);
+}
+html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
+  font-size: 20px;
+}
+html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
+  font-size: clamp(15px, 2.4vw, 19px);
+  letter-spacing: -3px;
+}
+html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
+  color: rgba(13, 13, 18, 0.92);
 }
 @keyframes cuneiform-wedge-glitch {
   0%   { opacity: 1; transform: translate(0, -3px); clip-path: inset(0 0 0 0); text-shadow: none; }
@@ -2423,10 +2440,33 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-rule"></div>
     <div class="landing-subtitle" id="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
     <div class="landing-actions">
-      <button id="landing-reader" class="landing-action primary" type="button"><span class="landing-action-title">Read Issue 1</span><span class="landing-badge" id="landing-reader-badge">Wanderer tier and above</span></button>
-      <a id="landing-dossier" class="landing-action" href="/dossier/"><span class="landing-action-title">Character Dossier</span><span class="landing-badge" id="landing-dossier-badge">Open to all</span></a>
-      <button id="landing-map" class="landing-action" type="button"><span class="landing-action-title">Cartographer's Atlas</span><span class="landing-badge">Cartographer tier and above</span></button>
-      <a class="landing-action" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener">Main Website</a>
+      <button id="landing-reader" class="landing-action primary cuneiform-btn" type="button" aria-label="Read Issue 1">
+        <span class="landing-action-title">
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Read Issue 1</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;&#x122B3;&#x12279;</span>
+        </span>
+        <span class="landing-badge" id="landing-reader-badge">Included with your code</span>
+      </button>
+      <a id="landing-dossier" class="landing-action cuneiform-btn" href="/dossier/" aria-label="Character Dossier">
+        <span class="landing-action-title">
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Character Dossier</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12214;&#x122A0;&#x12249;&#x122B3;</span>
+        </span>
+        <span class="landing-badge" id="landing-dossier-badge">Included with your code</span>
+      </a>
+      <button id="landing-map" class="landing-action cuneiform-btn" type="button" aria-label="Cartographer's Atlas">
+        <span class="landing-action-title">
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Cartographer's Atlas</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12239;&#x12297;&#x122B3;&#x1222D;</span>
+        </span>
+        <span class="landing-badge" id="landing-map-badge">Cartographer tier and above</span>
+      </button>
+      <a id="landing-website" class="landing-action cuneiform-btn" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener" aria-label="Main Website">
+        <span class="landing-action-title">
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Main Website</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12239;&#x12297;&#x1222D;</span>
+        </span>
+      </a>
     </div>
     <button type="button" id="archive-reset-access" class="landing-reset-access">Reset access</button>
   </div>
@@ -2836,74 +2876,93 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function initCuneiformProximityReveal() {
-    var btn = document.getElementById('entry-access-btn');
-    if (!btn || !btn.classList.contains('cuneiform-btn')) return;
+    var buttons = document.querySelectorAll('.cuneiform-btn');
+    if (!buttons.length) return;
 
     var PROXIMITY_RADIUS = 100;
     var GLITCH_MS = 480;
     var REVEAL_DELAY_MS = 180;
-    var isProximate = false;
-    var isRevealed = false;
-    var isGlitching = false;
-    var glitchTimer = null;
-    var revealTimer = null;
     var rafPending = false;
     var lastX = 0;
     var lastY = 0;
     var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var instances = [];
 
-    function clearTimers() {
-      if (glitchTimer) { clearTimeout(glitchTimer); glitchTimer = null; }
-      if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
-    }
+    function createCuneiformInstance(btn) {
+      var state = {
+        btn: btn,
+        isProximate: false,
+        isRevealed: false,
+        isGlitching: false,
+        glitchTimer: null,
+        revealTimer: null
+      };
 
-    function resetToCuneiform() {
-      clearTimers();
-      isGlitching = false;
-      isRevealed = false;
-      btn.classList.remove('is-glitching', 'is-revealed');
-    }
-
-    function startGlitchReveal() {
-      if (isGlitching || isRevealed) return;
-      isGlitching = true;
-      btn.classList.add('is-glitching');
-      if (reducedMotion) {
-        isGlitching = false;
-        isRevealed = true;
-        btn.classList.remove('is-glitching');
-        btn.classList.add('is-revealed');
-        return;
+      function clearTimers() {
+        if (state.glitchTimer) { clearTimeout(state.glitchTimer); state.glitchTimer = null; }
+        if (state.revealTimer) { clearTimeout(state.revealTimer); state.revealTimer = null; }
       }
-      revealTimer = setTimeout(function() {
-        isRevealed = true;
-        btn.classList.add('is-revealed');
-      }, REVEAL_DELAY_MS);
-      glitchTimer = setTimeout(function() {
-        isGlitching = false;
-        btn.classList.remove('is-glitching');
-      }, GLITCH_MS);
+
+      state.resetToCuneiform = function() {
+        clearTimers();
+        state.isGlitching = false;
+        state.isRevealed = false;
+        btn.classList.remove('is-glitching', 'is-revealed');
+      };
+
+      state.startGlitchReveal = function() {
+        if (state.isGlitching || state.isRevealed) return;
+        state.isGlitching = true;
+        btn.classList.add('is-glitching');
+        if (reducedMotion) {
+          state.isGlitching = false;
+          state.isRevealed = true;
+          btn.classList.remove('is-glitching');
+          btn.classList.add('is-revealed');
+          return;
+        }
+        state.revealTimer = setTimeout(function() {
+          state.isRevealed = true;
+          btn.classList.add('is-revealed');
+        }, REVEAL_DELAY_MS);
+        state.glitchTimer = setTimeout(function() {
+          state.isGlitching = false;
+          btn.classList.remove('is-glitching');
+        }, GLITCH_MS);
+      };
+
+      state.distanceToButton = function(clientX, clientY) {
+        var rect = btn.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var dx = clientX - cx;
+        var dy = clientY - cy;
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+
+      state.evaluateProximity = function() {
+        var dist = state.distanceToButton(lastX, lastY);
+        var near = dist <= PROXIMITY_RADIUS;
+        if (near && !state.isProximate) {
+          state.isProximate = true;
+          state.startGlitchReveal();
+        } else if (!near && state.isProximate) {
+          state.isProximate = false;
+          state.resetToCuneiform();
+        }
+      };
+
+      return state;
     }
 
-    function distanceToButton(clientX, clientY) {
-      var rect = btn.getBoundingClientRect();
-      var cx = rect.left + rect.width / 2;
-      var cy = rect.top + rect.height / 2;
-      var dx = clientX - cx;
-      var dy = clientY - cy;
-      return Math.sqrt(dx * dx + dy * dy);
+    for (var i = 0; i < buttons.length; i++) {
+      instances.push(createCuneiformInstance(buttons[i]));
     }
 
-    function evaluateProximity() {
+    function evaluateAllProximity() {
       rafPending = false;
-      var dist = distanceToButton(lastX, lastY);
-      var near = dist <= PROXIMITY_RADIUS;
-      if (near && !isProximate) {
-        isProximate = true;
-        startGlitchReveal();
-      } else if (!near && isProximate) {
-        isProximate = false;
-        resetToCuneiform();
+      for (var j = 0; j < instances.length; j++) {
+        instances[j].evaluateProximity();
       }
     }
 
@@ -2912,14 +2971,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       lastY = e.clientY;
       if (!rafPending) {
         rafPending = true;
-        requestAnimationFrame(evaluateProximity);
+        requestAnimationFrame(evaluateAllProximity);
       }
     }
 
     document.addEventListener('mousemove', onPointerMove, { passive: true });
     document.addEventListener('mouseleave', function() {
-      isProximate = false;
-      resetToCuneiform();
+      for (var k = 0; k < instances.length; k++) {
+        instances[k].isProximate = false;
+        instances[k].resetToCuneiform();
+      }
     });
   }
 
@@ -3367,10 +3428,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       }
     }
     if (readerBadge) {
-      readerBadge.textContent = canBrowse ? 'Wanderer tier and above' : 'Backer code required';
+      readerBadge.textContent = canBrowse ? 'Included with your code' : 'Backer code required';
     }
     if (dossierBadge) {
-      dossierBadge.textContent = canBrowse ? 'Open to all' : 'Backer code required';
+      dossierBadge.textContent = canBrowse ? 'Included with your code' : 'Backer code required';
     }
     if (landingSubtitle) {
       landingSubtitle.textContent = canBrowse
