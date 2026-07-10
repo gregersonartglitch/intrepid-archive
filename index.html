@@ -564,7 +564,8 @@ html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneifo
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   font-size: clamp(20px, 3.2vw, 26px);
   letter-spacing: 0.06em;
-  transform: translateY(0);
+  /* SantakkuM wedges sit low in em box — nudge down for optical center in hub tiles */
+  transform: translateY(3px);
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   color: var(--bone);
@@ -2825,7 +2826,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 131;
+window.INTREPID_BUILD = 132;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2902,7 +2903,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=127"></script>
-<script src="fog.js?v=131"></script>
+<script src="fog.js?v=132"></script>
 <script>
 (function() {
   'use strict';
