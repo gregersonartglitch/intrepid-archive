@@ -24,6 +24,17 @@
   var GUARDIAN_REVEAL_GLOW_MIN = 360;  // px — Tetrad guardians (Utu, Rapha, Mish, Gu)
   var GOD_REVEAL_GLOW_MIN = 300;       // px — The Eight Apkallu sigils
   var MEDALLION_REVEAL_MS = 5200;      // how long the announcing pulse runs
+  // Volume 2 journey gate — Elena pauses after Mish until Vol 2 ships.
+  // Kill switch: ENABLE_VOL2_JOURNEY_GATE = false removes the gate entirely.
+  // Manual unlock: localStorage.setItem('intrepid_vol2_journey_unlocked','1')
+  // Force lock:   localStorage.setItem('intrepid_vol2_journey_locked','1')
+  // URL override: ?vol2unlock on the map URL (local QA only)
+  var ENABLE_VOL2_JOURNEY_GATE = true;
+  var VOL2_UNLOCK_AT = '2026-12-01T00:00:00Z'; // set to Vol 2 launch UTC when known
+  var VOL2_JOURNEY_CAP_ID = 'mish'; // last journey stop in Vol 1 cartographer play
+  var VOL2_GATE_LS_UNLOCK = 'intrepid_vol2_journey_unlocked';
+  var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
+  var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
   // State
   var discovered = {};
   var markerRefs = {};
@@ -430,6 +441,21 @@
               discoverLocation(glowNextLoc);
               return;
             }
+          }
+        }
+      }
+
+      // Vol 2 sealed beacon — click the dim star at Monastery of the Wind, etc.
+      if (!searchMode && isVol2JourneyGateBlocking()) {
+        var sealedId = getVol2FirstSealedStepId();
+        var sealedLoc = sealedId ? (window.LOCATIONS || []).find(function(l) { return l.id === sealedId; }) : null;
+        if (sealedLoc) {
+          var spt = map.latLngToContainerPoint([sealedLoc.lat, sealedLoc.lng]);
+          var sDist = Math.sqrt(Math.pow(x - spt.x, 2) + Math.pow(y - spt.y, 2));
+          if (sDist < 130) {
+            e.stopPropagation(); e.preventDefault();
+            showVol2LockedMessage(false);
+            return;
           }
         }
       }
@@ -904,6 +930,69 @@
   // The final Elena stop — locked until all territories + cartographer sites are charted
   var FINAL_ELENA_STOP = 'indras-na';
 
+  function getJourneyStepIndex(locId) {
+    for (var ji = 0; ji < journeyPath.length; ji++) {
+      if (journeyPath[ji].locationId === locId) return ji;
+    }
+    return -1;
+  }
+
+  function getVol2CapStepIndex() {
+    return getJourneyStepIndex(VOL2_JOURNEY_CAP_ID);
+  }
+
+  function getVol2FirstSealedStepId() {
+    var capIdx = getVol2CapStepIndex();
+    if (capIdx < 0 || capIdx + 1 >= journeyPath.length) return null;
+    return journeyPath[capIdx + 1].locationId;
+  }
+
+  function isVol2JourneyUnlocked() {
+    if (!ENABLE_VOL2_JOURNEY_GATE) return true;
+    if (typeof location !== 'undefined' && location.search.indexOf('vol2unlock') > -1) return true;
+    try {
+      if (localStorage.getItem(VOL2_GATE_LS_UNLOCK) === '1') return true;
+      if (localStorage.getItem(VOL2_GATE_LS_LOCK) === '1') return false;
+    } catch (e) {}
+    var parsed = Date.parse(VOL2_UNLOCK_AT);
+    if (!isNaN(parsed) && Date.now() >= parsed) return true;
+    return false;
+  }
+
+  function isVol2LockedJourneyStep(locId) {
+    if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+    if (!isOnPath(locId)) return false;
+    var capIdx = getVol2CapStepIndex();
+    var stepIdx = getJourneyStepIndex(locId);
+    if (capIdx < 0 || stepIdx < 0) return false;
+    return stepIdx > capIdx;
+  }
+
+  function isVol2JourneyGateBlocking() {
+    if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+    if (!isFullyDiscovered(VOL2_JOURNEY_CAP_ID)) return false;
+    var capIdx = getVol2CapStepIndex();
+    if (capIdx < 0) return false;
+    for (var vi = capIdx + 1; vi < journeyPath.length; vi++) {
+      if (!isFullyDiscovered(journeyPath[vi].locationId)) return true;
+    }
+    return false;
+  }
+
+  function formatVol2Countdown() {
+    var parsed = Date.parse(VOL2_UNLOCK_AT);
+    if (isNaN(parsed)) return '';
+    var remainingMs = Math.max(0, parsed - Date.now());
+    if (remainingMs <= 0) return '';
+    var totalMin = Math.ceil(remainingMs / 60000);
+    var days = Math.floor(totalMin / (60 * 24));
+    var hours = Math.floor((totalMin % (60 * 24)) / 60);
+    var mins = totalMin % 60;
+    if (days > 0) return days + 'd ' + hours + 'h';
+    if (hours > 0) return hours + 'h ' + mins + 'm';
+    return mins + 'm';
+  }
+
   function explorationComplete() {
     var allLocs = window.LOCATIONS || [];
     var regionLocs = allLocs.filter(function(l) { return l.type === 'region'; });
@@ -920,6 +1009,10 @@
       if (!isFullyDiscovered(stepId)) {
         // Final Elena beat stays sealed until the map is fully charted
         if (stepId === FINAL_ELENA_STOP && !explorationComplete()) {
+          return null;
+        }
+        // Vol 2 gate — no golden path past Mish until unlock date / manual flip
+        if (isVol2LockedJourneyStep(stepId)) {
           return null;
         }
         return stepId;
@@ -1071,6 +1164,11 @@
       return false;
     }
 
+    // Vol 2 gate — post-Mish journey stops stay dark until Volume 2 ships
+    if (isVol2LockedJourneyStep(locId)) {
+      return false;
+    }
+
     // During tutorial (before Sabella's Hut is found): ONLY the current guided
     // journey step is clickable. The instant sabellas-hut is discovered, the
     // full proximity system unlocks — no waiting for toast delays.
@@ -1161,6 +1259,60 @@
       requestAnimationFrame(function() { el.style.opacity = '1'; });
     });
     setTimeout(dismiss, 7000);
+  }
+
+  // Brief modal when Elena cannot continue past Mish until Volume 2
+  function showVol2LockedMessage(isWelcome) {
+    var old = document.getElementById('locked-msg');
+    if (old) old.remove();
+
+    var sealedId = getVol2FirstSealedStepId();
+    var sealedLoc = (window.LOCATIONS || []).find(function(l) { return l.id === sealedId; });
+    var nextName = sealedLoc ? sealedLoc.name : 'the next chapter';
+    var countdown = formatVol2Countdown();
+    var countdownLine = countdown
+      ? '<div style="font-size:13px;color:#8ab4d4;margin-top:10px;">Volume 2 opens in <strong style="color:#b8d4f0;">' + countdown + '</strong></div>'
+      : '';
+
+    var el = document.createElement('div');
+    el.id = 'locked-msg';
+    el.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-60%);z-index:1100;cursor:pointer;' +
+      'background:rgba(8,10,14,0.97);border:2px solid rgba(100,140,200,0.55);' +
+      'border-radius:14px;padding:28px 48px;text-align:center;max-width:560px;width:90%;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'font-size:16px;line-height:1.7;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(100,140,200,0.12);' +
+      'opacity:0;transition:opacity 0.4s ease;';
+    el.innerHTML =
+      '<div style="font-size:12px;color:#8ab4d4;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">' +
+        (isWelcome ? 'Mish Charted' : 'Elena Waits') +
+      '</div>' +
+      '<div style="margin-bottom:14px;">Elena\u2019s path reaches Mish in Volume 1. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond unlock when <strong style="color:#b8d4f0;">Volume 2</strong> arrives.</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
+      countdownLine +
+      '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
+    document.body.appendChild(el);
+
+    function dismiss() {
+      el.style.opacity = '0';
+      setTimeout(function() { el.remove(); }, 600);
+    }
+    el.addEventListener('click', dismiss);
+
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { el.style.opacity = '1'; });
+    });
+    setTimeout(dismiss, isWelcome ? 9000 : 7000);
+  }
+
+  function maybeShowVol2GateToast() {
+    if (!isVol2JourneyGateBlocking()) return;
+    try {
+      if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
+      localStorage.setItem(VOL2_GATE_TOAST_LS, '1');
+    } catch (e) {}
+    setTimeout(function() { showVol2LockedMessage(true); }, 1400);
   }
 
 
@@ -1291,6 +1443,31 @@
           ctx.fill();
         }
       }
+    } else if (isVol2JourneyGateBlocking()) {
+      // Dim sealed beacon on the first post-Mish stop — visible but not golden
+      var sealedId = getVol2FirstSealedStepId();
+      var sealedLoc = sealedId ? locs.find(function(l) { return l.id === sealedId; }) : null;
+      if (sealedLoc) {
+        var spt = map.latLngToContainerPoint([sealedLoc.lat, sealedLoc.lng]);
+        if (spt.x > -100 && spt.x < w + 100 && spt.y > -100 && spt.y < h + 100) {
+          var sealPulse = 0.12 + Math.sin(time * 1.2) * 0.05;
+          var sealR = 38 + Math.sin(time * 0.9) * 6;
+          ctx.globalCompositeOperation = 'source-over';
+          var sealGrad = ctx.createRadialGradient(spt.x, spt.y, 0, spt.x, spt.y, sealR);
+          sealGrad.addColorStop(0, 'rgba(140, 170, 210, ' + (sealPulse + 0.08) + ')');
+          sealGrad.addColorStop(0.5, 'rgba(90, 110, 150, ' + sealPulse + ')');
+          sealGrad.addColorStop(1, 'rgba(70, 85, 120, 0)');
+          ctx.fillStyle = sealGrad;
+          ctx.beginPath();
+          ctx.arc(spt.x, spt.y, sealR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(180, 200, 230, ' + (0.35 + sealPulse) + ')';
+          ctx.font = 'bold 14px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\u2726', spt.x, spt.y);
+        }
+      }
     }
 
     // ── 3b. Pulsing beacons for undiscovered locations ──
@@ -1321,6 +1498,7 @@
     locs.forEach(function(loc) {
       if (discovered[loc.id]) return;
       if (!discovered['sabellas-hut']) return; // no beacons until tutorial cluster done
+      if (isVol2LockedJourneyStep(loc.id)) return; // sealed until Volume 2
 
       // Story locations: suppress if out-of-sequence AND far from cleared fog.
       if (loc.type === 'story' && loc.id !== nextId) {
@@ -2254,6 +2432,10 @@
     }
 
     delete clusterPeek[loc.id];
+
+    if (loc.id === VOL2_JOURNEY_CAP_ID) {
+      maybeShowVol2GateToast();
+    }
   } // end completeDiscovery
 
   // Mouse/touch tracking for spotlight (search mode only)
@@ -2577,7 +2759,12 @@
 
   function checkVol1Finale() {
     if (finaleState.vol1) return;
-    var vol1Locs = (window.LOCATIONS || []).filter(function(l) { return l.volume1; });
+    var vol1Locs = (window.LOCATIONS || []).filter(function(l) {
+      if (!l.volume1) return false;
+      // Gated journey stops do not block Vol 1 cartographer finale
+      if (isVol2LockedJourneyStep(l.id)) return false;
+      return true;
+    });
     var vol1Found = vol1Locs.filter(function(l) {
       return isFullyDiscovered(l.id);
     }).length;
@@ -3080,6 +3267,10 @@
     }
 
     if (!target) {
+      if (isVol2JourneyGateBlocking()) {
+        showVol2LockedMessage(false);
+        return;
+      }
       showGuideHint('All Charted', 'Elena\u2019s journey is complete.', '');
       return;
     }
@@ -3184,6 +3375,8 @@
     toggleAmbient: toggleAmbient,
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
+    isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,
+    isVol2JourneyUnlocked: isVol2JourneyUnlocked,
     initTetradCircles: initTetradCircles,
     _revealedGods: revealedGods,
     clearProgress: clearProgressStorage,
