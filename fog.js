@@ -1936,6 +1936,8 @@
 
       // Audio: divining rod pings accelerate near key
       updateDiviningAudio(proximity);
+      // Sabella parchment letter on "hot" band (Secret find) — primary letter path
+      maybeShowSabellaLetterOnChime(proximity);
       maybeShowChimeCluePopup(proximity);
 
       // Divining rod: spotlight grows and pulses faster when closer
@@ -2753,7 +2755,9 @@
   }
 
   /* ════════════════════════════════════════════════
-     SABELLA JOURNEY LETTERS (discovery-complete, 5 stops)
+     SABELLA JOURNEY LETTERS (chime-hot Secret finds, 5 stops)
+     Primary: proximity crosses "hot" band during searchMode
+     Fallback: discovery-complete if still unseen (dedupe via seen LS)
      Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
      Kill: localStorage intrepid_sabella_messages_disabled=1
      ════════════════════════════════════════════════ */
@@ -2767,6 +2771,13 @@
       if (params.has('nosabellamessages')) return false;
     } catch (e2) {}
     return true;
+  }
+
+  function getSabellaLetterHotThreshold() {
+    for (var i = 0; i < CHIME_CLUE_BANDS.length; i++) {
+      if (CHIME_CLUE_BANDS[i].id === 'hot') return CHIME_CLUE_BANDS[i].threshold;
+    }
+    return 0.65;
   }
 
   function getSabellaMessagesSeen() {
@@ -2792,6 +2803,38 @@
     if (!SABELLA_MESSAGES[locId]) return false;
     var seen = getSabellaMessagesSeen();
     return !seen[locId];
+  }
+
+  function countSabellaLettersCollected() {
+    var ids = Object.keys(SABELLA_MESSAGES);
+    var seen = getSabellaMessagesSeen();
+    var n = 0;
+    for (var i = 0; i < ids.length; i++) {
+      if (seen[ids[i]]) n++;
+    }
+    return n;
+  }
+
+  function sabellaLettersTotal() {
+    return Object.keys(SABELLA_MESSAGES).length;
+  }
+
+  // Primary letter path: fire once when chime search crosses "hot" (Secret find).
+  function maybeShowSabellaLetterOnChime(proximity) {
+    if (!isSabellaMessagesEnabled() || !searchMode || searchMode.silenced) return;
+    if (document.getElementById('sabella-message-popup')) return;
+    if (sabellaMessagePending) return;
+
+    var locId = searchMode.locId;
+    if (!SABELLA_MESSAGES[locId] || !hasUnseenSabellaMessage(locId)) return;
+    if (searchMode.sabellaLetterFired) return;
+    if (proximity < getSabellaLetterHotThreshold()) return;
+
+    searchMode.sabellaLetterFired = true;
+    if (!searchMode.clueBandsFired) searchMode.clueBandsFired = {};
+    searchMode.clueBandsFired.hot = true;
+
+    showSabellaMessagePopup(locId, SABELLA_MESSAGES[locId]);
   }
 
   function dismissSabellaMessagePopup() {
@@ -2862,10 +2905,13 @@
       speaker: letter.signoff,
       text: letter.greeting + ' ' + letter.body
     }, 'letter', locId);
+    updateProgress();
 
     setTimeout(function() { dismissSabellaMessagePopup(); }, 14000);
   }
 
+  // Fallback: discovery-complete if letter still unseen (e.g. skipped hot band).
+  // Primary path is maybeShowSabellaLetterOnChime — seen LS dedupes both.
   function scheduleSabellaMessage(loc, onDismiss) {
     function finishSkip() {
       if (onDismiss) setTimeout(onDismiss, 1400);
@@ -2960,7 +3006,8 @@
     updateProgress();
     maybeDismissPostTutorialOnDiscover(loc);
 
-    // Sabella journey letter (once per stop) — Indras Na letter precedes Vol 2 reward dialogue
+    // Sabella letter fallback (primary is chime-hot). Indras: unseen letter then Vol2 toast;
+    // if letter already collected during search, finishSkip → reward dialogue after delay.
     if (loc.id === FINAL_ELENA_STOP) {
       scheduleSabellaMessage(loc, function() {
         maybeShowVol2GateToast();
@@ -3248,6 +3295,12 @@
     var cityFound = cityLocs.filter(function(l) { return !!discovered[l.id]; }).length;
     var cityPct = cityTotal > 0 ? cityFound / cityTotal : 0;
 
+    // ── Secrets track ── (Sabella letters — flag-gated row)
+    var secretsEnabled = isSabellaMessagesEnabled();
+    var secretTotal = sabellaLettersTotal();
+    var secretFound = secretsEnabled ? countSabellaLettersCollected() : 0;
+    var secretPct = secretTotal > 0 ? secretFound / secretTotal : 0;
+
     // Combined pct for rank (weighted: journey counts most, then territories, then cities)
     var combined = (journeyFound * 3 + regionFound * 2 + cityFound) /
                    Math.max(1, journeyTotal * 3 + regionTotal * 2 + cityTotal);
@@ -3258,6 +3311,9 @@
     var countR  = document.getElementById('progress-count-regions');
     var fillC   = document.getElementById('progress-fill-cities');
     var countC  = document.getElementById('progress-count-cities');
+    var fillS   = document.getElementById('progress-fill-secrets');
+    var countS  = document.getElementById('progress-count-secrets');
+    var rowS    = document.getElementById('progress-row-secrets');
     var title   = document.getElementById('progress-title');
     var label   = document.getElementById('progress-label');
 
@@ -3267,6 +3323,11 @@
     if (countR) countR.innerHTML   = regionFound + ' <span>/ ' + regionTotal + '</span>';
     if (fillC)  fillC.style.width  = (cityPct * 100) + '%';
     if (countC) countC.innerHTML   = cityFound + ' <span>/ ' + cityTotal + '</span>';
+    if (rowS) rowS.style.display = secretsEnabled ? '' : 'none';
+    if (secretsEnabled) {
+      if (fillS) fillS.style.width = (secretPct * 100) + '%';
+      if (countS) countS.innerHTML = secretFound + ' <span>/ ' + secretTotal + '</span>';
+    }
     if (label)  label.textContent  = '';
 
     var rank = 'Apprentice Scribe';
@@ -3301,6 +3362,7 @@
     pulseEl(countJ, '#d4a843');
     pulseEl(countR, '#7ab8c8');
     pulseEl(countC, '#8cb88c');
+    if (secretsEnabled) pulseEl(countS, '#c49a6c');
 
     // ── Finale checks ──
     checkJourneyFinale(journeyFound, journeyTotal);
