@@ -35,6 +35,7 @@
   var VOL2_GATE_LS_UNLOCK = 'intrepid_vol2_journey_unlocked';
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
   var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
+  var VOL2_FEEDBACK_EMAIL = 'info@intrepidgraphicnovel.com';
   // State
   var discovered = {};
   var markerRefs = {};
@@ -1261,7 +1262,7 @@
     setTimeout(dismiss, 7000);
   }
 
-  // Brief modal when Elena cannot continue past Mish until Volume 2
+  // Brief modal when Elena cannot continue past Mish until Volume 2 Kickstarter
   function showVol2LockedMessage(isWelcome) {
     var old = document.getElementById('locked-msg');
     if (old) old.remove();
@@ -1271,8 +1272,11 @@
     var nextName = sealedLoc ? sealedLoc.name : 'the next chapter';
     var countdown = formatVol2Countdown();
     var countdownLine = countdown
-      ? '<div style="font-size:13px;color:#8ab4d4;margin-top:10px;">Volume 2 opens in <strong style="color:#b8d4f0;">' + countdown + '</strong></div>'
+      ? '<div style="font-size:13px;color:#8ab4d4;margin-top:10px;">Volume 2 Kickstarter opens in <strong style="color:#b8d4f0;">' + countdown + '</strong></div>'
       : '';
+    var emailLink =
+      '<a href="mailto:' + VOL2_FEEDBACK_EMAIL + '" style="color:#b8d4f0;text-decoration:underline;" onclick="event.stopPropagation();">' +
+      VOL2_FEEDBACK_EMAIL + '</a>';
 
     var el = document.createElement('div');
     el.id = 'locked-msg';
@@ -1286,10 +1290,11 @@
       'opacity:0;transition:opacity 0.4s ease;';
     el.innerHTML =
       '<div style="font-size:12px;color:#8ab4d4;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">' +
-        (isWelcome ? 'Mish Charted' : 'Elena Waits') +
+        'Congratulations' +
       '</div>' +
-      '<div style="margin-bottom:14px;">Elena\u2019s path reaches Mish in Volume 1. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond unlock when <strong style="color:#b8d4f0;">Volume 2</strong> arrives.</div>' +
-      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
+      '<div style="margin-bottom:14px;">You\u2019ve charted Elena\u2019s cartographer journey through <strong style="color:#d4a843;">Mish</strong> \u2014 Volume 1 is complete. More journey locations will open with the <strong style="color:#b8d4f0;">kickstarter launch of Volume 2</strong>. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond await that launch.</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;margin-bottom:10px;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">Spotted a bug or have feedback? Write us at ' + emailLink + '.</div>' +
       countdownLine +
       '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
     document.body.appendChild(el);
