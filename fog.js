@@ -10,6 +10,7 @@
   var CLICK_RADIUS = 110;   // how close (px) user must click to the glow
   var TUTORIAL_STEPS = 7;  // 7-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
+  var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
   var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
@@ -332,7 +333,8 @@
     setupClickHandler();
     setupSpotlightTracking();
 
-    // Redraw on map events
+    // Redraw on map events; detach lantern when pan moves search zone off-screen
+    map.on('move', syncSpotlightAttachment);
     map.on('move zoom viewreset resize zoomend', draw);
     window.addEventListener('resize', draw);
     draw();
@@ -2423,6 +2425,8 @@
     var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
     spotlightPos = { x: pt.x, y: pt.y };
 
+    if (map) map.getContainer().classList.add('chime-search-active');
+
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
 
@@ -2577,25 +2581,40 @@
     }
   }
 
+  // Tear down chime search immediately — reveal animation uses discovered phase, not searchMode.
+  function exitSearchMode() {
+    if (!searchMode) return;
+    searchMode = null;
+    spotlightPos = null;
+    lastPingTime = Date.now();
+
+    var escapeHint = document.getElementById('chime-escape-hint');
+    if (escapeHint) escapeHint.remove();
+    dismissSabellaCluePopup(false);
+
+    if (map) {
+      var container = map.getContainer();
+      container.classList.remove('chime-search-active');
+      container.style.cursor = '';
+    }
+
+    draw();
+  }
+
   function completeDiscovery(loc) {
     console.log('[FOG] \u2713 Key found! Full reveal:', loc.name);
 
-    // Keep spotlight visible during reveal animation — don't snap away
-    // searchMode and spotlightPos stay alive until animation ends
-    // but silence the divining-rod pings immediately so the success chime
-    // is not followed by a stale "keep searching" sound.
+    // Silence divining-rod pings before success chime; exit search visuals immediately
+    // so the directional arrow / lantern do not linger on the cursor during reveal.
     if (searchMode) searchMode.silenced = true;
     lastPingTime = Date.now();
+    exitSearchMode();
 
     discovered[loc.id] = { at: discovered[loc.id].at, phase: 'complete' };
     localStorage.setItem(LS_KEY, JSON.stringify(discovered));
 
     revealMarker(loc.id);
-    animateReveal(loc, PINHOLE_SCALE, function() {
-      // Clear search mode AFTER the reveal animation completes
-      searchMode = null;
-      spotlightPos = null;
-    });
+    animateReveal(loc, PINHOLE_SCALE);
     showCelebration(loc);
     playDiscoveryChime();
     setTimeout(function() {
@@ -2626,22 +2645,51 @@
     // Vol 2 gate toast fires from revealGod when Mish guardian medallion awakens.
   } // end completeDiscovery
 
+  // Spotlight stays attached only while cursor/lantern is near the chime search zone.
+  // Detaches on map pan when the search area slides away from the fixed screen point.
+  function spotlightWithinSearchZone(x, y) {
+    if (!searchMode || !map) return false;
+    var locPt = map.latLngToContainerPoint(getInteractionLatLng(searchMode.loc));
+    var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+    var distLoc = Math.sqrt(Math.pow(x - locPt.x, 2) + Math.pow(y - locPt.y, 2));
+    var distKey = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
+    return distLoc <= SPOTLIGHT_ATTACH_RADIUS || distKey <= SPOTLIGHT_ATTACH_RADIUS;
+  }
+
+  function syncSpotlightAttachment() {
+    if (!searchMode || !spotlightPos) return;
+    if (!spotlightWithinSearchZone(spotlightPos.x, spotlightPos.y)) {
+      spotlightPos = null;
+      draw();
+    }
+  }
+
+  function updateSpotlightFromPointer(clientX, clientY) {
+    if (!map || !searchMode) return;
+    var container = map.getContainer();
+    var rect = container.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var y = clientY - rect.top;
+    if (!spotlightWithinSearchZone(x, y)) {
+      if (spotlightPos) {
+        spotlightPos = null;
+        draw();
+      }
+      return;
+    }
+    spotlightPos = { x: x, y: y };
+  }
+
   // Mouse/touch tracking for spotlight (search mode only)
   function setupSpotlightTracking() {
     document.addEventListener('mousemove', function(e) {
-      if (!map || !searchMode) return;
-      var container = map.getContainer();
-      var rect = container.getBoundingClientRect();
-      spotlightPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      updateSpotlightFromPointer(e.clientX, e.clientY);
     });
 
     document.addEventListener('touchmove', function(e) {
-      if (!map || !searchMode) return;
       var touch = e.touches[0];
       if (!touch) return;
-      var container = map.getContainer();
-      var rect = container.getBoundingClientRect();
-      spotlightPos = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+      updateSpotlightFromPointer(touch.clientX, touch.clientY);
     }, { passive: true });
   }
 
