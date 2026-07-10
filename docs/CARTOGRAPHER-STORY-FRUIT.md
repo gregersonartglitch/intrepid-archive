@@ -28,6 +28,7 @@ Cartographers (`hollowlands9` / `CART-` links) already get a full fog atlas, Ele
 | **Story Tour** | `#journey-fab` + `#journey-toast` | Replay journey; toast shows `loc.desc` per stop |
 | **Rank titles** | `updateProgress()` | Apprentice Scribe → Master Cartographer by discovery count |
 | **Tower foreshadow** | `showTowerClusterHint()` | After Sabella’s hut: “One secret crowns this tower…” |
+| **Sabella journey letters** | `fog.js` `ENABLE_SABELLA_MESSAGES` | **Build 151+** — five discovery letters (hut, tower, monastery, Sinn, Indras Na); local demo ON; kill `intrepid_sabella_messages_disabled=1` |
 | **Sabella chime clues** | `fog.js` `ENABLE_SABELLA_CLUE_POPUPS` | **Scaffold only, default OFF** — warm/hot/burning popups + `intrepid_secrets_collected` |
 | **Dossier** | `/dossier/` | 11 character cards (public); no map cross-links today |
 | **Reader Issues 2–3** | Patron superset | Cartographers can read full Vol 1; map does not gate on reader progress |
@@ -79,8 +80,8 @@ Comic structure (reader): Issue 1 = pages 1–21, Issue 2 = 22–42, Issue 3 = 4
 
 **Effort:** 1–2 hr · **Risk:** low · **Flag:** `ENABLE_SABELLA_CLUE_POPUPS` stays default OFF until Jon approves
 
-5. **Sabella letters at chime hot band (3–5 stops)** — Extend `CHIME_CLUE_CONTENT` in `fog.js` (or move to `data.js` `chimeClues` per `docs/SABELLA-CLUE-POPUPS.md`). Stops: `sabellas-hut` (exists), `mish`, `monastery-wind`, `tower-nine`, `sinn`. Enable via `?sabellaclues` only.
-6. **Secrets ledger entries** — `recordSecret()` already writes `intrepid_secrets_collected`. No progress-row UI needed for v1; optional console/dev panel later. Same copy as chime clues + 2–3 **discovery-triggered** one-shots (see §4).
+5. **Sabella letters at five journey stops** — **Shipped build 151** via `ENABLE_SABELLA_MESSAGES` + `SABELLA_MESSAGES` in `fog.js`. Stops: `sabellas-hut`, `tower-nine`, `monastery-wind`, `sinn`, `indras-na`. Discovery-complete parchment popup; secrets ledger; **set flag false before prod**. Chime-heat `ENABLE_SABELLA_CLUE_POPUPS` remains separate / OFF.
+6. **Secrets ledger entries** — `recordSecret()` writes `intrepid_secrets_collected` (chime bands + `{locId}:letter`). No progress-row UI needed for v1.
 7. **Territory toast copy** — Today: generic “Territory Unlocked / Discover its cities & sites.” **Hook:** optional `territoryToast` string on region entries in `data.js`; `showTerritoryUnlock` reads it (small fog.js read — document only until approved). Example for `moon-queen-kingdom`: “Silver dusk settles on the chart. The Queen’s land does not share the Empire’s noon.”
 
 ### Tier C — Small UI (medium effort, high delight)

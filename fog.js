@@ -66,6 +66,46 @@
       burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil.' }
     }
   };
+  // Sabella journey letters at five stops — ON for local demo on this branch; set false before prod.
+  // Kill switch: localStorage intrepid_sabella_messages_disabled=1 (or ?nosabellamessages)
+  // Docs: docs/SABELLA-CLUE-POPUPS.md
+  var ENABLE_SABELLA_MESSAGES = true;
+  var SABELLA_MESSAGES_DISABLED_LS = 'intrepid_sabella_messages_disabled';
+  var SABELLA_MESSAGES_SEEN_LS = 'intrepid_sabella_messages_seen';
+  var sabellaMessagePending = false;
+  var sabellaMessageOnDismiss = null;
+  var SABELLA_MESSAGES = {
+    'sabellas-hut': {
+      title: 'A Letter by the Hearth',
+      greeting: 'My Elena\u2026',
+      body: 'I left the kettle warm and the door unlatched. If you are reading this, you found the hut the way I taught you \u2014 by cedar smoke and the wrongness of quiet. Do not wait for me here. The road remembers what I could not finish saying.',
+      signoff: 'Grandma Bella'
+    },
+    'tower-nine': {
+      title: 'From the Cage of Nine',
+      greeting: 'My Elena\u2026',
+      body: 'The Nine face inward, not out. Whatever they guard, they guard together \u2014 and the Stone listens. Climb carefully. I climbed once and came down changed. Trust the companions who wait in the fog beside the tower.',
+      signoff: 'Sabella'
+    },
+    'monastery-wind': {
+      title: 'Wind Through the Oracle\u2019s Hall',
+      greeting: 'My Elena\u2026',
+      body: 'Isin Ada will speak of trees and names already written. You may refuse the prophecy; I did, once. Still \u2014 listen for the part that sounds like your own heartbeat. That part is true, even when the rest is wind.',
+      signoff: 'Grandma Bella'
+    },
+    'sinn': {
+      title: 'Silver Ink at Sinn',
+      greeting: 'My Elena\u2026',
+      body: 'The Moon Court judges with silver ink and spiral law. If they ask who sent you, say your grandmother still charts by dusk. I left a mark in the fog for you \u2014 when the lantern grows warm, trust the chime.',
+      signoff: 'Sabella'
+    },
+    'indras-na': {
+      title: 'At the Western Gate',
+      greeting: 'My Elena\u2026',
+      body: 'You have come farther than I dared hope when I first folded this map. Indras Na is not an ending \u2014 only the place where this volume sets down its lantern. Rest. When the next road opens, look for my marks again. Until then: breathe. You did well.',
+      signoff: 'Grandma Bella'
+    }
+  };
   // State
   var discovered = {};
   var markerRefs = {};
@@ -387,7 +427,7 @@
     var FOG_UI_SKIP = '#layers, #panel, #discovery-card, #progress-container, .leaflet-control-zoom, ' +
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
-      '#sabella-clue-popup, #post-tutorial-hint, #chime-escape-hint, #guide-hint-toast, ' +
+      '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #guide-hint-toast, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -1000,7 +1040,8 @@
       var cardOpen = cardEl && cardEl.classList.contains('visible');
       var tutToast = document.getElementById('tutorial-persistent-toast');
 
-      if (panelOpen || cardOpen || tutToast) {
+      var sabellaMsg = document.getElementById('sabella-message-popup');
+      if (panelOpen || cardOpen || tutToast || sabellaMsg || sabellaMessagePending) {
         setTimeout(tryShow, 400);
         return;
       }
@@ -1438,7 +1479,8 @@
       (showChartLegend
         ? '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
             '<span style="color:#d99040;">\u25C8 Orange shimmer in the fog</span> \u2014 an undiscovered territory. Click it to reveal.<br>' +
-            '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 one of Sabella\u2019s marks. Click to search with hot &amp; cold chime.' +
+            '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 one of Sabella\u2019s marks. Click to search with hot &amp; cold chime.<br>' +
+            '<span style="color:#c4a882;">\u2709 Letters</span> \u2014 she also left notes along Elena\u2019s road (hut, monastery, tower, Sinn, and here).' +
           '</div>'
         : '') +
       '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
@@ -2623,7 +2665,7 @@
     };
   }
 
-  function recordSecret(payload, band) {
+  function recordSecret(payload, band, locIdOverride) {
     try {
       var stored = [];
       var raw = localStorage.getItem(SECRETS_COLLECTED_LS);
@@ -2633,8 +2675,8 @@
       if (exists) return;
       stored.push({
         id: payload.secretId,
-        locId: searchMode ? searchMode.locId : '',
-        band: band.id,
+        locId: locIdOverride || (searchMode ? searchMode.locId : '') || '',
+        band: band && band.id ? band.id : (band || 'letter'),
         speaker: payload.speaker,
         text: payload.text,
         at: Date.now()
@@ -2653,6 +2695,7 @@
 
   function showSabellaCluePopup(band, payload) {
     if (document.getElementById('sabella-clue-popup')) return;
+    if (document.getElementById('sabella-message-popup')) return;
 
     if (!document.getElementById('tut-toast-style')) {
       var s = document.createElement('style');
@@ -2696,6 +2739,7 @@
     if (!isSabellaCluePopupsEnabled() || !searchMode || searchMode.silenced) return;
     if (tutorialStep < TUTORIAL_STEPS) return;
     if (searchMode.cluePopupOpen || document.getElementById('sabella-clue-popup')) return;
+    if (document.getElementById('sabella-message-popup')) return;
     if (!searchMode.clueBandsFired) searchMode.clueBandsFired = {};
 
     for (var i = 0; i < CHIME_CLUE_BANDS.length; i++) {
@@ -2706,6 +2750,168 @@
       showSabellaCluePopup(band, payload);
       break;
     }
+  }
+
+  /* ════════════════════════════════════════════════
+     SABELLA JOURNEY LETTERS (discovery-complete, 5 stops)
+     Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
+     Kill: localStorage intrepid_sabella_messages_disabled=1
+     ════════════════════════════════════════════════ */
+  function isSabellaMessagesEnabled() {
+    if (!ENABLE_SABELLA_MESSAGES) return false;
+    try {
+      if (localStorage.getItem(SABELLA_MESSAGES_DISABLED_LS) === '1') return false;
+    } catch (e) {}
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('nosabellamessages')) return false;
+    } catch (e2) {}
+    return true;
+  }
+
+  function getSabellaMessagesSeen() {
+    try {
+      var raw = localStorage.getItem(SABELLA_MESSAGES_SEEN_LS);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function markSabellaMessageSeen(locId) {
+    try {
+      var seen = getSabellaMessagesSeen();
+      seen[locId] = Date.now();
+      localStorage.setItem(SABELLA_MESSAGES_SEEN_LS, JSON.stringify(seen));
+    } catch (e) {}
+  }
+
+  function hasUnseenSabellaMessage(locId) {
+    if (!SABELLA_MESSAGES[locId]) return false;
+    var seen = getSabellaMessagesSeen();
+    return !seen[locId];
+  }
+
+  function dismissSabellaMessagePopup() {
+    var popup = document.getElementById('sabella-message-popup');
+    if (!popup) {
+      var cbEarly = sabellaMessageOnDismiss;
+      sabellaMessageOnDismiss = null;
+      if (cbEarly) cbEarly();
+      return;
+    }
+    popup.style.opacity = '0';
+    setTimeout(function() {
+      if (popup.parentNode) popup.remove();
+      var cb = sabellaMessageOnDismiss;
+      sabellaMessageOnDismiss = null;
+      if (cb) cb();
+    }, 500);
+  }
+
+  function showSabellaMessagePopup(locId, letter) {
+    if (document.getElementById('sabella-message-popup')) return;
+    dismissSabellaCluePopup(true);
+
+    if (!document.getElementById('tut-toast-style')) {
+      var s = document.createElement('style');
+      s.id = 'tut-toast-style';
+      s.textContent = '@keyframes tutBorderPulse { 0%,100%{border-color:rgba(198,141,85,0.4)} 50%{border-color:rgba(212,168,67,0.9)} }';
+      document.head.appendChild(s);
+    }
+
+    var popup = document.createElement('div');
+    popup.id = 'sabella-message-popup';
+    popup.setAttribute('role', 'dialog');
+    popup.setAttribute('aria-label', letter.title || 'Letter from Sabella');
+    popup.style.cssText =
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
+      'background:linear-gradient(165deg,rgba(42,32,22,0.98) 0%,rgba(18,14,10,0.98) 55%,rgba(12,10,8,0.99) 100%);' +
+      'border:2px solid rgba(198,141,85,0.65);border-radius:14px;' +
+      'padding:24px 36px;text-align:center;max-width:540px;width:90%;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.14),inset 0 1px 0 rgba(232,210,170,0.08);' +
+      'animation:tutBorderPulse 2s ease-in-out infinite;' +
+      'opacity:0;transition:opacity 0.5s ease;';
+    popup.innerHTML =
+      '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
+        'margin-bottom:10px;font-family:Cinzel,serif;">Sabella\u2019s Letter</div>' +
+      '<div style="font-size:15px;letter-spacing:1px;color:#c4a882;margin-bottom:14px;font-family:Cinzel,serif;">' +
+        letter.title + '</div>' +
+      '<div style="font-size:17px;font-style:italic;color:#e8dcc4;margin-bottom:10px;text-align:left;">' +
+        letter.greeting + '</div>' +
+      '<div style="font-size:16px;letter-spacing:0.2px;line-height:1.65;margin-bottom:16px;text-align:left;color:#efe7d2;">' +
+        letter.body + '</div>' +
+      '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;margin-bottom:8px;">\u2014 ' +
+        letter.signoff + '</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+    popup.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissSabellaMessagePopup();
+    });
+    document.body.appendChild(popup);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { popup.style.opacity = '1'; });
+    });
+
+    markSabellaMessageSeen(locId);
+    recordSecret({
+      secretId: locId + ':letter',
+      speaker: letter.signoff,
+      text: letter.greeting + ' ' + letter.body
+    }, 'letter', locId);
+
+    setTimeout(function() { dismissSabellaMessagePopup(); }, 14000);
+  }
+
+  function scheduleSabellaMessage(loc, onDismiss) {
+    function finishSkip() {
+      if (onDismiss) setTimeout(onDismiss, 1400);
+    }
+    if (!loc || !isSabellaMessagesEnabled()) {
+      finishSkip();
+      return;
+    }
+    if (!hasUnseenSabellaMessage(loc.id)) {
+      finishSkip();
+      return;
+    }
+    if (sabellaMessagePending || document.getElementById('sabella-message-popup')) {
+      if (onDismiss) sabellaMessageOnDismiss = onDismiss;
+      return;
+    }
+
+    sabellaMessagePending = true;
+    sabellaMessageOnDismiss = onDismiss || null;
+
+    function tryShow() {
+      var panelEl = document.getElementById('panel');
+      var cardEl = document.getElementById('discovery-card');
+      var panelOpen = panelEl && panelEl.classList.contains('open');
+      var cardOpen = cardEl && cardEl.classList.contains('visible');
+      var tutToast = document.getElementById('tutorial-persistent-toast');
+      var postHint = document.getElementById('post-tutorial-hint');
+      var lockedMsg = document.getElementById('locked-msg');
+
+      if (panelOpen || cardOpen || tutToast || postHint || lockedMsg) {
+        setTimeout(tryShow, 400);
+        return;
+      }
+
+      sabellaMessagePending = false;
+      var letter = SABELLA_MESSAGES[loc.id];
+      if (!letter || !hasUnseenSabellaMessage(loc.id)) {
+        var cb = sabellaMessageOnDismiss;
+        sabellaMessageOnDismiss = null;
+        if (cb) setTimeout(cb, 400);
+        return;
+      }
+      showSabellaMessagePopup(loc.id, letter);
+    }
+
+    setTimeout(tryShow, 900);
   }
 
   // Tear down chime search immediately — reveal animation uses discovered phase, not searchMode.
@@ -2754,14 +2960,13 @@
     updateProgress();
     maybeDismissPostTutorialOnDiscover(loc);
 
-    // Vol 1 finale reward dialogue — tied to Indras Na completion, not Mish guardian reveal
+    // Sabella journey letter (once per stop) — Indras Na letter precedes Vol 2 reward dialogue
     if (loc.id === FINAL_ELENA_STOP) {
-      maybeShowVol2GateToast();
-    }
-
-    // Advance tutorial if in search steps
-    if (tutorialStep < TUTORIAL_STEPS) {
-      advanceTutorial();
+      scheduleSabellaMessage(loc, function() {
+        maybeShowVol2GateToast();
+      });
+    } else {
+      scheduleSabellaMessage(loc);
     }
 
     // Tower cluster: reveal companion site (Maxim Stone)
@@ -2770,6 +2975,11 @@
         peekClusterSites('tower-nine');
         showTowerClusterHint();
       }, 1800);
+    }
+
+    // Advance tutorial if in search steps
+    if (tutorialStep < TUTORIAL_STEPS) {
+      advanceTutorial();
     }
 
     delete clusterPeek[loc.id];
@@ -3535,7 +3745,8 @@
     'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales',
     'intrepid_cartographer_unlocked', 'intrepid_atlas_label',
     'intrepid_atlas_auth', 'intrepid_atlas_tier',
-    VOL2_GATE_TOAST_LS, VOL2_GATE_LS_UNLOCK, VOL2_GATE_LS_LOCK
+    VOL2_GATE_TOAST_LS, VOL2_GATE_LS_UNLOCK, VOL2_GATE_LS_LOCK,
+    SECRETS_COLLECTED_LS, SABELLA_MESSAGES_SEEN_LS
   ];
 
   function clearProgressStorage() {
