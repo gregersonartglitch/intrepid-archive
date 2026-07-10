@@ -516,6 +516,9 @@ input { font-family: inherit; }
 .gate-btn:active { transform: translateY(0); }
 
 /* Cuneiform dual-layer button — proximity glitch reveal (html.cuneiform-buttons-on only) */
+.cuneiform-btn__layer--cuneiform {
+  display: none;
+}
 html.cuneiform-buttons-on .gate-btn-cuneiform-zone {
   display: inline-block;
   position: relative;
@@ -1546,6 +1549,31 @@ body.edit-mode .mk-dot-wrap > * {
 
 }
 
+/* Cartographer sites — bright halo for fog-edge readability (Ashal is type town) */
+.leaflet-pane.leaflet-label-pane .lbl-cartographer-site {
+  color: rgba(255, 248, 220, 0.98);
+  font-weight: 700;
+  -webkit-text-stroke: 0.35px rgba(0, 0, 0, 0.85);
+  paint-order: stroke fill;
+  text-shadow:
+    0 1px 2px rgba(0,0,0,1),
+    0 0 4px rgba(0,0,0,1),
+    0 0 10px rgba(0,0,0,1),
+    0 0 24px rgba(0,0,0,0.95),
+    0 0 40px rgba(0,0,0,0.7);
+}
+.leaflet-pane.leaflet-label-pane .map-label-icon.fog-peek .lbl-cartographer-site,
+.leaflet-pane.leaflet-label-pane .map-label-icon.fog-revealed .lbl-cartographer-site {
+  color: #fff;
+  text-shadow:
+    0 0 1px rgba(0, 0, 0, 1),
+    0 1px 2px rgba(0,0,0,1),
+    0 0 6px rgba(0,0,0,1),
+    0 0 14px rgba(0,0,0,1),
+    0 0 28px rgba(0,0,0,0.95),
+    0 0 48px rgba(0,0,0,0.75);
+}
+
 /* Story */
 .mk-story {
   width: 12px; height: 12px; border-radius: 50%;
@@ -1895,6 +1923,11 @@ body.edit-mode .mk-dot-wrap > * {
   .hdr-home-btn,
   .hdr-v1-btn,
   .hdr-dossier-btn { padding: 6px 10px; font-size: 8px; letter-spacing: 1px; }
+  html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
+  html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
+  html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
+    font-size: 13px;
+  }
   .hdr-title { font-size: 13px; }
   .hdr-sub { font-size: 8px; }
 
@@ -2760,10 +2793,25 @@ body.edit-mode .mk-dot-wrap > * {
 
   <div id="hdr">
     <div class="hdr-nav-row">
-      <button type="button" id="hdr-home-btn" class="hdr-home-btn" title="Return to archive home" aria-label="Return to archive home">← Home</button>
+      <button type="button" id="hdr-home-btn" class="hdr-home-btn cuneiform-btn" title="Return to archive home" aria-label="Return to archive home">
+        <span class="hdr-btn-label">
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">← Home</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12239;&#x1222D;</span>
+        </span>
+      </button>
       <div class="hdr-nav-actions">
-        <a class="hdr-v1-btn" id="hdr-v1-btn" href="/reader/">📖 Read Volume 1</a>
-        <a class="hdr-dossier-btn" id="hdr-dossier-btn" href="/dossier/">🗓 Character Dossier</a>
+        <a class="hdr-v1-btn cuneiform-btn" id="hdr-v1-btn" href="/reader/" aria-label="Read Volume 1">
+          <span class="hdr-btn-label">
+            <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">📖 Read Volume 1</span>
+            <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;</span>
+          </span>
+        </a>
+        <a class="hdr-dossier-btn cuneiform-btn" id="hdr-dossier-btn" href="/dossier/" aria-label="Character Dossier">
+          <span class="hdr-btn-label">
+            <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">🗓 Character Dossier</span>
+            <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12214;&#x122A0;</span>
+          </span>
+        </a>
       </div>
     </div>
     <div class="hdr-brand">
@@ -2894,7 +2942,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 136;
+window.INTREPID_BUILD = 137;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2971,7 +3019,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=136"></script>
+<script src="fog.js?v=137"></script>
 <script>
 (function() {
   'use strict';
@@ -5086,9 +5134,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           ? '<span class="label-line">' + loc.name.replace(/\s+Utu$/i, '') + '</span><span class="label-line">UTU</span>'
           : loc.name;
       const dirClass = labelDirections[loc.id] ? ' lbl-dir-' + labelDirections[loc.id] : '';
+      const cartographerLblClass = loc.cartographerSite ? ' lbl-cartographer-site' : '';
       const lblIcon = L.divIcon({
         className: 'map-label-icon' + fogHiddenClass,
-        html: '<div class="mk-label-pin"><div class="' + lblClass + (labelClusterClass[loc.id] || '') + dirClass + '">' + labelHtml + '</div></div>',
+        html: '<div class="mk-label-pin"><div class="' + lblClass + (labelClusterClass[loc.id] || '') + cartographerLblClass + dirClass + '">' + labelHtml + '</div></div>',
         iconSize: [1, 1],
         iconAnchor: [0, 0]
       });
