@@ -36,14 +36,20 @@ vm.runInNewContext(dataCode, dataCtx);
 var LOCATIONS = dataCtx.window.LOCATIONS;
 var JOURNEY_PATH = dataCtx.window.JOURNEY_PATH;
 
-// ── Mirror fog.js vol2 / journey helpers (build 144) ─────────
+// ── Mirror fog.js vol2 / journey helpers (build 145) ─────────
 var FINAL_ELENA_STOP = 'indras-na';
 var VOL2_GUARDIAN_TRIGGER = 'Mish';
 var VOL2_JOURNEY_CAP_ID = 'sinn';
 var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
 var ENABLE_VOL2_JOURNEY_GATE = true;
-var MISH_UNLOCK = 13;
-var ELIL_UNLOCK = 14;
+// Vol 1 clock sequence — clockwise 12→6; Mish last (must match fog.js VOL1_REVEAL_ORDER)
+var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
+var MEDALLION_UNLOCKS = {
+  'Utu': 5, 'Sham & Mash': 9, 'Elil': 12, 'Rapha': 15,
+  'Ningal': 18, 'An': 21, 'Mish': 24
+};
+var MISH_UNLOCK = MEDALLION_UNLOCKS.Mish;
+var ELIL_UNLOCK = MEDALLION_UNLOCKS.Elil;
 
 function getJourneyStepIndex(locId, journeyPath) {
   for (var ji = 0; ji < journeyPath.length; ji++) {
@@ -183,13 +189,39 @@ function simulateRevealGod(m, revealedGods, discovered, journeyPath, ls, opts) {
 
 function pruneRevealedGods(revealedGods, discovered, unlocks) {
   var count = getMedallionDiscoveryCount(discovered);
-  var cleaned = {};
-  Object.keys(revealedGods).forEach(function(name) {
-    if (unlocks[name] && count >= unlocks[name]) cleaned[name] = true;
-  });
+  var cleaned = getValidRevealedGodsForCount(count, unlocks);
   Object.keys(revealedGods).forEach(function(k) { delete revealedGods[k]; });
   Object.keys(cleaned).forEach(function(k) { revealedGods[k] = true; });
   return cleaned;
+}
+
+function getValidRevealedGodsForCount(count, unlocks) {
+  var cleaned = {};
+  for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
+    var name = VOL1_REVEAL_ORDER[i];
+    var threshold = unlocks[name];
+    if (!threshold || count < threshold) break;
+    cleaned[name] = true;
+  }
+  return cleaned;
+}
+
+function simulateCheckGodReveals(count, revealedGods, unlocks, opts) {
+  var revealed = [];
+  for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
+    var name = VOL1_REVEAL_ORDER[i];
+    if (revealedGods[name]) continue;
+    var threshold = unlocks[name];
+    if (!threshold) break;
+    if (count >= threshold) {
+      revealedGods[name] = true;
+      revealed.push(name);
+      if (opts && opts.onePerTick) break;
+    } else {
+      break;
+    }
+  }
+  return revealed;
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -206,31 +238,49 @@ postSabella['sabellas-hut'] = { at: Date.now(), phase: 'complete' };
 var nextAfterSabella = getNextPathLocation(postSabella, JOURNEY_PATH, {});
 assert(nextAfterSabella === 'mish', 'getNextPathLocation after Sabella is mish (not null)');
 
-console.log('\n[2] Journey 5/8 + Elil revealed — no Vol2 gate');
+console.log('\n[2] Journey 5/8 + 11 discoveries — clock order caps at Utu only');
 var fiveEight = makeJourneyCompleteThrough('monastery-wind');
 fiveEight['monastery-wind'] = { at: Date.now(), phase: 'complete' };
-padDiscoveries(fiveEight, ELIL_UNLOCK);
-var revealedMid = { 'Utu': true, 'Rapha': true, 'Sham & Mash': true, 'Elil': true };
+padDiscoveries(fiveEight, 11);
+var validAt11 = getValidRevealedGodsForCount(11, MEDALLION_UNLOCKS);
 assert(journeyCompleteCount(fiveEight, JOURNEY_PATH) === 5, 'journey progress is 5/8');
-assert(!isMishGuardianRevealed(revealedMid, fiveEight), 'Mish guardian not awakened at 5/8 + Elil only');
+assert(Object.keys(validAt11).length === 2 && validAt11.Utu && validAt11['Sham & Mash'],
+  'at 11 discoveries only Utu (12pm) + Sham&Mash (1pm) may be lit');
+assert(!validAt11.Rapha, 'Rapha (3pm) not lit at 11 discoveries');
+assert(!validAt11.Mish, 'Mish (6pm) not lit at 11 discoveries');
+var revealedMid = { Utu: true };
+assert(!isMishGuardianRevealed(revealedMid, fiveEight), 'Mish guardian not awakened at 5/8 + Utu only');
 assert(!isVol2JourneyGateBlocking(revealedMid, fiveEight, JOURNEY_PATH), 'Vol2 gate not blocking before Mish guardian');
 var lsMid = {};
 assert(!maybeShowVol2GateToast(revealedMid, fiveEight, JOURNEY_PATH, lsMid), 'Vol2 toast not eligible before Mish guardian');
 assert(!lsMid[VOL2_GATE_TOAST_LS], 'Vol2 toast LS flag not set before Mish guardian');
 
+console.log('\n[2b] Stale out-of-order reveals pruned — Rapha/Mish removed at count 11');
+var staleOrder = { Utu: true, Rapha: true, Mish: true };
+pruneRevealedGods(staleOrder, fiveEight, MEDALLION_UNLOCKS);
+assert(staleOrder.Utu && !staleOrder.Rapha && !staleOrder.Mish,
+  'prune keeps only sequential prefix at discovery count');
+
+console.log('\n[2c] Sequential reveal — cannot skip to Rapha without prior sigils');
+var seqGods = {};
+simulateCheckGodReveals(15, seqGods, MEDALLION_UNLOCKS, { onePerTick: false });
+assert(seqGods.Utu && seqGods['Sham & Mash'] && seqGods.Elil && seqGods.Rapha,
+  'at 15 discoveries clock chain reaches Rapha (4th)');
+assert(!seqGods.Mish, 'Mish not revealed until count 24 even if Rapha threshold met');
+
 console.log('\n[3] Stale Mish in revealedGods below threshold — pruned');
 var staleGods = { Mish: true, Elil: true };
 var staleDisc = makeJourneyCompleteThrough('monastery-wind');
-padDiscoveries(staleDisc, 12);
-pruneRevealedGods(staleGods, staleDisc, { Mish: MISH_UNLOCK, Elil: ELIL_UNLOCK });
-assert(!staleGods.Mish, 'stale Mish pruned when discovery count < 13');
+padDiscoveries(staleDisc, 20);
+pruneRevealedGods(staleGods, staleDisc, MEDALLION_UNLOCKS);
+assert(!staleGods.Mish, 'stale Mish pruned when discovery count < 24');
 assert(!isVol2JourneyGateBlocking(staleGods, staleDisc, JOURNEY_PATH), 'Vol2 gate false after stale Mish prune');
 
 console.log('\n[4] Mish guardian first reveal — gate + toast');
 var mishReady = makeJourneyCompleteThrough('monastery-wind');
 mishReady['monastery-wind'] = { at: Date.now(), phase: 'complete' };
 padDiscoveries(mishReady, MISH_UNLOCK);
-var godsFresh = { Utu: true, Rapha: true, 'Sham & Mash': true };
+var godsFresh = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true };
 var lsMish = {};
 var mishReveal = simulateRevealGod(
   { name: 'Mish', guardian: true, unlock: MISH_UNLOCK },
@@ -244,7 +294,7 @@ console.log('\n[5] Elil reveal after Mish already revealed — no duplicate toas
 var elilReady = makeJourneyCompleteThrough('monastery-wind');
 elilReady['monastery-wind'] = { at: Date.now(), phase: 'complete' };
 padDiscoveries(elilReady, ELIL_UNLOCK);
-var godsWithMish = { Utu: true, Rapha: true, 'Sham & Mash': true, Mish: true };
+var godsWithMish = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true, Mish: true };
 var lsElil = {};
 lsElil[VOL2_GATE_TOAST_LS] = '1';
 var elilReveal = simulateRevealGod(
@@ -254,14 +304,20 @@ var elilReveal = simulateRevealGod(
 assert(!elilReveal.toastFired, 'Elil reveal does not fire Vol2 toast');
 assert(!maybeShowVol2GateToast(godsWithMish, elilReady, JOURNEY_PATH, lsElil), 'Vol2 toast not re-eligible after Mish toast already shown');
 
-console.log('\n[6] Chime exit clears searchMode (build 143+ regression)');
+console.log('\n[6] fog.js sequential guardian reveal (build 145)');
 var fogSrc = fs.readFileSync(path.join(ROOT, 'fog.js'), 'utf8');
+assert(fogSrc.indexOf('VOL1_REVEAL_ORDER') > -1, 'VOL1_REVEAL_ORDER defined in fog.js');
+assert(/function checkGodReveals[\s\S]*?break;\s*\/\/ next in clock order/.test(fogSrc),
+  'checkGodReveals breaks on first unreached threshold (no skip-ahead)');
+assert(fogSrc.indexOf('getValidRevealedGodsForCount') > -1, 'getValidRevealedGodsForCount prunes chain on init');
+
+console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');
 assert(/function exitSearchMode\(\)[\s\S]*?searchMode = null/.test(fogSrc), 'exitSearchMode nulls searchMode');
 assert(fogSrc.indexOf('exitSearchMode();') > -1 && fogSrc.indexOf('completeDiscovery') > -1, 'completeDiscovery calls exitSearchMode');
 assert(fogSrc.indexOf('searchMode.silenced = true') > -1, 'chime silenced before exit on key found');
 
-console.log('\n[7] fog.js syntax');
+console.log('\n[8] fog.js syntax');
 var cp = require('child_process');
 try {
   cp.execFileSync('node', ['--check', path.join(ROOT, 'fog.js')], { stdio: 'pipe' });

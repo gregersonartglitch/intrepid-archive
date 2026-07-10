@@ -25,7 +25,7 @@
   var GUARDIAN_REVEAL_GLOW_MIN = 360;  // px — Tetrad guardians (Utu, Rapha, Mish, Gu)
   var GOD_REVEAL_GLOW_MIN = 300;       // px — The Eight Apkallu sigils
   var MEDALLION_REVEAL_MS = 5200;      // how long the announcing pulse runs
-  // Volume 2 journey gate — fires when Mish guardian medallion awakens (6:00 · unlock 13).
+  // Volume 2 journey gate — fires when Mish guardian medallion awakens (6:00 · last Vol 1 unlock).
   // NOT on Mish map location discovery — player continues through sinn first.
   // Kill switch: ENABLE_VOL2_JOURNEY_GATE = false removes the gate entirely.
   // Manual unlock: localStorage.setItem('intrepid_vol2_journey_unlocked','1')
@@ -33,7 +33,11 @@
   // URL override: ?vol2unlock on the map URL (local QA only)
   var ENABLE_VOL2_JOURNEY_GATE = true;
   var VOL2_UNLOCK_AT = '2026-12-01T00:00:00Z'; // set to Vol 2 launch UTC when known
-  var VOL2_GUARDIAN_TRIGGER = 'Mish'; // Tetrad South · winged archer · MEDALLION_DEFS unlock 13
+  var VOL2_GUARDIAN_TRIGGER = 'Mish'; // Tetrad South · winged archer · last in VOL1_REVEAL_ORDER
+  // Vol 1 clock sequence — clockwise 12→6 on the frame (7 sigils); Mish is final Vol 1 unlock.
+  // Left semicircle (Gu, Nin, Belu, Ae, Erra) stays sealed until Volume II.
+  var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
+  var VOL2_SEALED_MEDALLIONS = ['Gu', 'Nin', 'Belu', 'Ae', 'Erra'];
   var VOL2_JOURNEY_CAP_ID = 'sinn'; // last journey stop before Vol 2 seals onward (indras-na)
   var VOL2_GATE_LS_UNLOCK = 'intrepid_vol2_journey_unlocked';
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
@@ -3174,15 +3178,39 @@
   var revealedGods = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
   var suppressAnimations = true; // suppress toasts/pulses during initial load restoration
 
+  function findMedallionDef(defs, name) {
+    for (var di = 0; di < defs.length; di++) {
+      if (defs[di].name === name) return defs[di];
+    }
+    return null;
+  }
+
+  // Only guardians in VOL1_REVEAL_ORDER may unlock, strictly in clock order — no skipping ahead.
+  function getValidRevealedGodsForCount(count, defs) {
+    var cleaned = {};
+    for (var vi = 0; vi < VOL1_REVEAL_ORDER.length; vi++) {
+      var vname = VOL1_REVEAL_ORDER[vi];
+      var vdef = findMedallionDef(defs, vname);
+      if (!vdef || !vdef.unlock || count < vdef.unlock) break;
+      cleaned[vname] = true;
+    }
+    return cleaned;
+  }
+
   function checkGodReveals(count) {
     var defs = window.MEDALLION_DEFS;
     if (!defs) return;
-    defs.forEach(function(m) {
-      if (revealedGods[m.name]) return; // already revealed
-      if (m.unlock && count >= m.unlock) {
+    for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
+      var name = VOL1_REVEAL_ORDER[i];
+      if (revealedGods[name]) continue;
+      var m = findMedallionDef(defs, name);
+      if (!m || !m.unlock) break;
+      if (count >= m.unlock) {
         revealGod(m);
+      } else {
+        break; // next in clock order not yet eligible — do not skip ahead
       }
-    });
+    }
   }
 
   function revealGod(m) {
@@ -3373,19 +3401,11 @@
   }
 
   function initTetradCircles() {
-    // Restore previously revealed gods — prune entries below current discovery threshold
+    // Restore previously revealed gods — prune to clock-order chain at current discovery count
     var currentCount = getMedallionDiscoveryCount();
     var defs = window.MEDALLION_DEFS || [];
-    var cleaned = {};
+    var cleaned = getValidRevealedGodsForCount(currentCount, defs);
     try {
-      var saved = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
-      Object.keys(saved).forEach(function(name) {
-        var canon = resolveMedallionName(name);
-        var def = defs.find(function(m) { return m.name === canon; });
-        if (def && def.unlock && currentCount >= def.unlock) {
-          cleaned[canon] = true;
-        }
-      });
       localStorage.setItem('revealedGods', JSON.stringify(cleaned));
     } catch(e) {}
     // Replace in-memory set so stale early-unlock entries cannot linger
