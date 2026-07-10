@@ -35,7 +35,7 @@
   --font-heading: 'Cinzel', serif;
   --font-body: 'EB Garamond', Georgia, serif;
   --font-ui: 'Montserrat', sans-serif;
-  --font-cuneiform: 'Noto Sans Cuneiform', serif;
+  --font-cuneiform: 'SantakkuM', serif;
 }
 
 /* ═══════════════════════════════════════════
@@ -519,7 +519,22 @@ html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--c
   letter-spacing: -3px;
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
-  color: rgba(13, 13, 18, 0.92);
+  color: var(--bone);
+  font-size: clamp(16px, 2.6vw, 21px);
+  letter-spacing: -2px;
+  -webkit-text-stroke: 0.4px rgba(13, 13, 18, 0.5);
+  text-shadow:
+    0 0 1px rgba(13, 13, 18, 0.4),
+    0 1px 2px rgba(13, 13, 18, 0.3);
+}
+html.cuneiform-buttons-on .landing-action.cuneiform-btn .landing-badge {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+html.cuneiform-buttons-on .landing-action.cuneiform-btn.cuneiform-btn--near .landing-badge {
+  opacity: 0.72;
+  visibility: visible;
 }
 @keyframes cuneiform-wedge-glitch {
   0%   { opacity: 1; transform: translate(0, -3px); clip-path: inset(0 0 0 0); text-shadow: none; }
@@ -2423,7 +2438,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="gate-btn-cuneiform-zone">
       <button id="entry-access-btn" class="gate-btn gate-fade cuneiform-btn" data-delay="1000" type="button" aria-label="Unlock Archive">
         <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Unlock Archive</span>
-        <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;&#x122B3;&#x12279;</span>
+        <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;</span>
       </button>
     </div>
     <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
@@ -2443,28 +2458,28 @@ body.edit-mode .mk-dot-wrap > * {
       <button id="landing-reader" class="landing-action primary cuneiform-btn" type="button" aria-label="Read Issue 1">
         <span class="landing-action-title">
           <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Read Issue 1</span>
-          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;&#x122B3;&#x12279;</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;</span>
         </span>
         <span class="landing-badge" id="landing-reader-badge">Included with your code</span>
       </button>
       <a id="landing-dossier" class="landing-action cuneiform-btn" href="/dossier/" aria-label="Character Dossier">
         <span class="landing-action-title">
           <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Character Dossier</span>
-          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12214;&#x122A0;&#x12249;&#x122B3;</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12214;&#x122A0;</span>
         </span>
         <span class="landing-badge" id="landing-dossier-badge">Included with your code</span>
       </a>
       <button id="landing-map" class="landing-action cuneiform-btn" type="button" aria-label="Cartographer's Atlas">
         <span class="landing-action-title">
           <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Cartographer's Atlas</span>
-          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12239;&#x12297;&#x122B3;&#x1222D;</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x12239;&#x12297;</span>
         </span>
         <span class="landing-badge" id="landing-map-badge">Cartographer tier and above</span>
       </button>
       <a id="landing-website" class="landing-action cuneiform-btn" href="https://www.intrepidgraphicnovel.com" target="_blank" rel="noopener" aria-label="Main Website">
         <span class="landing-action-title">
           <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Main Website</span>
-          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12239;&#x12297;&#x1222D;</span>
+          <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12239;</span>
         </span>
       </a>
     </div>
@@ -2859,18 +2874,17 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
   }
 
-  function loadNotoSansCuneiformFont() {
-    if (document.getElementById('noto-cuneiform-font')) return;
-    var link = document.createElement('link');
-    link.id = 'noto-cuneiform-font';
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Cuneiform&display=swap';
-    document.head.appendChild(link);
+  function loadCuneiformDisplayFont() {
+    if (document.getElementById('santakkum-cuneiform-font')) return;
+    var style = document.createElement('style');
+    style.id = 'santakkum-cuneiform-font';
+    style.textContent = "@font-face{font-family:'SantakkuM';src:url('assets/fonts/SantakkuM.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap;}";
+    document.head.appendChild(style);
   }
 
   function initCuneiformButtons() {
     if (!isCuneiformButtonsEnabled()) return;
-    loadNotoSansCuneiformFont();
+    loadCuneiformDisplayFont();
     document.documentElement.classList.add('cuneiform-buttons-on');
     initCuneiformProximityReveal();
   }
@@ -2907,7 +2921,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         clearTimers();
         state.isGlitching = false;
         state.isRevealed = false;
-        btn.classList.remove('is-glitching', 'is-revealed');
+        btn.classList.remove('is-glitching', 'is-revealed', 'cuneiform-btn--near');
       };
 
       state.startGlitchReveal = function() {
@@ -2945,6 +2959,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         var near = dist <= PROXIMITY_RADIUS;
         if (near && !state.isProximate) {
           state.isProximate = true;
+          btn.classList.add('cuneiform-btn--near');
           state.startGlitchReveal();
         } else if (!near && state.isProximate) {
           state.isProximate = false;
@@ -2979,6 +2994,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     document.addEventListener('mouseleave', function() {
       for (var k = 0; k < instances.length; k++) {
         instances[k].isProximate = false;
+        instances[k].btn.classList.remove('cuneiform-btn--near');
         instances[k].resetToCuneiform();
       }
     });
