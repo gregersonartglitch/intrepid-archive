@@ -1259,6 +1259,73 @@ body.debug-hotspots .medallion-hot::after {
   border-color: var(--amber);
   color: #fff;
 }
+
+/* Header cuneiform ghost buttons — fixed box, no layout shift on hover */
+html.cuneiform-buttons-on .hdr-home-btn,
+html.cuneiform-buttons-on .hdr-v1-btn,
+html.cuneiform-buttons-on .hdr-dossier-btn {
+  position: relative;
+  justify-content: center;
+  gap: 0;
+  background: rgba(13,13,18,0.55);
+  overflow: hidden;
+}
+html.cuneiform-buttons-on .hdr-home-btn:hover,
+html.cuneiform-buttons-on .hdr-v1-btn:hover,
+html.cuneiform-buttons-on .hdr-dossier-btn:hover {
+  background: rgba(13,13,18,0.72);
+  border-color: var(--amber);
+  color: #fff;
+  overflow: visible;
+}
+html.cuneiform-buttons-on .hdr-btn-label {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 1.35em;
+  overflow: hidden;
+}
+html.cuneiform-buttons-on .hdr-home-btn {
+  min-width: 5.6rem;
+}
+html.cuneiform-buttons-on .hdr-v1-btn {
+  min-width: 10.8rem;
+}
+html.cuneiform-buttons-on .hdr-dossier-btn {
+  min-width: 12.4rem;
+}
+html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
+html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
+html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  transform: translateY(0);
+  -webkit-text-stroke: 0.35px currentColor;
+  text-shadow: 0 0 1px currentColor;
+}
+html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn .cuneiform-btn__layer--latin,
+html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn .cuneiform-btn__layer--latin,
+html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn .cuneiform-btn__layer--latin {
+  --latin-optical-y: 0;
+  font-family: var(--font-heading);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn:hover .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn:hover .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn:hover .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn.cuneiform-btn--near .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn.cuneiform-btn--near .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn.cuneiform-btn--near .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn.is-revealed .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn.is-revealed .hdr-btn-label,
+html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn.is-revealed .hdr-btn-label {
+  overflow: visible;
+}
+
 body:not(.map-session) #fog-guide-btn {
   display: none !important;
 }
@@ -1927,7 +1994,7 @@ body.edit-mode .mk-dot-wrap > * {
   html.cuneiform-buttons-on .hdr-home-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
   html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform,
   html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
-    font-size: 13px;
+    font-size: 15px;
   }
   .hdr-title { font-size: 13px; }
   .hdr-sub { font-size: 8px; }
@@ -2943,7 +3010,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 139;
+window.INTREPID_BUILD = 138;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3020,7 +3087,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=139"></script>
+<script src="fog.js?v=138"></script>
 <script>
 (function() {
   'use strict';
