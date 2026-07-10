@@ -44,7 +44,7 @@ CSS token: `--font-cuneiform: 'SantakkuM', serif;`
 
 1. **Fewer glyphs per tile** — 2 wedges per button (was 4) for legibility at larger sizes
 2. **Larger cuneiform layer** — gate btn 26px; hub tiles `clamp(20px, 3.2vw, 26px)`; positive letter-spacing
-3. **Subtext reveal** — `.landing-badge` hidden by default; fades in on `.cuneiform-btn--near`, `:hover`, `.is-glitching`, or `.is-revealed` (same proximity pipeline as cuneiform→Latin)
+3. **Subtext reveal** — `.landing-badge` hidden by default; fades in on `.cuneiform-btn--near` only (same proximity class that triggers cuneiform→Latin glitch)
 
 ## Decorative-only — translation honesty
 
@@ -74,7 +74,7 @@ Dual-layer button structure:
 | Decorative layer | `aria-hidden="true"` on cuneiform `<span>` |
 | Hover crossfade | Proximity + glitch CSS; Latin layer stays in DOM for SR |
 | Motion | `prefers-reduced-motion: reduce` → skip crossfade, show Latin only |
-| Hub subtext | `.landing-badge` visually hidden until proximity/hover; still in DOM for SR when visible |
+| Hub subtext | `.landing-badge` hidden until `.cuneiform-btn--near`; still in DOM for SR when visible |
 
 ## Feature flags
 

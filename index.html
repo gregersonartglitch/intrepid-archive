@@ -504,28 +504,29 @@ html.cuneiform-buttons-on .cuneiform-btn__layer--cuneiform {
   font-family: var(--font-cuneiform);
   font-weight: 400;
   line-height: 1;
-  letter-spacing: -2px;
+  letter-spacing: 0.06em;
   text-transform: none;
   opacity: 1;
   pointer-events: none;
-  /* Noto Sans Cuneiform glyphs sit low in em box — optical center on gold button */
-  transform: translateY(-3px);
+  /* SantakkuM wedges sit low in em box — optical center on button chrome */
+  transform: translateY(-2px);
+  -webkit-text-stroke: 0.35px currentColor;
+  text-shadow: 0 0 1px currentColor;
 }
 html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
-  font-size: 20px;
+  font-size: 26px;
+  letter-spacing: 0.08em;
 }
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
-  font-size: clamp(15px, 2.4vw, 19px);
-  letter-spacing: -3px;
+  font-size: clamp(20px, 3.2vw, 26px);
+  letter-spacing: 0.06em;
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   color: var(--bone);
-  font-size: clamp(16px, 2.6vw, 21px);
-  letter-spacing: -2px;
-  -webkit-text-stroke: 0.4px rgba(13, 13, 18, 0.5);
+  -webkit-text-stroke: 0.45px rgba(13, 13, 18, 0.55);
   text-shadow:
-    0 0 1px rgba(13, 13, 18, 0.4),
-    0 1px 2px rgba(13, 13, 18, 0.3);
+    0 0 1px rgba(13, 13, 18, 0.45),
+    0 1px 2px rgba(13, 13, 18, 0.35);
 }
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .landing-badge {
   opacity: 0;
