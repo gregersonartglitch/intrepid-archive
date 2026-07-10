@@ -36,7 +36,7 @@ vm.runInNewContext(dataCode, dataCtx);
 var LOCATIONS = dataCtx.window.LOCATIONS;
 var JOURNEY_PATH = dataCtx.window.JOURNEY_PATH;
 
-// ── Mirror fog.js vol2 / journey helpers (build 145) ─────────
+// ── Mirror fog.js vol2 / journey helpers (build 148) ─────────
 var FINAL_ELENA_STOP = 'indras-na';
 var VOL2_GUARDIAN_TRIGGER = 'Mish';
 var VOL2_JOURNEY_CAP_ID = 'sinn';
@@ -44,9 +44,10 @@ var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
 var ENABLE_VOL2_JOURNEY_GATE = true;
 // Vol 1 clock sequence — clockwise 12→6; Mish last (must match fog.js VOL1_REVEAL_ORDER)
 var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
+// Territory thresholds (charted regions) — must match index.html MEDALLION_DEFS unlock values
 var MEDALLION_UNLOCKS = {
-  'Utu': 5, 'Sham & Mash': 9, 'Elil': 12, 'Rapha': 15,
-  'Ningal': 18, 'An': 21, 'Mish': 24
+  'Utu': 2, 'Sham & Mash': 4, 'Elil': 5, 'Rapha': 8,
+  'Ningal': 11, 'An': 14, 'Mish': 17
 };
 var MISH_UNLOCK = MEDALLION_UNLOCKS.Mish;
 var ELIL_UNLOCK = MEDALLION_UNLOCKS.Elil;
@@ -66,10 +67,41 @@ function getMedallionDiscoveryCount(discovered) {
   return Object.keys(discovered).length;
 }
 
+function getTerritoryDiscoveryCount(discovered) {
+  var n = 0;
+  LOCATIONS.forEach(function(l) {
+    if (l.type === 'region' && discovered[l.id]) n++;
+  });
+  return n;
+}
+
+function padTerritories(discovered, count) {
+  var regionLocs = LOCATIONS.filter(function(l) { return l.type === 'region'; });
+  for (var ri = 0; ri < regionLocs.length && getTerritoryDiscoveryCount(discovered) < count; ri++) {
+    if (!discovered[regionLocs[ri].id]) {
+      discovered[regionLocs[ri].id] = { at: Date.now(), phase: 'mist' };
+    }
+  }
+}
+
+function getJourneyCompleteCount(discovered, journeyPath) {
+  return journeyCompleteCount(discovered, journeyPath);
+}
+
+function meetsMishUnlockCriteria(territoryCount, discovered) {
+  if (!discovered[FINAL_ELENA_STOP]) return false;
+  return territoryCount >= MISH_UNLOCK;
+}
+
+function isGuardianUnlockEligible(name, threshold, territoryCount, discovered) {
+  if (!threshold) return false;
+  if (name === 'Mish') return meetsMishUnlockCriteria(territoryCount, discovered);
+  return territoryCount >= threshold;
+}
+
 function isMishGuardianRevealed(revealedGods, discovered) {
   if (!revealedGods[VOL2_GUARDIAN_TRIGGER]) return false;
-  if (getMedallionDiscoveryCount(discovered) < MISH_UNLOCK) return false;
-  return true;
+  return meetsMishUnlockCriteria(getTerritoryDiscoveryCount(discovered), discovered);
 }
 
 function isVol2JourneyUnlocked() {
@@ -78,6 +110,7 @@ function isVol2JourneyUnlocked() {
 
 function isVol2LockedJourneyStep(locId, journeyPath, revealedGods, discovered) {
   if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+  if (locId === FINAL_ELENA_STOP) return false;
   if (!isMishGuardianRevealed(revealedGods, discovered)) return false;
   if (!isOnPath(locId, journeyPath)) return false;
   var capIdx = getJourneyStepIndex(VOL2_JOURNEY_CAP_ID, journeyPath);
@@ -92,7 +125,9 @@ function isVol2JourneyGateBlocking(revealedGods, discovered, journeyPath) {
   var capIdx = getJourneyStepIndex(VOL2_JOURNEY_CAP_ID, journeyPath);
   if (capIdx < 0) return false;
   for (var vi = capIdx + 1; vi < journeyPath.length; vi++) {
-    if (!isFullyDiscovered(journeyPath[vi].locationId, discovered, journeyPath)) return true;
+    var stepId = journeyPath[vi].locationId;
+    if (stepId === FINAL_ELENA_STOP) continue;
+    if (!isFullyDiscovered(stepId, discovered, journeyPath)) return true;
   }
   return false;
 }
@@ -168,52 +203,78 @@ function padDiscoveries(discovered, count) {
   return n;
 }
 
+function padAllExploration(discovered) {
+  LOCATIONS.forEach(function(l) {
+    if (l.type === 'region' || l.cartographerSite) {
+      if (!discovered[l.id]) discovered[l.id] = { at: Date.now(), phase: 'mist' };
+    }
+  });
+}
+
+function isJourneyPathClickable(locId, discovered, journeyPath, revealedGods) {
+  if (discovered[locId]) return false;
+  if (locId === FINAL_ELENA_STOP) {
+    if (!explorationComplete(discovered)) return false;
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
+  if (isVol2LockedJourneyStep(locId, journeyPath, revealedGods, discovered)) return false;
+  if (isOnPath(locId, journeyPath)) {
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
+  return false;
+}
+
 function maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls) {
   if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
-  if (!isMishGuardianRevealed(revealedGods, discovered)) return false;
-  if (!isVol2JourneyGateBlocking(revealedGods, discovered, journeyPath)) return false;
+  if (!isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return false;
   if (ls[VOL2_GATE_TOAST_LS] === '1') return false;
   ls[VOL2_GATE_TOAST_LS] = '1';
   return true;
 }
 
+function simulateCompleteDiscovery(locId, discovered, journeyPath, revealedGods, ls) {
+  discovered[locId] = { at: Date.now(), phase: 'complete' };
+  var fired = false;
+  if (locId === FINAL_ELENA_STOP) {
+    fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls);
+  }
+  return { toastFired: fired };
+}
+
 function simulateRevealGod(m, revealedGods, discovered, journeyPath, ls, opts) {
   var wasAlready = !!revealedGods[m.name];
   revealedGods[m.name] = true;
-  var fired = false;
-  if (!opts.suppressAnimations && !wasAlready && m.guardian && m.name === VOL2_GUARDIAN_TRIGGER) {
-    fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls);
-  }
-  return { wasAlready: wasAlready, toastFired: fired };
+  return { wasAlready: wasAlready, toastFired: false };
 }
 
 function pruneRevealedGods(revealedGods, discovered, unlocks) {
-  var count = getMedallionDiscoveryCount(discovered);
-  var cleaned = getValidRevealedGodsForCount(count, unlocks);
+  var territoryCount = getTerritoryDiscoveryCount(discovered);
+  var cleaned = getValidRevealedGodsForCount(territoryCount, unlocks, discovered);
   Object.keys(revealedGods).forEach(function(k) { delete revealedGods[k]; });
   Object.keys(cleaned).forEach(function(k) { revealedGods[k] = true; });
   return cleaned;
 }
 
-function getValidRevealedGodsForCount(count, unlocks) {
+function getValidRevealedGodsForCount(territoryCount, unlocks, discovered) {
   var cleaned = {};
   for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
     var name = VOL1_REVEAL_ORDER[i];
     var threshold = unlocks[name];
-    if (!threshold || count < threshold) break;
+    if (!threshold) break;
+    if (!isGuardianUnlockEligible(name, threshold, territoryCount, discovered)) break;
     cleaned[name] = true;
   }
   return cleaned;
 }
 
-function simulateCheckGodReveals(count, revealedGods, unlocks, opts) {
+function simulateCheckGodReveals(territoryCount, revealedGods, unlocks, discovered, opts) {
   var revealed = [];
   for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
     var name = VOL1_REVEAL_ORDER[i];
     if (revealedGods[name]) continue;
     var threshold = unlocks[name];
     if (!threshold) break;
-    if (count >= threshold) {
+    if (isGuardianUnlockEligible(name, threshold, territoryCount, discovered)) {
       revealedGods[name] = true;
       revealed.push(name);
       if (opts && opts.onePerTick) break;
@@ -238,62 +299,107 @@ postSabella['sabellas-hut'] = { at: Date.now(), phase: 'complete' };
 var nextAfterSabella = getNextPathLocation(postSabella, JOURNEY_PATH, {});
 assert(nextAfterSabella === 'mish', 'getNextPathLocation after Sabella is mish (not null)');
 
-console.log('\n[2] Journey 5/8 + 11 discoveries — clock order caps at Utu only');
-var fiveEight = makeJourneyCompleteThrough('monastery-wind');
-fiveEight['monastery-wind'] = { at: Date.now(), phase: 'complete' };
-padDiscoveries(fiveEight, 11);
-var validAt11 = getValidRevealedGodsForCount(11, MEDALLION_UNLOCKS);
-assert(journeyCompleteCount(fiveEight, JOURNEY_PATH) === 5, 'journey progress is 5/8');
-assert(Object.keys(validAt11).length === 2 && validAt11.Utu && validAt11['Sham & Mash'],
-  'at 11 discoveries only Utu (12pm) + Sham&Mash (1pm) may be lit');
-assert(!validAt11.Rapha, 'Rapha (3pm) not lit at 11 discoveries');
-assert(!validAt11.Mish, 'Mish (6pm) not lit at 11 discoveries');
-var revealedMid = { Utu: true };
-assert(!isMishGuardianRevealed(revealedMid, fiveEight), 'Mish guardian not awakened at 5/8 + Utu only');
-assert(!isVol2JourneyGateBlocking(revealedMid, fiveEight, JOURNEY_PATH), 'Vol2 gate not blocking before Mish guardian');
+console.log('\n[2] Journey 6/8 + 8 territories — clock caps at Rapha (3pm), not Mish');
+var sixEight = makeJourneyCompleteThrough('tower-nine');
+sixEight['tower-nine'] = { at: Date.now(), phase: 'complete' };
+padTerritories(sixEight, 8);
+var validAt8 = getValidRevealedGodsForCount(8, MEDALLION_UNLOCKS, sixEight);
+assert(journeyCompleteCount(sixEight, JOURNEY_PATH) === 6, 'journey progress is 6/8');
+assert(validAt8.Utu && validAt8['Sham & Mash'] && validAt8.Elil && validAt8.Rapha,
+  'at 8 territories clock chain reaches Rapha (4th guardian)');
+assert(!validAt8.Ningal, 'Ningal (4pm) not lit at 8 territories');
+assert(!validAt8.An, 'An (5pm) not lit at 8 territories');
+assert(!validAt8.Mish, 'Mish (6pm) not lit without Indras Na');
+var revealedMid = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true };
+assert(!isMishGuardianRevealed(revealedMid, sixEight), 'Mish guardian not awakened at 6/8 + Rapha only');
+assert(!isVol2JourneyGateBlocking(revealedMid, sixEight, JOURNEY_PATH), 'Vol2 gate not blocking before Mish guardian');
 var lsMid = {};
-assert(!maybeShowVol2GateToast(revealedMid, fiveEight, JOURNEY_PATH, lsMid), 'Vol2 toast not eligible before Mish guardian');
-assert(!lsMid[VOL2_GATE_TOAST_LS], 'Vol2 toast LS flag not set before Mish guardian');
+assert(!maybeShowVol2GateToast(revealedMid, sixEight, JOURNEY_PATH, lsMid), 'Vol2 reward toast not eligible before Indras Na complete');
+assert(!lsMid[VOL2_GATE_TOAST_LS], 'Vol2 reward LS flag not set before Indras Na complete');
 
-console.log('\n[2b] Stale out-of-order reveals pruned — Rapha/Mish removed at count 11');
+console.log('\n[2e] Indras Na clickability — sealed until map whole, then sole journey target');
+var preFinale = makeJourneyCompleteThrough('sinn');
+preFinale['sinn'] = { at: Date.now(), phase: 'complete' };
+assert(!isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
+  'indras-na not clickable before all territories + sites charted');
+assert(getNextPathLocation(preFinale, JOURNEY_PATH, {}) === null,
+  'no golden glow on indras-na until exploration complete');
+padAllExploration(preFinale);
+assert(getNextPathLocation(preFinale, JOURNEY_PATH, {}) === FINAL_ELENA_STOP,
+  'indras-na is the only journey glow when map whole + prior steps done');
+assert(isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
+  'indras-na clickable when it is the active finale target');
+assert(!isJourneyPathClickable('sinn', preFinale, JOURNEY_PATH, {}),
+  'prior journey stops not clickable when indras-na is next');
+assert(!isVol2LockedJourneyStep(FINAL_ELENA_STOP, JOURNEY_PATH, { Mish: true }, preFinale),
+  'indras-na never sealed by Vol2 journey gate');
+
+console.log('\n[2b] Stale out-of-order reveals pruned — Mish removed at 8 territories');
 var staleOrder = { Utu: true, Rapha: true, Mish: true };
-pruneRevealedGods(staleOrder, fiveEight, MEDALLION_UNLOCKS);
-assert(staleOrder.Utu && !staleOrder.Rapha && !staleOrder.Mish,
-  'prune keeps only sequential prefix at discovery count');
+pruneRevealedGods(staleOrder, sixEight, MEDALLION_UNLOCKS);
+assert(staleOrder.Utu && staleOrder.Rapha && !staleOrder.Mish,
+  'prune keeps sequential prefix; Mish stripped without Indras Na');
 
-console.log('\n[2c] Sequential reveal — cannot skip to Rapha without prior sigils');
+console.log('\n[2c] 17 territories without Indras Na — Mish stays locked');
+var allTerrNoIndras = makeJourneyCompleteThrough('sinn');
+allTerrNoIndras['sinn'] = { at: Date.now(), phase: 'complete' };
+padTerritories(allTerrNoIndras, 17);
+var validNoIndras = getValidRevealedGodsForCount(17, MEDALLION_UNLOCKS, allTerrNoIndras);
+assert(validNoIndras.An && !validNoIndras.Mish,
+  '17 territories reaches An but Mish blocked until Indras Na discovered');
+
+console.log('\n[2d] Indras Na + 17 territories + full chain — Mish can reveal');
+var mishEligible = makeJourneyCompleteThrough('indras-na');
+mishEligible['indras-na'] = { at: Date.now(), phase: 'complete' };
+padTerritories(mishEligible, 17);
 var seqGods = {};
-simulateCheckGodReveals(15, seqGods, MEDALLION_UNLOCKS, { onePerTick: false });
-assert(seqGods.Utu && seqGods['Sham & Mash'] && seqGods.Elil && seqGods.Rapha,
-  'at 15 discoveries clock chain reaches Rapha (4th)');
-assert(!seqGods.Mish, 'Mish not revealed until count 24 even if Rapha threshold met');
+simulateCheckGodReveals(17, seqGods, MEDALLION_UNLOCKS, mishEligible, { onePerTick: false });
+assert(seqGods.Mish, 'Mish revealed when Indras Na discovered + 17 territories + chain');
+assert(seqGods.Utu && seqGods['Sham & Mash'] && seqGods.Elil && seqGods.Rapha && seqGods.Ningal && seqGods.An,
+  'full Vol1 clock chain lit before Mish');
 
-console.log('\n[3] Stale Mish in revealedGods below threshold — pruned');
+console.log('\n[3] Stale Mish in revealedGods without Indras Na — pruned');
 var staleGods = { Mish: true, Elil: true };
 var staleDisc = makeJourneyCompleteThrough('monastery-wind');
-padDiscoveries(staleDisc, 20);
+padTerritories(staleDisc, 17);
 pruneRevealedGods(staleGods, staleDisc, MEDALLION_UNLOCKS);
-assert(!staleGods.Mish, 'stale Mish pruned when discovery count < 24');
+assert(!staleGods.Mish, 'stale Mish pruned when Indras Na not discovered');
 assert(!isVol2JourneyGateBlocking(staleGods, staleDisc, JOURNEY_PATH), 'Vol2 gate false after stale Mish prune');
 
-console.log('\n[4] Mish guardian first reveal — gate + toast');
-var mishReady = makeJourneyCompleteThrough('monastery-wind');
-mishReady['monastery-wind'] = { at: Date.now(), phase: 'complete' };
-padDiscoveries(mishReady, MISH_UNLOCK);
-var godsFresh = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true };
-var lsMish = {};
+console.log('\n[4] Indras Na completion fires Vol1 reward toast (not Mish reveal)');
+var finaleReady = makeJourneyCompleteThrough('sinn');
+finaleReady['sinn'] = { at: Date.now(), phase: 'complete' };
+padAllExploration(finaleReady);
+var lsFinale = {};
+var finaleComplete = simulateCompleteDiscovery(FINAL_ELENA_STOP, finaleReady, JOURNEY_PATH, {}, lsFinale);
+assert(finaleComplete.toastFired, 'Vol1 reward toast fires on Indras Na completion');
+assert(lsFinale[VOL2_GATE_TOAST_LS] === '1', 'reward toast LS flag set on Indras Na complete');
+
+console.log('\n[4b] Mish guardian reveal alone does not fire reward toast');
+var mishOnlyGods = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true };
+var mishOnlyDisc = makeJourneyCompleteThrough('monastery-wind');
+mishOnlyDisc['monastery-wind'] = { at: Date.now(), phase: 'complete' };
+padTerritories(mishOnlyDisc, 17);
+mishOnlyDisc[FINAL_ELENA_STOP] = { at: Date.now(), phase: 'complete' };
+var lsMishOnly = {};
 var mishReveal = simulateRevealGod(
   { name: 'Mish', guardian: true, unlock: MISH_UNLOCK },
-  godsFresh, mishReady, JOURNEY_PATH, lsMish, { suppressAnimations: false }
+  mishOnlyGods, mishOnlyDisc, JOURNEY_PATH, lsMishOnly, { suppressAnimations: false }
 );
-assert(mishReveal.toastFired, 'Vol2 toast fires on first Mish guardian reveal');
-assert(isVol2JourneyGateBlocking(godsFresh, mishReady, JOURNEY_PATH), 'Vol2 gate blocks after Mish guardian');
-assert(getNextPathLocation(mishReady, JOURNEY_PATH, godsFresh) === 'tower-nine', 'journey continues to tower-nine after Mish guardian (not sealed yet)');
+assert(!mishReveal.toastFired, 'Mish guardian reveal does not fire Vol1 reward toast');
+assert(!lsMishOnly[VOL2_GATE_TOAST_LS], 'reward LS flag unset after Mish reveal without Indras Na ceremony path');
+
+console.log('\n[4c] Mid-journey (5/8) never triggers reward toast');
+var midJourney = makeJourneyCompleteThrough('monastery-wind');
+midJourney['monastery-wind'] = { at: Date.now(), phase: 'complete' };
+var lsMidJourney = {};
+assert(!maybeShowVol2GateToast({}, midJourney, JOURNEY_PATH, lsMidJourney),
+  'reward toast not eligible at 5/8 journey without Indras Na');
 
 console.log('\n[5] Elil reveal after Mish already revealed — no duplicate toast');
 var elilReady = makeJourneyCompleteThrough('monastery-wind');
 elilReady['monastery-wind'] = { at: Date.now(), phase: 'complete' };
-padDiscoveries(elilReady, ELIL_UNLOCK);
+padTerritories(elilReady, ELIL_UNLOCK);
 var godsWithMish = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true, Mish: true };
 var lsElil = {};
 lsElil[VOL2_GATE_TOAST_LS] = '1';
@@ -301,15 +407,25 @@ var elilReveal = simulateRevealGod(
   { name: 'Elil', guardian: false, unlock: ELIL_UNLOCK },
   godsWithMish, elilReady, JOURNEY_PATH, lsElil, { suppressAnimations: false }
 );
-assert(!elilReveal.toastFired, 'Elil reveal does not fire Vol2 toast');
-assert(!maybeShowVol2GateToast(godsWithMish, elilReady, JOURNEY_PATH, lsElil), 'Vol2 toast not re-eligible after Mish toast already shown');
+assert(!elilReveal.toastFired, 'Elil reveal does not fire Vol1 reward toast');
+assert(!maybeShowVol2GateToast(godsWithMish, elilReady, JOURNEY_PATH, lsElil), 'reward toast not re-eligible after flag already shown');
 
-console.log('\n[6] fog.js sequential guardian reveal (build 145)');
+console.log('\n[6] fog.js territory-paced guardians + Indras Na finale (build 148)');
 var fogSrc = fs.readFileSync(path.join(ROOT, 'fog.js'), 'utf8');
 assert(fogSrc.indexOf('VOL1_REVEAL_ORDER') > -1, 'VOL1_REVEAL_ORDER defined in fog.js');
+assert(fogSrc.indexOf('getTerritoryDiscoveryCount') > -1, 'getTerritoryDiscoveryCount helper in fog.js');
 assert(/function checkGodReveals[\s\S]*?break;\s*\/\/ next in clock order/.test(fogSrc),
   'checkGodReveals breaks on first unreached threshold (no skip-ahead)');
 assert(fogSrc.indexOf('getValidRevealedGodsForCount') > -1, 'getValidRevealedGodsForCount prunes chain on init');
+assert(/meetsMishUnlockCriteria[\s\S]*?discovered\[FINAL_ELENA_STOP\]/.test(fogSrc),
+  'Mish unlock requires Indras Na discovered');
+assert(/isVol2LockedJourneyStep[\s\S]*?locId === FINAL_ELENA_STOP/.test(fogSrc),
+  'indras-na excluded from Vol2 journey seal');
+assert(/maybeShowVol2GateToast[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.test(fogSrc),
+  'reward toast gated on Indras Na completion');
+assert(fogSrc.indexOf('maybeShowVol2GateToast();') > -1 &&
+  /completeDiscovery[\s\S]*?FINAL_ELENA_STOP[\s\S]*?maybeShowVol2GateToast/.test(fogSrc),
+  'completeDiscovery triggers reward toast on Indras Na');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');

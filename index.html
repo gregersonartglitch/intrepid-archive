@@ -3010,7 +3010,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 145;
+window.INTREPID_BUILD = 148;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3087,7 +3087,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=145"></script>
+<script src="fog.js?v=148"></script>
 <script>
 (function() {
   'use strict';
@@ -3806,29 +3806,29 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       // cx/cy = fraction of frame image (2400×1792) — window-size-independent
       var MEDALLIONS = [
         // ── Cardinals ──────────────────────────────────────────────────────
-        { name: 'Utu',           cx: 0.4909, cy: 0.1898, r: 216, guardian: true, unlock: 5, spriteFile: 'assets/medallions/bull.png', artPosition: '5% 100%', artZoom: '136%',
+        { name: 'Utu',           cx: 0.4909, cy: 0.1898, r: 216, guardian: true, unlock: 2, spriteFile: 'assets/medallions/bull.png', artPosition: '5% 100%', artZoom: '136%',
           role: 'Bull of Heaven · Tetrad North',
           lore: 'Guardian of the North and the turning seasons. UTU drives the sun across the sky. His hooves crack the heavens open at dawn. He does not guard the North — he IS the axis on which all seasons turn.' },
-        { name: 'Rapha',         cx: 0.7308, cy: 0.4517, r: 224, guardian: true, unlock: 15, spriteFile: 'assets/medallions/lion.png', artPosition: '68% 96%',
+        { name: 'Rapha',         cx: 0.7308, cy: 0.4517, r: 224, guardian: true, unlock: 8, spriteFile: 'assets/medallions/lion.png', artPosition: '68% 96%',
           role: 'Lion of Justice · Tetrad East',
           lore: 'Guardian of the East and the Dawn. He weighs what enters and what leaves. The Lion does not roar — he watches, and his watching is the judgment.' },
-        { name: 'Mish',          cx: 0.4818, cy: 0.7386, r: 268, guardian: true, unlock: 24, spriteFile: 'assets/medallions/defender.png', artPosition: '100% 100%',
+        { name: 'Mish',          cx: 0.4818, cy: 0.7386, r: 268, guardian: true, unlock: 17, spriteFile: 'assets/medallions/defender.png', artPosition: '100% 100%',
           role: 'The Defender · Tetrad South',
           lore: 'Guardian of the South and the far horizon. The winged archer of the southern reach. MISH does not aim at enemies — he aims at the horizon, and the horizon moves.' },
         { name: 'Gu',            cx: 0.2442, cy: 0.4448, r: 224, guardian: true, unlock: 99, vol2Sealed: true, spriteFile: 'assets/medallions/water.png', artPosition: '20% 92%',
           role: 'Water Bearer · Tetrad West',
           lore: 'Guardian of the West, Sky, and Dusk. Before the gods shaped the world, Water was already moving. GU stands over all the powers.' },
         // ── The Eight (clockwise from upper-right) ────────────────────────
-        { name: 'Sham & Mash',  cx: 0.7250, cy: 0.1920, r: 152, unlock: 9, spriteFile: 'assets/medallions/twins.png', artPosition: '100% 65%', artZoom: '136%',
+        { name: 'Sham & Mash',  cx: 0.7250, cy: 0.1920, r: 152, unlock: 4, spriteFile: 'assets/medallions/twins.png', artPosition: '100% 65%', artZoom: '136%',
           role: 'The Great Twins',
           lore: 'Two aspects of the God of Sunlight. One face sees what is. The other sees what should be. They have never agreed.' },
-        { name: 'Elil',          cx: 0.7978, cy: 0.3436, r: 160, unlock: 12, spriteFile: 'assets/medallions/crab.png', artPosition: '59% 57%',
+        { name: 'Elil',          cx: 0.7978, cy: 0.3436, r: 160, unlock: 5, spriteFile: 'assets/medallions/crab.png', artPosition: '59% 57%',
           role: 'The Shapeshifter',
           lore: 'Lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
-        { name: 'Ningal',        cx: 0.8050, cy: 0.5820, r: 164, unlock: 18, spriteFile: 'assets/medallions/furrow.png', artPosition: '14% 25%',
+        { name: 'Ningal',        cx: 0.8050, cy: 0.5820, r: 164, unlock: 11, spriteFile: 'assets/medallions/furrow.png', artPosition: '14% 25%',
           role: 'Queen of the Underworld',
           lore: "Ereshkigal's child. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
-        { name: 'An',            cx: 0.7130, cy: 0.7840, r: 176, unlock: 21, spriteFile: 'assets/medallions/fate.png', artPosition: '19% 49%',
+        { name: 'An',            cx: 0.7130, cy: 0.7840, r: 176, unlock: 14, spriteFile: 'assets/medallions/fate.png', artPosition: '19% 49%',
           role: 'Lord of Flight',
           lore: 'AN holds the balance that cannot be appealed. The scales do not measure weight — they measure what is owed.' },
         { name: 'Nin',           cx: 0.2630, cy: 0.7850, r: 164, unlock: 99, vol2Sealed: true, spriteFile: 'assets/medallions/scorpion.png', artPosition: '0% 58%', artZoom: '142%',
@@ -3951,7 +3951,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           if (subEl)  subEl.textContent  = '';
           if (descEl) {
             var sealedLabel = m.guardian ? 'guardian' : 'sigil';
-            descEl.textContent = 'Discover ' + m.unlock + ' locations to awaken this ' + sealedLabel + '.';
+            if (m.name === 'Mish') {
+              descEl.textContent = 'Chart all territories and complete Elena\'s journey at Indras Na to awaken this guardian.';
+            } else {
+              descEl.textContent = 'Chart ' + m.unlock + ' territories to awaken this ' + sealedLabel + '.';
+            }
           }
         }
         if (loreEl) loreEl.style.display = 'none';

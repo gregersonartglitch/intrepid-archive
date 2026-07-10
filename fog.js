@@ -38,7 +38,7 @@
   // Left semicircle (Gu, Nin, Belu, Ae, Erra) stays sealed until Volume II.
   var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
   var VOL2_SEALED_MEDALLIONS = ['Gu', 'Nin', 'Belu', 'Ae', 'Erra'];
-  var VOL2_JOURNEY_CAP_ID = 'sinn'; // last journey stop before Vol 2 seals onward (indras-na)
+  var VOL2_JOURNEY_CAP_ID = 'sinn'; // last pre-finale journey stop; indras-na is the V1 finale (never sealed)
   var VOL2_GATE_LS_UNLOCK = 'intrepid_vol2_journey_unlocked';
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
   var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
@@ -1024,6 +1024,39 @@
     return Object.keys(discovered).length;
   }
 
+  // Territories = major regions only (matches progress UI — not water bodies)
+  function getTerritoryDiscoveryCount() {
+    var allLocs = window.LOCATIONS || [];
+    var n = 0;
+    for (var ti = 0; ti < allLocs.length; ti++) {
+      var loc = allLocs[ti];
+      if (loc.type === 'region' && discovered[loc.id]) n++;
+    }
+    return n;
+  }
+
+  function getJourneyCompleteCount() {
+    var n = 0;
+    for (var jci = 0; jci < journeyPath.length; jci++) {
+      if (isFullyDiscovered(journeyPath[jci].locationId)) n++;
+    }
+    return n;
+  }
+
+  // Mish: requires Indras Na discovered + all 17 territories charted (unlock threshold)
+  function meetsMishUnlockCriteria(territoryCount) {
+    if (!discovered[FINAL_ELENA_STOP]) return false;
+    var mishDef = getMishGuardianDef();
+    var threshold = mishDef && mishDef.unlock ? mishDef.unlock : 17;
+    return territoryCount >= threshold;
+  }
+
+  function isGuardianUnlockEligible(name, threshold, territoryCount) {
+    if (!threshold) return false;
+    if (name === 'Mish') return meetsMishUnlockCriteria(territoryCount);
+    return territoryCount >= threshold;
+  }
+
   function getMishGuardianDef() {
     var defs = window.MEDALLION_DEFS || [];
     for (var mi = 0; mi < defs.length; mi++) {
@@ -1032,12 +1065,10 @@
     return null;
   }
 
-  // Mish guardian only counts as awakened when reveal state matches discovery threshold.
+  // Mish guardian only counts as awakened when reveal state matches territory threshold.
   function isMishGuardianRevealed() {
     if (!revealedGods[VOL2_GUARDIAN_TRIGGER]) return false;
-    var mishDef = getMishGuardianDef();
-    if (mishDef && mishDef.unlock && getMedallionDiscoveryCount() < mishDef.unlock) return false;
-    return true;
+    return meetsMishUnlockCriteria(getTerritoryDiscoveryCount());
   }
 
   function getVol2CapStepIndex() {
@@ -1047,7 +1078,9 @@
   function getVol2FirstSealedStepId() {
     var capIdx = getVol2CapStepIndex();
     if (capIdx < 0 || capIdx + 1 >= journeyPath.length) return null;
-    return journeyPath[capIdx + 1].locationId;
+    var nextId = journeyPath[capIdx + 1].locationId;
+    if (nextId === FINAL_ELENA_STOP) return null;
+    return nextId;
   }
 
   function isVol2JourneyUnlocked() {
@@ -1064,6 +1097,8 @@
 
   function isVol2LockedJourneyStep(locId) {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+    // Indras Na is the V1 finale click — never dimmed/sealed by the Vol 2 gate
+    if (locId === FINAL_ELENA_STOP) return false;
     if (!isMishGuardianRevealed()) return false;
     if (!isOnPath(locId)) return false;
     var capIdx = getVol2CapStepIndex();
@@ -1078,7 +1113,9 @@
     var capIdx = getVol2CapStepIndex();
     if (capIdx < 0) return false;
     for (var vi = capIdx + 1; vi < journeyPath.length; vi++) {
-      if (!isFullyDiscovered(journeyPath[vi].locationId)) return true;
+      var stepId = journeyPath[vi].locationId;
+      if (stepId === FINAL_ELENA_STOP) continue;
+      if (!isFullyDiscovered(stepId)) return true;
     }
     return false;
   }
@@ -1264,8 +1301,10 @@
     if (!loc) return false;
 
     // Gate the final Elena stop: requires all territories + cartographer sites first
-    if (locId === FINAL_ELENA_STOP && !explorationComplete()) {
-      return false;
+    if (locId === FINAL_ELENA_STOP) {
+      if (!explorationComplete()) return false;
+      // Finale is only clickable when it is the sole golden-glow journey target
+      return locId === getNextPathLocation();
     }
 
     // Vol 2 gate — post-sinn journey stops stay dark after Mish guardian awakens
@@ -1370,8 +1409,8 @@
     if (old) old.remove();
 
     var sealedId = getVol2FirstSealedStepId();
-    var sealedLoc = (window.LOCATIONS || []).find(function(l) { return l.id === sealedId; });
-    var nextName = sealedLoc ? sealedLoc.name : 'the next chapter';
+    var sealedLoc = sealedId ? (window.LOCATIONS || []).find(function(l) { return l.id === sealedId; }) : null;
+    var nextName = sealedLoc ? sealedLoc.name : 'Volume 2';
     var countdown = formatVol2Countdown();
     var countdownLine = countdown
       ? '<div style="font-size:13px;color:#8ab4d4;margin-top:10px;">Volume 2 Kickstarter opens in <strong style="color:#b8d4f0;">' + countdown + '</strong></div>'
@@ -1394,7 +1433,9 @@
       '<div style="font-size:12px;color:#8ab4d4;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">' +
         'Congratulations' +
       '</div>' +
-      '<div style="margin-bottom:14px;">You\u2019ve awakened <strong style="color:#d4a843;">Mish</strong>, Defender of the South \u2014 Volume 1 is complete. More journey locations will open with the <strong style="color:#b8d4f0;">kickstarter launch of Volume 2</strong>. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond await that launch.</div>' +
+      '<div style="margin-bottom:14px;">You\u2019ve reached <strong style="color:#d4a843;">Indras Na</strong> and completed Elena\u2019s journey through Volume 1. More journey locations will open with the <strong style="color:#b8d4f0;">kickstarter launch of Volume 2</strong>.' +
+        (sealedLoc ? ' <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond await that launch.' : '') +
+      '</div>' +
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;margin-bottom:10px;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">Spotted a bug or have feedback? Write us at ' + emailLink + '.</div>' +
       countdownLine +
@@ -1413,10 +1454,10 @@
     setTimeout(dismiss, isWelcome ? 9000 : 7000);
   }
 
+  // Vol 1 finale reward — fires once when Indras Na is fully discovered (not on Mish reveal)
   function maybeShowVol2GateToast() {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return;
-    if (!isMishGuardianRevealed()) return;
-    if (!isVol2JourneyGateBlocking()) return;
+    if (!isFullyDiscovered(FINAL_ELENA_STOP)) return;
     try {
       if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
       localStorage.setItem(VOL2_GATE_TOAST_LS, '1');
@@ -2654,6 +2695,11 @@
     updateProgress();
     maybeDismissPostTutorialOnDiscover(loc);
 
+    // Vol 1 finale reward dialogue — tied to Indras Na completion, not Mish guardian reveal
+    if (loc.id === FINAL_ELENA_STOP) {
+      maybeShowVol2GateToast();
+    }
+
     // Advance tutorial if in search steps
     if (tutorialStep < TUTORIAL_STEPS) {
       advanceTutorial();
@@ -2669,7 +2715,6 @@
 
     delete clusterPeek[loc.id];
 
-    // Vol 2 gate toast fires from revealGod when Mish guardian medallion awakens.
   } // end completeDiscovery
 
   // Spotlight stays attached only while cursor/lantern is near the chime search zone.
@@ -2962,11 +3007,11 @@
     if (combined > 0.80) rank = 'Master Cartographer';
     if (title) title.textContent = rank;
 
-    // Check god reveals — count ALL discoveries (any phase)
-    var totalDiscovered = Object.keys(discovered).length;
-    checkGodReveals(totalDiscovered);
+    // Check god reveals — paced by territories charted (not total discovery count)
+    checkGodReveals();
 
     // Milestone sparks at 5, 10, 15 (total combined discoveries)
+    var totalDiscovered = Object.keys(discovered).length;
     var milestones = [5, 10, 15];
     if (milestones.indexOf(totalDiscovered) > -1 && totalDiscovered > 0) {
       triggerMilestoneSpark(totalDiscovered);
@@ -3186,26 +3231,29 @@
   }
 
   // Only guardians in VOL1_REVEAL_ORDER may unlock, strictly in clock order — no skipping ahead.
-  function getValidRevealedGodsForCount(count, defs) {
+  // territoryCount = charted regions (type === 'region'), not total discoveries.
+  function getValidRevealedGodsForCount(territoryCount, defs) {
     var cleaned = {};
     for (var vi = 0; vi < VOL1_REVEAL_ORDER.length; vi++) {
       var vname = VOL1_REVEAL_ORDER[vi];
       var vdef = findMedallionDef(defs, vname);
-      if (!vdef || !vdef.unlock || count < vdef.unlock) break;
+      if (!vdef || !vdef.unlock) break;
+      if (!isGuardianUnlockEligible(vname, vdef.unlock, territoryCount)) break;
       cleaned[vname] = true;
     }
     return cleaned;
   }
 
-  function checkGodReveals(count) {
+  function checkGodReveals() {
     var defs = window.MEDALLION_DEFS;
     if (!defs) return;
+    var territoryCount = getTerritoryDiscoveryCount();
     for (var i = 0; i < VOL1_REVEAL_ORDER.length; i++) {
       var name = VOL1_REVEAL_ORDER[i];
       if (revealedGods[name]) continue;
       var m = findMedallionDef(defs, name);
       if (!m || !m.unlock) break;
-      if (count >= m.unlock) {
+      if (isGuardianUnlockEligible(name, m.unlock, territoryCount)) {
         revealGod(m);
       } else {
         break; // next in clock order not yet eligible — do not skip ahead
@@ -3261,11 +3309,6 @@
     // Keep the frame medallion lit once its guardian has awakened.
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
     if (window.syncMedallionHotspots) window.syncMedallionHotspots();
-
-    // Vol 2 journey gate — congratulations modal only on first Mish guardian ceremony
-    if (!suppressAnimations && !wasAlreadyRevealed && m.guardian && m.name === VOL2_GUARDIAN_TRIGGER) {
-      maybeShowVol2GateToast();
-    }
 
     // Save to localStorage
     try {
@@ -3401,8 +3444,8 @@
   }
 
   function initTetradCircles() {
-    // Restore previously revealed gods — prune to clock-order chain at current discovery count
-    var currentCount = getMedallionDiscoveryCount();
+    // Restore previously revealed gods — prune to clock-order chain at current territory count
+    var currentCount = getTerritoryDiscoveryCount();
     var defs = window.MEDALLION_DEFS || [];
     var cleaned = getValidRevealedGodsForCount(currentCount, defs);
     try {
