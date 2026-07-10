@@ -474,13 +474,24 @@
             var gnDist = Math.sqrt(Math.pow(x - gnpt.x, 2) + Math.pow(y - gnpt.y, 2));
             if (gnDist < 130) {
               e.stopPropagation(); e.preventDefault();
-              if (glowNextId === FINAL_ELENA_STOP && !explorationComplete()) {
-                showLockedMessage();
-                return;
-              }
               discoverLocation(glowNextLoc);
               return;
             }
+          }
+        }
+      }
+
+      // Locked Indras Na — getNextPathLocation() returns null while sealed (no glow),
+      // so hit-test the finale stop directly and explain the real prerequisites.
+      if (!searchMode && getIndrasNaLockedReason()) {
+        var indrasLoc = (window.LOCATIONS || []).find(function(l) { return l.id === FINAL_ELENA_STOP; });
+        if (indrasLoc) {
+          var ipt = map.latLngToContainerPoint(getInteractionLatLng(indrasLoc));
+          var iDist = Math.sqrt(Math.pow(x - ipt.x, 2) + Math.pow(y - ipt.y, 2));
+          if (iDist < 130) {
+            e.stopPropagation(); e.preventDefault();
+            showLockedMessage();
+            return;
           }
         }
       }
@@ -1143,6 +1154,42 @@
     return regionsComplete && sitesComplete;
   }
 
+  // Why Indras Na is sealed (null when unlockable or already discovered).
+  // Real gates: prior Elena path through Sinn, then all territories + cartographer sites.
+  // "Sabella's marks" = cartographer sites (narrative framing for charting work).
+  function getIndrasNaLockedReason() {
+    if (isFullyDiscovered(FINAL_ELENA_STOP)) return null;
+
+    var ji;
+    for (ji = 0; ji < journeyPath.length; ji++) {
+      var stepId = journeyPath[ji].locationId;
+      if (stepId === FINAL_ELENA_STOP) break;
+      if (!isFullyDiscovered(stepId)) {
+        return 'Indras Na waits at the end of Elena\u2019s road. Follow the golden glow through Sinn before this gate will open.';
+      }
+    }
+
+    if (explorationComplete()) return null;
+
+    var locs = window.LOCATIONS || [];
+    var undiscRegions = locs.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
+    var undiscSites = locs.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
+    var remaining = [];
+    if (undiscRegions > 0) {
+      remaining.push(undiscRegions + (undiscRegions === 1 ? ' territory' : ' territories'));
+    }
+    if (undiscSites > 0) {
+      remaining.push(undiscSites === 1
+        ? '1 of Sabella\u2019s marks'
+        : undiscSites + ' of Sabella\u2019s remaining marks');
+    }
+    if (!remaining.length) {
+      return 'Indras Na stays sealed until the Hollowlands are fully charted.';
+    }
+    return 'Indras Na stays sealed until Elena\u2019s path and Sabella\u2019s remaining marks are charted. ' +
+      remaining.join(' and ') + ' still wait in the fog.';
+  }
+
   function getNextPathLocation() {
     for (var i = 0; i < journeyPath.length; i++) {
       var stepId = journeyPath[i].locationId;
@@ -1360,16 +1407,20 @@
 
   // Show a brief locked message when the player clicks the final stop too early
   function showLockedMessage() {
+    var reason = getIndrasNaLockedReason();
+    if (!reason) return;
+
     var old = document.getElementById('locked-msg');
     if (old) old.remove();
 
-    // Count remaining work to give specific guidance
-    var locs = window.LOCATIONS || [];
-    var undiscRegions = locs.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
-    var undiscCities  = locs.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
-    var remaining = [];
-    if (undiscRegions > 0) remaining.push(undiscRegions + ' ' + (undiscRegions === 1 ? 'territory' : 'territories'));
-    if (undiscCities  > 0) remaining.push(undiscCities  + ' ' + (undiscCities  === 1 ? 'city or site' : 'cities &amp; sites'));
+    var priorPathReady = true;
+    var pji;
+    for (pji = 0; pji < journeyPath.length; pji++) {
+      var pStep = journeyPath[pji].locationId;
+      if (pStep === FINAL_ELENA_STOP) break;
+      if (!isFullyDiscovered(pStep)) { priorPathReady = false; break; }
+    }
+    var showChartLegend = priorPathReady && !explorationComplete();
 
     var el = document.createElement('div');
     el.id = 'locked-msg';
@@ -1382,12 +1433,14 @@
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(180,80,60,0.15);' +
       'opacity:0;transition:opacity 0.4s ease;';
     el.innerHTML =
-      '<div style="font-size:12px;color:#c87060;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">The Path Is Sealed</div>' +
-      '<div style="margin-bottom:14px;">Chart every territory and ancient site before Elena\'s journey can end. <strong style="color:#d4a843;">' + remaining.join(' and ') + '</strong> remain uncharted.</div>' +
-      '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
-        '<span style="color:#d99040;">◈ Orange shimmer in the fog</span> — an undiscovered territory. Click it to reveal.<br>' +
-        '<span style="color:#d4a843;">★ Amber star</span> — a hidden location. Click to search with hot &amp; cold chime.' +
-      '</div>' +
+      '<div style="font-size:12px;color:#c87060;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">Indras Na Is Sealed</div>' +
+      '<div style="margin-bottom:14px;">' + reason + '</div>' +
+      (showChartLegend
+        ? '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
+            '<span style="color:#d99040;">\u25C8 Orange shimmer in the fog</span> \u2014 an undiscovered territory. Click it to reveal.<br>' +
+            '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 one of Sabella\u2019s marks. Click to search with hot &amp; cold chime.' +
+          '</div>'
+        : '') +
       '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
     document.body.appendChild(el);
 
@@ -3716,6 +3769,7 @@
     toggleAmbient: toggleAmbient,
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
+    getIndrasNaLockedReason: getIndrasNaLockedReason,
     isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,
     isVol2JourneyUnlocked: isVol2JourneyUnlocked,
     initTetradCircles: initTetradCircles,

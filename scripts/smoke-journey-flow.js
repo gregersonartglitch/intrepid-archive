@@ -36,7 +36,7 @@ vm.runInNewContext(dataCode, dataCtx);
 var LOCATIONS = dataCtx.window.LOCATIONS;
 var JOURNEY_PATH = dataCtx.window.JOURNEY_PATH;
 
-// ── Mirror fog.js vol2 / journey helpers (build 149) ─────────
+// ── Mirror fog.js vol2 / journey helpers (build 150) ─────────
 var FINAL_ELENA_STOP = 'indras-na';
 var VOL2_GUARDIAN_TRIGGER = 'Mish';
 var VOL2_JOURNEY_CAP_ID = 'sinn';
@@ -150,6 +150,39 @@ function explorationComplete(discovered) {
   var siteLocs = LOCATIONS.filter(function(l) { return !!l.cartographerSite; });
   var sitesComplete = siteLocs.every(function(l) { return !!discovered[l.id]; });
   return regionsComplete && sitesComplete;
+}
+
+// Mirror fog.js getIndrasNaLockedReason — returns sealed copy or null when unlockable
+function getIndrasNaLockedReason(discovered, journeyPath) {
+  if (isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return null;
+
+  var ji;
+  for (ji = 0; ji < journeyPath.length; ji++) {
+    var stepId = journeyPath[ji].locationId;
+    if (stepId === FINAL_ELENA_STOP) break;
+    if (!isFullyDiscovered(stepId, discovered, journeyPath)) {
+      return 'Indras Na waits at the end of Elena\u2019s road. Follow the golden glow through Sinn before this gate will open.';
+    }
+  }
+
+  if (explorationComplete(discovered)) return null;
+
+  var undiscRegions = LOCATIONS.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
+  var undiscSites = LOCATIONS.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
+  var remaining = [];
+  if (undiscRegions > 0) {
+    remaining.push(undiscRegions + (undiscRegions === 1 ? ' territory' : ' territories'));
+  }
+  if (undiscSites > 0) {
+    remaining.push(undiscSites === 1
+      ? '1 of Sabella\u2019s marks'
+      : undiscSites + ' of Sabella\u2019s remaining marks');
+  }
+  if (!remaining.length) {
+    return 'Indras Na stays sealed until the Hollowlands are fully charted.';
+  }
+  return 'Indras Na stays sealed until Elena\u2019s path and Sabella\u2019s remaining marks are charted. ' +
+    remaining.join(' and ') + ' still wait in the fog.';
 }
 
 function getNextPathLocation(discovered, journeyPath, revealedGods) {
@@ -334,6 +367,29 @@ assert(!isJourneyPathClickable('sinn', preFinale, JOURNEY_PATH, {}),
 assert(!isVol2LockedJourneyStep(FINAL_ELENA_STOP, JOURNEY_PATH, { Mish: true }, preFinale),
   'indras-na never sealed by Vol2 journey gate');
 
+console.log('\n[2g] Locked Indras Na click feedback — reason string while sealed');
+var lockedMidPath = makeJourneyCompleteThrough('tower-nine');
+lockedMidPath['tower-nine'] = { at: Date.now(), phase: 'complete' };
+var midReason = getIndrasNaLockedReason(lockedMidPath, JOURNEY_PATH);
+assert(typeof midReason === 'string' && midReason.indexOf('Sinn') > -1,
+  'locked reason when prior path incomplete mentions Sinn');
+var lockedPreExplore = makeJourneyCompleteThrough('sinn');
+lockedPreExplore['sinn'] = { at: Date.now(), phase: 'complete' };
+var exploreReason = getIndrasNaLockedReason(lockedPreExplore, JOURNEY_PATH);
+assert(typeof exploreReason === 'string' && exploreReason.indexOf('Sabella') > -1,
+  'locked reason when exploration incomplete mentions Sabella marks');
+assert(exploreReason.indexOf('territor') > -1 || exploreReason.indexOf('marks') > -1,
+  'locked reason names remaining chart work');
+var unlockedSnap = makeJourneyCompleteThrough('sinn');
+unlockedSnap['sinn'] = { at: Date.now(), phase: 'complete' };
+padAllExploration(unlockedSnap);
+assert(getIndrasNaLockedReason(unlockedSnap, JOURNEY_PATH) === null,
+  'locked reason null when Indras Na is unlockable');
+var doneSnap = Object.assign({}, unlockedSnap);
+doneSnap[FINAL_ELENA_STOP] = { at: Date.now(), phase: 'complete' };
+assert(getIndrasNaLockedReason(doneSnap, JOURNEY_PATH) === null,
+  'locked reason null after Indras Na discovered');
+
 console.log('\n[2f] User snapshot — 7/8 journey, 17/17 territories, 13/13 sites → indras-na clickable');
 var userSnap = makeJourneyCompleteThrough('sinn');
 userSnap['sinn'] = { at: Date.now(), phase: 'complete' };
@@ -434,7 +490,7 @@ var elilReveal = simulateRevealGod(
 assert(!elilReveal.toastFired, 'Elil reveal does not fire Vol1 reward toast');
 assert(!maybeShowVol2GateToast(godsWithMish, elilReady, JOURNEY_PATH, lsElil), 'reward toast not re-eligible after flag already shown');
 
-console.log('\n[6] fog.js territory-paced guardians + Indras Na finale (build 149)');
+console.log('\n[6] fog.js territory-paced guardians + Indras Na finale (build 150)');
 var fogSrc = fs.readFileSync(path.join(ROOT, 'fog.js'), 'utf8');
 assert(fogSrc.indexOf('VOL1_REVEAL_ORDER') > -1, 'VOL1_REVEAL_ORDER defined in fog.js');
 assert(fogSrc.indexOf('getTerritoryDiscoveryCount') > -1, 'getTerritoryDiscoveryCount helper in fog.js');
@@ -449,6 +505,16 @@ assert(/maybeShowVol2GateToast[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.tes
 assert(fogSrc.indexOf('maybeShowVol2GateToast();') > -1 &&
   /completeDiscovery[\s\S]*?FINAL_ELENA_STOP[\s\S]*?maybeShowVol2GateToast/.test(fogSrc),
   'completeDiscovery triggers reward toast on Indras Na');
+assert(fogSrc.indexOf('function getIndrasNaLockedReason') > -1,
+  'getIndrasNaLockedReason helper exists');
+assert(fogSrc.indexOf('getIndrasNaLockedReason()') > -1 &&
+  fogSrc.indexOf('showLockedMessage()') > -1,
+  'locked indras-na click path calls showLockedMessage via getIndrasNaLockedReason');
+assert(fogSrc.indexOf('Indras Na Is Sealed') > -1,
+  'locked modal title present');
+assert(fogSrc.indexOf('Sabella\\u2019s remaining marks') > -1 ||
+  fogSrc.indexOf('Sabella\u2019s remaining marks') > -1,
+  'locked copy references Sabella marks');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');
