@@ -523,10 +523,6 @@ html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--c
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   color: var(--bone);
-  -webkit-text-stroke: 0.45px rgba(13, 13, 18, 0.55);
-  text-shadow:
-    0 0 1px rgba(13, 13, 18, 0.45),
-    0 1px 2px rgba(13, 13, 18, 0.35);
 }
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .landing-badge {
   opacity: 0;
@@ -2775,7 +2771,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 127;
+window.INTREPID_BUILD = 128;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2852,7 +2848,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=127"></script>
-<script src="fog.js?v=127"></script>
+<script src="fog.js?v=128"></script>
 <script>
 (function() {
   'use strict';
@@ -2894,111 +2890,70 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var buttons = document.querySelectorAll('.cuneiform-btn');
     if (!buttons.length) return;
 
-    var PROXIMITY_RADIUS = 100;
     var GLITCH_MS = 480;
     var REVEAL_DELAY_MS = 180;
-    var rafPending = false;
-    var lastX = 0;
-    var lastY = 0;
     var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var instances = [];
 
-    function createCuneiformInstance(btn) {
-      var state = {
-        btn: btn,
-        isProximate: false,
-        isRevealed: false,
-        isGlitching: false,
-        glitchTimer: null,
-        revealTimer: null
-      };
+    function bindCuneiformButton(btn) {
+      var isHovering = false;
+      var isRevealed = false;
+      var isGlitching = false;
+      var glitchTimer = null;
+      var revealTimer = null;
 
       function clearTimers() {
-        if (state.glitchTimer) { clearTimeout(state.glitchTimer); state.glitchTimer = null; }
-        if (state.revealTimer) { clearTimeout(state.revealTimer); state.revealTimer = null; }
+        if (glitchTimer) { clearTimeout(glitchTimer); glitchTimer = null; }
+        if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
       }
 
-      state.resetToCuneiform = function() {
+      function resetToCuneiform() {
         clearTimers();
-        state.isGlitching = false;
-        state.isRevealed = false;
+        isGlitching = false;
+        isRevealed = false;
         btn.classList.remove('is-glitching', 'is-revealed', 'cuneiform-btn--near');
-      };
+      }
 
-      state.startGlitchReveal = function() {
-        if (state.isGlitching || state.isRevealed) return;
-        state.isGlitching = true;
+      function startGlitchReveal() {
+        if (isGlitching || isRevealed) return;
+        isGlitching = true;
         btn.classList.add('is-glitching');
         if (reducedMotion) {
-          state.isGlitching = false;
-          state.isRevealed = true;
+          isGlitching = false;
+          isRevealed = true;
           btn.classList.remove('is-glitching');
           btn.classList.add('is-revealed');
           return;
         }
-        state.revealTimer = setTimeout(function() {
-          state.isRevealed = true;
+        revealTimer = setTimeout(function() {
+          isRevealed = true;
           btn.classList.add('is-revealed');
         }, REVEAL_DELAY_MS);
-        state.glitchTimer = setTimeout(function() {
-          state.isGlitching = false;
+        glitchTimer = setTimeout(function() {
+          isGlitching = false;
           btn.classList.remove('is-glitching');
         }, GLITCH_MS);
-      };
+      }
 
-      state.distanceToButton = function(clientX, clientY) {
-        var rect = btn.getBoundingClientRect();
-        var cx = rect.left + rect.width / 2;
-        var cy = rect.top + rect.height / 2;
-        var dx = clientX - cx;
-        var dy = clientY - cy;
-        return Math.sqrt(dx * dx + dy * dy);
-      };
+      function onEnter() {
+        if (isHovering) return;
+        isHovering = true;
+        btn.classList.add('cuneiform-btn--near');
+        startGlitchReveal();
+      }
 
-      state.evaluateProximity = function() {
-        var dist = state.distanceToButton(lastX, lastY);
-        var near = dist <= PROXIMITY_RADIUS;
-        if (near && !state.isProximate) {
-          state.isProximate = true;
-          btn.classList.add('cuneiform-btn--near');
-          state.startGlitchReveal();
-        } else if (!near && state.isProximate) {
-          state.isProximate = false;
-          state.resetToCuneiform();
-        }
-      };
+      function onLeave() {
+        if (!isHovering) return;
+        isHovering = false;
+        resetToCuneiform();
+      }
 
-      return state;
+      btn.addEventListener('mouseenter', onEnter);
+      btn.addEventListener('mouseleave', onLeave);
     }
 
     for (var i = 0; i < buttons.length; i++) {
-      instances.push(createCuneiformInstance(buttons[i]));
+      bindCuneiformButton(buttons[i]);
     }
-
-    function evaluateAllProximity() {
-      rafPending = false;
-      for (var j = 0; j < instances.length; j++) {
-        instances[j].evaluateProximity();
-      }
-    }
-
-    function onPointerMove(e) {
-      lastX = e.clientX;
-      lastY = e.clientY;
-      if (!rafPending) {
-        rafPending = true;
-        requestAnimationFrame(evaluateAllProximity);
-      }
-    }
-
-    document.addEventListener('mousemove', onPointerMove, { passive: true });
-    document.addEventListener('mouseleave', function() {
-      for (var k = 0; k < instances.length; k++) {
-        instances[k].isProximate = false;
-        instances[k].btn.classList.remove('cuneiform-btn--near');
-        instances[k].resetToCuneiform();
-      }
-    });
   }
 
   const LS_CARTOGRAPHER_KEY = 'intrepid_cartographer_unlocked';
