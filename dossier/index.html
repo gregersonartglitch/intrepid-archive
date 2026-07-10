@@ -90,16 +90,30 @@ body {
   flex-shrink: 0;
 }
 .roster-back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  margin: 0 0 8px -12px;
+  border-radius: 4px;
+  border: 1px solid rgba(198,141,85,0.4);
+  background: transparent;
   font-family: var(--font-heading);
-  font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--bone-dim);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #d4a843;
   text-decoration: none;
-  transition: color 0.3s;
-  margin-bottom: 12px;
+  white-space: nowrap;
+  transition: all 0.2s ease;
 }
 .roster-back::before { content: '← '; }
-.roster-back:hover { color: var(--gold); }
+.roster-back:hover {
+  background: rgba(198,141,85,0.15);
+  border-color: var(--amber);
+  color: #fff;
+}
 .roster-title {
   font-family: var(--font-display);
   font-size: 18px; font-weight: 400;
@@ -302,6 +316,13 @@ body {
 </style>
 </head>
 <body>
+<script src="/archive-access.js?v=115"></script>
+<script>
+(function () {
+  if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.guardPublicContentRoute) return;
+  window.IntrepidArchiveAccess.guardPublicContentRoute("/");
+})();
+</script>
 
 <!-- Underwater Background -->
 <div class="ocean-bg"></div>
@@ -313,7 +334,7 @@ body {
   <!-- LEFT: Roster Sidebar -->
   <nav class="roster">
     <div class="roster-header">
-      <a href="../" class="roster-back">Archive</a>
+      <a href="../" class="roster-back" title="Return to archive home" aria-label="Return to archive home">Home</a>
       <div class="roster-title">Dossier</div>
       <div class="roster-subtitle">Faces of the Hollowlands</div>
     </div>
