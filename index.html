@@ -642,11 +642,12 @@ html.cuneiform-buttons-on .landing-action.cuneiform-btn .landing-badge {
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.28s ease, visibility 0.28s ease;
+  transition: opacity 0.28s ease, visibility 0.28s ease, transform 0.28s ease;
 }
 html.cuneiform-buttons-on .landing-action.cuneiform-btn.cuneiform-btn--near .landing-badge {
   opacity: 0.72;
   visibility: visible;
+  transform: translateY(-6px);
 }
 @keyframes cuneiform-wedge-glitch {
   0%   { opacity: 1; transform: translate(0, -3px); clip-path: inset(0 0 0 0); text-shadow: none; }
@@ -2942,7 +2943,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 137;
+window.INTREPID_BUILD = 139;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3019,7 +3020,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=137"></script>
+<script src="fog.js?v=139"></script>
 <script>
 (function() {
   'use strict';
