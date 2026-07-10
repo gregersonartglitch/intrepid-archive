@@ -24,14 +24,16 @@
   var GUARDIAN_REVEAL_GLOW_MIN = 360;  // px — Tetrad guardians (Utu, Rapha, Mish, Gu)
   var GOD_REVEAL_GLOW_MIN = 300;       // px — The Eight Apkallu sigils
   var MEDALLION_REVEAL_MS = 5200;      // how long the announcing pulse runs
-  // Volume 2 journey gate — Elena pauses after Mish until Vol 2 ships.
+  // Volume 2 journey gate — fires when Mish guardian medallion awakens (6:00 · unlock 13).
+  // NOT on Mish map location discovery — player continues through sinn first.
   // Kill switch: ENABLE_VOL2_JOURNEY_GATE = false removes the gate entirely.
   // Manual unlock: localStorage.setItem('intrepid_vol2_journey_unlocked','1')
   // Force lock:   localStorage.setItem('intrepid_vol2_journey_locked','1')
   // URL override: ?vol2unlock on the map URL (local QA only)
   var ENABLE_VOL2_JOURNEY_GATE = true;
   var VOL2_UNLOCK_AT = '2026-12-01T00:00:00Z'; // set to Vol 2 launch UTC when known
-  var VOL2_JOURNEY_CAP_ID = 'mish'; // last journey stop in Vol 1 cartographer play
+  var VOL2_GUARDIAN_TRIGGER = 'Mish'; // Tetrad South · winged archer · MEDALLION_DEFS unlock 13
+  var VOL2_JOURNEY_CAP_ID = 'sinn'; // last journey stop before Vol 2 seals onward (indras-na)
   var VOL2_GATE_LS_UNLOCK = 'intrepid_vol2_journey_unlocked';
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
   var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
@@ -345,9 +347,8 @@
     resolveTutorialStepOnInit();
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
-    } else {
-      maybeFlyToPostTutorialBeacon();
     }
+    // Post-tutorial: golden glow guides the player — no auto-fly to distant Mish.
 
     if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
       maybeFlyToNextJourneyStep(2000);
@@ -1008,6 +1009,10 @@
     return -1;
   }
 
+  function isMishGuardianRevealed() {
+    return !!revealedGods[VOL2_GUARDIAN_TRIGGER];
+  }
+
   function getVol2CapStepIndex() {
     return getJourneyStepIndex(VOL2_JOURNEY_CAP_ID);
   }
@@ -1032,6 +1037,7 @@
 
   function isVol2LockedJourneyStep(locId) {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+    if (!isMishGuardianRevealed()) return false;
     if (!isOnPath(locId)) return false;
     var capIdx = getVol2CapStepIndex();
     var stepIdx = getJourneyStepIndex(locId);
@@ -1041,7 +1047,7 @@
 
   function isVol2JourneyGateBlocking() {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
-    if (!isFullyDiscovered(VOL2_JOURNEY_CAP_ID)) return false;
+    if (!isMishGuardianRevealed()) return false;
     var capIdx = getVol2CapStepIndex();
     if (capIdx < 0) return false;
     for (var vi = capIdx + 1; vi < journeyPath.length; vi++) {
@@ -1082,7 +1088,7 @@
         if (stepId === FINAL_ELENA_STOP && !explorationComplete()) {
           return null;
         }
-        // Vol 2 gate — skip sealed post-Mish stops; null only when cap is done
+        // Vol 2 gate — skip sealed post-sinn stops after Mish guardian awakens
         if (isVol2LockedJourneyStep(stepId)) {
           continue;
         }
@@ -1235,7 +1241,7 @@
       return false;
     }
 
-    // Vol 2 gate — post-Mish journey stops stay dark until Volume 2 ships
+    // Vol 2 gate — post-sinn journey stops stay dark after Mish guardian awakens
     if (isVol2LockedJourneyStep(locId)) {
       return false;
     }
@@ -1361,7 +1367,7 @@
       '<div style="font-size:12px;color:#8ab4d4;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">' +
         'Congratulations' +
       '</div>' +
-      '<div style="margin-bottom:14px;">You\u2019ve charted Elena\u2019s cartographer journey through <strong style="color:#d4a843;">Mish</strong> \u2014 Volume 1 is complete. More journey locations will open with the <strong style="color:#b8d4f0;">kickstarter launch of Volume 2</strong>. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond await that launch.</div>' +
+      '<div style="margin-bottom:14px;">You\u2019ve awakened <strong style="color:#d4a843;">Mish</strong>, Defender of the South \u2014 Volume 1 is complete. More journey locations will open with the <strong style="color:#b8d4f0;">kickstarter launch of Volume 2</strong>. <strong style="color:#d4a843;">' + nextName + '</strong> and the stops beyond await that launch.</div>' +
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;margin-bottom:10px;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">Spotted a bug or have feedback? Write us at ' + emailLink + '.</div>' +
       countdownLine +
@@ -2617,14 +2623,7 @@
 
     delete clusterPeek[loc.id];
 
-    if (loc.id === VOL2_JOURNEY_CAP_ID) {
-      maybeShowVol2GateToast();
-    }
-
-    // Tutorial end — Mish is far from Sabella's cluster; pan so the golden glow is visible.
-    if (loc.id === 'sabellas-hut' && isFullyDiscovered('sabellas-hut')) {
-      maybeFlyToNextJourneyStep(2400);
-    }
+    // Vol 2 gate toast fires from revealGod when Mish guardian medallion awakens.
   } // end completeDiscovery
 
   // Mouse/touch tracking for spotlight (search mode only)
@@ -3162,6 +3161,11 @@
     // Keep the frame medallion lit once its guardian has awakened.
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
     if (window.syncMedallionHotspots) window.syncMedallionHotspots();
+
+    // Vol 2 journey gate — congratulations modal when Mish guardian (6:00) awakens
+    if (!suppressAnimations && m.guardian && m.name === VOL2_GUARDIAN_TRIGGER) {
+      maybeShowVol2GateToast();
+    }
 
     // Save to localStorage
     try {
