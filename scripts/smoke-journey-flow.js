@@ -36,12 +36,15 @@ vm.runInNewContext(dataCode, dataCtx);
 var LOCATIONS = dataCtx.window.LOCATIONS;
 var JOURNEY_PATH = dataCtx.window.JOURNEY_PATH;
 
-// ── Mirror fog.js vol2 / journey helpers (build 150) ─────────
+// ── Mirror fog.js vol2 / journey helpers (build 154) ─────────
 var FINAL_ELENA_STOP = 'indras-na';
 var VOL2_GUARDIAN_TRIGGER = 'Mish';
 var VOL2_JOURNEY_CAP_ID = 'sinn';
 var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
 var ENABLE_VOL2_JOURNEY_GATE = true;
+var ENABLE_SABELLA_MESSAGES = true;
+var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'tower-nine', 'monastery-wind', 'sinn'];
+var SABELLA_MESSAGES_SEEN = {}; // test-local stand-in for intrepid_sabella_messages_seen
 // Vol 1 clock sequence — clockwise 12→6; Mish last (must match fog.js VOL1_REVEAL_ORDER)
 var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
 // Territory thresholds (charted regions) — must match index.html MEDALLION_DEFS unlock values
@@ -51,6 +54,36 @@ var MEDALLION_UNLOCKS = {
 };
 var MISH_UNLOCK = MEDALLION_UNLOCKS.Mish;
 var ELIL_UNLOCK = MEDALLION_UNLOCKS.Elil;
+
+function isSabellaMessagesEnabled() {
+  return !!ENABLE_SABELLA_MESSAGES;
+}
+
+function countSabellaPrereqLettersCollected() {
+  var n = 0;
+  for (var i = 0; i < SABELLA_LETTER_PREREQ_IDS.length; i++) {
+    if (SABELLA_MESSAGES_SEEN[SABELLA_LETTER_PREREQ_IDS[i]]) n++;
+  }
+  return n;
+}
+
+function sabellaPrereqLettersComplete() {
+  return countSabellaPrereqLettersCollected() >= SABELLA_LETTER_PREREQ_IDS.length;
+}
+
+function collectSabellaPrereqLetters() {
+  for (var i = 0; i < SABELLA_LETTER_PREREQ_IDS.length; i++) {
+    SABELLA_MESSAGES_SEEN[SABELLA_LETTER_PREREQ_IDS[i]] = Date.now();
+  }
+}
+
+function clearSabellaLetters() {
+  SABELLA_MESSAGES_SEEN = {};
+}
+
+function hasUnseenSabellaMessage(locId) {
+  return !SABELLA_MESSAGES_SEEN[locId];
+}
 
 function getJourneyStepIndex(locId, journeyPath) {
   for (var ji = 0; ji < journeyPath.length; ji++) {
@@ -165,32 +198,42 @@ function getIndrasNaLockedReason(discovered, journeyPath) {
     }
   }
 
-  if (explorationComplete(discovered)) return null;
+  if (!explorationComplete(discovered)) {
+    var undiscRegions = LOCATIONS.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
+    var undiscSites = LOCATIONS.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
+    var remaining = [];
+    if (undiscRegions > 0) {
+      remaining.push(undiscRegions + (undiscRegions === 1 ? ' territory' : ' territories'));
+    }
+    if (undiscSites > 0) {
+      remaining.push(undiscSites === 1
+        ? '1 of Sabella\u2019s marks'
+        : undiscSites + ' of Sabella\u2019s remaining marks');
+    }
+    if (!remaining.length) {
+      return 'Indras Na stays sealed until the Hollowlands are fully charted.';
+    }
+    return 'Indras Na stays sealed until Elena\u2019s path and Sabella\u2019s remaining marks are charted. ' +
+      remaining.join(' and ') + ' still wait in the fog.';
+  }
 
-  var undiscRegions = LOCATIONS.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
-  var undiscSites = LOCATIONS.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
-  var remaining = [];
-  if (undiscRegions > 0) {
-    remaining.push(undiscRegions + (undiscRegions === 1 ? ' territory' : ' territories'));
+  if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
+    var found = countSabellaPrereqLettersCollected();
+    var need = SABELLA_LETTER_PREREQ_IDS.length;
+    return 'Indras Na stays sealed until Sabella\u2019s remaining letters along Elena\u2019s road are found. ' +
+      found + ' of ' + need + ' letters found along Elena\u2019s road.';
   }
-  if (undiscSites > 0) {
-    remaining.push(undiscSites === 1
-      ? '1 of Sabella\u2019s marks'
-      : undiscSites + ' of Sabella\u2019s remaining marks');
-  }
-  if (!remaining.length) {
-    return 'Indras Na stays sealed until the Hollowlands are fully charted.';
-  }
-  return 'Indras Na stays sealed until Elena\u2019s path and Sabella\u2019s remaining marks are charted. ' +
-    remaining.join(' and ') + ' still wait in the fog.';
+
+  return null;
 }
 
 function getNextPathLocation(discovered, journeyPath, revealedGods) {
   for (var i = 0; i < journeyPath.length; i++) {
     var stepId = journeyPath[i].locationId;
     if (!isFullyDiscovered(stepId, discovered, journeyPath)) {
-      if (stepId === FINAL_ELENA_STOP && !explorationComplete(discovered)) {
-        return null;
+      if (stepId === FINAL_ELENA_STOP) {
+        if (!explorationComplete(discovered)) return null;
+        if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) return null;
       }
       if (isVol2LockedJourneyStep(stepId, journeyPath, revealedGods, discovered)) {
         continue;
@@ -248,6 +291,7 @@ function isJourneyPathClickable(locId, discovered, journeyPath, revealedGods) {
   if (isFullyDiscovered(locId, discovered, journeyPath)) return false;
   if (locId === FINAL_ELENA_STOP) {
     if (!explorationComplete(discovered)) return false;
+    if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) return false;
     return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
   }
   if (isVol2LockedJourneyStep(locId, journeyPath, revealedGods, discovered)) return false;
@@ -257,19 +301,29 @@ function isJourneyPathClickable(locId, discovered, journeyPath, revealedGods) {
   return false;
 }
 
-function maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls) {
+// Mirror finale reward gate: no toast while letter open / unseen Indras letter owed
+function maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls, opts) {
+  opts = opts || {};
   if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
   if (!isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return false;
+  if (opts.letterPopupOpen || opts.sabellaMessagePending) return false;
+  if (isSabellaMessagesEnabled() && hasUnseenSabellaMessage(FINAL_ELENA_STOP)) return false;
   if (ls[VOL2_GATE_TOAST_LS] === '1') return false;
   ls[VOL2_GATE_TOAST_LS] = '1';
   return true;
 }
 
-function simulateCompleteDiscovery(locId, discovered, journeyPath, revealedGods, ls) {
+function simulateCompleteDiscovery(locId, discovered, journeyPath, revealedGods, ls, opts) {
   discovered[locId] = { at: Date.now(), phase: 'complete' };
   var fired = false;
   if (locId === FINAL_ELENA_STOP) {
-    fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls);
+    // Letter-first: if Indras letter unseen / open, toast waits (attach dismiss → toast)
+    if (isSabellaMessagesEnabled() &&
+        (hasUnseenSabellaMessage(FINAL_ELENA_STOP) || (opts && (opts.letterPopupOpen || opts.sabellaMessagePending)))) {
+      fired = false;
+    } else {
+      fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls, opts);
+    }
   }
   return { toastFired: fired };
 }
@@ -350,7 +404,8 @@ var lsMid = {};
 assert(!maybeShowVol2GateToast(revealedMid, sixEight, JOURNEY_PATH, lsMid), 'Vol2 reward toast not eligible before Indras Na complete');
 assert(!lsMid[VOL2_GATE_TOAST_LS], 'Vol2 reward LS flag not set before Indras Na complete');
 
-console.log('\n[2e] Indras Na clickability — sealed until map whole, then sole journey target');
+console.log('\n[2e] Indras Na clickability — sealed until map whole + road letters, then sole journey target');
+clearSabellaLetters();
 var preFinale = makeJourneyCompleteThrough('sinn');
 preFinale['sinn'] = { at: Date.now(), phase: 'complete' };
 assert(!isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
@@ -358,8 +413,13 @@ assert(!isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
 assert(getNextPathLocation(preFinale, JOURNEY_PATH, {}) === null,
   'no golden glow on indras-na until exploration complete');
 padAllExploration(preFinale);
+assert(getNextPathLocation(preFinale, JOURNEY_PATH, {}) === null,
+  'no golden glow on indras-na until Sabella road letters collected (flag on)');
+assert(!isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
+  'indras-na not clickable with map whole but letters missing');
+collectSabellaPrereqLetters();
 assert(getNextPathLocation(preFinale, JOURNEY_PATH, {}) === FINAL_ELENA_STOP,
-  'indras-na is the only journey glow when map whole + prior steps done');
+  'indras-na is the only journey glow when map whole + prior steps + 4 letters done');
 assert(isJourneyPathClickable(FINAL_ELENA_STOP, preFinale, JOURNEY_PATH, {}),
   'indras-na clickable when it is the active finale target');
 assert(!isJourneyPathClickable('sinn', preFinale, JOURNEY_PATH, {}),
@@ -368,6 +428,7 @@ assert(!isVol2LockedJourneyStep(FINAL_ELENA_STOP, JOURNEY_PATH, { Mish: true }, 
   'indras-na never sealed by Vol2 journey gate');
 
 console.log('\n[2g] Locked Indras Na click feedback — reason string while sealed');
+clearSabellaLetters();
 var lockedMidPath = makeJourneyCompleteThrough('tower-nine');
 lockedMidPath['tower-nine'] = { at: Date.now(), phase: 'complete' };
 var midReason = getIndrasNaLockedReason(lockedMidPath, JOURNEY_PATH);
@@ -380,6 +441,21 @@ assert(typeof exploreReason === 'string' && exploreReason.indexOf('Sabella') > -
   'locked reason when exploration incomplete mentions Sabella marks');
 assert(exploreReason.indexOf('territor') > -1 || exploreReason.indexOf('marks') > -1,
   'locked reason names remaining chart work');
+var lockedLetters = makeJourneyCompleteThrough('sinn');
+lockedLetters['sinn'] = { at: Date.now(), phase: 'complete' };
+padAllExploration(lockedLetters);
+SABELLA_MESSAGES_SEEN['sabellas-hut'] = 1;
+SABELLA_MESSAGES_SEEN['tower-nine'] = 1;
+SABELLA_MESSAGES_SEEN['monastery-wind'] = 1;
+// sinn letter missing → 3 of 4
+var letterReason = getIndrasNaLockedReason(lockedLetters, JOURNEY_PATH);
+assert(typeof letterReason === 'string' && letterReason.indexOf('3 of 4') > -1,
+  'locked reason when 4 letters missing shows count (3 of 4)');
+assert(letterReason.indexOf('letters found along Elena') > -1,
+  'locked reason names Sabella letters along Elena\u2019s road');
+assert(!isJourneyPathClickable(FINAL_ELENA_STOP, lockedLetters, JOURNEY_PATH, {}),
+  '4 letters missing → indras-na locked');
+collectSabellaPrereqLetters();
 var unlockedSnap = makeJourneyCompleteThrough('sinn');
 unlockedSnap['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(unlockedSnap);
@@ -390,7 +466,23 @@ doneSnap[FINAL_ELENA_STOP] = { at: Date.now(), phase: 'complete' };
 assert(getIndrasNaLockedReason(doneSnap, JOURNEY_PATH) === null,
   'locked reason null after Indras Na discovered');
 
-console.log('\n[2f] User snapshot — 7/8 journey, 17/17 territories, 13/13 sites → indras-na clickable');
+console.log('\n[2h] Sabella letter gate off → no secret requirement');
+ENABLE_SABELLA_MESSAGES = false;
+clearSabellaLetters();
+var flagOffSnap = makeJourneyCompleteThrough('sinn');
+flagOffSnap['sinn'] = { at: Date.now(), phase: 'complete' };
+padAllExploration(flagOffSnap);
+assert(getIndrasNaLockedReason(flagOffSnap, JOURNEY_PATH) === null,
+  'flag off → no secret gate (locked reason null with map whole)');
+assert(getNextPathLocation(flagOffSnap, JOURNEY_PATH, {}) === FINAL_ELENA_STOP,
+  'flag off → indras-na glow without letters');
+assert(isJourneyPathClickable(FINAL_ELENA_STOP, flagOffSnap, JOURNEY_PATH, {}),
+  'flag off → indras-na clickable without letters');
+ENABLE_SABELLA_MESSAGES = true;
+collectSabellaPrereqLetters();
+
+console.log('\n[2f] User snapshot — 7/8 journey, 17/17 territories, 13/13 sites + 4 letters → indras-na clickable');
+collectSabellaPrereqLetters();
 var userSnap = makeJourneyCompleteThrough('sinn');
 userSnap['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(userSnap);
@@ -447,6 +539,8 @@ assert(!staleGods.Mish, 'stale Mish pruned when Indras Na not discovered');
 assert(!isVol2JourneyGateBlocking(staleGods, staleDisc, JOURNEY_PATH), 'Vol2 gate false after stale Mish prune');
 
 console.log('\n[4] Indras Na completion fires Vol1 reward toast (not Mish reveal)');
+collectSabellaPrereqLetters();
+SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP] = Date.now(); // letter already read
 var finaleReady = makeJourneyCompleteThrough('sinn');
 finaleReady['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(finaleReady);
@@ -454,6 +548,29 @@ var lsFinale = {};
 var finaleComplete = simulateCompleteDiscovery(FINAL_ELENA_STOP, finaleReady, JOURNEY_PATH, {}, lsFinale);
 assert(finaleComplete.toastFired, 'Vol1 reward toast fires on Indras Na completion');
 assert(lsFinale[VOL2_GATE_TOAST_LS] === '1', 'reward toast LS flag set on Indras Na complete');
+
+console.log('\n[4c] Finale letter pacing — congrats waits for letter Close');
+clearSabellaLetters();
+collectSabellaPrereqLetters();
+delete SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP];
+var paceReady = makeJourneyCompleteThrough('sinn');
+paceReady['sinn'] = { at: Date.now(), phase: 'complete' };
+padAllExploration(paceReady);
+var lsPace = {};
+var paceHot = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsPace, {
+  letterPopupOpen: true
+});
+assert(!paceHot.toastFired, 'congrats does not fire while Indras letter still open');
+assert(!lsPace[VOL2_GATE_TOAST_LS], 'reward LS not set while letter open');
+var lsUnseen = {};
+var paceUnseen = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsUnseen, {});
+assert(!paceUnseen.toastFired, 'congrats does not fire while Indras letter still unseen');
+assert(!lsUnseen[VOL2_GATE_TOAST_LS], 'reward LS not set while letter unseen');
+SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP] = Date.now();
+var lsAfter = {};
+var paceAfter = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsAfter, {});
+assert(paceAfter.toastFired, 'congrats fires after Indras letter dismissed / already seen');
+assert(lsAfter[VOL2_GATE_TOAST_LS] === '1', 'reward LS set after letter resolved');
 
 console.log('\n[4b] Mish guardian reveal alone does not fire reward toast');
 var mishOnlyGods = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true };
@@ -469,7 +586,7 @@ var mishReveal = simulateRevealGod(
 assert(!mishReveal.toastFired, 'Mish guardian reveal does not fire Vol1 reward toast');
 assert(!lsMishOnly[VOL2_GATE_TOAST_LS], 'reward LS flag unset after Mish reveal without Indras Na ceremony path');
 
-console.log('\n[4c] Mid-journey (5/8) never triggers reward toast');
+console.log('\n[4d] Mid-journey (5/8) never triggers reward toast');
 var midJourney = makeJourneyCompleteThrough('monastery-wind');
 midJourney['monastery-wind'] = { at: Date.now(), phase: 'complete' };
 var lsMidJourney = {};
@@ -490,7 +607,7 @@ var elilReveal = simulateRevealGod(
 assert(!elilReveal.toastFired, 'Elil reveal does not fire Vol1 reward toast');
 assert(!maybeShowVol2GateToast(godsWithMish, elilReady, JOURNEY_PATH, lsElil), 'reward toast not re-eligible after flag already shown');
 
-console.log('\n[6] fog.js territory-paced guardians + Indras Na finale (build 150)');
+console.log('\n[6] fog.js territory-paced guardians + Indras Na finale (build 154)');
 var fogSrc = fs.readFileSync(path.join(ROOT, 'fog.js'), 'utf8');
 assert(fogSrc.indexOf('VOL1_REVEAL_ORDER') > -1, 'VOL1_REVEAL_ORDER defined in fog.js');
 assert(fogSrc.indexOf('getTerritoryDiscoveryCount') > -1, 'getTerritoryDiscoveryCount helper in fog.js');
@@ -515,6 +632,13 @@ assert(fogSrc.indexOf('Indras Na Is Sealed') > -1,
 assert(fogSrc.indexOf('Sabella\\u2019s remaining marks') > -1 ||
   fogSrc.indexOf('Sabella\u2019s remaining marks') > -1,
   'locked copy references Sabella marks');
+assert(fogSrc.indexOf('SABELLA_LETTER_PREREQ_IDS') > -1 &&
+  fogSrc.indexOf('sabellaPrereqLettersComplete') > -1,
+  'Sabella road-letter prereq gate helpers exist');
+assert(/getIndrasNaLockedReason[\s\S]*?letters found along Elena/.test(fogSrc),
+  'locked copy reports letter count along Elena\u2019s road');
+assert(/getNextPathLocation[\s\S]*?sabellaPrereqLettersComplete/.test(fogSrc),
+  'getNextPathLocation seals indras-na until road letters complete');
 assert(fogSrc.indexOf('locked-msg-close') > -1 &&
   fogSrc.indexOf('function lockedMsgCloseHtml') > -1 &&
   fogSrc.indexOf('function wireLockedMsgDismiss') > -1,
@@ -522,6 +646,13 @@ assert(fogSrc.indexOf('locked-msg-close') > -1 &&
 assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
   /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
   'Indras Na + Vol2 locked modals both use Close button');
+assert(/requireManualDismiss[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc) ||
+  /locId === FINAL_ELENA_STOP[\s\S]*?lockedMsgCloseHtml/.test(fogSrc),
+  'Indras Na letter uses manual Close (no auto-dismiss path)');
+assert(/maybeShowVol2GateToast[\s\S]*?sabella-message-popup[\s\S]*?hasUnseenSabellaMessage\(FINAL_ELENA_STOP\)/.test(fogSrc),
+  'congrats waits for Indras letter dismiss / already-seen');
+assert(/scheduleSabellaMessage[\s\S]*?sabella-message-popup[\s\S]*?sabellaMessageOnDismiss/.test(fogSrc),
+  'scheduleSabellaMessage attaches congrats callback while letter open');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');
