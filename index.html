@@ -61,10 +61,37 @@ input { font-family: inherit; }
   transition: opacity 0.55s ease, visibility 0.55s ease;
 }
 #archive-entry.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.entry-guest-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+  margin-bottom: 2px;
+}
+.entry-guest-divider::before,
+.entry-guest-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(198,141,85,0.22) 50%, transparent);
+}
+.entry-guest-divider-label {
+  flex-shrink: 0;
+  color: rgba(198,141,85,0.42);
+  font-family: var(--font-ui);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 .entry-guest-btn {
+  position: relative;
   display: inline-block;
-  margin-top: 18px;
-  min-height: 44px;
+  margin-top: 14px;
+  min-height: 48px;
+  min-width: 220px;
   padding: 12px 28px;
   border: 1px solid rgba(198,141,85,0.28);
   border-radius: 3px;
@@ -78,31 +105,47 @@ input { font-family: inherit; }
   transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
 }
 .entry-guest-btn-label {
-  display: inline-flex;
+  display: block;
+}
+.entry-guest-lock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  pointer-events: none;
 }
 .entry-guest-lock-icon {
-  width: 14px;
-  height: 14px;
-  display: inline-block;
-  color: rgba(212, 168, 67, 0.95);
+  width: 30px;
+  height: 30px;
+  display: block;
+  color: rgba(212, 168, 67, 0.92);
+  filter: drop-shadow(0 0 8px rgba(212, 168, 67, 0.45));
 }
-.entry-guest-btn:hover {
+.entry-guest-btn:hover:not(:disabled):not(.is-locked) {
   border-color: rgba(198,141,85,0.45);
   color: var(--bone);
   background: rgba(198,141,85,0.06);
 }
-.entry-guest-btn.is-locked {
-  border-color: rgba(212, 168, 67, 0.45);
-  color: rgba(212, 168, 67, 0.95);
-  background: rgba(212, 168, 67, 0.08);
+.entry-guest-btn.is-locked,
+.entry-guest-btn:disabled.is-locked {
+  border-color: rgba(198,141,85,0.14);
+  background: rgba(10, 9, 14, 0.35);
+  color: rgba(191,178,153,0.32);
+  cursor: not-allowed;
+  opacity: 1;
 }
-.entry-guest-btn.is-locked:hover {
-  border-color: rgba(212, 168, 67, 0.45);
-  color: rgba(212, 168, 67, 0.95);
-  background: rgba(212, 168, 67, 0.08);
+.entry-guest-btn.is-locked .entry-guest-btn-label {
+  opacity: 0.38;
+  color: rgba(191,178,153,0.45);
+}
+.entry-guest-btn.is-locked:hover,
+.entry-guest-btn:disabled.is-locked:hover {
+  border-color: rgba(198,141,85,0.14);
+  background: rgba(10, 9, 14, 0.35);
+  color: rgba(191,178,153,0.32);
+  cursor: not-allowed;
 }
 .entry-guest-note {
   margin-top: 14px;
@@ -113,7 +156,11 @@ input { font-family: inherit; }
   line-height: 1.6;
 }
 .entry-guest-note.is-countdown {
-  color: rgba(212, 168, 67, 0.85);
+  color: rgba(212, 168, 67, 0.96);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.8px;
+  text-shadow: 0 0 12px rgba(212, 168, 67, 0.18);
 }
 
 /* ═══════════════════════════════════════════
@@ -2504,6 +2551,7 @@ body.edit-mode .mk-dot-wrap > * {
       </button>
     </div>
     <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
+    <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or wait for guest access</span></div>
     <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button"><span class="entry-guest-btn-label">Continue as guest</span></button>
     <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
   </div>
@@ -2836,7 +2884,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 133;
+window.INTREPID_BUILD = 134;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2912,8 +2960,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=127"></script>
-<script src="fog.js?v=133"></script>
+<script src="archive-access.js?v=134"></script>
+<script src="fog.js?v=134"></script>
 <script>
 (function() {
   'use strict';
@@ -3332,11 +3380,15 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   /* ═══════════════════════════════════════════
      ARCHIVE ENTRY ACCESS (unified password)
      ═══════════════════════════════════════════ */
-  const LOCK_ICON_SVG = '<svg class="entry-guest-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg>';
+  const LOCK_ICON_SVG = '<svg class="entry-guest-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg>';
+  const GUEST_BTN_LABEL_HTML = '<span class="entry-guest-btn-label">Continue as guest</span>';
+  const GUEST_BTN_LOCKED_HTML = '<span class="entry-guest-lock-overlay" aria-hidden="true">' + LOCK_ICON_SVG + '</span>' + GUEST_BTN_LABEL_HTML;
   var guestUnlockCountdownTimer = null;
   const entryAccessPw = document.getElementById('entry-access-pw');
   const entryAccessBtn = document.getElementById('entry-access-btn');
   const entryAccessMsg = document.getElementById('entry-access-msg');
+  const entryGuestDivider = document.getElementById('entry-guest-divider');
+  const entryGuestDividerLabel = document.getElementById('entry-guest-divider-label');
   const entryGuestBtn = document.getElementById('entry-guest-btn');
   const entryGuestNote = document.getElementById('entry-guest-note');
 
@@ -3397,13 +3449,20 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var isCountdownActive = !isGuestEnabled && hasValidUnlockTime && !unlockWindow.isTimeReached;
     if (isGuestEnabled) {
       stopGuestUnlockCountdown();
+      if (entryGuestDivider) {
+        entryGuestDivider.hidden = false;
+        entryGuestDivider.setAttribute('aria-hidden', 'false');
+      }
+      if (entryGuestDividerLabel) {
+        entryGuestDividerLabel.textContent = 'Or continue without a code';
+      }
       if (entryGuestBtn) {
         entryGuestBtn.hidden = false;
         entryGuestBtn.disabled = false;
         entryGuestBtn.setAttribute('aria-hidden', 'false');
         entryGuestBtn.setAttribute('aria-disabled', 'false');
         entryGuestBtn.classList.remove('is-locked');
-        entryGuestBtn.innerHTML = '<span class="entry-guest-btn-label">Continue as guest</span>';
+        entryGuestBtn.innerHTML = GUEST_BTN_LABEL_HTML;
       }
       if (entryGuestNote) {
         entryGuestNote.classList.remove('is-countdown');
@@ -3415,13 +3474,22 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       return;
     }
     startGuestUnlockCountdownIfNeeded();
+    if (entryGuestDivider) {
+      entryGuestDivider.hidden = false;
+      entryGuestDivider.setAttribute('aria-hidden', 'false');
+    }
+    if (entryGuestDividerLabel) {
+      entryGuestDividerLabel.textContent = isCountdownActive
+        ? 'Or wait for guest access'
+        : 'Guest access paused';
+    }
     if (entryGuestBtn) {
       entryGuestBtn.hidden = false;
       entryGuestBtn.disabled = true;
       entryGuestBtn.setAttribute('aria-hidden', 'false');
       entryGuestBtn.setAttribute('aria-disabled', 'true');
       entryGuestBtn.classList.add('is-locked');
-      entryGuestBtn.innerHTML = '<span class="entry-guest-btn-label">' + LOCK_ICON_SVG + '<span>Continue as guest</span></span>';
+      entryGuestBtn.innerHTML = GUEST_BTN_LOCKED_HTML;
     }
     if (entryGuestNote) {
       if (isCountdownActive) {
@@ -3429,7 +3497,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         entryGuestNote.textContent = 'Guest access opens in ' + formatDurationCompact(unlockWindow.remainingMs) + '.';
       } else if (hasValidUnlockTime && unlockWindow.isTimeReached) {
         entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Wanderer window reached, but guest access is still paused until ENABLE_GUEST_ENTRY is set to true.';
+        entryGuestNote.textContent = 'Guest access window reached, but guest preview is still paused.';
       } else {
         entryGuestNote.classList.remove('is-countdown');
         entryGuestNote.textContent = 'Guest preview is temporarily paused for a backer-first window.';
