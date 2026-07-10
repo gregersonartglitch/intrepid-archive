@@ -36,6 +36,29 @@
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
   var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
   var VOL2_FEEDBACK_EMAIL = 'info@intrepidgraphicnovel.com';
+  // Sabella/Scribe chime-heat clue popups — default OFF until Jon approves.
+  // Enable: ?sabellaclues on map URL, or localStorage intrepid_sabella_clues_enabled=1
+  // Kill switch: ENABLE_SABELLA_CLUE_POPUPS = false
+  var ENABLE_SABELLA_CLUE_POPUPS = false;
+  var SABELLA_CLUES_LS = 'intrepid_sabella_clues_enabled';
+  var SECRETS_COLLECTED_LS = 'intrepid_secrets_collected';
+  var CHIME_CLUE_BANDS = [
+    { id: 'warm', threshold: 0.35, eyebrow: 'Getting warmer' },
+    { id: 'hot', threshold: 0.65, eyebrow: 'Getting hotter' },
+    { id: 'burning', threshold: 0.85, eyebrow: 'Almost there' }
+  ];
+  var CHIME_CLUE_CONTENT = {
+    'sabellas-hut': {
+      warm: { speaker: 'Scribe', text: 'Faster beeps mean you draw closer to the hidden sigil.' },
+      hot: { speaker: 'Sabella', text: 'Larger inside than it looks from the road. She warned me not to measure the rooms.' },
+      burning: { speaker: 'Scribe', text: 'The sigil glows beneath your lantern — tap it.' }
+    },
+    '_default': {
+      warm: { speaker: 'Scribe', text: 'Listen — the chime quickens when your lantern nears the mark.' },
+      hot: { speaker: 'Sabella', text: 'She left this trace in the fog. The chime is your compass now.' },
+      burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil.' }
+    }
+  };
   // State
   var discovered = {};
   var markerRefs = {};
@@ -349,6 +372,7 @@
     var FOG_UI_SKIP = '#layers, #panel, #discovery-card, #progress-container, .leaflet-control-zoom, ' +
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
+      '#sabella-clue-popup, #post-tutorial-hint, #chime-escape-hint, #guide-hint-toast, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -1701,6 +1725,7 @@
 
       // Audio: divining rod pings accelerate near key
       updateDiviningAudio(proximity);
+      maybeShowChimeCluePopup(proximity);
 
       // Divining rod: spotlight grows and pulses faster when closer
       var pulseSpeed = 2 + proximity * 6; // 2Hz far → 8Hz close
@@ -2341,7 +2366,8 @@
       startTime: Date.now(),
       mapClicks: 0,
       escapeBoost: false,
-      escapeHintShown: false
+      escapeHintShown: false,
+      clueBandsFired: {}
     };
 
     // Initialize spotlight at the pinhole center so it works immediately
@@ -2390,6 +2416,116 @@
         setTimeout(function() { toast.remove(); }, 500);
       }
     }, 12000);
+  }
+
+  /* ════════════════════════════════════════════════
+     SABELLA / SCRIBE CHIME-HEAT CLUE POPUPS (flag-gated)
+     ════════════════════════════════════════════════ */
+  function isSabellaCluePopupsEnabled() {
+    if (!ENABLE_SABELLA_CLUE_POPUPS) return false;
+    try {
+      if (localStorage.getItem(SABELLA_CLUES_LS) === '1') return true;
+    } catch (e) {}
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('sabellaclues')) return true;
+    } catch (e2) {}
+    return false;
+  }
+
+  function getChimeCluePayload(locId, bandId) {
+    var locClues = CHIME_CLUE_CONTENT[locId] || CHIME_CLUE_CONTENT['_default'];
+    var entry = locClues[bandId] || locClues.hot || CHIME_CLUE_CONTENT['_default'].hot;
+    return {
+      speaker: entry.speaker,
+      text: entry.text,
+      secretId: locId + ':' + bandId
+    };
+  }
+
+  function recordSecret(payload, band) {
+    try {
+      var stored = [];
+      var raw = localStorage.getItem(SECRETS_COLLECTED_LS);
+      if (raw) stored = JSON.parse(raw);
+      if (!Array.isArray(stored)) stored = [];
+      var exists = stored.some(function(s) { return s && s.id === payload.secretId; });
+      if (exists) return;
+      stored.push({
+        id: payload.secretId,
+        locId: searchMode ? searchMode.locId : '',
+        band: band.id,
+        speaker: payload.speaker,
+        text: payload.text,
+        at: Date.now()
+      });
+      localStorage.setItem(SECRETS_COLLECTED_LS, JSON.stringify(stored));
+    } catch (e) {}
+  }
+
+  function dismissSabellaCluePopup(saveDismiss) {
+    var popup = document.getElementById('sabella-clue-popup');
+    if (!popup) return;
+    popup.style.opacity = '0';
+    setTimeout(function() { popup.remove(); }, 500);
+    if (saveDismiss && searchMode) searchMode.cluePopupOpen = false;
+  }
+
+  function showSabellaCluePopup(band, payload) {
+    if (document.getElementById('sabella-clue-popup')) return;
+
+    if (!document.getElementById('tut-toast-style')) {
+      var s = document.createElement('style');
+      s.id = 'tut-toast-style';
+      s.textContent = '@keyframes tutBorderPulse { 0%,100%{border-color:rgba(198,141,85,0.4)} 50%{border-color:rgba(212,168,67,0.9)} }';
+      document.head.appendChild(s);
+    }
+
+    var popup = document.createElement('div');
+    popup.id = 'sabella-clue-popup';
+    popup.style.cssText =
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
+      'background:rgba(8,10,14,0.97);' +
+      'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
+      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.12);' +
+      'animation:tutBorderPulse 2s ease-in-out infinite;' +
+      'opacity:0;transition:opacity 0.5s ease;';
+    popup.innerHTML =
+      '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
+        'margin-bottom:12px;font-family:Cinzel,serif;">Secrets \u00b7 ' + band.eyebrow + '</div>' +
+      '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:12px;font-family:EB Garamond,serif;">' +
+        '\u201c' + payload.text + '\u201d</div>' +
+      '<div style="font-size:12px;color:#9a8f7e;font-style:italic;margin-bottom:8px;">\u2014 ' + payload.speaker + '</div>' +
+      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+    popup.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissSabellaCluePopup(true);
+    });
+    document.body.appendChild(popup);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { popup.style.opacity = '1'; });
+    });
+    if (searchMode) searchMode.cluePopupOpen = true;
+    recordSecret(payload, band);
+    setTimeout(function() { dismissSabellaCluePopup(true); }, 9000);
+  }
+
+  function maybeShowChimeCluePopup(proximity) {
+    if (!isSabellaCluePopupsEnabled() || !searchMode || searchMode.silenced) return;
+    if (tutorialStep < TUTORIAL_STEPS) return;
+    if (searchMode.cluePopupOpen || document.getElementById('sabella-clue-popup')) return;
+    if (!searchMode.clueBandsFired) searchMode.clueBandsFired = {};
+
+    for (var i = 0; i < CHIME_CLUE_BANDS.length; i++) {
+      var band = CHIME_CLUE_BANDS[i];
+      if (proximity < band.threshold || searchMode.clueBandsFired[band.id]) continue;
+      searchMode.clueBandsFired[band.id] = true;
+      var payload = getChimeCluePayload(searchMode.locId, band.id);
+      showSabellaCluePopup(band, payload);
+      break;
+    }
   }
 
   function completeDiscovery(loc) {
