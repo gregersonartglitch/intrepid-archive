@@ -1125,7 +1125,7 @@
 
     // Count remaining work to give specific guidance
     var locs = window.LOCATIONS || [];
-    var undiscRegions = locs.filter(function(l) { return (l.type === 'region' || l.type === 'water') && !discovered[l.id]; }).length;
+    var undiscRegions = locs.filter(function(l) { return l.type === 'region' && !discovered[l.id]; }).length;
     var undiscCities  = locs.filter(function(l) { return !!l.cartographerSite && !discovered[l.id]; }).length;
     var remaining = [];
     if (undiscRegions > 0) remaining.push(undiscRegions + ' ' + (undiscRegions === 1 ? 'territory' : 'territories'));
@@ -1401,6 +1401,9 @@
 
       // Journey path stops, cartographer sites, or cluster companions
       if (!onPath && !loc.cartographerSite && !clusterPeek[loc.id]) return;
+
+      // Cartographer sites: show label when amber beacon glows (sync with isClickable)
+      if (loc.cartographerSite) peekMarker(loc.id);
 
       // Yellow star beacon
       var baseAlpha = 0.36;
@@ -3186,8 +3189,11 @@
     clearProgress: clearProgressStorage,
     reset: function() {
       clearProgressStorage();
+      try {
+        sessionStorage.removeItem('intrepid_archive_entered');
+      } catch (e) {}
       stripArchiveParamsFromUrl();
-      location.reload();
+      location.replace(location.pathname);
     }
   };
 })();
