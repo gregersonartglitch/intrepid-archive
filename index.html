@@ -566,6 +566,13 @@ html.cuneiform-buttons-on .cuneiform-btn__layer--latin {
   text-align: center;
   pointer-events: none;
   z-index: 0;
+  --latin-optical-y: 0;
+}
+html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--latin {
+  --latin-optical-y: -2px;
+}
+html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--latin {
+  --latin-optical-y: -1px;
 }
 html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--latin,
 html.cuneiform-buttons-on .cuneiform-btn.cuneiform-btn--near .cuneiform-btn__layer--latin,
@@ -576,6 +583,7 @@ html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--lati
   color: inherit;
   -webkit-text-fill-color: currentColor;
   z-index: 2;
+  transform: translateY(var(--latin-optical-y, 0));
 }
 html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--cuneiform,
 html.cuneiform-buttons-on .cuneiform-btn.cuneiform-btn--near .cuneiform-btn__layer--cuneiform,
@@ -613,8 +621,8 @@ html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneifo
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   font-size: clamp(20px, 3.2vw, 26px);
   letter-spacing: 0.06em;
-  /* SantakkuM wedges sit low in em box — nudge down for optical center in hub tiles */
-  transform: translateY(3px);
+  /* Hub tiles: flex center + no extra nudge (3px was over-low after badge fix) */
+  transform: translateY(0);
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   color: var(--bone);
@@ -648,7 +656,7 @@ html.cuneiform-buttons-on .landing-action.cuneiform-btn.cuneiform-btn--near .lan
   0%   { opacity: 0; transform: translate(2px, -1px); clip-path: inset(4px 0 2px 0); text-shadow: 2px 0 rgba(255, 60, 60, 0.55), -2px 0 rgba(60, 200, 255, 0.55); }
   33%  { opacity: 0.45; transform: translate(-2px, 1px); clip-path: inset(0 2px 4px 0); text-shadow: -2px 0 rgba(255, 60, 60, 0.65), 2px 0 rgba(60, 200, 255, 0.65); }
   66%  { opacity: 0.82; transform: translate(1px, 0); clip-path: inset(1px 0 0 0); text-shadow: 1px 0 rgba(255, 80, 80, 0.35), -1px 0 rgba(80, 200, 255, 0.35); }
-  100% { opacity: 1; transform: translate(0, 0); clip-path: inset(0 0 0 0); text-shadow: none; }
+  100% { opacity: 1; transform: translate(0, var(--latin-optical-y, 0)); clip-path: inset(0 0 0 0); text-shadow: none; }
 }
 html.cuneiform-buttons-on .cuneiform-btn.is-glitching .cuneiform-btn__layer--cuneiform {
   animation: cuneiform-wedge-glitch 480ms steps(4) forwards;
@@ -669,6 +677,7 @@ html.cuneiform-buttons-on .cuneiform-btn.is-revealed .cuneiform-btn__layer--lati
     visibility: visible;
     color: inherit;
     -webkit-text-fill-color: currentColor;
+    transform: translateY(var(--latin-optical-y, 0));
   }
   html.cuneiform-buttons-on .cuneiform-btn:hover .cuneiform-btn__layer--cuneiform,
   html.cuneiform-buttons-on .cuneiform-btn.cuneiform-btn--near .cuneiform-btn__layer--cuneiform,
@@ -2885,7 +2894,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 135;
+window.INTREPID_BUILD = 136;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2962,7 +2971,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=135"></script>
+<script src="fog.js?v=136"></script>
 <script>
 (function() {
   'use strict';
