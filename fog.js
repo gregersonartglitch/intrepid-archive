@@ -2606,6 +2606,38 @@
     setTimeout(dismissUnlock, 7000);
   }
 
+  // During chime search, only the target label stays readable — dense clusters
+  // (Crossing Pool / Dawn Spear / Sabella's Hut) otherwise stack illegibly.
+  function setChimeSearchLabelFocus(locId) {
+    Object.keys(markerRefs).forEach(function(id) {
+      var refs = markerRefs[id];
+      if (!refs || !refs.label || !refs.label._icon) return;
+      var icon = refs.label._icon;
+      if (locId && id === locId) {
+        icon.classList.add('chime-search-target');
+        // Show target name during search even if not yet fog-revealed
+        icon.classList.remove('fog-hidden');
+      } else {
+        icon.classList.remove('chime-search-target');
+      }
+    });
+  }
+
+  function clearChimeSearchLabelFocus() {
+    Object.keys(markerRefs).forEach(function(id) {
+      var refs = markerRefs[id];
+      if (!refs || !refs.label || !refs.label._icon) return;
+      var icon = refs.label._icon;
+      icon.classList.remove('chime-search-target');
+      // Restore fog-hidden for undiscovered, non-peeked labels we temporarily showed
+      if (!discovered[id] && !clusterPeek[id] &&
+          !icon.classList.contains('fog-revealed') &&
+          !icon.classList.contains('fog-peek')) {
+        icon.classList.add('fog-hidden');
+      }
+    });
+  }
+
   // Enter search mode — place a hidden key in the fog ring
   function enterSearchMode(loc) {
     // Random angle and distance for the key
@@ -2629,6 +2661,7 @@
     spotlightPos = { x: pt.x, y: pt.y };
 
     if (map) map.getContainer().classList.add('chime-search-active');
+    setChimeSearchLabelFocus(loc.id);
 
     console.log('[FOG] Search mode: find the key for', loc.name);
   }
@@ -3042,6 +3075,7 @@
     var escapeHint = document.getElementById('chime-escape-hint');
     if (escapeHint) escapeHint.remove();
     dismissSabellaCluePopup(false);
+    clearChimeSearchLabelFocus();
 
     if (map) {
       var container = map.getContainer();

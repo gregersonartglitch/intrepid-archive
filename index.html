@@ -2291,6 +2291,21 @@ body.edit-mode .mk-dot-wrap > * {
   transition: opacity 0.8s ease;
 }
 
+/* Chime search: mute stacked cluster labels; only the search target stays readable */
+.chime-search-active .leaflet-marker-icon.map-label-icon:not(.chime-search-target) {
+  opacity: 0.08 !important;
+  pointer-events: none !important;
+  transition: opacity 0.35s ease;
+}
+.chime-search-active .leaflet-marker-icon.map-label-icon.chime-search-target,
+.chime-search-active .leaflet-marker-icon.map-label-icon.chime-search-target.fog-hidden,
+.chime-search-active .leaflet-marker-icon.map-label-icon.chime-search-target.fog-peek,
+.chime-search-active .leaflet-marker-icon.map-label-icon.chime-search-target.fog-revealed {
+  opacity: 1 !important;
+  pointer-events: none !important;
+  transition: opacity 0.35s ease;
+}
+
 /* ── Discovery Card ─────────────────────── */
 #discovery-card {
   position: fixed;
@@ -3054,7 +3069,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 154;
+window.INTREPID_BUILD = 155;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3131,7 +3146,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=154"></script>
+<script src="fog.js?v=155"></script>
 <script>
 (function() {
   'use strict';
