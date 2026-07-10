@@ -470,7 +470,7 @@
         if (glowNextId) {
           var glowNextLoc = (window.LOCATIONS || []).find(function(l) { return l.id === glowNextId; });
           if (glowNextLoc) {
-            var gnpt = map.latLngToContainerPoint([glowNextLoc.lat, glowNextLoc.lng]);
+            var gnpt = map.latLngToContainerPoint(getInteractionLatLng(glowNextLoc));
             var gnDist = Math.sqrt(Math.pow(x - gnpt.x, 2) + Math.pow(y - gnpt.y, 2));
             if (gnDist < 130) {
               e.stopPropagation(); e.preventDefault();
@@ -1043,9 +1043,9 @@
     return n;
   }
 
-  // Mish: requires Indras Na discovered + all 17 territories charted (unlock threshold)
+  // Mish: requires Indras Na fully complete + all 17 territories charted (unlock threshold)
   function meetsMishUnlockCriteria(territoryCount) {
-    if (!discovered[FINAL_ELENA_STOP]) return false;
+    if (!isFullyDiscovered(FINAL_ELENA_STOP)) return false;
     var mishDef = getMishGuardianDef();
     var threshold = mishDef && mishDef.unlock ? mishDef.unlock : 17;
     return territoryCount >= threshold;
@@ -1294,7 +1294,7 @@
   }
 
   function isClickable(locId) {
-    if (discovered[locId]) return false;
+    if (isFullyDiscovered(locId)) return false;
 
     var allLocs = window.LOCATIONS || [];
     var loc = allLocs.find(function(l) { return l.id === locId; });
@@ -1504,7 +1504,7 @@
       var tutorialBlocked = (!isPostTutorial() && tutorialHintLoc &&
                              nextId !== tutorialHintLoc.id);
       if (glowLoc && !tutorialBlocked) {
-        var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
+        var gpt = map.latLngToContainerPoint(getInteractionLatLng(glowLoc));
         if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
           var pulse = 0.2 + Math.sin(time * 2) * 0.1;
           var outerR = 50 + Math.sin(time * 1.5) * 10;
@@ -2334,7 +2334,13 @@
      DISCOVER
      ════════════════════════════════════════════════ */
   function discoverLocation(loc) {
-    if (!discovered[loc.id] && !isClickable(loc.id)) return;
+    if (!isFullyDiscovered(loc.id) && !isClickable(loc.id)) return;
+
+    // Resume chime search when a journey stop was left mid-search (searching phase)
+    if (discovered[loc.id] && discovered[loc.id].phase === 'searching' && isOnPath(loc.id)) {
+      if (!searchMode) enterSearchMode(loc);
+      return;
+    }
 
     // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
     var isTutorial = tutorialStep < TUTORIAL_STEPS;
