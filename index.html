@@ -486,6 +486,7 @@ input { font-family: inherit; }
   outline: none; transition: border-color 0.3s ease;
 }
 .gate-input::placeholder { color: rgba(191,178,153,0.3); letter-spacing: 4px; font-size: 11px; }
+#entry-access-pw::placeholder { color: rgba(191,178,153,0.42); }
 .gate-input:focus { border-bottom-color: var(--amber); }
 .gate-toggle {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
@@ -2884,7 +2885,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 134;
+window.INTREPID_BUILD = 135;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -2960,8 +2961,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=134"></script>
-<script src="fog.js?v=134"></script>
+<script src="archive-access.js?v=135"></script>
+<script src="fog.js?v=135"></script>
 <script>
 (function() {
   'use strict';
