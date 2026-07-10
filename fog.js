@@ -1447,6 +1447,33 @@
 
 
   // Show a brief locked message when the player clicks the final stop too early
+  // Shared Close control for center locked modals (Indras Na sealed + Vol2 gate)
+  function lockedMsgCloseHtml() {
+    return '<button type="button" class="locked-msg-close" aria-label="Close">' +
+      '\u2715 Close</button>';
+  }
+
+  function wireLockedMsgDismiss(el, autoMs) {
+    function dismiss() {
+      if (!el.parentNode) return;
+      el.style.opacity = '0';
+      setTimeout(function() { if (el.parentNode) el.remove(); }, 600);
+    }
+    // Whole card remains tappable; Close button is the primary control
+    el.addEventListener('click', dismiss);
+    var btn = el.querySelector('.locked-msg-close');
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dismiss();
+      });
+    }
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { el.style.opacity = '1'; });
+    });
+    if (autoMs) setTimeout(dismiss, autoMs);
+  }
+
   function showLockedMessage() {
     var reason = getIndrasNaLockedReason();
     if (!reason) return;
@@ -1483,19 +1510,9 @@
             '<span style="color:#c4a882;">\u2709 Letters</span> \u2014 she also left notes along Elena\u2019s road (hut, monastery, tower, Sinn, and here).' +
           '</div>'
         : '') +
-      '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
+      lockedMsgCloseHtml();
     document.body.appendChild(el);
-
-    function dismiss() {
-      el.style.opacity = '0';
-      setTimeout(function() { el.remove(); }, 600);
-    }
-    el.addEventListener('click', dismiss);
-
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { el.style.opacity = '1'; });
-    });
-    setTimeout(dismiss, 7000);
+    wireLockedMsgDismiss(el, 7000);
   }
 
   // Brief modal when Elena cannot continue past Mish until Volume 2 Kickstarter
@@ -1534,19 +1551,9 @@
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;margin-bottom:10px;">You can still chart territories and hidden sites across the Hollowlands.</div>' +
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">Spotted a bug or have feedback? Write us at ' + emailLink + '.</div>' +
       countdownLine +
-      '<div style="font-size:11px;color:#6a6055;margin-top:16px;font-style:italic;">tap to dismiss</div>';
+      lockedMsgCloseHtml();
     document.body.appendChild(el);
-
-    function dismiss() {
-      el.style.opacity = '0';
-      setTimeout(function() { el.remove(); }, 600);
-    }
-    el.addEventListener('click', dismiss);
-
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() { el.style.opacity = '1'; });
-    });
-    setTimeout(dismiss, isWelcome ? 9000 : 7000);
+    wireLockedMsgDismiss(el, isWelcome ? 9000 : 7000);
   }
 
   // Vol 1 finale reward — fires once when Indras Na is fully discovered (not on Mish reveal)

@@ -2394,6 +2394,36 @@ body.edit-mode .mk-dot-wrap > * {
   color: #fff;
   box-shadow: 0 0 14px rgba(212,168,67,0.25), 0 2px 10px rgba(0,0,0,0.5);
 }
+/* Locked center modals (Indras Na sealed / Vol2 gate) — primary dismiss */
+.locked-msg-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+  min-width: 140px;
+  min-height: 48px;
+  padding: 12px 28px;
+  font-family: Cinzel, serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #efe7d2;
+  background: rgba(212, 168, 67, 0.22);
+  border: 2px solid #d4a843;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.55), 0 0 18px rgba(212, 168, 67, 0.18);
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.locked-msg-close:hover,
+.locked-msg-close:focus-visible {
+  background: rgba(212, 168, 67, 0.4);
+  border-color: #e8c56a;
+  color: #fff;
+  box-shadow: 0 0 22px rgba(212, 168, 67, 0.35), 0 2px 14px rgba(0, 0, 0, 0.55);
+  outline: none;
+}
 .dc-divider {
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
@@ -3024,7 +3054,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 152;
+window.INTREPID_BUILD = 153;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3101,7 +3131,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=135"></script>
-<script src="fog.js?v=152"></script>
+<script src="fog.js?v=153"></script>
 <script>
 (function() {
   'use strict';

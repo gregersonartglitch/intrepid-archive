@@ -515,6 +515,13 @@ assert(fogSrc.indexOf('Indras Na Is Sealed') > -1,
 assert(fogSrc.indexOf('Sabella\\u2019s remaining marks') > -1 ||
   fogSrc.indexOf('Sabella\u2019s remaining marks') > -1,
   'locked copy references Sabella marks');
+assert(fogSrc.indexOf('locked-msg-close') > -1 &&
+  fogSrc.indexOf('function lockedMsgCloseHtml') > -1 &&
+  fogSrc.indexOf('function wireLockedMsgDismiss') > -1,
+  'locked modals share prominent Close button helper');
+assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
+  /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
+  'Indras Na + Vol2 locked modals both use Close button');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');
