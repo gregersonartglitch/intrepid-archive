@@ -1,0 +1,49 @@
+# QA Smoke Checklist — Intrepid Map
+
+Short human + agent checklist for every `fog.js` / journey / gate change. If LIVE players would complain, verify here before marking done.
+
+## Automated (run first)
+
+```bash
+node --check fog.js
+node scripts/smoke-journey-flow.js
+```
+
+Smoke script must exit **0**. It checks:
+
+- Post-Sabella `getNextPathLocation()` → `mish` (not null)
+- Journey 5/8 + Elil awakened → Vol2 gate **not** blocking, toast flag **not** set
+- Stale `revealedGods.Mish` below discovery 13 → pruned, gate stays off
+- First Mish guardian reveal → gate blocks, toast eligible
+- Elil reveal after Mish → no duplicate Vol2 toast
+- Chime `exitSearchMode()` clears `searchMode` on key found
+
+## Manual browser pass
+
+Dev server: `npx http-server . -p 8080 --cors -c-1` → `http://localhost:8080`
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | Fresh `?reset` → enter `hollowlands9` | Tutorial starts at Crossing Pool |
+| 2 | Complete tutorial through Sabella's Hut | Golden glow on **mish** (town); orange/yellow beacons appear |
+| 3 | Advance journey to ~5/8 (through Monastery of the Wind) | No "Congratulations" Vol2 modal |
+| 4 | Awaken frame gods through Elil (2pm) without Mish (6pm) | Elil ceremony only; **no** Vol2 modal |
+| 5 | Reach discovery **13** — Mish guardian (6pm) awakens | Mish medallion ceremony **then** Vol2 congratulations modal |
+| 6 | Complete a chime search (key found) | Directional arrow / lantern gone immediately; no lingering search UI |
+| 7 | After Mish guardian, journey continues | Golden glow on **tower-nine** / **sinn** — not sealed until post-sinn |
+
+## Vol2 gate invariants
+
+- Toast + journey seal tied to **Mish guardian** (`revealGod`, unlock 13) — **not** Mish map location, not discovery count alone, not Elil/other gods
+- `VOL2_JOURNEY_CAP_ID` = `sinn` — player finishes sinn before `indras-na` seals
+- Kill switch: `ENABLE_VOL2_JOURNEY_GATE = false` in `fog.js`
+
+## When to run smoke script
+
+- Any edit to `fog.js` touching journey path, `getNextPathLocation`, god reveals, chime/search, or Vol2 gate
+- Before bumping `INTREPID_BUILD` for deploy
+- After merging guardian/medallion threshold changes in `index.html` `MEDALLION_DEFS`
+
+## Agent rule
+
+After fog.js journey/gate/chime changes: run **both** commands above; browser-verify the manual table before claiming done.

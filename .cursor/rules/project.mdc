@@ -22,11 +22,32 @@ A fog-of-war interactive web map for the fantasy novel "The Hollowlands." Player
 4. **Orange beacon** = territory (region/water type). Unlocked by non-territory discovery within 500 units
 5. **Yellow beacon** = cartographerSite or journey path stop. Visible within 400 units of cleared fog
 
+### Password visibility toggle (hard rule)
+Every password or access-code input **must** include a show/hide eyeball toggle. No exceptions for new gates or refactors.
+
+- **Applies to:** archive entry (`#entry-access-pw`), reader paywall (`#reader-gate-pw` in `backer-gate.js`), cartographer gate (`#gate-pw`), and any future access gates
+- **Markup:** wrap input in an input-wrap; add a `button.gate-toggle` (or reader equivalent) with paired show/hide SVG icons and `.showing` class when password is visible
+- **Accessibility:** toggle button must use `aria-label` — `"Show access password"` / `"Hide access password"` (or field-specific wording); input keeps its own `aria-label`
+- **JS:** toggle `input.type` between `password` and `text`; update toggle `aria-label` and `.showing` on each click; refocus input
+- **Reference:** archive entry pattern in `index.html` (`#entry-access-eye` + `#entry-access-pw`)
+
+### Revertible / disableable additions
+New features must be reversible without a deploy rollback. Bug fixes do **not** need flags.
+
+- **Flag required for:** new behavior, atmosphere, audio layers, UI overlays, experimental fantasy — anything Jon might want off until approved
+- **Flag not required for:** correcting broken or dead code paths, invariant fixes, parity with an existing designed flow (e.g. a god reveal that already has a card ceremony elsewhere)
+- **How to gate:** const at top of file (`ENABLE_*`), URL param, and/or `localStorage` opt-in/opt-out — pick what fits; document the key in a comment
+- **Default:** new atmosphere / fantasy layers default **OFF** until Jon approves; respect existing ambient/SFX toggles when relevant
+- **Prefer plugins over core coupling:** isolate in `reader/plugins/<name>/` (or a fog.js hook guarded by a flag) instead of weaving optional behavior through draw/discovery paths
+- **Reference pattern:** reader magnify — `ENABLE_READER_MAGNIFY` in `spike.js`, plugin in `reader/plugins/magnify/`, user opt-in via `localStorage` key `intrepid_reader_magnify_enabled`, kill switch `intrepid_reader_magnify_disabled`
+- **Examples needing flags:** veil static / signal bleed (item 17), rank-up ceremony toast, Elena ribbon, SFX mute split — ship behind a disable flag, default off until approved
+
 ### Code Style
 - All fog.js logic stays inside the existing IIFE — do NOT restructure to modules
 - Use `var` not `let/const` — the codebase is ES5 style for broad browser compat
 - Comment every major section clearly — the file is 2700+ lines
 - After any edit to fog.js, run: `node --check fog.js` to validate syntax
+- After fog.js journey/gate/chime changes: run `node --check fog.js` **and** `node scripts/smoke-journey-flow.js`; browser-verify before marking done (see `docs/QA-SMOKE-CHECKLIST.md`)
 
 ### Coordinate System
 - `lat` = horizontal (left-right on screen). Higher lat = further right

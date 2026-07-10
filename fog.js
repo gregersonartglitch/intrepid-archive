@@ -339,6 +339,11 @@
     window.addEventListener('resize', draw);
     draw();
 
+    // Prune stale god reveals before progress/gate logic (MEDALLION_DEFS set in index.html)
+    if (window.MEDALLION_DEFS && window.MEDALLION_DEFS.length) {
+      initTetradCircles();
+    }
+
     // UI
     updateProgress();
     suppressAnimations = false; // from now on, new reveals get the full ceremony
@@ -1011,8 +1016,24 @@
     return -1;
   }
 
+  function getMedallionDiscoveryCount() {
+    return Object.keys(discovered).length;
+  }
+
+  function getMishGuardianDef() {
+    var defs = window.MEDALLION_DEFS || [];
+    for (var mi = 0; mi < defs.length; mi++) {
+      if (defs[mi].name === VOL2_GUARDIAN_TRIGGER) return defs[mi];
+    }
+    return null;
+  }
+
+  // Mish guardian only counts as awakened when reveal state matches discovery threshold.
   function isMishGuardianRevealed() {
-    return !!revealedGods[VOL2_GUARDIAN_TRIGGER];
+    if (!revealedGods[VOL2_GUARDIAN_TRIGGER]) return false;
+    var mishDef = getMishGuardianDef();
+    if (mishDef && mishDef.unlock && getMedallionDiscoveryCount() < mishDef.unlock) return false;
+    return true;
   }
 
   function getVol2CapStepIndex() {
@@ -1389,6 +1410,8 @@
   }
 
   function maybeShowVol2GateToast() {
+    if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return;
+    if (!isMishGuardianRevealed()) return;
     if (!isVol2JourneyGateBlocking()) return;
     try {
       if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
@@ -3163,6 +3186,7 @@
   }
 
   function revealGod(m) {
+    var wasAlreadyRevealed = !!revealedGods[m.name];
     revealedGods[m.name] = true;
 
     // During page load restoration, just save state silently — no ceremony
@@ -3210,8 +3234,8 @@
     if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(m.name);
     if (window.syncMedallionHotspots) window.syncMedallionHotspots();
 
-    // Vol 2 journey gate — congratulations modal when Mish guardian (6:00) awakens
-    if (!suppressAnimations && m.guardian && m.name === VOL2_GUARDIAN_TRIGGER) {
+    // Vol 2 journey gate — congratulations modal only on first Mish guardian ceremony
+    if (!suppressAnimations && !wasAlreadyRevealed && m.guardian && m.name === VOL2_GUARDIAN_TRIGGER) {
       maybeShowVol2GateToast();
     }
 
@@ -3349,21 +3373,27 @@
   }
 
   function initTetradCircles() {
-    // Restore previously revealed gods — but validate against current discovery count
-    var currentCount = Object.keys(discovered).length;
+    // Restore previously revealed gods — prune entries below current discovery threshold
+    var currentCount = getMedallionDiscoveryCount();
     var defs = window.MEDALLION_DEFS || [];
+    var cleaned = {};
     try {
       var saved = migrateRevealedGods(JSON.parse(localStorage.getItem('revealedGods') || '{}'));
       Object.keys(saved).forEach(function(name) {
         var canon = resolveMedallionName(name);
-        // Find the medallion def to check threshold
         var def = defs.find(function(m) { return m.name === canon; });
         if (def && def.unlock && currentCount >= def.unlock) {
-          revealedGods[canon] = true;
-          if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(canon);
+          cleaned[canon] = true;
         }
       });
+      localStorage.setItem('revealedGods', JSON.stringify(cleaned));
     } catch(e) {}
+    // Replace in-memory set so stale early-unlock entries cannot linger
+    Object.keys(revealedGods).forEach(function(name) { delete revealedGods[name]; });
+    Object.keys(cleaned).forEach(function(name) {
+      revealedGods[name] = true;
+      if (window.addPermanentMedallionGlow) window.addPermanentMedallionGlow(name);
+    });
     // Silent catch-up for gods that meet threshold but were missed on init
     var prevSuppress = suppressAnimations;
     suppressAnimations = true;
@@ -3382,7 +3412,8 @@
     POST_TUTORIAL_HINT_LS,
     'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales',
     'intrepid_cartographer_unlocked', 'intrepid_atlas_label',
-    'intrepid_atlas_auth', 'intrepid_atlas_tier'
+    'intrepid_atlas_auth', 'intrepid_atlas_tier',
+    VOL2_GATE_TOAST_LS, VOL2_GATE_LS_UNLOCK, VOL2_GATE_LS_LOCK
   ];
 
   function clearProgressStorage() {
