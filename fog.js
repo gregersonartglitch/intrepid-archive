@@ -341,13 +341,14 @@
     addResetButton();
     addGuideButton();
 
-    // Tutorial
-    tutorialStep = Object.keys(discovered).length;
+    // Tutorial — never derive step from total discovery count (early sites inflate it).
+    resolveTutorialStepOnInit();
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
     }
 
     if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
+      maybeFlyToNextJourneyStep(2000);
       setTimeout(schedulePostTutorialHint, 2000);
     }
 
@@ -648,7 +649,50 @@
   // Step that waits for card close (doesn't advance on discover)
   var TUTORIAL_CARD_STEP = 1;
 
+  // Tutorial resume on reload — discovery count is wrong when territories/sites were
+  // found early (e.g. Gates/Ashal during Sabella chime search).
+  function resolveTutorialStepOnInit() {
+    if (isFullyDiscovered('sabellas-hut')) {
+      tutorialStep = TUTORIAL_STEPS;
+      return;
+    }
+    if (discovered['sabellas-hut']) {
+      // Pinhole open, key not found — resume the find-key step.
+      tutorialStep = 4;
+      return;
+    }
+    var clusterIds = ['crossing-pool', 'dawn-spear', 'sabellas-hut'];
+    var step = 0;
+    for (var ci = 0; ci < clusterIds.length; ci++) {
+      if (!isFullyDiscovered(clusterIds[ci])) break;
+      step = ci + 1;
+    }
+    tutorialStep = Math.min(step, TUTORIAL_STEPS - 1);
+  }
+
+  function isPostTutorial() {
+    return !!discovered['sabellas-hut'];
+  }
+
+  // Pan to the next journey glow when it would be off-screen (Mish is ~2k units from Sabella's cluster).
+  function maybeFlyToNextJourneyStep(delayMs) {
+    if (!map) return;
+    var nextId = getNextPathLocation();
+    if (!nextId) return;
+    var nextLoc = (window.LOCATIONS || []).find(function(l) { return l.id === nextId; });
+    if (!nextLoc) return;
+    var center = map.getCenter();
+    var dx = center.lat - nextLoc.lat;
+    var dy = center.lng - nextLoc.lng;
+    if (Math.sqrt(dx * dx + dy * dy) < 600) return;
+    setTimeout(function() {
+      if (!map) return;
+      map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 2, { duration: 1.8 });
+    }, delayMs || 1200);
+  }
+
   function startTutorial() {
+    if (isFullyDiscovered('sabellas-hut')) return;
     var nextId = getNextPathLocation();
     if (!nextId) return;
     var locs = window.LOCATIONS || [];
@@ -1036,9 +1080,9 @@
         if (stepId === FINAL_ELENA_STOP && !explorationComplete()) {
           return null;
         }
-        // Vol 2 gate — no golden path past Mish until unlock date / manual flip
+        // Vol 2 gate — skip sealed post-Mish stops; null only when cap is done
         if (isVol2LockedJourneyStep(stepId)) {
-          return null;
+          continue;
         }
         return stepId;
       }
@@ -1197,8 +1241,7 @@
     // During tutorial (before Sabella's Hut is found): ONLY the current guided
     // journey step is clickable. The instant sabellas-hut is discovered, the
     // full proximity system unlocks — no waiting for toast delays.
-    var sabellasDone = !!discovered['sabellas-hut'];
-    if (!sabellasDone && tutorialHintLoc) {
+    if (!isPostTutorial() && tutorialHintLoc) {
       return locId === tutorialHintLoc.id;
     }
 
@@ -1429,7 +1472,7 @@
       var glowLoc = locs.find(function(l) { return l.id === nextId; });
       // Before Sabella's Hut is found: only draw the current hint glow.
       // After it's found: always draw for nextId (even mid-tutorial auto-toasts).
-      var tutorialBlocked = (!discovered['sabellas-hut'] && tutorialHintLoc &&
+      var tutorialBlocked = (!isPostTutorial() && tutorialHintLoc &&
                              nextId !== tutorialHintLoc.id);
       if (glowLoc && !tutorialBlocked) {
         var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
@@ -1526,7 +1569,7 @@
 
     locs.forEach(function(loc) {
       if (discovered[loc.id]) return;
-      if (!discovered['sabellas-hut']) return; // no beacons until tutorial cluster done
+      if (!isPostTutorial()) return; // no beacons until Sabella's Hut pinhole opens
       if (isVol2LockedJourneyStep(loc.id)) return; // sealed until Volume 2
 
       // Story locations: suppress if out-of-sequence AND far from cleared fog.
@@ -2576,6 +2619,11 @@
 
     if (loc.id === VOL2_JOURNEY_CAP_ID) {
       maybeShowVol2GateToast();
+    }
+
+    // Tutorial end — Mish is far from Sabella's cluster; pan so the golden glow is visible.
+    if (loc.id === 'sabellas-hut' && isFullyDiscovered('sabellas-hut')) {
+      maybeFlyToNextJourneyStep(2400);
     }
   } // end completeDiscovery
 
