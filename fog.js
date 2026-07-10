@@ -345,6 +345,8 @@
     resolveTutorialStepOnInit();
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
+    } else {
+      maybeFlyToPostTutorialBeacon();
     }
 
     if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
@@ -1411,6 +1413,220 @@
     return { w: cssW, h: cssH };
   }
 
+  // Golden / orange / amber beacons — drawn AFTER fog clears so destination-out
+  // in section 4 does not erase glow pixels (Chrome composite bleed).
+  function drawBeaconGlows(ctx, w, h, time) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+
+    var nextId = getNextPathLocation();
+    var locs = window.LOCATIONS || [];
+
+    // ── Golden glow on next journey step ──
+    if (nextId) {
+      var glowLoc = locs.find(function(l) { return l.id === nextId; });
+      var tutorialBlocked = (!isPostTutorial() && tutorialHintLoc &&
+                             nextId !== tutorialHintLoc.id);
+      if (glowLoc && !tutorialBlocked) {
+        var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
+        if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
+          var pulse = 0.2 + Math.sin(time * 2) * 0.1;
+          var outerR = 50 + Math.sin(time * 1.5) * 10;
+
+          ctx.globalCompositeOperation = 'destination-out';
+          var holeGrad = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
+          holeGrad.addColorStop(0,   'rgba(0,0,0,0.35)');
+          holeGrad.addColorStop(0.4, 'rgba(0,0,0,0.15)');
+          holeGrad.addColorStop(0.8, 'rgba(0,0,0,0.03)');
+          holeGrad.addColorStop(1,   'rgba(0,0,0,0)');
+          ctx.fillStyle = holeGrad;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.globalCompositeOperation = 'source-over';
+          var glow = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
+          glow.addColorStop(0,    'rgba(255, 240, 180, ' + (pulse + 0.25) + ')');
+          glow.addColorStop(0.3,  'rgba(212, 168, 67, '  + (pulse + 0.1)  + ')');
+          glow.addColorStop(0.7,  'rgba(198, 141, 85, '  + (pulse * 0.5)  + ')');
+          glow.addColorStop(1,    'rgba(198, 141, 85, 0)');
+          ctx.fillStyle = glow;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
+          ctx.fill();
+
+          var coreR = 8 + Math.sin(time * 3) * 3;
+          var core = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, coreR);
+          core.addColorStop(0, 'rgba(255, 252, 220, 0.85)');
+          core.addColorStop(1, 'rgba(212, 168, 67, 0)');
+          ctx.fillStyle = core;
+          ctx.beginPath();
+          ctx.arc(gpt.x, gpt.y, coreR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (isVol2JourneyGateBlocking()) {
+      var sealedId = getVol2FirstSealedStepId();
+      var sealedLoc = sealedId ? locs.find(function(l) { return l.id === sealedId; }) : null;
+      if (sealedLoc) {
+        var spt = map.latLngToContainerPoint([sealedLoc.lat, sealedLoc.lng]);
+        if (spt.x > -100 && spt.x < w + 100 && spt.y > -100 && spt.y < h + 100) {
+          var sealPulse = 0.12 + Math.sin(time * 1.2) * 0.05;
+          var sealR = 38 + Math.sin(time * 0.9) * 6;
+          ctx.globalCompositeOperation = 'source-over';
+          var sealGrad = ctx.createRadialGradient(spt.x, spt.y, 0, spt.x, spt.y, sealR);
+          sealGrad.addColorStop(0, 'rgba(140, 170, 210, ' + (sealPulse + 0.08) + ')');
+          sealGrad.addColorStop(0.5, 'rgba(90, 110, 150, ' + sealPulse + ')');
+          sealGrad.addColorStop(1, 'rgba(70, 85, 120, 0)');
+          ctx.fillStyle = sealGrad;
+          ctx.beginPath();
+          ctx.arc(spt.x, spt.y, sealR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(180, 200, 230, ' + (0.35 + sealPulse) + ')';
+          ctx.font = 'bold 14px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\u2726', spt.x, spt.y);
+        }
+      }
+    }
+
+    // ── Orange territory + amber site beacons ──
+    locs.forEach(function(loc) {
+      if (discovered[loc.id]) return;
+      if (!isPostTutorial()) return;
+      if (isVol2LockedJourneyStep(loc.id)) return;
+
+      if (loc.type === 'story' && loc.id !== nextId) {
+        var storyNearDisc = false;
+        Object.keys(discovered).forEach(function(dId) {
+          if (storyNearDisc) return;
+          var dLoc = locs.find(function(l) { return l.id === dId; });
+          if (!dLoc) return;
+          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+          if (Math.sqrt(dx * dx + dy * dy) < 400) storyNearDisc = true;
+        });
+        if (!storyNearDisc) return;
+      }
+
+      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+      if (pt.x < -120 || pt.x > w + 120 || pt.y < -120 || pt.y > h + 120) return;
+
+      var isRegion = isTerritory(loc);
+
+      if (isRegion) {
+        if (!territoryHasGlow(loc)) return;
+
+        var shimmerAlpha = 0.30 + Math.sin(time * 0.9 + loc.lat * 0.01) * 0.08;
+        var shimmerR = 88 + Math.sin(time * 0.4 + loc.lng * 0.008) * 14;
+
+        ctx.globalCompositeOperation = 'destination-out';
+        var territoryHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR * 1.05);
+        territoryHole.addColorStop(0,   'rgba(0,0,0,0.30)');
+        territoryHole.addColorStop(0.45,'rgba(0,0,0,0.14)');
+        territoryHole.addColorStop(0.8, 'rgba(0,0,0,0.04)');
+        territoryHole.addColorStop(1,   'rgba(0,0,0,0)');
+        ctx.fillStyle = territoryHole;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, shimmerR * 1.05, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalCompositeOperation = 'source-over';
+        var sg = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR);
+        sg.addColorStop(0,   'rgba(255, 185, 70, ' + Math.min(0.62, shimmerAlpha * 1.55) + ')');
+        sg.addColorStop(0.4, 'rgba(220, 120, 30, ' + shimmerAlpha + ')');
+        sg.addColorStop(0.8, 'rgba(180, 90,  20, ' + shimmerAlpha * 0.45 + ')');
+        sg.addColorStop(1,   'rgba(160, 70,  10, 0)');
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, shimmerR, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255, 220, 120, 0.55)';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 5 + Math.sin(time * 2.2) * 2, 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      var onPath = isOnPath(loc.id);
+      if (!onPath) {
+        var nearDiscovered = false;
+        Object.keys(discovered).forEach(function(dId) {
+          if (nearDiscovered) return;
+          var dLoc = locs.find(function(l) { return l.id === dId; });
+          if (!dLoc) return;
+          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
+          if (Math.sqrt(dx * dx + dy * dy) < 400) nearDiscovered = true;
+        });
+
+        if (!nearDiscovered) {
+          if (!nearestTerritoryIsDiscovered(loc)) return;
+        }
+      }
+
+      if (!onPath && !loc.cartographerSite && !clusterPeek[loc.id]) return;
+
+      if (loc.cartographerSite) peekMarker(loc.id);
+
+      var baseAlpha = 0.36;
+      var pulseAmp  = 0.16;
+      var beaconR   = 30;
+
+      var p = baseAlpha + Math.sin(time * 1.8 + loc.lat * 0.02) * pulseAmp;
+      var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 6;
+
+      ctx.globalCompositeOperation = 'destination-out';
+      var siteHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow * 1.25);
+      siteHole.addColorStop(0,   'rgba(0,0,0,0.22)');
+      siteHole.addColorStop(0.55,'rgba(0,0,0,0.08)');
+      siteHole.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = siteHole;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, rGlow * 1.25, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalCompositeOperation = 'source-over';
+      var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
+      g.addColorStop(0,    'rgba(255, 255, 180, ' + Math.min(1, p * 1.0) + ')');
+      g.addColorStop(0.15, 'rgba(255, 230, 80, '  + Math.min(1, p + 0.15) + ')');
+      g.addColorStop(0.4,  'rgba(240, 200, 50, '  + p + ')');
+      g.addColorStop(1,    'rgba(220, 180, 40, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, rGlow, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+  }
+
+  function isGlowTargetOnScreen(loc, margin) {
+    if (!map || !loc) return false;
+    var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+    var rect = map.getContainer().getBoundingClientRect();
+    margin = margin || 90;
+    return pt.x >= margin && pt.x <= rect.width - margin &&
+           pt.y >= margin && pt.y <= rect.height - margin;
+  }
+
+  function maybeFlyToPostTutorialBeacon() {
+    if (!map || !isFullyDiscovered('sabellas-hut')) return;
+    var flyId = getNextPathLocation();
+    if (!flyId) return;
+    var flyLoc = (window.LOCATIONS || []).find(function(l) { return l.id === flyId; });
+    if (!flyLoc || isGlowTargetOnScreen(flyLoc)) return;
+    try {
+      if (sessionStorage.getItem('intrepid_post_tut_flew') === '1') return;
+      sessionStorage.setItem('intrepid_post_tut_flew', '1');
+    } catch (e) {}
+    setTimeout(function() {
+      if (!map) return;
+      map.flyTo([flyLoc.lat, flyLoc.lng], map.getMinZoom() + 2, { duration: 1.6 });
+    }, 1200);
+  }
+
   /* ════════════════════════════════════════════════
      DRAW FOG
      ════════════════════════════════════════════════ */
@@ -1464,226 +1680,7 @@
       ctx.restore();
     }
 
-    // ── 3. Golden glow on next clickable location ──
-    var nextId = getNextPathLocation();
     var locs = window.LOCATIONS || [];
-
-    if (nextId) {
-      var glowLoc = locs.find(function(l) { return l.id === nextId; });
-      // Before Sabella's Hut is found: only draw the current hint glow.
-      // After it's found: always draw for nextId (even mid-tutorial auto-toasts).
-      var tutorialBlocked = (!isPostTutorial() && tutorialHintLoc &&
-                             nextId !== tutorialHintLoc.id);
-      if (glowLoc && !tutorialBlocked) {
-        var gpt = map.latLngToContainerPoint([glowLoc.lat, glowLoc.lng]);
-        if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
-          var pulse = 0.2 + Math.sin(time * 2) * 0.1;
-          var outerR = 50 + Math.sin(time * 1.5) * 10;
-
-          // Pass 1: poke a subtle hole in the fog so the map hints through
-          ctx.globalCompositeOperation = 'destination-out';
-          var holeGrad = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
-          holeGrad.addColorStop(0,   'rgba(0,0,0,0.35)');
-          holeGrad.addColorStop(0.4, 'rgba(0,0,0,0.15)');
-          holeGrad.addColorStop(0.8, 'rgba(0,0,0,0.03)');
-          holeGrad.addColorStop(1,   'rgba(0,0,0,0)');
-          ctx.fillStyle = holeGrad;
-          ctx.beginPath();
-          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Pass 2: subtle golden tint
-          ctx.globalCompositeOperation = 'source-over';
-          var glow = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, outerR);
-          glow.addColorStop(0,    'rgba(255, 240, 180, ' + (pulse + 0.25) + ')');
-          glow.addColorStop(0.3,  'rgba(212, 168, 67, '  + (pulse + 0.1)  + ')');
-          glow.addColorStop(0.7,  'rgba(198, 141, 85, '  + (pulse * 0.5)  + ')');
-          glow.addColorStop(1,    'rgba(198, 141, 85, 0)');
-          ctx.fillStyle = glow;
-          ctx.beginPath();
-          ctx.arc(gpt.x, gpt.y, outerR, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Small pulsing core
-          var coreR = 8 + Math.sin(time * 3) * 3;
-          var core = ctx.createRadialGradient(gpt.x, gpt.y, 0, gpt.x, gpt.y, coreR);
-          core.addColorStop(0, 'rgba(255, 252, 220, 0.85)');
-          core.addColorStop(1, 'rgba(212, 168, 67, 0)');
-          ctx.fillStyle = core;
-          ctx.beginPath();
-          ctx.arc(gpt.x, gpt.y, coreR, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    } else if (isVol2JourneyGateBlocking()) {
-      // Dim sealed beacon on the first post-Mish stop — visible but not golden
-      var sealedId = getVol2FirstSealedStepId();
-      var sealedLoc = sealedId ? locs.find(function(l) { return l.id === sealedId; }) : null;
-      if (sealedLoc) {
-        var spt = map.latLngToContainerPoint([sealedLoc.lat, sealedLoc.lng]);
-        if (spt.x > -100 && spt.x < w + 100 && spt.y > -100 && spt.y < h + 100) {
-          var sealPulse = 0.12 + Math.sin(time * 1.2) * 0.05;
-          var sealR = 38 + Math.sin(time * 0.9) * 6;
-          ctx.globalCompositeOperation = 'source-over';
-          var sealGrad = ctx.createRadialGradient(spt.x, spt.y, 0, spt.x, spt.y, sealR);
-          sealGrad.addColorStop(0, 'rgba(140, 170, 210, ' + (sealPulse + 0.08) + ')');
-          sealGrad.addColorStop(0.5, 'rgba(90, 110, 150, ' + sealPulse + ')');
-          sealGrad.addColorStop(1, 'rgba(70, 85, 120, 0)');
-          ctx.fillStyle = sealGrad;
-          ctx.beginPath();
-          ctx.arc(spt.x, spt.y, sealR, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = 'rgba(180, 200, 230, ' + (0.35 + sealPulse) + ')';
-          ctx.font = 'bold 14px Cinzel, serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('\u2726', spt.x, spt.y);
-        }
-      }
-    }
-
-    // ── 3b. Pulsing beacons for undiscovered locations ──
-    // Visual language:
-    //   TERRITORIES → wide orange shimmer (reads as "fog thinning", no chime implied)
-    //   CITIES/TOWNS/SACRED → bright amber star, only after nearest territory is discovered
-    //   JOURNEY PATH stops → amber star freely (story beats, section 3 handles active step)
-
-    // Pre-compute nearest-discovered-distance for ALL undiscovered regions so
-    // the rank sort is accurate (can't sort inside the loop that computes the values).
-    var undiscRegionsSorted = locs.filter(function(l) {
-      return (l.type === 'region' || l.type === 'water') && !discovered[l.id];
-    }).map(function(l) {
-      var minD = Infinity;
-      Object.keys(discovered).forEach(function(dId) {
-        var dLoc = locs.find(function(ll) { return ll.id === dId; });
-        if (!dLoc) return;
-        var dx = l.lat - dLoc.lat, dy = l.lng - dLoc.lng;
-        var d = Math.sqrt(dx*dx + dy*dy);
-        if (d < minD) minD = d;
-      });
-      l._nearestDiscDist = minD;
-      return l;
-    }).sort(function(a, b) {
-      return (a._nearestDiscDist || 99999) - (b._nearestDiscDist || 99999);
-    });
-
-    locs.forEach(function(loc) {
-      if (discovered[loc.id]) return;
-      if (!isPostTutorial()) return; // no beacons until Sabella's Hut pinhole opens
-      if (isVol2LockedJourneyStep(loc.id)) return; // sealed until Volume 2
-
-      // Story locations: suppress if out-of-sequence AND far from cleared fog.
-      if (loc.type === 'story' && loc.id !== nextId) {
-        var storyNearDisc = false;
-        Object.keys(discovered).forEach(function(dId) {
-          if (storyNearDisc) return;
-          var dLoc = locs.find(function(l) { return l.id === dId; });
-          if (!dLoc) return;
-          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
-          if (Math.sqrt(dx * dx + dy * dy) < 400) storyNearDisc = true;
-        });
-        if (!storyNearDisc) return;
-      }
-
-      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
-      if (pt.x < -120 || pt.x > w + 120 || pt.y < -120 || pt.y > h + 120) return;
-
-      var isRegion = isTerritory(loc);
-
-      if (isRegion) {
-        // ── TERRITORY GLOW (ORANGE) ──
-        // Uses the same predicate as isClickable(): normal proximity first,
-        // nearest-undiscovered fallback only when proximity would dead-end.
-        if (!territoryHasGlow(loc)) return;
-
-        var shimmerAlpha = 0.30 + Math.sin(time * 0.9 + loc.lat * 0.01) * 0.08;
-        var shimmerR = 88 + Math.sin(time * 0.4 + loc.lng * 0.008) * 14;
-
-        // Thin the fog below reachable territory beacons so players can scan
-        // the map instead of hunting for barely-visible pixels.
-        ctx.globalCompositeOperation = 'destination-out';
-        var territoryHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR * 1.05);
-        territoryHole.addColorStop(0,   'rgba(0,0,0,0.30)');
-        territoryHole.addColorStop(0.45,'rgba(0,0,0,0.14)');
-        territoryHole.addColorStop(0.8, 'rgba(0,0,0,0.04)');
-        territoryHole.addColorStop(1,   'rgba(0,0,0,0)');
-        ctx.fillStyle = territoryHole;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, shimmerR * 1.05, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.globalCompositeOperation = 'source-over';
-        var sg = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, shimmerR);
-        sg.addColorStop(0,   'rgba(255, 185, 70, ' + Math.min(0.62, shimmerAlpha * 1.55) + ')');
-        sg.addColorStop(0.4, 'rgba(220, 120, 30, ' + shimmerAlpha + ')');
-        sg.addColorStop(0.8, 'rgba(180, 90,  20, ' + shimmerAlpha * 0.45 + ')');
-        sg.addColorStop(1,   'rgba(160, 70,  10, 0)');
-        ctx.fillStyle = sg;
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, shimmerR, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255, 220, 120, 0.55)';
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, 5 + Math.sin(time * 2.2) * 2, 0, Math.PI * 2);
-        ctx.fill();
-        return;
-      }
-
-      // ── LOCATION GLOW (YELLOW) ──
-      // Non-region: check proximity — only glow if within cleared fog range
-      var onPath = isOnPath(loc.id);
-      if (!onPath) {
-        var nearDiscovered = false;
-        Object.keys(discovered).forEach(function(dId) {
-          if (nearDiscovered) return;
-          var dLoc = locs.find(function(l) { return l.id === dId; });
-          if (!dLoc) return;
-          var dx = loc.lat - dLoc.lat, dy = loc.lng - dLoc.lng;
-          if (Math.sqrt(dx * dx + dy * dy) < 400) nearDiscovered = true;
-        });
-
-        if (!nearDiscovered) {
-          // Far from cleared fog — require territory to be discovered first
-          if (!nearestTerritoryIsDiscovered(loc)) return;
-        }
-      }
-
-      // Journey path stops, cartographer sites, or cluster companions
-      if (!onPath && !loc.cartographerSite && !clusterPeek[loc.id]) return;
-
-      // Cartographer sites: show label when amber beacon glows (sync with isClickable)
-      if (loc.cartographerSite) peekMarker(loc.id);
-
-      // Yellow star beacon
-      var baseAlpha = 0.36;
-      var pulseAmp  = 0.16;
-      var beaconR   = 30;
-
-      var p = baseAlpha + Math.sin(time * 1.8 + loc.lat * 0.02) * pulseAmp;
-      var rGlow = beaconR + Math.sin(time * 0.8 + loc.lng * 0.01) * 6;
-
-      ctx.globalCompositeOperation = 'destination-out';
-      var siteHole = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow * 1.25);
-      siteHole.addColorStop(0,   'rgba(0,0,0,0.22)');
-      siteHole.addColorStop(0.55,'rgba(0,0,0,0.08)');
-      siteHole.addColorStop(1,   'rgba(0,0,0,0)');
-      ctx.fillStyle = siteHole;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, rGlow * 1.25, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.globalCompositeOperation = 'source-over';
-      var g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rGlow);
-      g.addColorStop(0,    'rgba(255, 255, 180, ' + Math.min(1, p * 1.0) + ')');
-      g.addColorStop(0.15, 'rgba(255, 230, 80, '  + Math.min(1, p + 0.15) + ')');
-      g.addColorStop(0.4,  'rgba(240, 200, 50, '  + p + ')');
-      g.addColorStop(1,    'rgba(220, 180, 40, 0)');
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, rGlow, 0, Math.PI * 2);
-      ctx.fill();
-    });
 
     // ── 4. Clear holes for discovered locations ──
     ctx.globalCompositeOperation = 'destination-out';
@@ -2095,6 +2092,9 @@
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
+
+    // ── 3. Discovery beacons (on top of fog clears) ──
+    drawBeaconGlows(ctx, w, h, time);
 
     // ── 5. Tutorial hint (drawn on canvas — only for canvas-type steps) ──
     if (tutorialHintLoc && tutorialStep < TUTORIAL_STEPS) {
