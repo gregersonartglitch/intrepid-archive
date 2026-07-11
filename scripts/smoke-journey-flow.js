@@ -301,13 +301,11 @@ function isJourneyPathClickable(locId, discovered, journeyPath, revealedGods) {
   return false;
 }
 
-// Mirror finale reward gate: no toast while letter open / unseen Indras letter owed
+// Mirror finale reward gate: fires on Indras Na complete (no letter wait — letters end at Sinn)
 function maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls, opts) {
   opts = opts || {};
   if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
   if (!isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return false;
-  if (opts.letterPopupOpen || opts.sabellaMessagePending) return false;
-  if (isSabellaMessagesEnabled() && hasUnseenSabellaMessage(FINAL_ELENA_STOP)) return false;
   if (ls[VOL2_GATE_TOAST_LS] === '1') return false;
   ls[VOL2_GATE_TOAST_LS] = '1';
   return true;
@@ -317,13 +315,7 @@ function simulateCompleteDiscovery(locId, discovered, journeyPath, revealedGods,
   discovered[locId] = { at: Date.now(), phase: 'complete' };
   var fired = false;
   if (locId === FINAL_ELENA_STOP) {
-    // Letter-first: if Indras letter unseen / open, toast waits (attach dismiss → toast)
-    if (isSabellaMessagesEnabled() &&
-        (hasUnseenSabellaMessage(FINAL_ELENA_STOP) || (opts && (opts.letterPopupOpen || opts.sabellaMessagePending)))) {
-      fired = false;
-    } else {
-      fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls, opts);
-    }
+    fired = maybeShowVol2GateToast(revealedGods, discovered, journeyPath, ls, opts);
   }
   return { toastFired: fired };
 }
@@ -540,7 +532,6 @@ assert(!isVol2JourneyGateBlocking(staleGods, staleDisc, JOURNEY_PATH), 'Vol2 gat
 
 console.log('\n[4] Indras Na completion fires Vol1 reward toast (not Mish reveal)');
 collectSabellaPrereqLetters();
-SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP] = Date.now(); // letter already read
 var finaleReady = makeJourneyCompleteThrough('sinn');
 finaleReady['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(finaleReady);
@@ -549,28 +540,24 @@ var finaleComplete = simulateCompleteDiscovery(FINAL_ELENA_STOP, finaleReady, JO
 assert(finaleComplete.toastFired, 'Vol1 reward toast fires on Indras Na completion');
 assert(lsFinale[VOL2_GATE_TOAST_LS] === '1', 'reward toast LS flag set on Indras Na complete');
 
-console.log('\n[4c] Finale letter pacing — congrats waits for letter Close');
+console.log('\n[4c] Indras Na has no letter — congrats fires on discovery (letters end at Sinn)');
 clearSabellaLetters();
 collectSabellaPrereqLetters();
-delete SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP];
 var paceReady = makeJourneyCompleteThrough('sinn');
 paceReady['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(paceReady);
 var lsPace = {};
-var paceHot = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsPace, {
-  letterPopupOpen: true
-});
-assert(!paceHot.toastFired, 'congrats does not fire while Indras letter still open');
-assert(!lsPace[VOL2_GATE_TOAST_LS], 'reward LS not set while letter open');
-var lsUnseen = {};
-var paceUnseen = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsUnseen, {});
-assert(!paceUnseen.toastFired, 'congrats does not fire while Indras letter still unseen');
-assert(!lsUnseen[VOL2_GATE_TOAST_LS], 'reward LS not set while letter unseen');
-SABELLA_MESSAGES_SEEN[FINAL_ELENA_STOP] = Date.now();
-var lsAfter = {};
-var paceAfter = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsAfter, {});
-assert(paceAfter.toastFired, 'congrats fires after Indras letter dismissed / already seen');
-assert(lsAfter[VOL2_GATE_TOAST_LS] === '1', 'reward LS set after letter resolved');
+var paceDone = simulateCompleteDiscovery(FINAL_ELENA_STOP, Object.assign({}, paceReady), JOURNEY_PATH, {}, lsPace, {});
+assert(paceDone.toastFired, 'congrats fires on Indras Na complete without waiting for a letter');
+assert(lsPace[VOL2_GATE_TOAST_LS] === '1', 'reward LS set on Indras complete (no Indras letter)');
+var fogLetters = fs.readFileSync(path.join(ROOT, 'fog.js'), 'utf8');
+var msgBlock = fogLetters.match(/var SABELLA_MESSAGES = \{[\s\S]*?\n  \};/);
+assert(msgBlock && msgBlock[0].indexOf("'indras-na'") === -1,
+  'SABELLA_MESSAGES has no indras-na letter entry');
+assert(msgBlock && msgBlock[0].indexOf("'sinn'") > -1,
+  'SABELLA_MESSAGES includes sinn as last road letter');
+assert(/western gate waits/.test(fogLetters),
+  'Sinn letter carries farewell beat toward western gate');
 
 console.log('\n[4b] Mish guardian reveal alone does not fire reward toast');
 var mishOnlyGods = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true };
@@ -646,13 +633,16 @@ assert(fogSrc.indexOf('locked-msg-close') > -1 &&
 assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
   /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
   'Indras Na + Vol2 locked modals both use Close button');
-assert(/requireManualDismiss[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc) ||
-  /locId === FINAL_ELENA_STOP[\s\S]*?lockedMsgCloseHtml/.test(fogSrc),
-  'Indras Na letter uses manual Close (no auto-dismiss path)');
-assert(/maybeShowVol2GateToast[\s\S]*?sabella-message-popup[\s\S]*?hasUnseenSabellaMessage\(FINAL_ELENA_STOP\)/.test(fogSrc),
-  'congrats waits for Indras letter dismiss / already-seen');
-assert(/scheduleSabellaMessage[\s\S]*?sabella-message-popup[\s\S]*?sabellaMessageOnDismiss/.test(fogSrc),
-  'scheduleSabellaMessage attaches congrats callback while letter open');
+assert(!/requireManualDismiss[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc),
+  'no Indras Na letter manual-Close path (letters end at Sinn)');
+assert(!/maybeShowVol2GateToast[\s\S]*?hasUnseenSabellaMessage\(FINAL_ELENA_STOP\)/.test(fogSrc),
+  'congrats does not wait for an Indras letter');
+assert(/if \(loc\.id === FINAL_ELENA_STOP\) \{\s*maybeShowVol2GateToast\(\);/.test(fogSrc),
+  'Indras complete calls maybeShowVol2GateToast directly');
+assert(/SABELLA_LETTER_PREREQ_IDS = \['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'\]/.test(fogSrc),
+  'exactly 4 road-letter prereqs ending at sinn');
+assert(/sabellaLettersTotal[\s\S]*?Object\.keys\(SABELLA_MESSAGES\)\.length/.test(fogSrc),
+  'Secrets total derived from SABELLA_MESSAGES keys (4)');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');

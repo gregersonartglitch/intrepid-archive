@@ -74,7 +74,8 @@
   var SABELLA_MESSAGES_SEEN_LS = 'intrepid_sabella_messages_seen';
   var sabellaMessagePending = false;
   var sabellaMessageOnDismiss = null;
-  // Object key order follows Elena's journey path (hut → monastery → tower → sinn → indras-na).
+  // Object key order follows Elena's journey path (hut → monastery → tower → sinn).
+  // Last letter is at Sinn (road before Indras Na) — no parchment on the finale stop.
   var SABELLA_MESSAGES = {
     'sabellas-hut': {
       title: 'A Letter by the Hearth',
@@ -97,17 +98,11 @@
     'sinn': {
       title: 'Silver Ink at Sinn',
       greeting: 'My Elena\u2026',
-      body: 'The Moon Court judges with silver ink and spiral law. If they ask who sent you, say your grandmother still charts by dusk. I left a mark for you in the silver dusk \u2014 when the lantern grows warm, trust the chime.',
+      body: 'The Moon Court judges with silver ink and spiral law. If they ask who sent you, say your grandmother still charts by dusk. I left a mark for you in the silver dusk \u2014 when the lantern grows warm, trust the chime. Beyond this court the western gate waits; you have come farther than I dared hope.',
       signoff: 'Sabella'
-    },
-    'indras-na': {
-      title: 'At the Western Gate',
-      greeting: 'My Elena\u2026',
-      body: 'You have come farther than I dared hope when I first folded this map. Indras Na is not an ending \u2014 only the place where this volume sets down its lantern. Rest. When the next road opens, look for my marks again. Until then: breathe. You did well.',
-      signoff: 'Grandma Bella'
     }
   };
-  // First 4 letters must be found before Indras Na unlocks (5th letter is AT Indras Na).
+  // All 4 road letters must be found before Indras Na unlocks (last letter is at Sinn).
   // Order matches journey path: hut → monastery → tower → sinn (monastery before tower).
   // Only enforced when isSabellaMessagesEnabled(); flag off → legacy journey/explore gates only.
   var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'];
@@ -1202,7 +1197,7 @@
 
   // Why Indras Na is sealed (null when unlockable or already discovered).
   // Real gates: prior Elena path through Sinn, all territories + cartographer sites,
-  // then (when Sabella messages enabled) the first 4 road letters. 5th letter is at Indras Na.
+  // then (when Sabella messages enabled) all 4 road letters (last at Sinn).
   // "Sabella's marks" = cartographer sites (narrative framing for charting work).
   function getIndrasNaLockedReason() {
     if (isFullyDiscovered(FINAL_ELENA_STOP)) return null;
@@ -1574,19 +1569,10 @@
   }
 
   // Vol 1 finale reward — fires once when Indras Na is fully discovered (not on Mish reveal).
-  // Never stacks under / over the Indras Sabella letter: wait until letter dismissed (or already seen).
+  // No Sabella letter at Indras Na; congrats runs on discovery complete (letters end at Sinn).
   function maybeShowVol2GateToast() {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return;
     if (!isFullyDiscovered(FINAL_ELENA_STOP)) return;
-    // Letter still on screen (chime-hot) or pending — do not set LS / steal the moment
-    if (document.getElementById('sabella-message-popup') || sabellaMessagePending) return;
-    if (isSabellaMessagesEnabled() && hasUnseenSabellaMessage(FINAL_ELENA_STOP)) {
-      var finaleLoc = (window.LOCATIONS || []).find(function(l) { return l.id === FINAL_ELENA_STOP; });
-      if (finaleLoc) {
-        scheduleSabellaMessage(finaleLoc, function() { maybeShowVol2GateToast(); });
-      }
-      return;
-    }
     try {
       if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
       localStorage.setItem(VOL2_GATE_TOAST_LS, '1');
@@ -2822,7 +2808,8 @@
   }
 
   /* ════════════════════════════════════════════════
-     SABELLA JOURNEY LETTERS (chime-hot Secret finds, 5 stops)
+     SABELLA JOURNEY LETTERS (chime-hot Secret finds, 4 stops)
+     Last letter at Sinn; Indras Na has no parchment (congrats on complete).
      Primary: proximity crosses "hot" band during searchMode
      Fallback: discovery-complete if still unseen (dedupe via seen LS)
      Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
@@ -2945,17 +2932,12 @@
       document.head.appendChild(s);
     }
 
-    // Finale letter: manual Close only (no auto-dismiss) so congrats cannot steal the read.
-    var requireManualDismiss = (locId === FINAL_ELENA_STOP);
-
     var popup = document.createElement('div');
     popup.id = 'sabella-message-popup';
     popup.setAttribute('role', 'dialog');
     popup.setAttribute('aria-label', letter.title || 'Letter from Sabella');
     popup.style.cssText =
-      'position:fixed;' + (requireManualDismiss
-        ? 'top:50%;left:50%;transform:translate(-50%,-55%);z-index:2100;'
-        : 'bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;') +
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;' +
       'cursor:pointer;' +
       'background:linear-gradient(165deg,rgba(42,32,22,0.98) 0%,rgba(18,14,10,0.98) 55%,rgba(12,10,8,0.99) 100%);' +
       'border:2px solid rgba(198,141,85,0.65);border-radius:14px;' +
@@ -2975,27 +2957,13 @@
         letter.body + '</div>' +
       '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;margin-bottom:8px;">\u2014 ' +
         letter.signoff + '</div>' +
-      (requireManualDismiss
-        ? lockedMsgCloseHtml()
-        : '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>');
+      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
 
     function onLetterDismiss(e) {
       if (e) e.stopPropagation();
       dismissSabellaMessagePopup();
     }
-    if (requireManualDismiss) {
-      // Whole card tappable; Close is the primary control (matches sealed modal)
-      popup.addEventListener('click', onLetterDismiss);
-      var closeBtn = popup.querySelector('.locked-msg-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          dismissSabellaMessagePopup();
-        });
-      }
-    } else {
-      popup.addEventListener('click', onLetterDismiss);
-    }
+    popup.addEventListener('click', onLetterDismiss);
     document.body.appendChild(popup);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { popup.style.opacity = '1'; });
@@ -3009,15 +2977,12 @@
     }, 'letter', locId);
     updateProgress();
 
-    // Road letters auto-dismiss; Indras Na finale letter waits for explicit Close
-    if (!requireManualDismiss) {
-      setTimeout(function() { dismissSabellaMessagePopup(); }, 14000);
-    }
+    setTimeout(function() { dismissSabellaMessagePopup(); }, 14000);
   }
 
   // Fallback: discovery-complete if letter still unseen (e.g. skipped hot band).
   // Primary path is maybeShowSabellaLetterOnChime — seen LS dedupes both.
-  // If letter already open from chime-hot, attach onDismiss and wait (do not fire congrats yet).
+  // Optional onDismiss runs after Close (road letters only; Indras uses maybeShowVol2GateToast directly).
   function scheduleSabellaMessage(loc, onDismiss) {
     function finishSkip() {
       if (onDismiss) setTimeout(onDismiss, 1400);
@@ -3114,12 +3079,9 @@
     updateProgress();
     maybeDismissPostTutorialOnDiscover(loc);
 
-    // Sabella letter fallback (primary is chime-hot). Indras: unseen letter then Vol2 toast;
-    // if letter already collected during search, finishSkip → reward dialogue after delay.
+    // Sabella letter fallback (primary is chime-hot). Indras Na has no letter — fire Vol2 toast.
     if (loc.id === FINAL_ELENA_STOP) {
-      scheduleSabellaMessage(loc, function() {
-        maybeShowVol2GateToast();
-      });
+      maybeShowVol2GateToast();
     } else {
       scheduleSabellaMessage(loc);
     }

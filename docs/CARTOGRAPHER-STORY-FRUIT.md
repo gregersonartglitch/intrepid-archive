@@ -80,7 +80,7 @@ Comic structure (reader): Issue 1 = pages 1–21, Issue 2 = 22–42, Issue 3 = 4
 
 **Effort:** 1–2 hr · **Risk:** low · **Flag:** `ENABLE_SABELLA_CLUE_POPUPS` stays default OFF until Jon approves
 
-5. **Sabella letters at five journey stops** — **Shipped build 151** via `ENABLE_SABELLA_MESSAGES` + `SABELLA_MESSAGES` in `fog.js`. Stops: `sabellas-hut`, `monastery-wind`, `tower-nine`, `sinn`, `indras-na` (journey order). Discovery-complete parchment popup; secrets ledger; **set flag false before prod**. Chime-heat `ENABLE_SABELLA_CLUE_POPUPS` remains separate / OFF.
+5. **Sabella letters at four journey stops** — **Shipped** via `ENABLE_SABELLA_MESSAGES` + `SABELLA_MESSAGES` in `fog.js`. Stops: `sabellas-hut`, `monastery-wind`, `tower-nine`, `sinn` (last letter before Indras Na). Discovery-complete parchment popup; secrets ledger; **set flag false before prod**. Chime-heat `ENABLE_SABELLA_CLUE_POPUPS` remains separate / OFF.
 6. **Secrets ledger entries** — `recordSecret()` writes `intrepid_secrets_collected` (chime bands + `{locId}:letter`). No progress-row UI needed for v1.
 7. **Territory toast copy** — Today: generic “Territory Unlocked / Discover its cities & sites.” **Hook:** optional `territoryToast` string on region entries in `data.js`; `showTerritoryUnlock` reads it (small fog.js read — document only until approved). Example for `moon-queen-kingdom`: “Silver dusk settles on the chart. The Queen’s land does not share the Empire’s noon.”
 

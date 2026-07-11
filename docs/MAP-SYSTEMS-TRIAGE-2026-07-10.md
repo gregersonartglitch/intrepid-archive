@@ -22,7 +22,7 @@ Progress panel (`#progress-container` in `index.html`, filled by `updateProgress
 | **Elena’s Journey** | **8** | `JOURNEY_PATH` stops fully discovered (`phase === 'complete'`) | Drives golden glow; Indras Na is last |
 | **Territories** | **17** | `type === 'region'` only (waters excluded from this bar) | Paces guardian clock; required for Indras Na + Mish |
 | **Cities & Sites** | **13** | `cartographerSite: true` | Required for Indras Na (`explorationComplete`) |
-| **Secrets** | **5** | Sabella letters seen (`intrepid_sabella_messages_seen`) | Row shown only when Sabella messages enabled; 4 of 5 gate Indras Na |
+| **Secrets** | **4** | Sabella letters seen (`intrepid_sabella_messages_seen`) | Row shown only when Sabella messages enabled; all 4 gate Indras Na |
 
 ### 1.1 Elena’s Journey (8)
 
@@ -45,7 +45,7 @@ Order in `data.js` → `window.JOURNEY_PATH`:
 - **Indras Na** stays sealed until:
   1. All prior journey steps complete, **and**
   2. All 17 regions + all 13 cartographer sites charted (`explorationComplete`), **and**
-  3. When `ENABLE_SABELLA_MESSAGES` is on: first **4** road letters collected (`sabellas-hut`, `monastery-wind`, `tower-nine`, `sinn`). The 5th letter is *at* Indras Na.
+  3. When `ENABLE_SABELLA_MESSAGES` is on: all **4** road letters collected (`sabellas-hut`, `monastery-wind`, `tower-nine`, `sinn`). Last letter is at Sinn — Indras Na has no parchment.
 
 **What completing a journey stop unlocks**
 
@@ -96,7 +96,7 @@ Note: `mish` is both a journey stop and a cartographer site.
 - Narrative framing as “Sabella’s marks” in Indras Na lock copy  
 - Required for Indras Na via `explorationComplete`
 
-### 1.4 Secrets / Sabella letters (5)
+### 1.4 Secrets / Sabella letters (4)
 
 Defined in `SABELLA_MESSAGES` (`fog.js`):
 
@@ -105,8 +105,7 @@ Defined in `SABELLA_MESSAGES` (`fog.js`):
 | `sabellas-hut` | A Letter by the Hearth |
 | `monastery-wind` | Wind Through the Oracle’s Hall |
 | `tower-nine` | From the Cage of Nine |
-| `sinn` | Silver Ink at Sinn |
-| `indras-na` | At the Western Gate |
+| `sinn` | Silver Ink at Sinn (last — farewell toward western gate) |
 
 **Unlock rules**
 
@@ -114,11 +113,11 @@ Defined in `SABELLA_MESSAGES` (`fog.js`):
 - Primary: during chime search, proximity crosses **hot** band (~0.65).  
 - Fallback: on discovery-complete if still unseen.  
 - Progress Secrets row only when messages enabled.  
-- Letters 1–4 are Indras Na prerequisites when flag on.
+- All 4 letters are Indras Na prerequisites when flag on.
 
 **What collecting unlocks**
 
-- Secrets bar fill; Indras Na unlock (first four); story beat only — no map power beyond that gate.
+- Secrets bar fill; Indras Na unlock (all four); story beat only — no map power beyond that gate.
 
 ### 1.5 Locations that exist in data but are not collectible
 
@@ -194,7 +193,7 @@ Reveal ceremony: permanent torch glow on frame, discovery card, deep chime; larg
 | Unlock date | `VOL2_UNLOCK_AT = 2026-12-01T00:00:00Z` (or LS / `?vol2unlock`) |
 | Indras Na | Never sealed by this gate |
 
-**Current-path reality:** `JOURNEY_PATH` is sinn → indras-na only after the cap. There is **no** post-sinn sealed journey stop in data today, so `isVol2JourneyGateBlocking()` is effectively idle. The live Vol 2 UX is the **congratulations toast** after Indras Na (and letter dismiss), pointing at Kickstarter / Dec 2026 and inviting continued territory/site charting.
+**Current-path reality:** `JOURNEY_PATH` is sinn → indras-na only after the cap. There is **no** post-sinn sealed journey stop in data today, so `isVol2JourneyGateBlocking()` is effectively idle. The live Vol 2 UX is the **congratulations toast** after Indras Na discovery complete, pointing at Kickstarter / Dec 2026 and inviting continued territory/site charting.
 
 ---
 
@@ -243,7 +242,7 @@ One-shot post-tutorial toast after Sabella’s Hut (`showPostTutorialHint`, LS `
 4. Follow **golden** glow along Elena’s path (mish → … → sinn), using chime search at each stop; optional letters at monastery / tower / sinn.  
 5. In parallel / between stops: click **orange** territories and **amber** sites as they appear near cleared fog; ranks and guardian clock advance with regions.  
 6. Use **Guide Me** if lost; progress panel shows four tracks.  
-7. When all regions + sites (+ 4 letters if messages on) are done and path is through sinn, **Indras Na** golden-glows; chime search + final letter.  
+7. When all regions + sites (+ 4 letters if messages on) are done and path is through sinn, **Indras Na** golden-glows; chime search then Vol 1 congrats (no letter at Indras).  
 8. Journey/Vol1 finales may fire (constellation, fog wave, Azu); Mish guardian unlocks only after Indras Na + 17 territories.  
 9. Vol 2 toast: celebrate V1 journey end; keep charting leftovers; wait for dated unlock / KS for more journey road.
 
