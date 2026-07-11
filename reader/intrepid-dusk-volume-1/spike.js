@@ -1,6 +1,7 @@
 const ENABLE_READER_MAGNIFY = true;
 const READER_MAGNIFY_DISABLE_KEY = "intrepid_reader_magnify_disabled";
 const READER_MAGNIFY_ENABLED_KEY = "intrepid_reader_magnify_enabled";
+const READER_HELP_TIP_SEEN_KEY = "intrepid_reader_help_tip_seen_v1";
 
 const issuePageCounts = [
   { issue: "001", pages: 21 },
@@ -50,11 +51,25 @@ const pageEntries = [
   }),
 ];
 
-const PRELOAD_BACK = 2;
-const PRELOAD_AHEAD = 3;
+// Issue 1 = cover spread (2) + 21 pages → indices 0–22
+const ISSUE_001_LAST_INDEX = 22;
+const ISSUE_002_START = 23;
+const ISSUE_003_START = 45;
+const PRELOAD_BACK = 3;
+const PRELOAD_AHEAD = 5;
+const LINK_PRELOAD_AHEAD = 3;
+// Cover + first content spread(s) must decode before the book is revealed.
+const OPENING_READY_LAST_INDEX = 5;
+const IMAGE_LOAD_MAX_ATTEMPTS = 3;
+const IMAGE_LOAD_TIMEOUT_MS = 12000;
+const PAGE_ASSET_VERSION = 162;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
+const decodedPages = new Set();
+const prefetchImages = {};
+const linkPreloads = {};
 let lastPageIndex = 0;
+let readerReady = false;
 
 const elements = {
   book: document.querySelector("#book"),
@@ -62,7 +77,14 @@ const elements = {
   controls: document.querySelector(".controls"),
   stage: document.querySelector(".reader-stage"),
   readerRoot: document.querySelector(".reader"),
+  loadVeil: document.querySelector("[data-reader-load-veil]"),
+  loadProgress: document.querySelector("[data-reader-load-progress]"),
+  helpTip: document.querySelector("[data-reader-help-tip]"),
+  helpTipMagnify: document.querySelector("[data-reader-help-magnify]"),
+  helpOpen: document.querySelector('[data-action="help-open"]'),
+  helpDismiss: document.querySelector('[data-action="help-dismiss"]'),
 };
+let hasReaderMagnifyPlugin = false;
 
 function isReaderMagnifyRuntimeAllowed() {
   if (!ENABLE_READER_MAGNIFY) {
@@ -77,6 +99,9 @@ function isReaderMagnifyRuntimeAllowed() {
 
 function loadReaderMagnifyPlugin(callback) {
   if (!isReaderMagnifyRuntimeAllowed()) {
+    if (typeof callback === "function") {
+      callback();
+    }
     return;
   }
 
@@ -87,7 +112,18 @@ function loadReaderMagnifyPlugin(callback) {
 
   var script = document.createElement("script");
   script.src = "../plugins/magnify/magnify-plugin.js?v=9";
-  script.onload = callback;
+  script.onload = function () {
+    hasReaderMagnifyPlugin = !!window.IntrepidReaderMagnify;
+    if (typeof callback === "function") {
+      callback();
+    }
+  };
+  script.onerror = function () {
+    hasReaderMagnifyPlugin = false;
+    if (typeof callback === "function") {
+      callback();
+    }
+  };
   document.head.appendChild(script);
 }
 
@@ -95,6 +131,7 @@ function initReaderMagnify() {
   if (!window.IntrepidReaderMagnify || !elements.readerRoot) {
     return;
   }
+  hasReaderMagnifyPlugin = true;
 
   window.IntrepidReaderMagnify.mount({
     root: elements.readerRoot,
@@ -121,6 +158,9 @@ function initReaderMagnify() {
       }
       triggerPageFlipAudio();
       if (zone === "right") {
+        if (!pageFlip || !readerReady) {
+          return;
+        }
         if (!requestPageTurn(lastPageIndex + 1)) {
           return;
         }
@@ -128,10 +168,90 @@ function initReaderMagnify() {
         pageFlip.flipNext("bottom");
         return;
       }
+      if (!pageFlip || !readerReady) {
+        return;
+      }
       warmFlipTargetsFromDirection(false);
       pageFlip.flipPrev("bottom");
     },
   });
+}
+
+function canUseStorage() {
+  try {
+    return typeof localStorage !== "undefined";
+  } catch (err) {
+    return false;
+  }
+}
+
+function hasSeenReaderHelpTip() {
+  if (!canUseStorage()) {
+    return false;
+  }
+  return localStorage.getItem(READER_HELP_TIP_SEEN_KEY) === "1";
+}
+
+function markReaderHelpTipSeen() {
+  if (!canUseStorage()) {
+    return;
+  }
+  localStorage.setItem(READER_HELP_TIP_SEEN_KEY, "1");
+}
+
+function isMagnifyTipAvailable() {
+  return isReaderMagnifyRuntimeAllowed() && hasReaderMagnifyPlugin;
+}
+
+function updateReaderHelpTipCopy() {
+  if (!elements.helpTipMagnify) {
+    return;
+  }
+  if (isMagnifyTipAvailable()) {
+    elements.helpTipMagnify.textContent =
+      " Magnify is available via the Lens control (or M key).";
+    return;
+  }
+  elements.helpTipMagnify.textContent =
+    " Magnify is unavailable on this device or build.";
+}
+
+function hideReaderHelpTip() {
+  if (!elements.helpTip) {
+    return;
+  }
+  elements.helpTip.hidden = true;
+}
+
+function showReaderHelpTip(options) {
+  if (!elements.helpTip) {
+    return;
+  }
+  updateReaderHelpTipCopy();
+  elements.helpTip.hidden = false;
+  if (options && options.markSeen) {
+    markReaderHelpTipSeen();
+  }
+}
+
+function initReaderHelpTip() {
+  updateReaderHelpTipCopy();
+  if (!hasSeenReaderHelpTip()) {
+    showReaderHelpTip({ markSeen: true });
+  } else {
+    hideReaderHelpTip();
+  }
+  if (elements.helpDismiss) {
+    elements.helpDismiss.addEventListener("click", function () {
+      hideReaderHelpTip();
+      markReaderHelpTipSeen();
+    });
+  }
+  if (elements.helpOpen) {
+    elements.helpOpen.addEventListener("click", function () {
+      showReaderHelpTip({ markSeen: true });
+    });
+  }
 }
 
 function getStagePadding() {
@@ -189,41 +309,167 @@ function triggerPageFlipAudio() {
   }
 }
 
-function decodePageImage(image) {
-  if (typeof image.decode === "function") {
-    return image.decode().catch(function () {});
+function pageAssetUrl(entry, attempt) {
+  if (!entry || !entry.src) {
+    return "";
   }
-  return Promise.resolve();
+  var query = "v=" + PAGE_ASSET_VERSION;
+  if (attempt > 0) {
+    query += "&r=" + attempt + "&t=" + Date.now();
+  }
+  return entry.src + (entry.src.indexOf("?") >= 0 ? "&" : "?") + query;
 }
 
-function markPageReady(image) {
-  image.classList.add("is-ready");
+function decodePageImage(pageIndex) {
+  return ensurePageImageReady(pageIndex, { soft: true });
 }
 
-function whenPageImageReady(image) {
-  if (image.classList.contains("is-ready")) {
-    return Promise.resolve();
-  }
-
-  // Already cached: show immediately so flip does not reveal empty page.
-  // First paint still waits for load + decode below.
-  if (image.complete && image.naturalWidth > 0) {
-    markPageReady(image);
-    return decodePageImage(image);
-  }
-
+function ensurePageImageReady(pageIndex, options) {
+  var soft = !!(options && options.soft);
   return new Promise(function (resolve) {
-    image.addEventListener(
-      "load",
-      function () {
-        decodePageImage(image).then(function () {
-          markPageReady(image);
-          resolve();
-        });
-      },
-      { once: true },
-    );
+    if (pageIndex < 0 || pageIndex >= pageEntries.length) {
+      resolve(false);
+      return;
+    }
+
+    var entry = pageEntries[pageIndex];
+    if (!entry || entry.blank) {
+      resolve(true);
+      return;
+    }
+
+    if (decodedPages.has(pageIndex)) {
+      resolve(true);
+      return;
+    }
+
+    var image = pageImages[pageIndex];
+    if (!image) {
+      resolve(false);
+      return;
+    }
+
+    var attempt = 0;
+    var settled = false;
+    var timeoutId = null;
+
+    function settle(ok) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timeoutId != null) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      resolve(ok);
+    }
+
+    function markReady() {
+      decodedPages.add(pageIndex);
+      warmedPages.add(pageIndex);
+      settle(true);
+    }
+
+    function runDecode() {
+      if (typeof image.decode !== "function") {
+        markReady();
+        return;
+      }
+      image.decode().then(markReady).catch(markReady);
+    }
+
+    function isLoaded() {
+      return !!(image.complete && image.naturalWidth > 0);
+    }
+
+    function isBrokenComplete() {
+      return !!(image.complete && image.naturalWidth === 0 && image.getAttribute("src"));
+    }
+
+    function bindAttempt() {
+      if (isLoaded()) {
+        runDecode();
+        return;
+      }
+
+      function onLoad() {
+        cleanup();
+        runDecode();
+      }
+
+      function onError() {
+        cleanup();
+        retryOrFail();
+      }
+
+      function cleanup() {
+        image.removeEventListener("load", onLoad);
+        image.removeEventListener("error", onError);
+      }
+
+      function retryOrFail() {
+        attempt += 1;
+        if (attempt >= IMAGE_LOAD_MAX_ATTEMPTS) {
+          settle(false);
+          return;
+        }
+        image.src = pageAssetUrl(entry, attempt);
+        bindAttempt();
+      }
+
+      if (isBrokenComplete()) {
+        retryOrFail();
+        return;
+      }
+
+      image.addEventListener("load", onLoad);
+      image.addEventListener("error", onError);
+
+      if (!image.getAttribute("src")) {
+        image.src = pageAssetUrl(entry, attempt);
+      }
+    }
+
+    timeoutId = setTimeout(function () {
+      settle(isLoaded());
+    }, soft ? Math.min(4000, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
+
+    bindAttempt();
   });
+}
+
+function injectLinkPreload(pageIndex) {
+  if (pageIndex < 0 || pageIndex >= pageEntries.length) {
+    return;
+  }
+  if (!canAccessPageIndex(pageIndex)) {
+    return;
+  }
+
+  const entry = pageEntries[pageIndex];
+  if (!entry || entry.blank) {
+    return;
+  }
+
+  var href = pageAssetUrl(entry, 0);
+  if (linkPreloads[href]) {
+    return;
+  }
+
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
+  link.href = href;
+  document.head.appendChild(link);
+  linkPreloads[href] = link;
+}
+
+function syncLinkPreloads(centerIndex) {
+  for (let offset = 1; offset <= LINK_PRELOAD_AHEAD; offset += 1) {
+    injectLinkPreload(centerIndex + offset);
+    injectLinkPreload(centerIndex - offset);
+  }
 }
 
 function warmPageImage(pageIndex) {
@@ -235,7 +481,8 @@ function warmPageImage(pageIndex) {
     return;
   }
 
-  if (pageEntries[pageIndex].blank) {
+  const entry = pageEntries[pageIndex];
+  if (entry.blank) {
     return;
   }
 
@@ -245,24 +492,136 @@ function warmPageImage(pageIndex) {
   }
 
   image.loading = "eager";
+  decodePageImage(pageIndex);
 
   if (warmedPages.has(pageIndex)) {
-    whenPageImageReady(image);
     return;
   }
 
   warmedPages.add(pageIndex);
-  whenPageImageReady(image);
+
+  // StPageFlip may not mount lazy imgs until flip — probe warms HTTP cache + decode.
+  if (!prefetchImages[pageIndex]) {
+    const probe = new Image();
+    probe.decoding = "async";
+    probe.src = pageAssetUrl(entry, 0);
+    probe.addEventListener(
+      "load",
+      function onProbeLoad() {
+        probe.removeEventListener("load", onProbeLoad);
+        decodePageImage(pageIndex);
+      },
+      { once: true },
+    );
+    prefetchImages[pageIndex] = probe;
+  }
+}
+
+function setReaderPreparing(isPreparing) {
+  if (elements.readerRoot) {
+    elements.readerRoot.classList.toggle("is-preparing", isPreparing);
+  }
+  if (elements.loadVeil) {
+    elements.loadVeil.setAttribute("aria-busy", isPreparing ? "true" : "false");
+    if (!isPreparing) {
+      elements.loadVeil.setAttribute("aria-hidden", "true");
+    } else {
+      elements.loadVeil.removeAttribute("aria-hidden");
+    }
+  }
+  if (elements.book) {
+    elements.book.setAttribute("aria-hidden", isPreparing ? "true" : "false");
+  }
+}
+
+function updateLoadProgress(done, total) {
+  if (!elements.loadProgress) {
+    return;
+  }
+  var safeTotal = Math.max(1, total);
+  var pct = Math.round((done / safeTotal) * 100);
+  elements.loadProgress.textContent = pct + "%";
+}
+
+function collectOpeningImageIndices() {
+  var indices = [];
+  var last = Math.min(OPENING_READY_LAST_INDEX, pageEntries.length - 1);
+  for (var index = 0; index <= last; index += 1) {
+    var entry = pageEntries[index];
+    if (entry && !entry.blank) {
+      indices.push(index);
+    }
+  }
+  return indices;
+}
+
+function prepareOpeningPages(pageElements) {
+  var indices = collectOpeningImageIndices();
+  var done = 0;
+  updateLoadProgress(0, indices.length || 1);
+
+  for (var i = 0; i < indices.length; i += 1) {
+    injectLinkPreload(indices[i]);
+  }
+
+  if (!indices.length) {
+    return Promise.resolve(true);
+  }
+
+  return Promise.all(
+    indices.map(function (pageIndex) {
+      return ensurePageImageReady(pageIndex).then(function (ok) {
+        done += 1;
+        updateLoadProgress(done, indices.length);
+        return ok;
+      });
+    }),
+  ).then(function (results) {
+    var failed = results.filter(function (ok) {
+      return !ok;
+    }).length;
+    if (failed && elements.loadVeil && elements.loadProgress) {
+      elements.loadVeil.classList.add("is-failed");
+      elements.loadProgress.textContent =
+        failed === results.length
+          ? "Unable to load pages — retrying…"
+          : "Almost ready…";
+    }
+    // Soft-fail: still mount if at least the cover (or any page) decoded.
+    return results.some(Boolean) || failed < results.length;
+  });
 }
 
 function preloadAround(centerIndex) {
   for (let offset = -PRELOAD_BACK; offset <= PRELOAD_AHEAD; offset += 1) {
     warmPageImage(centerIndex + offset);
   }
+  syncLinkPreloads(centerIndex);
 }
 
-function invalidateWarmCache() {
-  warmedPages.clear();
+function bootstrapIssueOne() {
+  for (let index = 0; index <= ISSUE_001_LAST_INDEX; index += 1) {
+    warmPageImage(index);
+    injectLinkPreload(index);
+  }
+}
+
+function bootstrapUnlockedIssues() {
+  if (!window.ReaderAccess) {
+    return;
+  }
+  if (window.ReaderAccess.isIssueUnlocked("002")) {
+    for (let index = ISSUE_002_START; index < ISSUE_003_START; index += 1) {
+      warmPageImage(index);
+      injectLinkPreload(index);
+    }
+  }
+  if (window.ReaderAccess.isIssueUnlocked("003")) {
+    for (let index = ISSUE_003_START; index < pageEntries.length; index += 1) {
+      warmPageImage(index);
+      injectLinkPreload(index);
+    }
+  }
 }
 
 function canAccessPageIndex(pageIndex) {
@@ -300,7 +659,13 @@ function warmFlipTargetsFromDirection(forward) {
   const step = forward ? 1 : -1;
   warmPageImage(lastPageIndex + step);
   warmPageImage(lastPageIndex + step * 2);
+  warmPageImage(lastPageIndex + step * 3);
   preloadAround(lastPageIndex + step);
+}
+
+function warmBothFlipDirections() {
+  warmFlipTargetsFromDirection(true);
+  warmFlipTargetsFromDirection(false);
 }
 
 function warmFlipTargetFromPointer(event) {
@@ -313,9 +678,9 @@ function warmFlipTargetFromPointer(event) {
   warmFlipTargetsFromDirection(clickOnRight);
 }
 
-function createPageFlip() {
+function buildPageElements() {
   elements.book.innerHTML = "";
-  const pageElements = pageEntries.map((entry, index) => {
+  return pageEntries.map((entry, index) => {
     const page = document.createElement("div");
     page.className = entry.blank
       ? "reader-page reader-page--blank"
@@ -330,27 +695,28 @@ function createPageFlip() {
     }
 
     const image = document.createElement("img");
-    image.src = entry.src;
     image.alt = entry.cover
       ? "Intrepid Dusk Volume 1 cover"
       : `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
     image.width = NATIVE_PAGE_WIDTH;
     image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";
-    image.loading = index < 6 ? "eager" : "lazy";
-    image.draggable = false;
-    pageImages[index] = image;
-
-    if (index < 6) {
-      whenPageImageReady(image);
+    image.loading = "eager";
+    if (index <= OPENING_READY_LAST_INDEX && "fetchPriority" in image) {
+      image.fetchPriority = "high";
     }
+    image.draggable = false;
+    image.src = pageAssetUrl(entry, 0);
+    pageImages[index] = image;
 
     page.append(image);
     return page;
   });
+}
 
+function createPageFlip(pageElements) {
   const { pageW, pageH } = fitBookToStage();
-  const pageFlip = new St.PageFlip(elements.book, {
+  const pageFlipInstance = new St.PageFlip(elements.book, {
     width: pageW,
     height: pageH,
     size: "stretch",
@@ -373,35 +739,102 @@ function createPageFlip() {
     disableFlipByClick: false,
   });
 
-  pageFlip.on("init", (event) => {
+  pageFlipInstance.on("init", (event) => {
     handlePageTurn(event.data.page);
   });
 
-  pageFlip.on("flip", (event) => {
+  pageFlipInstance.on("flip", (event) => {
     var target =
       event.data && typeof event.data === "object"
         ? event.data.page
         : event.data;
     if (!handlePageTurn(target)) {
-      pageFlip.turnToPage(lastPageIndex);
+      pageFlipInstance.turnToPage(lastPageIndex);
     }
   });
 
-  pageFlip.on("changeState", (event) => {
+  pageFlipInstance.on("changeState", (event) => {
     if (event.data !== "flipping") {
       return;
     }
-    preloadAround(lastPageIndex);
+    warmBothFlipDirections();
   });
 
-  pageFlip.loadFromHTML(pageElements);
+  pageFlipInstance.loadFromHTML(pageElements);
+  bootstrapIssueOne();
+  bootstrapUnlockedIssues();
   preloadAround(0);
-  return pageFlip;
+  return pageFlipInstance;
 }
 
-let pageFlip = createPageFlip();
+function revealReader() {
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      setReaderPreparing(false);
+      readerReady = true;
+      if (pendingIssueTwoLand) {
+        pendingIssueTwoLand = false;
+        landOnIssueTwoStart();
+      }
+    });
+  });
+}
 
-loadReaderMagnifyPlugin(initReaderMagnify);
+function bootReader() {
+  setReaderPreparing(true);
+  var pageElements = buildPageElements();
+
+  prepareOpeningPages(pageElements)
+    .then(function (ok) {
+      if (!ok && elements.loadProgress) {
+        // Last-chance retry for opening pages before reveal.
+        return Promise.all(
+          collectOpeningImageIndices().map(function (pageIndex) {
+            decodedPages.delete(pageIndex);
+            warmedPages.delete(pageIndex);
+            var entry = pageEntries[pageIndex];
+            var image = pageImages[pageIndex];
+            if (image && entry) {
+              image.src = pageAssetUrl(entry, 1);
+            }
+            return ensurePageImageReady(pageIndex);
+          }),
+        ).then(function () {
+          return true;
+        });
+      }
+      return true;
+    })
+    .then(function () {
+      pageFlip = createPageFlip(pageElements);
+      revealReader();
+      loadReaderMagnifyPlugin(function () {
+        initReaderMagnify();
+        updateReaderHelpTipCopy();
+      });
+      initReaderHelpTip();
+    })
+    .catch(function () {
+      // Never leave the reader stuck behind the veil.
+      try {
+        pageFlip = createPageFlip(pageElements);
+      } catch (err) {
+        console.error("[reader] failed to mount page flip", err);
+      }
+      if (elements.loadProgress) {
+        elements.loadProgress.textContent = "Opening…";
+      }
+      revealReader();
+      loadReaderMagnifyPlugin(function () {
+        initReaderMagnify();
+        updateReaderHelpTipCopy();
+      });
+      initReaderHelpTip();
+    });
+}
+
+let pageFlip = null;
+bootReader();
 
 function resolvePageImageAtPoint(clientX, clientY) {
   var target = document.elementFromPoint(clientX, clientY);
@@ -596,7 +1029,9 @@ function isBookPageTurnZone(clientX, clientY) {
 
 function handleStageResize() {
   fitBookToStage();
-  pageFlip.update();
+  if (pageFlip) {
+    pageFlip.update();
+  }
 }
 
 if (typeof ResizeObserver !== "undefined") {
@@ -632,23 +1067,202 @@ elements.book.addEventListener("click", blockMagnifyCenterPageFlip, true);
 
 if (window.ReaderGate) {
   window.ReaderGate.onUnlocked = function () {
-    pageFlip.flipNext("bottom");
+    if (pageFlip && readerReady) {
+      pageFlip.flipNext("bottom");
+    }
   };
 }
 
+function stripSessionIdFromUrl() {
+  var url = new URL(window.location.href);
+  if (!url.searchParams.has("session_id")) {
+    return;
+  }
+  url.searchParams.delete("session_id");
+  var clean =
+    url.pathname + (url.search ? url.search : "") + (url.hash || "");
+  history.replaceState(null, "", clean);
+}
+
+var pendingIssueTwoLand = false;
+
+function landOnIssueTwoStart() {
+  if (!pageFlip || !readerReady) {
+    pendingIssueTwoLand = true;
+    return;
+  }
+  var issueTwoIndex =
+    window.ReaderAccess && window.ReaderAccess.ISSUE_002_START != null
+      ? window.ReaderAccess.ISSUE_002_START
+      : 23;
+  pageFlip.turnToPage(issueTwoIndex);
+  handlePageTurn(issueTwoIndex);
+}
+
+function handleStripeReturn() {
+  var params = new URLSearchParams(window.location.search);
+  var sessionId = params.get("session_id");
+  if (!sessionId) {
+    return;
+  }
+
+  fetch(
+    "/api/verify-session?session_id=" + encodeURIComponent(sessionId),
+  )
+    .then(function (res) {
+      return res.json();
+    })
+    .then(function (data) {
+      stripSessionIdFromUrl();
+      if (data && data.unlock && window.ReaderAccess) {
+        window.ReaderAccess.grantGuestIssues();
+        if (window.ReaderGate && window.ReaderGate.trackPurchaseSuccess) {
+          window.ReaderGate.trackPurchaseSuccess();
+        }
+        landOnIssueTwoStart();
+        return;
+      }
+      if (window.ReaderGate) {
+        window.ReaderGate.show("002");
+      }
+    })
+    .catch(function () {
+      stripSessionIdFromUrl();
+      if (window.ReaderGate) {
+        window.ReaderGate.show("002");
+      }
+    });
+}
+
+handleStripeReturn();
+
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
-    invalidateWarmCache();
     preloadAround(lastPageIndex);
   }
 });
 
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
-    invalidateWarmCache();
     preloadAround(lastPageIndex);
   }
 });
+
+function isEditableKeyboardTarget(target) {
+  if (!target || !(target instanceof Element)) {
+    return false;
+  }
+  var tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+    return true;
+  }
+  return target.isContentEditable;
+}
+
+function isReaderGateOpen() {
+  var gate = document.getElementById("reader-backer-gate");
+  return !!(gate && !gate.hidden);
+}
+
+function unlockReaderAudio() {
+  if (window.ReaderAudio) {
+    window.ReaderAudio.unlock();
+  }
+}
+
+function turnReaderPagePrev() {
+  if (!pageFlip || !readerReady) {
+    return;
+  }
+  unlockReaderAudio();
+  triggerPageFlipAudio();
+  if (window.IntrepidReaderMagnify) {
+    window.IntrepidReaderMagnify.unmount();
+  }
+  warmFlipTargetsFromDirection(false);
+  pageFlip.flipPrev("bottom");
+}
+
+function turnReaderPageNext() {
+  if (!pageFlip || !readerReady) {
+    return;
+  }
+  unlockReaderAudio();
+  if (!requestPageTurn(lastPageIndex + 1)) {
+    return;
+  }
+  triggerPageFlipAudio();
+  if (window.IntrepidReaderMagnify) {
+    window.IntrepidReaderMagnify.unmount();
+  }
+  warmFlipTargetsFromDirection(true);
+  pageFlip.flipNext("bottom");
+}
+
+function turnReaderPageFirst() {
+  if (!pageFlip || !readerReady) {
+    return;
+  }
+  unlockReaderAudio();
+  if (window.IntrepidReaderMagnify) {
+    window.IntrepidReaderMagnify.unmount();
+  }
+  pageFlip.turnToPage(0);
+  handlePageTurn(0);
+}
+
+function turnReaderPageLast() {
+  if (!pageFlip || !readerReady) {
+    return;
+  }
+  unlockReaderAudio();
+  var lastIndex = pageEntries.length - 1;
+  if (!requestPageTurn(lastIndex)) {
+    return;
+  }
+  if (window.IntrepidReaderMagnify) {
+    window.IntrepidReaderMagnify.unmount();
+  }
+  pageFlip.turnToPage(lastIndex);
+  handlePageTurn(lastIndex);
+}
+
+function handleReaderKeyboardNav(event) {
+  if (event.defaultPrevented) {
+    return;
+  }
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return;
+  }
+  if (isEditableKeyboardTarget(event.target)) {
+    return;
+  }
+  if (isReaderGateOpen()) {
+    return;
+  }
+
+  if (event.key === "ArrowLeft") {
+    event.preventDefault();
+    turnReaderPagePrev();
+    return;
+  }
+  if (event.key === "ArrowRight") {
+    event.preventDefault();
+    turnReaderPageNext();
+    return;
+  }
+  if (event.key === "Home") {
+    event.preventDefault();
+    turnReaderPageFirst();
+    return;
+  }
+  if (event.key === "End") {
+    event.preventDefault();
+    turnReaderPageLast();
+  }
+}
+
+document.addEventListener("keydown", handleReaderKeyboardNav);
 
 elements.controls.addEventListener("click", (event) => {
   const button = event.target.closest("button");
@@ -658,34 +1272,13 @@ elements.controls.addEventListener("click", (event) => {
 
   const action = button.dataset.action;
 
-  if (action === "prev" || action === "next") {
-    triggerPageFlipAudio();
-  }
-
-  if (window.ReaderAudio) {
-    window.ReaderAudio.unlock();
-  }
-
   if (action === "prev") {
-    if (window.IntrepidReaderMagnify) {
-      window.IntrepidReaderMagnify.unmount();
-    }
-    warmFlipTargetsFromDirection(false);
-    pageFlip.flipPrev("bottom");
+    turnReaderPagePrev();
   }
   if (action === "next") {
-    if (!requestPageTurn(lastPageIndex + 1)) return;
-    if (window.IntrepidReaderMagnify) {
-      window.IntrepidReaderMagnify.unmount();
-    }
-    warmFlipTargetsFromDirection(true);
-    pageFlip.flipNext("bottom");
+    turnReaderPageNext();
   }
   if (action === "reset") {
-    if (window.IntrepidReaderMagnify) {
-      window.IntrepidReaderMagnify.unmount();
-    }
-    pageFlip.turnToPage(0);
-    handlePageTurn(0);
+    turnReaderPageFirst();
   }
 });

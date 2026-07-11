@@ -70,6 +70,7 @@ a {
 
 .reader-header-start {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
@@ -92,6 +93,11 @@ a {
   border-color: rgba(198, 141, 85, 0.5);
   background: rgba(198, 141, 85, 0.14);
   color: var(--gold);
+}
+
+.reader-reset-access {
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .audio-toggles {
@@ -161,6 +167,24 @@ h1 {
   gap: 12px;
 }
 
+.reader-help-launch {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(198, 141, 85, 0.44);
+  border-radius: 999px;
+  background: rgba(198, 141, 85, 0.12);
+  color: var(--gold);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reader-help-launch:hover {
+  border-color: rgba(198, 141, 85, 0.72);
+  background: rgba(198, 141, 85, 0.2);
+}
+
 .page-counter {
   margin: 0;
   padding: 8px 12px;
@@ -217,6 +241,78 @@ h1 {
   padding: clamp(14px, 2.5svh, 28px) clamp(18px, 3vw, 36px);
 }
 
+/* Opening veil — hide empty StPageFlip until cover + first spread are decoded */
+.reader.is-preparing .book {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.reader.is-preparing .controls,
+.reader.is-preparing .reader-help-launch {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.reader-load-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(198, 141, 85, 0.1), transparent 52%),
+    rgba(7, 7, 6, 0.92);
+  transition: opacity 0.55s ease, visibility 0.55s ease;
+}
+
+.reader:not(.is-preparing) .reader-load-veil {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.reader-load-veil__inner {
+  max-width: 22rem;
+  text-align: center;
+}
+
+.reader-load-veil__eyebrow {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.reader-load-veil__title {
+  margin: 0 0 14px;
+  color: var(--bone);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.15rem, 2.8vw, 1.45rem);
+  font-weight: normal;
+  letter-spacing: 0.02em;
+}
+
+.reader-load-veil__progress {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.reader-load-veil.is-failed .reader-load-veil__title {
+  color: var(--bone);
+}
+
+.reader-load-veil.is-failed .reader-load-veil__progress {
+  color: var(--gold);
+}
+
 .reader-stage::before {
   position: absolute;
   inset: 0;
@@ -227,6 +323,74 @@ h1 {
   content: "";
   mask-image: radial-gradient(ellipse at center, black, transparent 76%);
   pointer-events: none;
+}
+
+.reader-help-tip {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 22;
+  width: min(330px, calc(100vw - 28px));
+  padding: 12px 36px 12px 12px;
+  border: 1px solid rgba(198, 141, 85, 0.24);
+  border-radius: 8px;
+  background: rgba(8, 7, 5, 0.92);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.36);
+  color: var(--bone);
+}
+
+.reader-help-tip[hidden] {
+  display: none !important;
+}
+
+.reader-help-tip-title {
+  margin: 0 0 6px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.reader-help-tip-body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reader-help-tip-body kbd {
+  display: inline-block;
+  min-width: 22px;
+  margin: 0 2px;
+  padding: 1px 6px;
+  border: 1px solid rgba(239, 231, 210, 0.22);
+  border-radius: 4px;
+  background: rgba(239, 231, 210, 0.08);
+  color: var(--bone);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.reader-help-tip-close {
+  position: absolute;
+  top: 5px;
+  right: 7px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(239, 231, 210, 0.75);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reader-help-tip-close:hover {
+  background: rgba(198, 141, 85, 0.14);
+  color: var(--gold);
 }
 
 .book {
@@ -258,13 +422,13 @@ h1 {
 .reader-page {
   overflow: hidden;
   aspect-ratio: 1100 / 1674;
-  background: #070706;
+  background: transparent;
 }
 
 .reader-page--blank {
   background:
     radial-gradient(ellipse at center, rgba(239, 231, 210, 0.035), transparent 56%),
-    #070706;
+    var(--ink);
 }
 
 .reader-page img {
@@ -273,14 +437,8 @@ h1 {
   height: 100%;
   object-fit: cover;
   object-position: center;
-  background-color: var(--ink);
-  opacity: 0;
   user-select: none;
   -webkit-user-drag: none;
-}
-
-.reader-page img.is-ready {
-  opacity: 1;
 }
 
 /* Overlap facing pages 1px to hide center hairline (StPageFlip --left / --right) */
@@ -379,12 +537,13 @@ h1 {
 }
 
 .reader-backer-gate-input-wrap {
+  position: relative;
   margin-bottom: 14px;
 }
 
 .reader-backer-gate-input {
   width: 100%;
-  padding: 12px 14px;
+  padding: 12px 44px 12px 14px;
   border: none;
   border-bottom: 1px solid rgba(239, 231, 210, 0.22);
   border-radius: 0;
@@ -398,6 +557,51 @@ h1 {
 .reader-backer-gate-input:focus {
   outline: none;
   border-bottom-color: var(--gold);
+}
+
+.reader-backer-gate-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(239, 231, 210, 0.35);
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
+  cursor: pointer;
+}
+
+.reader-backer-gate-toggle:hover {
+  color: var(--gold);
+  background: rgba(198, 141, 85, 0.08);
+}
+
+.reader-backer-gate-toggle.showing {
+  color: var(--gold);
+}
+
+.reader-backer-gate-toggle svg {
+  display: block;
+  pointer-events: none;
+}
+
+.reader-backer-gate-toggle .pw-toggle-icon--hide {
+  display: none;
+}
+
+.reader-backer-gate-toggle.showing .pw-toggle-icon--show {
+  display: none;
+}
+
+.reader-backer-gate-toggle.showing .pw-toggle-icon--hide {
+  display: block;
 }
 
 .reader-backer-gate-btn {
@@ -416,6 +620,51 @@ h1 {
 
 .reader-backer-gate-btn:hover {
   filter: brightness(1.06);
+}
+
+.reader-backer-gate-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.reader-backer-gate-btn--secondary {
+  margin-top: 4px;
+  background: rgba(198, 141, 85, 0.18);
+  color: var(--bone);
+  border: 1px solid rgba(198, 141, 85, 0.35);
+}
+
+.reader-backer-gate-btn--secondary:hover {
+  filter: brightness(1.08);
+}
+
+.reader-backer-gate-paywall {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reader-backer-gate-code,
+.reader-backer-gate-restore {
+  margin-top: 4px;
+}
+
+.reader-backer-gate-link {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  color: var(--gold);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.reader-backer-gate-link--subtle {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .reader-backer-gate-error {
@@ -463,6 +712,12 @@ h1 {
     flex-wrap: wrap;
     justify-content: space-between;
     width: 100%;
+  }
+
+  .reader-help-tip {
+    right: 10px;
+    bottom: 10px;
+    width: min(340px, calc(100vw - 20px));
   }
 
   .reader-stage {
