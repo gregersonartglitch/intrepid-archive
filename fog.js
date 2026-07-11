@@ -56,14 +56,14 @@
   ];
   var CHIME_CLUE_CONTENT = {
     'sabellas-hut': {
-      warm: { speaker: 'Scribe', text: 'Faster beeps mean you draw closer to the hidden sigil.' },
+      warm: { speaker: 'Scribe', text: 'Your lantern warms as you draw closer to the hidden sigil.' },
       hot: { speaker: 'Sabella', text: 'Larger inside than it looks from the road. She warned me not to measure the rooms.' },
       burning: { speaker: 'Scribe', text: 'The sigil glows beneath your lantern — tap it.' }
     },
     '_default': {
-      warm: { speaker: 'Scribe', text: 'Listen — the chime quickens when your lantern nears the mark.' },
-      hot: { speaker: 'Sabella', text: 'She left this trace in the fog. The chime is your compass now.' },
-      burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil.' }
+      warm: { speaker: 'Scribe', text: 'Watch the lantern — it glows warmer when you near the mark.' },
+      hot: { speaker: 'Sabella', text: 'She left this trace in the fog. The lantern is your compass now.' },
+      burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil — then click.' }
     }
   };
   // Sabella journey letters at five stops — ON for local demo on this branch; set false before prod.
@@ -427,7 +427,7 @@
     var FOG_UI_SKIP = '#layers, #panel, #discovery-card, #progress-container, .leaflet-control-zoom, ' +
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
-      '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #guide-hint-toast, ' +
+      '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #chime-search-teach, #chime-warmth-hud, #guide-hint-toast, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -704,8 +704,8 @@
     { msg: 'You made a discovery! Read the card, then close it.', action: 'close-card', display: 'toast' },
     { msg: 'A new light has appeared. Follow it.', action: 'click', display: 'canvas' },
     { msg: 'Close the card — then look for the next glow nearby.', action: 'search', display: 'toast' },
-    { msg: 'Listen for the chime — faster beeps mean you are over the target. Look for the diagonal point.', action: 'find-key', display: 'canvas' },
-    { msg: 'When the beeping quickens, tap that spot to reveal what lies beneath.', action: 'auto', display: 'toast' },
+    { msg: 'The mark is hidden nearby. Move your lantern — it glows warmer as you near the mark. Click again when closest.', action: 'find-key', display: 'canvas' },
+    { msg: 'When the lantern glows warmest, tap that spot to chart what lies beneath.', action: 'auto', display: 'toast' },
     { msg: 'The archive is yours, Cartographer. Explore freely.', action: 'auto', display: 'toast' }
   ];
 
@@ -1015,7 +1015,9 @@
       '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;text-align:left;display:inline-block;">' +
         '<span style="color:#d4a843;">\u25cf</span> Gold \u2014 Elena\u2019s next step<br>' +
         '<span style="color:#e08a40;">\u25cf</span> Orange \u2014 uncharted territories<br>' +
-        '<span style="color:#e8c840;">\u25cf</span> Amber \u2014 cartographer sites</div>' +
+        '<span style="color:#e8c840;">\u25cf</span> Amber \u2014 cartographer sites: click once to search, again when closest</div>' +
+      '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:12px;">' +
+        'On amber stars the mark hides in the fog \u2014 your lantern grows warmer as you near it. Click a second time to chart it.</div>' +
       '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;' +
         'font-family:EB Garamond,serif;">tap to dismiss</div>';
     toast.addEventListener('click', function() { dismissPostTutorialHint(true); });
@@ -1518,7 +1520,7 @@
       (showChartLegend
         ? '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
             '<span style="color:#d99040;">\u25C8 Orange shimmer in the fog</span> \u2014 an undiscovered territory. Click it to reveal.<br>' +
-            '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 one of Sabella\u2019s marks. Click to search with hot &amp; cold chime.<br>' +
+            '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 click once to search; move your lantern until it warms, then click again to chart.<br>' +
             '<span style="color:#c4a882;">\u2709 Letters</span> \u2014 she also left notes along Elena\u2019s road (hut, monastery, tower, Sinn, and here).' +
           '</div>'
         : '') +
@@ -1956,6 +1958,8 @@
 
       // Audio: divining rod pings accelerate near key
       updateDiviningAudio(proximity);
+      // Mute-friendly warmth label (Cold → Warmer → Click to chart)
+      updateChimeWarmthHud(proximity);
       // Sabella parchment letter on "hot" band (Secret find) — primary letter path
       maybeShowSabellaLetterOnChime(proximity);
       maybeShowChimeCluePopup(proximity);
@@ -2003,6 +2007,14 @@
         ctx.fill();
         ctx.restore();
         ctx.globalCompositeOperation = 'destination-out';
+      }
+    } else if (searchMode) {
+      ensureChimeWarmthHud();
+      var idleHud = document.getElementById('chime-warmth-hud');
+      if (idleHud) {
+        idleHud.textContent = 'Move lantern';
+        idleHud.style.color = '#9a8f7e';
+        idleHud.style.borderColor = 'rgba(154,143,126,0.35)';
       }
     }
     ctx.globalCompositeOperation = 'source-over';
@@ -2650,8 +2662,127 @@
 
     if (map) map.getContainer().classList.add('chime-search-active');
     setChimeSearchLabelFocus(loc.id);
+    showChimeSearchTeachTip(loc);
+    ensureChimeWarmthHud();
 
     console.log('[FOG] Search mode: find the key for', loc.name);
+  }
+
+  // Mute-safe teach tip on every search enter — does not rely on beeps.
+  // First visit gets a longer sentence; later visits a shorter reminder.
+  var CHIME_TEACH_SEEN_LS = 'intrepid_chime_teach_seen';
+  var chimeTeachTimer = null;
+
+  function dismissChimeSearchTeachTip() {
+    if (chimeTeachTimer) {
+      clearTimeout(chimeTeachTimer);
+      chimeTeachTimer = null;
+    }
+    var tip = document.getElementById('chime-search-teach');
+    if (!tip) return;
+    tip.style.opacity = '0';
+    setTimeout(function() { if (tip.parentNode) tip.remove(); }, 400);
+  }
+
+  function showChimeSearchTeachTip(loc) {
+    dismissChimeSearchTeachTip();
+    var firstTime = true;
+    try { firstTime = localStorage.getItem(CHIME_TEACH_SEEN_LS) !== '1'; } catch (e) {}
+
+    var tip = document.createElement('div');
+    tip.id = 'chime-search-teach';
+    tip.setAttribute('role', 'status');
+    tip.style.cssText =
+      'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:940;cursor:pointer;' +
+      'background:rgba(8,10,14,0.94);border:1px solid rgba(212,168,67,0.5);' +
+      'border-radius:12px;padding:14px 22px;max-width:440px;width:90%;text-align:center;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'box-shadow:0 8px 36px rgba(0,0,0,0.65),0 0 24px rgba(212,168,67,0.1);' +
+      'opacity:0;transition:opacity 0.45s ease;';
+    tip.innerHTML =
+      '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
+        'margin-bottom:8px;font-family:Cinzel,serif;">Search the fog</div>' +
+      '<div style="font-size:15px;line-height:1.55;color:#efe7d2;">' +
+        (firstTime
+          ? 'The mark is hidden nearby \u2014 move your lantern until it glows warmer, then <strong style="color:#d4a843;font-weight:600;">click again</strong> to chart it.'
+          : 'Move your lantern closer until it warms, then click again to chart the mark.') +
+      '</div>' +
+      (loc && loc.name
+        ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">Charting ' + loc.name + '</div>'
+        : '') +
+      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+    tip.addEventListener('click', function() {
+      try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e2) {}
+      dismissChimeSearchTeachTip();
+    });
+    document.body.appendChild(tip);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { tip.style.opacity = '1'; });
+    });
+    try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e3) {}
+    chimeTeachTimer = setTimeout(function() {
+      dismissChimeSearchTeachTip();
+    }, firstTime ? 10000 : 6500);
+  }
+
+  // On-screen cold/warm label — works with sound off (audio remains optional feedback)
+  function ensureChimeWarmthHud() {
+    if (document.getElementById('chime-warmth-hud')) return;
+    var hud = document.createElement('div');
+    hud.id = 'chime-warmth-hud';
+    hud.setAttribute('aria-live', 'polite');
+    hud.style.cssText =
+      'position:fixed;bottom:96px;left:50%;transform:translateX(-50%);z-index:930;' +
+      'pointer-events:none;padding:8px 18px;border-radius:999px;' +
+      'background:rgba(8,10,14,0.82);border:1px solid rgba(212,168,67,0.35);' +
+      'font-family:Cinzel,serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;' +
+      'color:#c4a882;opacity:0;transition:opacity 0.35s ease,color 0.25s ease,border-color 0.25s ease;' +
+      'box-shadow:0 4px 20px rgba(0,0,0,0.45);';
+    hud.textContent = 'Searching';
+    document.body.appendChild(hud);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { hud.style.opacity = '1'; });
+    });
+  }
+
+  function dismissChimeWarmthHud() {
+    var hud = document.getElementById('chime-warmth-hud');
+    if (!hud) return;
+    hud.style.opacity = '0';
+    setTimeout(function() { if (hud.parentNode) hud.remove(); }, 350);
+  }
+
+  function updateChimeWarmthHud(proximity) {
+    ensureChimeWarmthHud();
+    var hud = document.getElementById('chime-warmth-hud');
+    if (!hud) return;
+    var label = 'Searching';
+    var color = '#9a8f7e';
+    var border = 'rgba(154,143,126,0.35)';
+    if (proximity >= 0.85) {
+      label = 'Click to chart';
+      color = '#f0d878';
+      border = 'rgba(240,216,120,0.7)';
+    } else if (proximity >= 0.65) {
+      label = 'Hot';
+      color = '#e8c840';
+      border = 'rgba(232,200,64,0.55)';
+    } else if (proximity >= 0.35) {
+      label = 'Warmer';
+      color = '#d4a843';
+      border = 'rgba(212,168,67,0.5)';
+    } else if (proximity >= 0.15) {
+      label = 'Cool';
+      color = '#8ab4d4';
+      border = 'rgba(138,180,212,0.4)';
+    } else {
+      label = 'Cold';
+      color = '#7a8a9a';
+      border = 'rgba(122,138,154,0.35)';
+    }
+    if (hud.textContent !== label) hud.textContent = label;
+    hud.style.color = color;
+    hud.style.borderColor = border;
   }
 
   // After prolonged search, widen the key hit area and show explicit guidance
@@ -2677,7 +2808,7 @@
       'box-shadow:0 8px 40px rgba(0,0,0,0.7);';
     toast.innerHTML =
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Still searching?</div>' +
-      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. Faster chimes mean you are closer — look for the glowing sigil in the fog.</div>' +
+      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. As it glows warmer you are closer \u2014 look for the glowing sigil, then click again to chart it.</div>' +
       '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
     document.body.appendChild(toast);
     toast.addEventListener('click', function() {
@@ -3041,6 +3172,8 @@
 
     var escapeHint = document.getElementById('chime-escape-hint');
     if (escapeHint) escapeHint.remove();
+    dismissChimeSearchTeachTip();
+    dismissChimeWarmthHud();
     dismissSabellaCluePopup(false);
     clearChimeSearchLabelFocus();
 
