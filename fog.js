@@ -111,6 +111,14 @@
   // Order matches journey path: hut → monastery → tower → sinn (monastery before tower).
   // Only enforced when isSabellaMessagesEnabled(); flag off → legacy journey/explore gates only.
   var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'];
+  // Canonical display names for locked modal / Guide Me — never depend on LOCATIONS mutation
+  // or font misreads (e.g. Monastery ≠ Mercury). Keep in sync with data.js ids above.
+  var SABELLA_LETTER_DISPLAY_NAMES = {
+    'sabellas-hut': 'Sabella\u2019s Hut',
+    'monastery-wind': 'Monastery of the Wind',
+    'tower-nine': 'Tower of the Nine',
+    'sinn': 'Sinn'
+  };
   // State
   var discovered = {};
   var markerRefs = {};
@@ -556,6 +564,29 @@
         }
       }
 
+      // Missing Sabella letter at a completed stop — generous hit so recovery works
+      // even when the player is zoomed out / slightly off the mark.
+      if (!searchMode && isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
+        var missIds = getMissingSabellaLetterIds();
+        var bestMiss = null;
+        var bestMissDist = Infinity;
+        var mi;
+        for (mi = 0; mi < missIds.length; mi++) {
+          var mLoc = (window.LOCATIONS || []).find(function(l) { return l.id === missIds[mi]; });
+          if (!mLoc || !isFullyDiscovered(mLoc.id)) continue;
+          var mpt = map.latLngToContainerPoint(getInteractionLatLng(mLoc));
+          var md = Math.sqrt(Math.pow(x - mpt.x, 2) + Math.pow(y - mpt.y, 2));
+          if (md < 160 && md < bestMissDist) {
+            bestMiss = mLoc;
+            bestMissDist = md;
+          }
+        }
+        if (bestMiss && forceShowSabellaLetter(bestMiss)) {
+          e.stopPropagation(); e.preventDefault();
+          return;
+        }
+      }
+
       // Vol 2 sealed beacon — click the dim star at Monastery of the Wind, etc.
       if (!searchMode && isVol2JourneyGateBlocking()) {
         var sealedId = getVol2FirstSealedStepId();
@@ -664,6 +695,29 @@
       var rect = container.getBoundingClientRect();
       var x = touch.clientX - rect.left;
       var y = touch.clientY - rect.top;
+
+      // Missing Sabella letter recovery (touch) — same generous hit as click path
+      if (!searchMode && isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
+        var tMissIds = getMissingSabellaLetterIds();
+        var tBestMiss = null;
+        var tBestMissDist = Infinity;
+        var tmi;
+        for (tmi = 0; tmi < tMissIds.length; tmi++) {
+          var tMLoc = (window.LOCATIONS || []).find(function(l) { return l.id === tMissIds[tmi]; });
+          if (!tMLoc || !isFullyDiscovered(tMLoc.id)) continue;
+          var tMpt = map.latLngToContainerPoint(getInteractionLatLng(tMLoc));
+          var tMd = Math.sqrt(Math.pow(x - tMpt.x, 2) + Math.pow(y - tMpt.y, 2));
+          if (tMd < 160 && tMd < tBestMissDist) {
+            tBestMiss = tMLoc;
+            tBestMissDist = tMd;
+          }
+        }
+        if (tBestMiss && forceShowSabellaLetter(tBestMiss)) {
+          e.preventDefault();
+          return;
+        }
+      }
+
       var locs = window.LOCATIONS || [];
       var closest = null, closestDist = Infinity;
       locs.forEach(function(loc) {
@@ -3211,14 +3265,18 @@
 
   function getMissingSabellaLetterNames() {
     var ids = getMissingSabellaLetterIds();
-    var locs = window.LOCATIONS || [];
     var names = [];
     var i;
     for (i = 0; i < ids.length; i++) {
-      var loc = locs.find(function(l) { return l.id === ids[i]; });
-      names.push(loc ? loc.name : ids[i]);
+      names.push(sabellaLetterDisplayName(ids[i]));
     }
     return names;
+  }
+
+  function sabellaLetterDisplayName(locId) {
+    if (SABELLA_LETTER_DISPLAY_NAMES[locId]) return SABELLA_LETTER_DISPLAY_NAMES[locId];
+    var loc = (window.LOCATIONS || []).find(function(l) { return l.id === locId; });
+    return loc ? loc.name : locId;
   }
 
   function getFirstMissingSabellaLetterId() {
@@ -3226,14 +3284,26 @@
     return missing.length ? missing[0] : null;
   }
 
-  // Soft-lock recovery: fully charted letter-stop with unseen parchment → show letter now.
-  function maybeRecoverSabellaLetter(loc) {
+  // Soft-lock recovery: fully charted letter-stop with unseen parchment → show letter NOW.
+  // Must not defer behind #locked-msg / scheduleSabellaMessage (that soft-locks at Secrets 3/4).
+  function forceShowSabellaLetter(loc) {
     if (!loc || !isSabellaMessagesEnabled()) return false;
     if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return false;
     if (!isFullyDiscovered(loc.id)) return false;
-    if (document.getElementById('sabella-message-popup') || sabellaMessagePending) return true;
-    scheduleSabellaMessage(loc);
+
+    // Clear overlays that block scheduleSabellaMessage forever
+    var locked = document.getElementById('locked-msg');
+    if (locked && locked.parentNode) locked.parentNode.removeChild(locked);
+    dismissSabellaCluePopup(true);
+    sabellaMessagePending = false;
+
+    if (document.getElementById('sabella-message-popup')) return true;
+    showSabellaMessagePopup(loc.id, SABELLA_MESSAGES[loc.id]);
     return true;
+  }
+
+  function maybeRecoverSabellaLetter(loc) {
+    return forceShowSabellaLetter(loc);
   }
 
   // Primary letter path: fire once when chime search crosses "hot" (Secret find).
@@ -4323,15 +4393,16 @@
       if (missId) {
         target = locs.find(function(l) { return l.id === missId; });
         if (target) {
+          var missName = sabellaLetterDisplayName(missId);
           var missCount = getMissingSabellaLetterIds().length;
           if (missCount === 1) {
-            hintLine1 = 'Sabella left one more letter at ' + target.name + '.';
+            hintLine1 = 'Sabella left one more letter at ' + missName + '.';
           } else {
             hintLine1 = 'Sabella left more letters along Elena\u2019s road \u2014 next: ' +
-              target.name + '.';
+              missName + '.';
           }
           if (isFullyDiscovered(missId)) {
-            hintLine2 = 'Sabella\u2019s letter still waits here \u2014 click the mark to read it.';
+            hintLine2 = 'Opening Sabella\u2019s letter now \u2014 Secrets must reach 4 of 4.';
             recoverLetterOnArrive = true;
           } else {
             hintLine2 = 'Follow the glow and find the letter with the chime.';
@@ -4437,17 +4508,19 @@
       guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4500 };
     }, 900);
 
-    // Recover skipped letter at the guided stop (discovered + unseen parchment)
+    // Recover skipped letter immediately (don't wait on scheduleSabellaMessage / locked-msg)
     if (recoverLetterOnArrive) {
+      forceShowSabellaLetter(target);
       setTimeout(function() {
-        maybeRecoverSabellaLetter(target);
-      }, 1100);
+        forceShowSabellaLetter(target);
+      }, 1200);
     }
 
     // Show hint toast
     setTimeout(function() {
       showGuideHint(
-        target.name + (target.sub ? ' \u2014 ' + target.sub : ''),
+        (recoverLetterOnArrive ? sabellaLetterDisplayName(target.id) : target.name) +
+          (target.sub && !recoverLetterOnArrive ? ' \u2014 ' + target.sub : ''),
         hintLine1,
         hintLine2
       );
@@ -4532,6 +4605,8 @@
     getMissingSabellaLetterIds: getMissingSabellaLetterIds,
     getFirstMissingSabellaLetterId: getFirstMissingSabellaLetterId,
     maybeRecoverSabellaLetter: maybeRecoverSabellaLetter,
+    forceShowSabellaLetter: forceShowSabellaLetter,
+    sabellaLetterDisplayName: sabellaLetterDisplayName,
     getSinnLockedReason: getSinnLockedReason,
     isSinnTerritoryGated: isSinnTerritoryGated,
     isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,

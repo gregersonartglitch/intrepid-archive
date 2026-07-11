@@ -256,14 +256,17 @@ function getIndrasNaLockedReason(discovered, journeyPath) {
   if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
     var found = countSabellaPrereqLettersCollected();
     var need = SABELLA_LETTER_PREREQ_IDS.length;
+    var DISPLAY = {
+      'sabellas-hut': 'Sabella\u2019s Hut',
+      'monastery-wind': 'Monastery of the Wind',
+      'tower-nine': 'Tower of the Nine',
+      'sinn': 'Sinn'
+    };
     var missingNames = [];
     var seen = SABELLA_MESSAGES_SEEN;
     for (var mi = 0; mi < SABELLA_LETTER_PREREQ_IDS.length; mi++) {
       var mid = SABELLA_LETTER_PREREQ_IDS[mi];
-      if (!seen[mid]) {
-        var mloc = LOCATIONS.find(function(l) { return l.id === mid; });
-        missingNames.push(mloc ? mloc.name : mid);
-      }
+      if (!seen[mid]) missingNames.push(DISPLAY[mid] || mid);
     }
     var stillNeeded = missingNames.length
       ? missingNames.join(', ')
@@ -762,17 +765,27 @@ assert(/getNextPathLocation[\s\S]*?sabellaPrereqLettersComplete/.test(fogSrc),
 assert(fogSrc.indexOf('function isIndrasNaSealed') > -1, 'isIndrasNaSealed helper exists');
 assert(fogSrc.indexOf('function getMissingSabellaLetterIds') > -1, 'missing letter id helper exists');
 assert(fogSrc.indexOf('function maybeRecoverSabellaLetter') > -1, 'letter recovery helper exists');
+assert(fogSrc.indexOf('function forceShowSabellaLetter') > -1, 'forceShowSabellaLetter exists');
+assert(fogSrc.indexOf('SABELLA_LETTER_DISPLAY_NAMES') > -1 &&
+  fogSrc.indexOf("'monastery-wind': 'Monastery of the Wind'") > -1,
+  'canonical Monastery of the Wind display name (not Mercury)');
+assert(fogSrc.indexOf('function sabellaLetterDisplayName') > -1,
+  'sabellaLetterDisplayName helper exists');
+assert(/forceShowSabellaLetter[\s\S]*?locked[\s\S]*?removeChild|locked\.parentNode\.removeChild/.test(fogSrc) ||
+  /function forceShowSabellaLetter[\s\S]*?getElementById\('locked-msg'\)[\s\S]*?removeChild/.test(fogSrc),
+  'forceShow clears locked-msg before showing letter');
 assert(fogSrc.indexOf('Sabella left one more letter at') > -1,
   'Guide Me toast copy for single missing letter');
-assert(fogSrc.indexOf('Sabella\u2019s letter still waits here') > -1 ||
-  fogSrc.indexOf('Sabella\\u2019s letter still waits here') > -1,
-  'Guide Me tip for discovered-but-unread letter stop');
-assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?recoverLetterOnArrive/.test(fogSrc),
-  'Guide Me steers to first missing letter and recovers when charted');
+assert(fogSrc.indexOf('Opening Sabella') > -1,
+  'Guide Me tip opens letter on arrive');
+assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?forceShowSabellaLetter/.test(fogSrc),
+  'Guide Me steers to first missing letter and force-shows when charted');
 assert(/else if \(isIndrasNaSealed\(\)\)[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc),
   'drawBeaconGlows draws sealed Indras Na beacon');
 assert(fogSrc.indexOf('maybeRecoverSabellaLetter(discLoc)') > -1,
   'clicking completed letter-stop recovers skipped letter');
+assert(fogSrc.indexOf('forceShowSabellaLetter(bestMiss)') > -1,
+  'dedicated missing-letter hit-test force-shows parchment');
 assert(/completeDiscovery[\s\S]*?maybeFlyToNextJourneyStep/.test(fogSrc),
   'completeDiscovery flies toward next/sealed Indras when off-screen');
 assert(fogSrc.indexOf('locked-msg-close') > -1 &&
