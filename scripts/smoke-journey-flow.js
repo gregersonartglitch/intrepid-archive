@@ -36,6 +36,17 @@ vm.runInNewContext(dataCode, dataCtx);
 var LOCATIONS = dataCtx.window.LOCATIONS;
 var JOURNEY_PATH = dataCtx.window.JOURNEY_PATH;
 
+console.log('\n[0] Retired hotspot — moon-stronghold folded into sinn (build 168)');
+assert(!LOCATIONS.some(function(l) { return l.id === 'moon-stronghold'; }),
+  'moon-stronghold removed from LOCATIONS');
+assert(JOURNEY_PATH.every(function(s) { return s.locationId !== 'moon-stronghold'; }),
+  'moon-stronghold not on journey path');
+var sinnLoc = LOCATIONS.find(function(l) { return l.id === 'sinn'; });
+assert(!!sinnLoc && /silver-walled seat/.test(sinnLoc.desc || ''),
+  'sinn desc folds stronghold / Sabella seat lore');
+assert(LOCATIONS.filter(function(l) { return !!l.cartographerSite; }).length === 13,
+  'Cities & Sites cartographer count stays 13 (stronghold was never a site)');
+
 // ── Mirror fog.js vol2 / journey helpers (build 154) ─────────
 var FINAL_ELENA_STOP = 'indras-na';
 var VOL2_GUARDIAN_TRIGGER = 'Mish';

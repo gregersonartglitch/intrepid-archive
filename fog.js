@@ -365,6 +365,14 @@
     try { discovered = JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
     catch(e) { discovered = {}; }
 
+    // Retired hotspot (build 168): moon-stronghold folded into sinn — drop orphan key so
+    // proximity / Object.keys(discovered) loops never treat a missing LOCATIONS id as live.
+    // Does not affect Cities & Sites (never cartographerSite) or journey counts.
+    if (discovered['moon-stronghold']) {
+      delete discovered['moon-stronghold'];
+      try { localStorage.setItem(LS_KEY, JSON.stringify(discovered)); } catch (eMig) {}
+    }
+
     loadAmbientPreference();
     updateAmbientButton();
     ensureAmbientAudio();

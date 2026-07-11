@@ -574,18 +574,7 @@ window.LOCATIONS = [
     volume1: true,
     art: 'ashal.jpg'
   },
-  {
-    id: 'moon-stronghold',
-    name: 'Moon Queen\'s Stronghold',
-    sub: 'Seat of the Moon Queen',
-    type: 'story',
-    lat: 4442,
-    lng: 1406,
-    desc: 'The silver-walled fortress from which Sabella, Elena\'s grandmother and the Moon Queen, governs the last free territory in the Hollowlands. Elena stood before her here and understood: rescue is not always what the rescued want.',
-    lore: '"The Moon Queen built her throne from the wreckage of a life she chose to leave behind. She did not look back. Looking back is for those who believe they left something worth returning to."',
-    journeyStep: null,
-    volume1: true
-  },
+  // moon-stronghold retired (build 168): fortress is in Sinn itself — not a separate hotspot
   {
     id: 'tower-nine',
     name: 'Tower of the Nine',
@@ -742,8 +731,8 @@ window.LOCATIONS = [
     type: 'city',
     lat: 4414,
     lng: 1394,
-    desc: 'The judicial heart of the Moon Queen\'s domain, where verdicts are written in silver ink that fades by dawn, binding only those who witnessed the judgment. The streets spiral inward like a nautilus shell, a shape Sabella carried from somewhere she has never named.',
-    lore: '"Sinn does not dispense justice. Sinn dispenses clarity. The difference is that justice can be appealed."',
+    desc: 'The judicial heart of the Moon Queen\'s domain — and the silver-walled seat from which Sabella, Elena\'s grandmother, governs the last free territory in the Hollowlands. Verdicts are written in silver ink that fades by dawn; the streets spiral inward like a nautilus shell. Elena stood before her here and understood: rescue is not always what the rescued want.',
+    lore: '"The Moon Queen built her throne from the wreckage of a life she chose to leave behind. She did not look back. Looking back is for those who believe they left something worth returning to."',
     journeyStep: 7,
     volume1: true
   },

@@ -7,7 +7,7 @@ let data = fs.readFileSync('data.js', 'utf8');
 const journeyIds = [
   'crossing-pool', 'dawn-spear', 'sabellas-hut', 'tower-nine',
   'monastery-wind', 'hollowgate', 'mish', 'brea',
-  'moon-stronghold', 'erra', 'maxim-stone'
+  'erra', 'maxim-stone'
 ];
 
 // Always revealed types
@@ -59,7 +59,6 @@ const epithets = {
   'sabellas-hut': 'The Grandmother\'s Shelter',
   'tower-nine': 'The Ruined Tower',
   'monastery-wind': 'The Oracle\'s Sanctuary',
-  'moon-stronghold': 'The Moon Queen\'s Fortress',
   'maxim-stone': 'The Barrier',
   'irridari-citadel': 'The Shining Fortress',
   

@@ -56,8 +56,7 @@ Comic structure (reader): Issue 1 = pages 1–21, Issue 2 = 22–42, Issue 3 = 4
 | `erra` | **2–3** | War-city; Atrus Nul’s father; Elena passes through war-as-atmosphere | Cartographer site; dossier Atrus | City panel doesn’t connect **Erra → Atrus Nul → Irridari** chain |
 | `tower-nine` | **3** | Nine gods caged; storm set-piece; Elena enters the cage | P0; art; tower hint | Maxim Stone cluster peek exists; **Nine facing inward** could be a secret |
 | `maxim-stone` | **3** | World suture; prophecy proves; Sabella face in stone (comic) | Vol1 story site; cluster unlock | No **second inscription / Magus script** hook (reserved for future Trail) |
-| `moon-stronghold` | **3** | Elena meets Sabella; rescue ≠ what rescued want | Vol1 story; not on journey | Not discoverable on golden path; easy **optional site** for Issue 3 patrons |
-| `sinn` | **3** | Moon Court; Sabella’s design; judicial clarity | P0 journey; chime search | Silver ink / spiral design in desc but no **secret** collectible |
+| `sinn` | **3** | Moon Court; Sabella’s fortress-seat; grandmother reunion; judicial clarity | P0 journey; chime search; **stronghold lore folded in (build 168)** | Stronghold no longer a separate hotspot |
 | `indras-na` | **3** | Western garrison; finale approach; mirrors / laughter | P0 finale; chime; gated | Locked-message UX aside, lore doesn’t say **Volume 1 ends here** |
 | `irridari-citadel` | **3** | Atrus Nul’s seat; cosmic antagonist scope | Vol1 sacred; not cartographer site | Patrons chart nearby **Nin/Erra** but citadel is easy miss |
 | `hope-rebellands` | **2** | OG border; resistance; Elena’s path through contested land | Vol1 region | Region lore generic; no Issue 2 **rebel** beat |
@@ -73,7 +72,7 @@ Comic structure (reader): Issue 1 = pages 1–21, Issue 2 = 22–42, Issue 3 = 4
 
 1. **P0 journey desc/lore pass (8 IDs)** — Add one Issue-specific sentence per `desc` (what Elena did here), keep lore as single cartographer quote. Priority: `mish`, `monastery-wind`, `sinn`, `indras-na`.
 2. **Issue 2 cartographer sites** — `brea`, `denegoth`, `ashal`, `erra`: one thread each (Magus, Lugal Esugar, pilgrimage, Atrus lineage). Already flagged P1 in `docs/location-descriptions-handoff.md`.
-3. **Issue 3 optional story site** — `moon-stronghold`: ensure layer default visible; add one line to desc: “Elena’s reunion with her grandmother happened here — the map marks the fortress, not the conversation.”
+3. **Issue 3 Sinn panel** — Stronghold lore folded into `sinn` (build 168); no separate `moon-stronghold` hotspot.
 4. **Region hooks (2–3 territories)** — `hope-rebellands`, `moon-queen-kingdom`, `atras-empire`: replace generic chronicler voice with one Sabella / Atrus / rebel hook each (handoff rubric § north-star).
 
 ### Tier B — Content into existing scaffolds (no new UI)

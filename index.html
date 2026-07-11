@@ -1567,17 +1567,6 @@ body.edit-mode .mk-dot-wrap > * {
   line-height: 0.88;
   white-space: nowrap;
 }
-.mk-story-lbl.lbl-moon-stronghold {
-  white-space: normal;
-  line-height: 0.88;
-  font-size: calc(12px * var(--label-scale));
-  text-align: left;
-}
-.mk-story-lbl.lbl-moon-stronghold .label-line {
-  display: block;
-  line-height: 0.88;
-  white-space: nowrap;
-}
 /* Capital */
 .mk-capital {
   width: 12px; height: 12px; border-radius: 50%;
@@ -3084,7 +3073,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 167;
+window.INTREPID_BUILD = 168;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3161,7 +3150,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=167"></script>
+<script src="fog.js?v=168"></script>
 <script>
 (function() {
   'use strict';
@@ -5260,18 +5249,15 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       const lblClass = 'mk-' + t + '-lbl';
       const labelSplits = {
         'tower-nine': ['Tower of', 'the Nine'],
-        'maxim-stone': ['The Maxim', 'Stone'],
-        'moon-stronghold': ['Moon Queen\'s', 'Stronghold']
+        'maxim-stone': ['The Maxim', 'Stone']
       };
       const labelClusterClass = {
         'tower-nine': ' lbl-tower-nine',
-        'maxim-stone': ' lbl-maxim-stone',
-        'moon-stronghold': ' lbl-moon-stronghold'
+        'maxim-stone': ' lbl-maxim-stone'
       };
       // Short directional nudge from dot — only for genuine label collisions
       const labelDirections = {
         'maxim-stone': 'below-right',
-        'moon-stronghold': 'below-right',
         'sinn': 'below-left'
       };
       const labelHtml = labelSplits[loc.id]
@@ -5437,7 +5423,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     'monastery-wind':  'monastery-wind.jpg',
     'ashal':           'ashal.jpg',
     'maxim-stone':     'maxim-stone.jpg',
-    'moon-stronghold': 'landmarks/moon_queen_stronghold.png',
     'hollowgate':      'landmarks/hollowgate.png'
   };
 
