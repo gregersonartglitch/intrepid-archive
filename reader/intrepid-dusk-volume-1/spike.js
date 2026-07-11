@@ -58,11 +58,15 @@ const ISSUE_003_START = 45;
 const PRELOAD_BACK = 3;
 const PRELOAD_AHEAD = 5;
 const LINK_PRELOAD_AHEAD = 3;
-// Cover + first content spread(s) must decode before the book is revealed.
-const OPENING_READY_LAST_INDEX = 5;
-const IMAGE_LOAD_MAX_ATTEMPTS = 3;
-const IMAGE_LOAD_TIMEOUT_MS = 12000;
-const PAGE_ASSET_VERSION = 162;
+// Cover + first content pages preferred before reveal (not a hard block).
+// Keep this small: buildPageElements only assigns src for these indices so the
+// browser connection pool is not starved by ~70 concurrent WebP downloads.
+const OPENING_READY_LAST_INDEX = 3;
+const IMAGE_LOAD_MAX_ATTEMPTS = 2;
+const IMAGE_LOAD_TIMEOUT_MS = 4000;
+const VEIL_HARD_DEADLINE_MS = 3500;
+const PAGE_ASSET_VERSION = 165;
+const SOFT_TOAST_MS = 4200;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
 const decodedPages = new Set();
@@ -85,6 +89,8 @@ const elements = {
   helpDismiss: document.querySelector('[data-action="help-dismiss"]'),
 };
 let hasReaderMagnifyPlugin = false;
+let bootOpened = false;
+let veilDeadlineId = null;
 
 function isReaderMagnifyRuntimeAllowed() {
   if (!ENABLE_READER_MAGNIFY) {
@@ -371,12 +377,13 @@ function ensurePageImageReady(pageIndex, options) {
       settle(true);
     }
 
-    function runDecode() {
-      if (typeof image.decode !== "function") {
-        markReady();
-        return;
+    function afterLoaded() {
+      // Gate on load only — decode() is best-effort and must never block reveal.
+      // Some browsers leave decode() pending on large WebPs / detached nodes.
+      markReady();
+      if (typeof image.decode === "function") {
+        image.decode().catch(function () {});
       }
-      image.decode().then(markReady).catch(markReady);
     }
 
     function isLoaded() {
@@ -389,13 +396,13 @@ function ensurePageImageReady(pageIndex, options) {
 
     function bindAttempt() {
       if (isLoaded()) {
-        runDecode();
+        afterLoaded();
         return;
       }
 
       function onLoad() {
         cleanup();
-        runDecode();
+        afterLoaded();
       }
 
       function onError() {
@@ -433,7 +440,7 @@ function ensurePageImageReady(pageIndex, options) {
 
     timeoutId = setTimeout(function () {
       settle(isLoaded());
-    }, soft ? Math.min(4000, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
+    }, soft ? Math.min(2500, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
 
     bindAttempt();
   });
@@ -472,6 +479,19 @@ function syncLinkPreloads(centerIndex) {
   }
 }
 
+function assignPageImageSrc(pageIndex, attempt) {
+  var entry = pageEntries[pageIndex];
+  var image = pageImages[pageIndex];
+  if (!entry || entry.blank || !image) {
+    return "";
+  }
+  var href = pageAssetUrl(entry, attempt || 0);
+  if (image.getAttribute("src") !== href) {
+    image.src = href;
+  }
+  return href;
+}
+
 function warmPageImage(pageIndex) {
   if (pageIndex < 0 || pageIndex >= pageEntries.length) {
     return;
@@ -491,6 +511,7 @@ function warmPageImage(pageIndex) {
     return;
   }
 
+  assignPageImageSrc(pageIndex, 0);
   image.loading = "eager";
   decodePageImage(pageIndex);
 
@@ -584,11 +605,11 @@ function prepareOpeningPages(pageElements) {
       elements.loadVeil.classList.add("is-failed");
       elements.loadProgress.textContent =
         failed === results.length
-          ? "Unable to load pages — retrying…"
+          ? "Opening with pages still loading…"
           : "Almost ready…";
     }
-    // Soft-fail: still mount if at least the cover (or any page) decoded.
-    return results.some(Boolean) || failed < results.length;
+    // Never block the book on preload — report readiness only.
+    return failed === 0;
   });
 }
 
@@ -701,12 +722,18 @@ function buildPageElements() {
     image.width = NATIVE_PAGE_WIDTH;
     image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";
-    image.loading = "eager";
-    if (index <= OPENING_READY_LAST_INDEX && "fetchPriority" in image) {
-      image.fetchPriority = "high";
-    }
     image.draggable = false;
-    image.src = pageAssetUrl(entry, 0);
+    // Only kick network for opening pages here. Assigning src on every page
+    // at boot starved the browser pool (~6 conns/host) and timed out the veil.
+    if (index <= OPENING_READY_LAST_INDEX) {
+      image.loading = "eager";
+      if ("fetchPriority" in image) {
+        image.fetchPriority = "high";
+      }
+      image.src = pageAssetUrl(entry, 0);
+    } else {
+      image.loading = "lazy";
+    }
     pageImages[index] = image;
 
     page.append(image);
@@ -780,56 +807,77 @@ function revealReader() {
   });
 }
 
+function showSoftLoadToast(message) {
+  if (!elements.stage || !message) {
+    return;
+  }
+  var existing = elements.stage.querySelector("[data-reader-soft-toast]");
+  if (existing) {
+    existing.remove();
+  }
+  var toast = document.createElement("div");
+  toast.className = "reader-soft-toast";
+  toast.setAttribute("data-reader-soft-toast", "");
+  toast.setAttribute("role", "status");
+  toast.textContent = message;
+  elements.stage.appendChild(toast);
+  setTimeout(function () {
+    toast.classList.add("is-leaving");
+    setTimeout(function () {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 400);
+  }, SOFT_TOAST_MS);
+}
+
+function openBook(pageElements, options) {
+  if (bootOpened) {
+    return;
+  }
+  bootOpened = true;
+  if (veilDeadlineId != null) {
+    clearTimeout(veilDeadlineId);
+    veilDeadlineId = null;
+  }
+
+  try {
+    if (!pageFlip) {
+      pageFlip = createPageFlip(pageElements);
+    }
+  } catch (err) {
+    console.error("[reader] failed to mount page flip", err);
+  }
+
+  if (options && options.softError) {
+    showSoftLoadToast("Pages are still loading — flip when ready.");
+  }
+
+  revealReader();
+  loadReaderMagnifyPlugin(function () {
+    initReaderMagnify();
+    updateReaderHelpTipCopy();
+  });
+  initReaderHelpTip();
+}
+
 function bootReader() {
   setReaderPreparing(true);
   var pageElements = buildPageElements();
+  var openingFailed = false;
+
+  veilDeadlineId = setTimeout(function () {
+    openBook(pageElements, { softError: true });
+  }, VEIL_HARD_DEADLINE_MS);
 
   prepareOpeningPages(pageElements)
     .then(function (ok) {
-      if (!ok && elements.loadProgress) {
-        // Last-chance retry for opening pages before reveal.
-        return Promise.all(
-          collectOpeningImageIndices().map(function (pageIndex) {
-            decodedPages.delete(pageIndex);
-            warmedPages.delete(pageIndex);
-            var entry = pageEntries[pageIndex];
-            var image = pageImages[pageIndex];
-            if (image && entry) {
-              image.src = pageAssetUrl(entry, 1);
-            }
-            return ensurePageImageReady(pageIndex);
-          }),
-        ).then(function () {
-          return true;
-        });
-      }
-      return true;
-    })
-    .then(function () {
-      pageFlip = createPageFlip(pageElements);
-      revealReader();
-      loadReaderMagnifyPlugin(function () {
-        initReaderMagnify();
-        updateReaderHelpTipCopy();
-      });
-      initReaderHelpTip();
+      openingFailed = !ok;
+      // Prefer cover readiness, but never wait on a second full retry cycle.
+      openBook(pageElements, { softError: openingFailed });
     })
     .catch(function () {
-      // Never leave the reader stuck behind the veil.
-      try {
-        pageFlip = createPageFlip(pageElements);
-      } catch (err) {
-        console.error("[reader] failed to mount page flip", err);
-      }
-      if (elements.loadProgress) {
-        elements.loadProgress.textContent = "Opening…";
-      }
-      revealReader();
-      loadReaderMagnifyPlugin(function () {
-        initReaderMagnify();
-        updateReaderHelpTipCopy();
-      });
-      initReaderHelpTip();
+      openBook(pageElements, { softError: true });
     });
 }
 

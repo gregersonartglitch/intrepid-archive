@@ -313,6 +313,31 @@ h1 {
   color: var(--gold);
 }
 
+.reader-soft-toast {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 12;
+  transform: translateX(-50%);
+  max-width: min(22rem, calc(100% - 28px));
+  padding: 10px 14px;
+  border: 1px solid rgba(198, 141, 85, 0.35);
+  border-radius: 8px;
+  background: rgba(8, 7, 5, 0.92);
+  color: var(--bone);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.reader-soft-toast.is-leaving {
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+}
+
 .reader-stage::before {
   position: absolute;
   inset: 0;
