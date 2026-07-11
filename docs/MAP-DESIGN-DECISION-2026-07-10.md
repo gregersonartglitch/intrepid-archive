@@ -13,10 +13,11 @@ Shared source of truth for *what the map is today:*
 - **Triage:** `docs/MAP-SYSTEMS-TRIAGE-2026-07-10.md`
 - **Proposal A (economy / soft-gates):** `docs/MAP-DESIGN-PROPOSAL-A-ECONOMY.md`
 - **Proposal B (compass / attention):** `docs/MAP-DESIGN-PROPOSAL-B-COMPASS.md`
+- **Fable build-112 review:** `docs/FABLE-MAP-REVIEW-2026-07-07.md`
 
 **Product job:** A 20–40 minute wonder artifact. Feel the Hollowlands. Want to read the book. Not a retention economy, not a live-ops loop.
 
-**Audience:** Small (≈3 reviewers), includes older players (Haytus). Accessible beats friction. Delight beats “earned scarcity” when the session is one sitting.
+**Audience:** Small (≈3 reviewers), includes older players (John Haytas). Accessible beats friction. Delight beats “earned scarcity” when the session is one sitting.
 
 ---
 
@@ -38,7 +39,7 @@ No new economy. No glow redesign. Copy and labels only:
 1. **Bearing lines** — Static footer on discovery cards, in Sabella’s voice, aiming the next thing (cover the 5–8 journey stops that need it).
 2. **Letters-as-bearings reframe** — Relabel Secrets → **“Letters along the road”** (or equivalent) so the track reads as path guidance, not a loot bar.
 3. **Locked-reason copy** — Adopt Proposal A’s pattern: when something is locked, the map always shows *why* (reuse / extend Indras Na–style locked reasons).
-4. **Demote water beacons note** — If still relevant (triage item 9 / waters vs Territories bar), a short clarifying note so seas don’t read as clock progress.
+4. **Demote water beacons note** — Per Fable review item 9 in `docs/FABLE-MAP-REVIEW-2026-07-07.md` (waters glow as territories but feed no counter), a short clarifying note or distinct identity so seas don’t read as clock progress.
 
 ---
 
@@ -48,7 +49,7 @@ No new economy. No glow redesign. Copy and labels only:
 |------|----------|
 | Full basin soft-gates (read-gated unlocks) | Unverifiable in playtest; dark amber; High soft-lock risk |
 | One-glow-at-a-time / hide beacons | Rail anxiety; fights free exploration |
-| Territory hold-rite | Motor accessibility (Haytus) |
+| Territory hold-rite | Motor accessibility (Haytas demographic) |
 | Ink currency, rank capabilities, sketch pins | Retention-economy scope; wrong product job |
 
 ---
