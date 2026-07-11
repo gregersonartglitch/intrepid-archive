@@ -43,7 +43,7 @@ var VOL2_JOURNEY_CAP_ID = 'sinn';
 var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
 var ENABLE_VOL2_JOURNEY_GATE = true;
 var ENABLE_SABELLA_MESSAGES = true;
-var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'tower-nine', 'monastery-wind', 'sinn'];
+var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'];
 var SABELLA_MESSAGES_SEEN = {}; // test-local stand-in for intrepid_sabella_messages_seen
 // Vol 1 clock sequence — clockwise 12→6; Mish last (must match fog.js VOL1_REVEAL_ORDER)
 var VOL1_REVEAL_ORDER = ['Utu', 'Sham & Mash', 'Elil', 'Rapha', 'Ningal', 'An', 'Mish'];
@@ -445,8 +445,8 @@ var lockedLetters = makeJourneyCompleteThrough('sinn');
 lockedLetters['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(lockedLetters);
 SABELLA_MESSAGES_SEEN['sabellas-hut'] = 1;
-SABELLA_MESSAGES_SEEN['tower-nine'] = 1;
 SABELLA_MESSAGES_SEEN['monastery-wind'] = 1;
+SABELLA_MESSAGES_SEEN['tower-nine'] = 1;
 // sinn letter missing → 3 of 4
 var letterReason = getIndrasNaLockedReason(lockedLetters, JOURNEY_PATH);
 assert(typeof letterReason === 'string' && letterReason.indexOf('3 of 4') > -1,

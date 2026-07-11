@@ -74,11 +74,18 @@
   var SABELLA_MESSAGES_SEEN_LS = 'intrepid_sabella_messages_seen';
   var sabellaMessagePending = false;
   var sabellaMessageOnDismiss = null;
+  // Object key order follows Elena's journey path (hut → monastery → tower → sinn → indras-na).
   var SABELLA_MESSAGES = {
     'sabellas-hut': {
       title: 'A Letter by the Hearth',
       greeting: 'My Elena\u2026',
       body: 'I left the kettle warm and the door unlatched. If you are reading this, you found the hut the way I taught you \u2014 by cedar smoke and the wrongness of quiet. Do not wait for me here. The road remembers what I could not finish saying.',
+      signoff: 'Grandma Bella'
+    },
+    'monastery-wind': {
+      title: 'Wind Through the Oracle\u2019s Hall',
+      greeting: 'My Elena\u2026',
+      body: 'Isin Ada will speak of dust and names already written. You may refuse the prophecy; I did, once. Still \u2014 listen for the part that sounds like your own heartbeat. That part is true, even when the rest is wind.',
       signoff: 'Grandma Bella'
     },
     'tower-nine': {
@@ -87,16 +94,10 @@
       body: 'The Nine face inward, not out. Whatever they guard, they guard together \u2014 and the Stone listens. Climb carefully. I climbed once and came down changed. Trust the companions who wait in the fog beside the tower.',
       signoff: 'Sabella'
     },
-    'monastery-wind': {
-      title: 'Wind Through the Oracle\u2019s Hall',
-      greeting: 'My Elena\u2026',
-      body: 'Isin Ada will speak of trees and names already written. You may refuse the prophecy; I did, once. Still \u2014 listen for the part that sounds like your own heartbeat. That part is true, even when the rest is wind.',
-      signoff: 'Grandma Bella'
-    },
     'sinn': {
       title: 'Silver Ink at Sinn',
       greeting: 'My Elena\u2026',
-      body: 'The Moon Court judges with silver ink and spiral law. If they ask who sent you, say your grandmother still charts by dusk. I left a mark in the fog for you \u2014 when the lantern grows warm, trust the chime.',
+      body: 'The Moon Court judges with silver ink and spiral law. If they ask who sent you, say your grandmother still charts by dusk. I left a mark for you in the silver dusk \u2014 when the lantern grows warm, trust the chime.',
       signoff: 'Sabella'
     },
     'indras-na': {
@@ -107,8 +108,9 @@
     }
   };
   // First 4 letters must be found before Indras Na unlocks (5th letter is AT Indras Na).
+  // Order matches journey path: hut → monastery → tower → sinn (monastery before tower).
   // Only enforced when isSabellaMessagesEnabled(); flag off → legacy journey/explore gates only.
-  var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'tower-nine', 'monastery-wind', 'sinn'];
+  var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'];
   // State
   var discovered = {};
   var markerRefs = {};

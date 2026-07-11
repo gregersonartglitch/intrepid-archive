@@ -13,8 +13,8 @@ Five parchment letters fire **once per location** when chime search proximity cr
 | Stop | Location ID | Title (first line) |
 |------|-------------|--------------------|
 | 1 | `sabellas-hut` | **A Letter by the Hearth** — *My Elena…* |
-| 2 | `tower-nine` | **From the Cage of Nine** — *My Elena…* |
-| 3 | `monastery-wind` | **Wind Through the Oracle's Hall** — *My Elena…* |
+| 2 | `monastery-wind` | **Wind Through the Oracle's Hall** — *My Elena…* |
+| 3 | `tower-nine` | **From the Cage of Nine** — *My Elena…* |
 | 4 | `sinn` | **Silver Ink at Sinn** — *My Elena…* |
 | 5 | `indras-na` | **At the Western Gate** — *My Elena…* (then Vol 1 reward dialogue on discovery complete) |
 
