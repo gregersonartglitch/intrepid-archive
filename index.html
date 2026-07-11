@@ -488,6 +488,20 @@ input { font-family: inherit; }
 .gate-input::placeholder { color: rgba(191,178,153,0.3); letter-spacing: 4px; font-size: 11px; }
 #entry-access-pw::placeholder { color: rgba(191,178,153,0.42); }
 .gate-input:focus { border-bottom-color: var(--amber); }
+/* Kill browser autofill cream/white so bone text stays readable on dark gate fields */
+#entry-access-pw:-webkit-autofill,
+#entry-access-pw:-webkit-autofill:hover,
+#entry-access-pw:-webkit-autofill:focus,
+#entry-access-pw:-webkit-autofill:active,
+#gate-pw:-webkit-autofill,
+#gate-pw:-webkit-autofill:hover,
+#gate-pw:-webkit-autofill:focus,
+#gate-pw:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--bone);
+  caret-color: var(--bone);
+  box-shadow: 0 0 0 1000px rgba(10, 9, 14, 0.95) inset;
+  transition: background-color 99999s ease-out;
+}
 .gate-toggle {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
   width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
@@ -624,8 +638,8 @@ html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneifo
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   font-size: clamp(20px, 3.2vw, 26px);
   letter-spacing: 0.06em;
-  /* Hub tiles: flex center + no extra nudge (3px was over-low after badge fix) */
-  transform: translateY(0);
+  /* Hub tiles: Santakku wedges sit low in em box — lift for optical center */
+  transform: translateY(-3px);
 }
 html.cuneiform-buttons-on .landing-action.primary.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   color: var(--bone);
@@ -1299,7 +1313,8 @@ html.cuneiform-buttons-on .hdr-v1-btn.cuneiform-btn .cuneiform-btn__layer--cunei
 html.cuneiform-buttons-on .hdr-dossier-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   font-size: 18px;
   letter-spacing: 0.06em;
-  transform: translateY(0);
+  /* Same Santakku low-em bias as hub — lighter lift on smaller header type */
+  transform: translateY(-2px);
   -webkit-text-stroke: 0.35px currentColor;
   text-shadow: 0 0 1px currentColor;
 }
@@ -3069,7 +3084,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 158;
+window.INTREPID_BUILD = 159;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3145,8 +3160,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=158"></script>
-<script src="fog.js?v=158"></script>
+<script src="archive-access.js?v=159"></script>
+<script src="fog.js?v=159"></script>
 <script>
 (function() {
   'use strict';
