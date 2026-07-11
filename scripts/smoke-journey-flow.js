@@ -256,10 +256,41 @@ function getIndrasNaLockedReason(discovered, journeyPath) {
   if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
     var found = countSabellaPrereqLettersCollected();
     var need = SABELLA_LETTER_PREREQ_IDS.length;
-    return 'Indras Na stays sealed until Sabella\u2019s remaining letters along Elena\u2019s road are found. ' +
-      found + ' of ' + need + ' letters found along Elena\u2019s road.';
+    var missingNames = [];
+    var seen = SABELLA_MESSAGES_SEEN;
+    for (var mi = 0; mi < SABELLA_LETTER_PREREQ_IDS.length; mi++) {
+      var mid = SABELLA_LETTER_PREREQ_IDS[mi];
+      if (!seen[mid]) {
+        var mloc = LOCATIONS.find(function(l) { return l.id === mid; });
+        missingNames.push(mloc ? mloc.name : mid);
+      }
+    }
+    var stillNeeded = missingNames.length
+      ? missingNames.join(', ')
+      : 'an unread letter along Elena\u2019s road';
+    return 'Sabella\u2019s letters: ' + found + ' of ' + need +
+      ' found. Still needed: ' + stillNeeded +
+      '. Tap a completed letter-stop again if you missed the parchment during the chime.';
   }
 
+  return null;
+}
+
+function isIndrasNaSealed(discovered, journeyPath) {
+  if (isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return false;
+  var ji;
+  for (ji = 0; ji < journeyPath.length; ji++) {
+    var stepId = journeyPath[ji].locationId;
+    if (stepId === FINAL_ELENA_STOP) break;
+    if (!isFullyDiscovered(stepId, discovered, journeyPath)) return false;
+  }
+  return !!getIndrasNaLockedReason(discovered, journeyPath);
+}
+
+function getFirstMissingSabellaLetterId() {
+  for (var i = 0; i < SABELLA_LETTER_PREREQ_IDS.length; i++) {
+    if (!SABELLA_MESSAGES_SEEN[SABELLA_LETTER_PREREQ_IDS[i]]) return SABELLA_LETTER_PREREQ_IDS[i];
+  }
   return null;
 }
 
@@ -535,16 +566,26 @@ SABELLA_MESSAGES_SEEN['tower-nine'] = 1;
 var letterReason = getIndrasNaLockedReason(lockedLetters, JOURNEY_PATH);
 assert(typeof letterReason === 'string' && letterReason.indexOf('3 of 4') > -1,
   'locked reason when 4 letters missing shows count (3 of 4)');
-assert(letterReason.indexOf('letters found along Elena') > -1,
-  'locked reason names Sabella letters along Elena\u2019s road');
+assert(letterReason.indexOf('Still needed:') > -1 && letterReason.indexOf('Sinn') > -1,
+  'locked reason lists missing letter stop name (Sinn)');
+assert(isIndrasNaSealed(lockedLetters, JOURNEY_PATH),
+  'sinn done + letters incomplete → Indras Na sealed beacon state');
+assert(getNextPathLocation(lockedLetters, JOURNEY_PATH, {}) === null,
+  'no golden glow while Indras sealed on letters');
+assert(getFirstMissingSabellaLetterId() === 'sinn',
+  'first missing letter is sinn when hut/monastery/tower collected');
 assert(!isJourneyPathClickable(FINAL_ELENA_STOP, lockedLetters, JOURNEY_PATH, {}),
-  '4 letters missing → indras-na locked');
+  '3 of 4 letters → indras-na locked (not golden-clickable)');
 collectSabellaPrereqLetters();
 var unlockedSnap = makeJourneyCompleteThrough('sinn');
 unlockedSnap['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(unlockedSnap);
 assert(getIndrasNaLockedReason(unlockedSnap, JOURNEY_PATH) === null,
   'locked reason null when Indras Na is unlockable');
+assert(!isIndrasNaSealed(unlockedSnap, JOURNEY_PATH),
+  'not sealed when unlockable — golden glow path');
+assert(getNextPathLocation(unlockedSnap, JOURNEY_PATH, {}) === FINAL_ELENA_STOP,
+  'sinn done + all prereqs → golden glow on indras-na');
 var doneSnap = Object.assign({}, unlockedSnap);
 doneSnap[FINAL_ELENA_STOP] = { at: Date.now(), phase: 'complete' };
 assert(getIndrasNaLockedReason(doneSnap, JOURNEY_PATH) === null,
@@ -714,10 +755,26 @@ assert(fogSrc.indexOf('Sabella\\u2019s remaining marks') > -1 ||
 assert(fogSrc.indexOf('SABELLA_LETTER_PREREQ_IDS') > -1 &&
   fogSrc.indexOf('sabellaPrereqLettersComplete') > -1,
   'Sabella road-letter prereq gate helpers exist');
-assert(/getIndrasNaLockedReason[\s\S]*?letters found along Elena/.test(fogSrc),
-  'locked copy reports letter count along Elena\u2019s road');
+assert(/getIndrasNaLockedReason[\s\S]*?Still needed:/.test(fogSrc),
+  'locked copy lists still-needed letter stop names');
 assert(/getNextPathLocation[\s\S]*?sabellaPrereqLettersComplete/.test(fogSrc),
   'getNextPathLocation seals indras-na until road letters complete');
+assert(fogSrc.indexOf('function isIndrasNaSealed') > -1, 'isIndrasNaSealed helper exists');
+assert(fogSrc.indexOf('function getMissingSabellaLetterIds') > -1, 'missing letter id helper exists');
+assert(fogSrc.indexOf('function maybeRecoverSabellaLetter') > -1, 'letter recovery helper exists');
+assert(fogSrc.indexOf('Sabella left one more letter at') > -1,
+  'Guide Me toast copy for single missing letter');
+assert(fogSrc.indexOf('Sabella\u2019s letter still waits here') > -1 ||
+  fogSrc.indexOf('Sabella\\u2019s letter still waits here') > -1,
+  'Guide Me tip for discovered-but-unread letter stop');
+assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?recoverLetterOnArrive/.test(fogSrc),
+  'Guide Me steers to first missing letter and recovers when charted');
+assert(/else if \(isIndrasNaSealed\(\)\)[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc),
+  'drawBeaconGlows draws sealed Indras Na beacon');
+assert(fogSrc.indexOf('maybeRecoverSabellaLetter(discLoc)') > -1,
+  'clicking completed letter-stop recovers skipped letter');
+assert(/completeDiscovery[\s\S]*?maybeFlyToNextJourneyStep/.test(fogSrc),
+  'completeDiscovery flies toward next/sealed Indras when off-screen');
 assert(fogSrc.indexOf('locked-msg-close') > -1 &&
   fogSrc.indexOf('function lockedMsgCloseHtml') > -1 &&
   fogSrc.indexOf('function wireLockedMsgDismiss') > -1,

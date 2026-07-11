@@ -624,6 +624,8 @@
         if (discLoc) {
           e.stopPropagation();
           e.preventDefault();
+          // Recover skipped Sabella letter before reopening lore card
+          if (maybeRecoverSabellaLetter(discLoc)) return;
           showDiscoveryCard(discLoc);
         }
       }
@@ -704,6 +706,7 @@
         });
         if (discLoc) {
           e.preventDefault();
+          if (maybeRecoverSabellaLetter(discLoc)) return;
           showDiscoveryCard(discLoc);
         }
       }
@@ -759,17 +762,21 @@
     return !!discovered['sabellas-hut'];
   }
 
-  // Pan to the next journey glow when it would be off-screen (Mish is ~2k units from Sabella's cluster).
+  // Pan to the next journey glow (or sealed Indras Na) when off-screen / near the edge.
+  // Viewport check matters at high zoom — Sinn→Indras is only ~374 map units but can sit off-frame.
   function maybeFlyToNextJourneyStep(delayMs) {
     if (!map) return;
     var nextId = getNextPathLocation();
-    if (!nextId) return;
-    var nextLoc = (window.LOCATIONS || []).find(function(l) { return l.id === nextId; });
+    var flyId = nextId || (isIndrasNaSealed() ? FINAL_ELENA_STOP : null);
+    if (!flyId) return;
+    var nextLoc = (window.LOCATIONS || []).find(function(l) { return l.id === flyId; });
     if (!nextLoc) return;
-    var center = map.getCenter();
-    var dx = center.lat - nextLoc.lat;
-    var dy = center.lng - nextLoc.lng;
-    if (Math.sqrt(dx * dx + dy * dy) < 600) return;
+    var pt = map.latLngToContainerPoint([nextLoc.lat, nextLoc.lng]);
+    var size = map.getSize();
+    var margin = 90;
+    var onScreen = pt.x > margin && pt.x < size.x - margin &&
+      pt.y > margin && pt.y < size.y - margin;
+    if (onScreen) return;
     setTimeout(function() {
       if (!map) return;
       map.flyTo([nextLoc.lat, nextLoc.lng], map.getMinZoom() + 2, { duration: 1.8 });
@@ -1297,11 +1304,29 @@
     if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
       var found = countSabellaPrereqLettersCollected();
       var need = SABELLA_LETTER_PREREQ_IDS.length;
-      return 'Indras Na stays sealed until Sabella\u2019s remaining letters along Elena\u2019s road are found. ' +
-        found + ' of ' + need + ' letters found along Elena\u2019s road.';
+      var missingNames = getMissingSabellaLetterNames();
+      var stillNeeded = missingNames.length
+        ? missingNames.join(', ')
+        : 'an unread letter along Elena\u2019s road';
+      return 'Sabella\u2019s letters: ' + found + ' of ' + need +
+        ' found. Still needed: ' + stillNeeded +
+        '. Tap a completed letter-stop again if you missed the parchment during the chime.';
     }
 
     return null;
+  }
+
+  // True when Elena's road through Sinn is done but Indras Na is still gated
+  // (territories/sites/letters). Drives sealed finale beacon — never leave 7/8 dark.
+  function isIndrasNaSealed() {
+    if (isFullyDiscovered(FINAL_ELENA_STOP)) return false;
+    var ji;
+    for (ji = 0; ji < journeyPath.length; ji++) {
+      var stepId = journeyPath[ji].locationId;
+      if (stepId === FINAL_ELENA_STOP) break;
+      if (!isFullyDiscovered(stepId)) return false;
+    }
+    return !!getIndrasNaLockedReason();
   }
 
   function getNextPathLocation() {
@@ -1783,6 +1808,31 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('\u2726', gspt.x, gspt.y);
+        }
+      }
+    } else if (isIndrasNaSealed()) {
+      // Dim sealed finale beacon while territories/sites/letters gate Indras Na
+      var gatedIndras = locs.find(function(l) { return l.id === FINAL_ELENA_STOP; });
+      if (gatedIndras) {
+        peekMarker(FINAL_ELENA_STOP);
+        var gipt = map.latLngToContainerPoint(getInteractionLatLng(gatedIndras));
+        if (gipt.x > -100 && gipt.x < w + 100 && gipt.y > -100 && gipt.y < h + 100) {
+          var iSealPulse = 0.14 + Math.sin(time * 1.15) * 0.06;
+          var iSealR = 42 + Math.sin(time * 0.85) * 7;
+          ctx.globalCompositeOperation = 'source-over';
+          var iSealGrad = ctx.createRadialGradient(gipt.x, gipt.y, 0, gipt.x, gipt.y, iSealR);
+          iSealGrad.addColorStop(0, 'rgba(200, 110, 80, ' + (iSealPulse + 0.1) + ')');
+          iSealGrad.addColorStop(0.45, 'rgba(140, 70, 55, ' + (iSealPulse + 0.04) + ')');
+          iSealGrad.addColorStop(1, 'rgba(90, 45, 40, 0)');
+          ctx.fillStyle = iSealGrad;
+          ctx.beginPath();
+          ctx.arc(gipt.x, gipt.y, iSealR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(230, 180, 150, ' + (0.4 + iSealPulse) + ')';
+          ctx.font = 'bold 15px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\u2726', gipt.x, gipt.y);
         }
       }
     } else if (isVol2JourneyGateBlocking()) {
@@ -3147,6 +3197,45 @@
     return countSabellaPrereqLettersCollected() >= SABELLA_LETTER_PREREQ_IDS.length;
   }
 
+  // Ordered missing road-letter stops (hut → monastery → tower → sinn).
+  function getMissingSabellaLetterIds() {
+    var seen = getSabellaMessagesSeen();
+    var missing = [];
+    var i;
+    for (i = 0; i < SABELLA_LETTER_PREREQ_IDS.length; i++) {
+      var id = SABELLA_LETTER_PREREQ_IDS[i];
+      if (!seen[id]) missing.push(id);
+    }
+    return missing;
+  }
+
+  function getMissingSabellaLetterNames() {
+    var ids = getMissingSabellaLetterIds();
+    var locs = window.LOCATIONS || [];
+    var names = [];
+    var i;
+    for (i = 0; i < ids.length; i++) {
+      var loc = locs.find(function(l) { return l.id === ids[i]; });
+      names.push(loc ? loc.name : ids[i]);
+    }
+    return names;
+  }
+
+  function getFirstMissingSabellaLetterId() {
+    var missing = getMissingSabellaLetterIds();
+    return missing.length ? missing[0] : null;
+  }
+
+  // Soft-lock recovery: fully charted letter-stop with unseen parchment → show letter now.
+  function maybeRecoverSabellaLetter(loc) {
+    if (!loc || !isSabellaMessagesEnabled()) return false;
+    if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return false;
+    if (!isFullyDiscovered(loc.id)) return false;
+    if (document.getElementById('sabella-message-popup') || sabellaMessagePending) return true;
+    scheduleSabellaMessage(loc);
+    return true;
+  }
+
   // Primary letter path: fire once when chime search crosses "hot" (Secret find).
   function maybeShowSabellaLetterOnChime(proximity) {
     if (!isSabellaMessagesEnabled() || !searchMode || searchMode.silenced) return;
@@ -3355,6 +3444,11 @@
         peekClusterSites('tower-nine');
         showTowerClusterHint();
       }, 1800);
+    }
+
+    // After a journey stop completes, fly toward next glow or sealed Indras Na if off-screen
+    if (isOnPath(loc.id) && loc.id !== FINAL_ELENA_STOP) {
+      maybeFlyToNextJourneyStep(1800);
     }
 
     // Advance tutorial if in search steps
@@ -4207,8 +4301,9 @@
     var target = null;
     var hintLine1 = '';
     var hintLine2 = '';
+    var recoverLetterOnArrive = false;
 
-    // Priority 1: next unvisited journey step (finale excluded until map is complete)
+    // Priority 1: next unvisited journey step (golden glow — includes unlockable Indras Na)
     var nextId = getNextPathLocation();
     if (nextId) {
       target = locs.find(function(l) { return l.id === nextId; });
@@ -4217,6 +4312,40 @@
         hintLine2 = target.type === 'story'
           ? 'Find the \u2605 amber glow and use the chime to locate it.'
           : 'Follow the golden glow to reveal this stop.';
+      }
+    }
+
+    // Priority 1b: Indras sealed on missing Sabella letters — steer to first unread stop
+    // (ordered: hut → monastery → tower → sinn). Do this BEFORE territory hunt.
+    if (!target && isIndrasNaSealed() && isSabellaMessagesEnabled() &&
+        !sabellaPrereqLettersComplete()) {
+      var missId = getFirstMissingSabellaLetterId();
+      if (missId) {
+        target = locs.find(function(l) { return l.id === missId; });
+        if (target) {
+          var missCount = getMissingSabellaLetterIds().length;
+          if (missCount === 1) {
+            hintLine1 = 'Sabella left one more letter at ' + target.name + '.';
+          } else {
+            hintLine1 = 'Sabella left more letters along Elena\u2019s road \u2014 next: ' +
+              target.name + '.';
+          }
+          if (isFullyDiscovered(missId)) {
+            hintLine2 = 'Sabella\u2019s letter still waits here \u2014 click the mark to read it.';
+            recoverLetterOnArrive = true;
+          } else {
+            hintLine2 = 'Follow the glow and find the letter with the chime.';
+          }
+        }
+      }
+    }
+
+    // Priority 1c: Indras sealed for charting (not letters) — show sealed finale mark
+    if (!target && isIndrasNaSealed()) {
+      target = locs.find(function(l) { return l.id === FINAL_ELENA_STOP; });
+      if (target) {
+        hintLine1 = 'Indras Na stays sealed until the map is whole.';
+        hintLine2 = 'Chart every territory and ancient site first, then return here.';
       }
     }
 
@@ -4271,6 +4400,10 @@
         showSinnLockedMessage();
         return;
       }
+      if (isIndrasNaSealed()) {
+        showLockedMessage();
+        return;
+      }
       if (isVol2JourneyGateBlocking()) {
         showVol2LockedMessage(false);
         return;
@@ -4279,27 +4412,37 @@
       return;
     }
 
-    if (isSinnTerritoryGated()) {
+    if (isSinnTerritoryGated() && target.id !== SINN_CITY_ID) {
       var sinnNamed = getTerritoryDiscoveryCount();
       hintLine1 = 'Sinn waits until more of the Hollowlands are charted.';
       hintLine2 = '(' + sinnNamed + ' of ' + SINN_TERRITORY_GATE +
         ' lands named) \u2014 chart the orange shimmer first.';
-    } else if (!discovered[FINAL_ELENA_STOP] && discovered[SINN_CITY_ID] && !explorationComplete()) {
-      hintLine1 = 'Indras Na stays sealed until the map is whole.';
-      if (!hintLine2) {
-        hintLine2 = 'Chart every territory and ancient site first.';
-      } else {
-        hintLine2 += ' Then Elena\u2019s final stop will appear.';
-      }
     }
 
-    // Pan to target smoothly
-    map.panTo(getInteractionLatLng(target), { animate: true, duration: 1.4 });
+    // Pan/fly to target — fly when farther so letter stops aren't a tiny nudge
+    var guideCenter = map.getCenter();
+    var guideDx = guideCenter.lat - target.lat;
+    var guideDy = guideCenter.lng - target.lng;
+    var guideDist = Math.sqrt(guideDx * guideDx + guideDy * guideDy);
+    if (guideDist > 450) {
+      map.flyTo(getInteractionLatLng(target), Math.max(map.getZoom(), map.getMinZoom() + 2), {
+        duration: 1.6
+      });
+    } else {
+      map.panTo(getInteractionLatLng(target), { animate: true, duration: 1.4 });
+    }
 
     // Trigger canvas pulsing ring for 4s after pan lands
     setTimeout(function() {
-      guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4000 };
+      guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4500 };
     }, 900);
+
+    // Recover skipped letter at the guided stop (discovered + unseen parchment)
+    if (recoverLetterOnArrive) {
+      setTimeout(function() {
+        maybeRecoverSabellaLetter(target);
+      }, 1100);
+    }
 
     // Show hint toast
     setTimeout(function() {
@@ -4385,6 +4528,10 @@
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
     getIndrasNaLockedReason: getIndrasNaLockedReason,
+    isIndrasNaSealed: isIndrasNaSealed,
+    getMissingSabellaLetterIds: getMissingSabellaLetterIds,
+    getFirstMissingSabellaLetterId: getFirstMissingSabellaLetterId,
+    maybeRecoverSabellaLetter: maybeRecoverSabellaLetter,
     getSinnLockedReason: getSinnLockedReason,
     isSinnTerritoryGated: isSinnTerritoryGated,
     isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,
