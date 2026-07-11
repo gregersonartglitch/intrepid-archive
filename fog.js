@@ -83,9 +83,9 @@
   // Last letter is at Sinn (road before Indras Na) — no parchment on the finale stop.
   var SABELLA_MESSAGES = {
     'sabellas-hut': {
-      title: 'A Letter by the Hearth',
+      title: 'A Letter from Grandma Bella',
       greeting: 'My Elena\u2026',
-      body: 'I left the kettle warm and the door unlatched. If you are reading this, you found the hut the way I taught you \u2014 by cedar smoke and the wrongness of quiet. Do not wait for me here. The road remembers what I could not finish saying.',
+      body: 'If you should ever be so unlucky as to come here\u2026 I have faith Asim will guide you to this place. Take this\u2026 It will serve you well in your time of need. I love you, sweet one.',
       signoff: 'Grandma Bella'
     },
     'monastery-wind': {
