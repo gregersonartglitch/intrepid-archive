@@ -43,6 +43,8 @@ var VOL2_JOURNEY_CAP_ID = 'sinn';
 var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
 var ENABLE_VOL2_JOURNEY_GATE = true;
 var ENABLE_SABELLA_MESSAGES = true;
+var SINN_CITY_ID = 'sinn';
+var SINN_TERRITORY_GATE = 10;
 var SABELLA_LETTER_PREREQ_IDS = ['sabellas-hut', 'monastery-wind', 'tower-nine', 'sinn'];
 var SABELLA_MESSAGES_SEEN = {}; // test-local stand-in for intrepid_sabella_messages_seen
 // Vol 1 clock sequence — clockwise 12→6; Mish last (must match fog.js VOL1_REVEAL_ORDER)
@@ -185,6 +187,40 @@ function explorationComplete(discovered) {
   return regionsComplete && sitesComplete;
 }
 
+function meetsSinnTerritoryGate(discovered) {
+  return getTerritoryDiscoveryCount(discovered) >= SINN_TERRITORY_GATE;
+}
+
+function isSinnTerritoryGated(discovered, journeyPath) {
+  if (isFullyDiscovered(SINN_CITY_ID, discovered, journeyPath)) return false;
+  if (meetsSinnTerritoryGate(discovered)) return false;
+  var ji;
+  for (ji = 0; ji < journeyPath.length; ji++) {
+    var stepId = journeyPath[ji].locationId;
+    if (stepId === SINN_CITY_ID) break;
+    if (!isFullyDiscovered(stepId, discovered, journeyPath)) return false;
+  }
+  return true;
+}
+
+function getSinnLockedReason(discovered, journeyPath) {
+  if (isFullyDiscovered(SINN_CITY_ID, discovered, journeyPath)) return null;
+  var ji;
+  for (ji = 0; ji < journeyPath.length; ji++) {
+    var stepId = journeyPath[ji].locationId;
+    if (stepId === SINN_CITY_ID) break;
+    if (!isFullyDiscovered(stepId, discovered, journeyPath)) {
+      return 'Sinn waits further along Elena\u2019s road. Follow the golden glow.';
+    }
+  }
+  if (!meetsSinnTerritoryGate(discovered)) {
+    var named = getTerritoryDiscoveryCount(discovered);
+    return 'Sinn waits until more of the Hollowlands are charted. (' +
+      named + ' of ' + SINN_TERRITORY_GATE + ' lands named)';
+  }
+  return null;
+}
+
 // Mirror fog.js getIndrasNaLockedReason — returns sealed copy or null when unlockable
 function getIndrasNaLockedReason(discovered, journeyPath) {
   if (isFullyDiscovered(FINAL_ELENA_STOP, discovered, journeyPath)) return null;
@@ -231,6 +267,9 @@ function getNextPathLocation(discovered, journeyPath, revealedGods) {
   for (var i = 0; i < journeyPath.length; i++) {
     var stepId = journeyPath[i].locationId;
     if (!isFullyDiscovered(stepId, discovered, journeyPath)) {
+      if (stepId === SINN_CITY_ID) {
+        if (!meetsSinnTerritoryGate(discovered)) return null;
+      }
       if (stepId === FINAL_ELENA_STOP) {
         if (!explorationComplete(discovered)) return null;
         if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) return null;
@@ -289,6 +328,10 @@ function padAllExploration(discovered) {
 
 function isJourneyPathClickable(locId, discovered, journeyPath, revealedGods) {
   if (isFullyDiscovered(locId, discovered, journeyPath)) return false;
+  if (locId === SINN_CITY_ID) {
+    if (!meetsSinnTerritoryGate(discovered)) return false;
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
   if (locId === FINAL_ELENA_STOP) {
     if (!explorationComplete(discovered)) return false;
     if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) return false;
@@ -395,6 +438,55 @@ assert(!isVol2JourneyGateBlocking(revealedMid, sixEight, JOURNEY_PATH), 'Vol2 ga
 var lsMid = {};
 assert(!maybeShowVol2GateToast(revealedMid, sixEight, JOURNEY_PATH, lsMid), 'Vol2 reward toast not eligible before Indras Na complete');
 assert(!lsMid[VOL2_GATE_TOAST_LS], 'Vol2 reward LS flag not set before Indras Na complete');
+
+console.log('\n[2s] Sinn territory gate — locked below 10 lands, open at 10+');
+var preSinn = makeJourneyCompleteThrough('sinn');
+assert(getTerritoryDiscoveryCount(preSinn) === 0, 'pre-sinn snap starts with 0 territories');
+assert(isSinnTerritoryGated(preSinn, JOURNEY_PATH), 'Sinn gated when path ready but 0 lands named');
+assert(getNextPathLocation(preSinn, JOURNEY_PATH, {}) === null,
+  'getNextPathLocation null while Sinn territory-gated (no golden glow)');
+assert(!isJourneyPathClickable(SINN_CITY_ID, preSinn, JOURNEY_PATH, {}),
+  'Sinn not clickable while territory-gated');
+var reason0 = getSinnLockedReason(preSinn, JOURNEY_PATH);
+assert(reason0 && reason0.indexOf('0 of 10 lands named') > -1,
+  'locked copy reports 0 of 10 lands named');
+
+padTerritories(preSinn, 7);
+assert(getTerritoryDiscoveryCount(preSinn) === 7, 'padded to 7 territories (user case)');
+assert(isSinnTerritoryGated(preSinn, JOURNEY_PATH), 'Sinn still gated at 7/10');
+assert(getNextPathLocation(preSinn, JOURNEY_PATH, {}) === null,
+  'no Sinn golden glow at 7 territories');
+assert(!isJourneyPathClickable(SINN_CITY_ID, preSinn, JOURNEY_PATH, {}),
+  'Sinn not clickable at 7 territories');
+var reason7 = getSinnLockedReason(preSinn, JOURNEY_PATH);
+assert(reason7 && reason7.indexOf('7 of 10 lands named') > -1,
+  'locked copy reports 7 of 10 lands named');
+assert(reason7.indexOf('Sinn waits until more of the Hollowlands are charted') > -1,
+  'locked copy uses Hollowlands charted phrasing');
+
+padTerritories(preSinn, 10);
+assert(getTerritoryDiscoveryCount(preSinn) === 10, 'padded to 10 territories');
+assert(!isSinnTerritoryGated(preSinn, JOURNEY_PATH), 'Sinn ungated at 10 lands');
+assert(getNextPathLocation(preSinn, JOURNEY_PATH, {}) === SINN_CITY_ID,
+  'getNextPathLocation is sinn at 10+ territories');
+assert(isJourneyPathClickable(SINN_CITY_ID, preSinn, JOURNEY_PATH, {}),
+  'Sinn clickable at 10 territories');
+assert(getSinnLockedReason(preSinn, JOURNEY_PATH) === null,
+  'no Sinn locked reason once gate met');
+
+// Gate is journey pacing — still applies when Sabella messages are off
+var flagWas = ENABLE_SABELLA_MESSAGES;
+ENABLE_SABELLA_MESSAGES = false;
+var preSinnFlagOff = makeJourneyCompleteThrough('sinn');
+padTerritories(preSinnFlagOff, 7);
+assert(getNextPathLocation(preSinnFlagOff, JOURNEY_PATH, {}) === null,
+  'Sinn still gated at 7 when ENABLE_SABELLA_MESSAGES false');
+assert(!isJourneyPathClickable(SINN_CITY_ID, preSinnFlagOff, JOURNEY_PATH, {}),
+  'Sinn not clickable at 7 with Sabella flag off');
+padTerritories(preSinnFlagOff, 10);
+assert(getNextPathLocation(preSinnFlagOff, JOURNEY_PATH, {}) === SINN_CITY_ID,
+  'Sinn opens at 10 with Sabella flag off');
+ENABLE_SABELLA_MESSAGES = flagWas;
 
 console.log('\n[2e] Indras Na clickability — sealed until map whole + road letters, then sole journey target');
 clearSabellaLetters();
@@ -643,6 +735,18 @@ assert(/SABELLA_LETTER_PREREQ_IDS = \['sabellas-hut', 'monastery-wind', 'tower-n
   'exactly 4 road-letter prereqs ending at sinn');
 assert(/sabellaLettersTotal[\s\S]*?Object\.keys\(SABELLA_MESSAGES\)\.length/.test(fogSrc),
   'Secrets total derived from SABELLA_MESSAGES keys (4)');
+assert(fogSrc.indexOf('SINN_TERRITORY_GATE') > -1 && fogSrc.indexOf('SINN_TERRITORY_GATE = 10') > -1,
+  'SINN_TERRITORY_GATE constant is 10');
+assert(fogSrc.indexOf('function getSinnLockedReason') > -1 &&
+  fogSrc.indexOf('function isSinnTerritoryGated') > -1,
+  'Sinn territory gate helpers exist');
+assert(/getNextPathLocation[\s\S]*?SINN_CITY_ID[\s\S]*?meetsSinnTerritoryGate/.test(fogSrc),
+  'getNextPathLocation seals sinn until territory gate');
+assert(fogSrc.indexOf('Sinn Is Sealed') > -1 &&
+  fogSrc.indexOf('showSinnLockedMessage') > -1,
+  'Sinn locked modal title + show helper present');
+assert(fogSrc.indexOf('lands named') > -1,
+  'Sinn locked copy reports lands named count');
 
 console.log('\n[7] Chime exit clears searchMode (build 143+ regression)');
 assert(fogSrc.indexOf('function exitSearchMode()') > -1, 'exitSearchMode exists');

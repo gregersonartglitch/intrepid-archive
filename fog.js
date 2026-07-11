@@ -43,6 +43,11 @@
   var VOL2_GATE_LS_LOCK = 'intrepid_vol2_journey_locked';
   var VOL2_GATE_TOAST_LS = 'intrepid_vol2_gate_toast_shown';
   var VOL2_FEEDBACK_EMAIL = 'info@intrepidgraphicnovel.com';
+  // Sinn city journey gate — pace Elena's road until enough territories are charted.
+  // Journey pacing economy (not Sabella-only): applies even when ENABLE_SABELLA_MESSAGES is false.
+  // Threshold 10 = past half of 17 lands; blocks early Secrets 4/4 at ~7 territories.
+  var SINN_CITY_ID = 'sinn';
+  var SINN_TERRITORY_GATE = 10;
   // Sabella/Scribe chime-heat clue popups — default OFF until Jon approves.
   // Enable: ?sabellaclues on map URL, or localStorage intrepid_sabella_clues_enabled=1
   // Kill switch: ENABLE_SABELLA_CLUE_POPUPS = false
@@ -517,6 +522,21 @@
               discoverLocation(glowNextLoc);
               return;
             }
+          }
+        }
+      }
+
+      // Locked Sinn — getNextPathLocation() returns null while territory-gated (no glow),
+      // so hit-test the city directly and explain the charting prerequisite.
+      if (!searchMode && getSinnLockedReason()) {
+        var sinnLoc = (window.LOCATIONS || []).find(function(l) { return l.id === SINN_CITY_ID; });
+        if (sinnLoc) {
+          var sinnPt = map.latLngToContainerPoint(getInteractionLatLng(sinnLoc));
+          var sinnDist = Math.sqrt(Math.pow(x - sinnPt.x, 2) + Math.pow(y - sinnPt.y, 2));
+          if (sinnDist < 130) {
+            e.stopPropagation(); e.preventDefault();
+            showSinnLockedMessage();
+            return;
           }
         }
       }
@@ -1197,6 +1217,47 @@
     return regionsComplete && sitesComplete;
   }
 
+  function meetsSinnTerritoryGate() {
+    return getTerritoryDiscoveryCount() >= SINN_TERRITORY_GATE;
+  }
+
+  // True when Elena's road is ready for Sinn but territories are still under the gate.
+  // Drives sealed beacon + Guide Me territory hints (no golden glow on Sinn).
+  function isSinnTerritoryGated() {
+    if (isFullyDiscovered(SINN_CITY_ID)) return false;
+    if (meetsSinnTerritoryGate()) return false;
+    var ji;
+    for (ji = 0; ji < journeyPath.length; ji++) {
+      var stepId = journeyPath[ji].locationId;
+      if (stepId === SINN_CITY_ID) break;
+      if (!isFullyDiscovered(stepId)) return false;
+    }
+    return true;
+  }
+
+  // Why Sinn is sealed (null when unlockable or already discovered).
+  // Territory gate is journey pacing — always on, independent of Sabella letters.
+  function getSinnLockedReason() {
+    if (isFullyDiscovered(SINN_CITY_ID)) return null;
+
+    var ji;
+    for (ji = 0; ji < journeyPath.length; ji++) {
+      var stepId = journeyPath[ji].locationId;
+      if (stepId === SINN_CITY_ID) break;
+      if (!isFullyDiscovered(stepId)) {
+        return 'Sinn waits further along Elena\u2019s road. Follow the golden glow.';
+      }
+    }
+
+    if (!meetsSinnTerritoryGate()) {
+      var named = getTerritoryDiscoveryCount();
+      return 'Sinn waits until more of the Hollowlands are charted. (' +
+        named + ' of ' + SINN_TERRITORY_GATE + ' lands named)';
+    }
+
+    return null;
+  }
+
   // Why Indras Na is sealed (null when unlockable or already discovered).
   // Real gates: prior Elena path through Sinn, all territories + cartographer sites,
   // then (when Sabella messages enabled) all 4 road letters (last at Sinn).
@@ -1248,6 +1309,10 @@
       var stepId = journeyPath[i].locationId;
       // Must match updateProgress / isFullyDiscovered — searching phase is not complete
       if (!isFullyDiscovered(stepId)) {
+        // Sinn stays sealed until enough territories are charted (journey pacing)
+        if (stepId === SINN_CITY_ID) {
+          if (!meetsSinnTerritoryGate()) return null;
+        }
         // Final Elena beat stays sealed until map charted (+ road letters when flag on)
         if (stepId === FINAL_ELENA_STOP) {
           if (!explorationComplete()) return null;
@@ -1401,6 +1466,12 @@
     var loc = allLocs.find(function(l) { return l.id === locId; });
     if (!loc) return false;
 
+    // Gate Sinn city: enough territories charted, then only as the golden-glow target
+    if (locId === SINN_CITY_ID) {
+      if (!meetsSinnTerritoryGate()) return false;
+      return locId === getNextPathLocation();
+    }
+
     // Gate the final Elena stop: territories + sites (+ road letters when Sabella flag on)
     if (locId === FINAL_ELENA_STOP) {
       if (!explorationComplete()) return false;
@@ -1461,7 +1532,7 @@
 
 
   // Show a brief locked message when the player clicks the final stop too early
-  // Shared Close control for center locked modals (Indras Na sealed + Vol2 gate)
+  // Shared Close control for center locked modals (Sinn / Indras Na sealed + Vol2 gate)
   function lockedMsgCloseHtml() {
     return '<button type="button" class="locked-msg-close" aria-label="Close">' +
       '\u2715 Close</button>';
@@ -1486,6 +1557,38 @@
       requestAnimationFrame(function() { el.style.opacity = '1'; });
     });
     if (autoMs) setTimeout(dismiss, autoMs);
+  }
+
+  function showSinnLockedMessage() {
+    var reason = getSinnLockedReason();
+    if (!reason) return;
+
+    var old = document.getElementById('locked-msg');
+    if (old) old.remove();
+
+    var showChartHint = isSinnTerritoryGated();
+
+    var el = document.createElement('div');
+    el.id = 'locked-msg';
+    el.style.cssText =
+      'position:fixed;top:50%;left:50%;transform:translate(-50%,-60%);z-index:1100;cursor:pointer;' +
+      'background:rgba(8,10,14,0.97);border:2px solid rgba(180,80,60,0.7);' +
+      'border-radius:14px;padding:28px 48px;text-align:center;max-width:560px;width:90%;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'font-size:16px;line-height:1.7;' +
+      'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(180,80,60,0.15);' +
+      'opacity:0;transition:opacity 0.4s ease;';
+    el.innerHTML =
+      '<div style="font-size:12px;color:#c87060;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;font-family:Cinzel,serif;">Sinn Is Sealed</div>' +
+      '<div style="margin-bottom:14px;">' + reason + '</div>' +
+      (showChartHint
+        ? '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
+            '<span style="color:#d99040;">\u25C8 Orange shimmer in the fog</span> \u2014 chart more territories. Use Guide Me if you need a heading.' +
+          '</div>'
+        : '') +
+      lockedMsgCloseHtml();
+    document.body.appendChild(el);
+    wireLockedMsgDismiss(el, 7000);
   }
 
   function showLockedMessage() {
@@ -1658,6 +1761,30 @@
           ctx.fill();
         }
       }
+    } else if (isSinnTerritoryGated()) {
+      // Dim sealed beacon on Sinn while territory gate holds (no golden glow = not clickable)
+      var gatedSinn = locs.find(function(l) { return l.id === SINN_CITY_ID; });
+      if (gatedSinn) {
+        var gspt = map.latLngToContainerPoint(getInteractionLatLng(gatedSinn));
+        if (gspt.x > -100 && gspt.x < w + 100 && gspt.y > -100 && gspt.y < h + 100) {
+          var gSealPulse = 0.12 + Math.sin(time * 1.2) * 0.05;
+          var gSealR = 38 + Math.sin(time * 0.9) * 6;
+          ctx.globalCompositeOperation = 'source-over';
+          var gSealGrad = ctx.createRadialGradient(gspt.x, gspt.y, 0, gspt.x, gspt.y, gSealR);
+          gSealGrad.addColorStop(0, 'rgba(180, 120, 90, ' + (gSealPulse + 0.08) + ')');
+          gSealGrad.addColorStop(0.5, 'rgba(120, 80, 60, ' + gSealPulse + ')');
+          gSealGrad.addColorStop(1, 'rgba(90, 60, 45, 0)');
+          ctx.fillStyle = gSealGrad;
+          ctx.beginPath();
+          ctx.arc(gspt.x, gspt.y, gSealR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(210, 170, 140, ' + (0.35 + gSealPulse) + ')';
+          ctx.font = 'bold 14px Cinzel, serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('\u2726', gspt.x, gspt.y);
+        }
+      }
     } else if (isVol2JourneyGateBlocking()) {
       var sealedId = getVol2FirstSealedStepId();
       var sealedLoc = sealedId ? locs.find(function(l) { return l.id === sealedId; }) : null;
@@ -1689,6 +1816,9 @@
       if (discovered[loc.id]) return;
       if (!isPostTutorial()) return;
       if (isVol2LockedJourneyStep(loc.id)) return;
+      // Sealed journey stops: dim sealed beacon only (above) — no amber star
+      if (loc.id === SINN_CITY_ID && isSinnTerritoryGated()) return;
+      if (loc.id === FINAL_ELENA_STOP && getIndrasNaLockedReason()) return;
 
       if (loc.type === 'story' && loc.id !== nextId) {
         var storyNearDisc = false;
@@ -4137,6 +4267,10 @@
     }
 
     if (!target) {
+      if (isSinnTerritoryGated()) {
+        showSinnLockedMessage();
+        return;
+      }
       if (isVol2JourneyGateBlocking()) {
         showVol2LockedMessage(false);
         return;
@@ -4145,7 +4279,12 @@
       return;
     }
 
-    if (!discovered[FINAL_ELENA_STOP] && discovered['sinn'] && !explorationComplete()) {
+    if (isSinnTerritoryGated()) {
+      var sinnNamed = getTerritoryDiscoveryCount();
+      hintLine1 = 'Sinn waits until more of the Hollowlands are charted.';
+      hintLine2 = '(' + sinnNamed + ' of ' + SINN_TERRITORY_GATE +
+        ' lands named) \u2014 chart the orange shimmer first.';
+    } else if (!discovered[FINAL_ELENA_STOP] && discovered[SINN_CITY_ID] && !explorationComplete()) {
       hintLine1 = 'Indras Na stays sealed until the map is whole.';
       if (!hintLine2) {
         hintLine2 = 'Chart every territory and ancient site first.';
@@ -4246,6 +4385,8 @@
     getDiscovered: function() { return discovered; },
     getNextLocation: getNextPathLocation,
     getIndrasNaLockedReason: getIndrasNaLockedReason,
+    getSinnLockedReason: getSinnLockedReason,
+    isSinnTerritoryGated: isSinnTerritoryGated,
     isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,
     isVol2JourneyUnlocked: isVol2JourneyUnlocked,
     initTetradCircles: initTetradCircles,
