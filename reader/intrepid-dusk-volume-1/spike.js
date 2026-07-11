@@ -58,14 +58,17 @@ const ISSUE_003_START = 45;
 const PRELOAD_BACK = 3;
 const PRELOAD_AHEAD = 5;
 const LINK_PRELOAD_AHEAD = 3;
-// Cover + first content pages preferred before reveal (not a hard block).
-// Keep this small: buildPageElements only assigns src for these indices so the
-// browser connection pool is not starved by ~70 concurrent WebP downloads.
-const OPENING_READY_LAST_INDEX = 3;
+// Cover spread (0–1) + first 2–3 content spreads (2–7). Prefer these before
+ // reveal, but never hard-block past VEIL_HARD_DEADLINE_MS. Keep well below
+ // full-book so ~70 concurrent WebPs cannot starve the connection pool.
+const OPENING_READY_LAST_INDEX = 7;
+const NEIGHBORHOOD_RADIUS = 2;
+const WARM_QUEUE_BATCH = 2;
+const WARM_QUEUE_GAP_MS = 100;
 const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 165;
+const PAGE_ASSET_VERSION = 166;
 const SOFT_TOAST_MS = 4200;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
@@ -74,6 +77,7 @@ const prefetchImages = {};
 const linkPreloads = {};
 let lastPageIndex = 0;
 let readerReady = false;
+let backgroundWarmTimer = null;
 
 const elements = {
   book: document.querySelector("#book"),
@@ -374,6 +378,7 @@ function ensurePageImageReady(pageIndex, options) {
     function markReady() {
       decodedPages.add(pageIndex);
       warmedPages.add(pageIndex);
+      setPageImageLoading(pageIndex, false);
       settle(true);
     }
 
@@ -492,6 +497,26 @@ function assignPageImageSrc(pageIndex, attempt) {
   return href;
 }
 
+function setPageImageLoading(pageIndex, isLoading) {
+  var image = pageImages[pageIndex];
+  if (!image || !image.parentElement) {
+    return;
+  }
+  image.parentElement.classList.toggle("is-loading", !!isLoading);
+}
+
+function pageImageIsPaintReady(pageIndex) {
+  var entry = pageEntries[pageIndex];
+  if (!entry || entry.blank) {
+    return true;
+  }
+  if (decodedPages.has(pageIndex)) {
+    return true;
+  }
+  var image = pageImages[pageIndex];
+  return !!(image && image.complete && image.naturalWidth > 0);
+}
+
 function warmPageImage(pageIndex) {
   if (pageIndex < 0 || pageIndex >= pageEntries.length) {
     return;
@@ -513,7 +538,14 @@ function warmPageImage(pageIndex) {
 
   assignPageImageSrc(pageIndex, 0);
   image.loading = "eager";
-  decodePageImage(pageIndex);
+  if (!pageImageIsPaintReady(pageIndex)) {
+    setPageImageLoading(pageIndex, true);
+  }
+  decodePageImage(pageIndex).then(function (ok) {
+    if (ok || pageImageIsPaintReady(pageIndex)) {
+      setPageImageLoading(pageIndex, false);
+    }
+  });
 
   if (warmedPages.has(pageIndex)) {
     return;
@@ -530,11 +562,76 @@ function warmPageImage(pageIndex) {
       "load",
       function onProbeLoad() {
         probe.removeEventListener("load", onProbeLoad);
-        decodePageImage(pageIndex);
+        decodePageImage(pageIndex).then(function (ok) {
+          if (ok || pageImageIsPaintReady(pageIndex)) {
+            setPageImageLoading(pageIndex, false);
+          }
+        });
       },
       { once: true },
     );
     prefetchImages[pageIndex] = probe;
+  }
+}
+
+// Assign src + warm decode for current page ± NEIGHBORHOOD_RADIUS before/during flip.
+function ensureNeighborhoodPages(centerIndex) {
+  var center =
+    typeof centerIndex === "number" && !isNaN(centerIndex)
+      ? centerIndex
+      : lastPageIndex;
+  for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
+    warmPageImage(center + offset);
+  }
+}
+
+// After unveil: trickle-warm upcoming pages so flips stay full without
+ // re-starving the pool the way bootstrapIssueOne used to.
+function queueBackgroundWarm(startIndex, endIndexExclusive) {
+  if (backgroundWarmTimer != null) {
+    clearTimeout(backgroundWarmTimer);
+    backgroundWarmTimer = null;
+  }
+  var next = Math.max(0, startIndex | 0);
+  var end = Math.min(
+    pageEntries.length,
+    typeof endIndexExclusive === "number" ? endIndexExclusive : pageEntries.length,
+  );
+
+  function tick() {
+    var batch = 0;
+    while (batch < WARM_QUEUE_BATCH && next < end) {
+      if (canAccessPageIndex(next)) {
+        warmPageImage(next);
+        injectLinkPreload(next);
+        batch += 1;
+      }
+      next += 1;
+    }
+    if (next < end) {
+      backgroundWarmTimer = setTimeout(tick, WARM_QUEUE_GAP_MS);
+    } else {
+      backgroundWarmTimer = null;
+    }
+  }
+
+  backgroundWarmTimer = setTimeout(tick, 0);
+}
+
+function startPostUnveilWarmQueue() {
+  // Opening window already eager; continue through Issue 1 then unlocked issues.
+  queueBackgroundWarm(OPENING_READY_LAST_INDEX + 1, ISSUE_001_LAST_INDEX + 1);
+  if (window.ReaderAccess) {
+    if (window.ReaderAccess.isIssueUnlocked("002")) {
+      setTimeout(function () {
+        queueBackgroundWarm(ISSUE_002_START, ISSUE_003_START);
+      }, 400);
+    }
+    if (window.ReaderAccess.isIssueUnlocked("003")) {
+      setTimeout(function () {
+        queueBackgroundWarm(ISSUE_003_START, pageEntries.length);
+      }, 800);
+    }
   }
 }
 
@@ -621,10 +718,8 @@ function preloadAround(centerIndex) {
 }
 
 function bootstrapIssueOne() {
-  for (let index = 0; index <= ISSUE_001_LAST_INDEX; index += 1) {
-    warmPageImage(index);
-    injectLinkPreload(index);
-  }
+  // Prefer trickle warm after unveil — see startPostUnveilWarmQueue.
+  queueBackgroundWarm(0, ISSUE_001_LAST_INDEX + 1);
 }
 
 function bootstrapUnlockedIssues() {
@@ -632,16 +727,10 @@ function bootstrapUnlockedIssues() {
     return;
   }
   if (window.ReaderAccess.isIssueUnlocked("002")) {
-    for (let index = ISSUE_002_START; index < ISSUE_003_START; index += 1) {
-      warmPageImage(index);
-      injectLinkPreload(index);
-    }
+    queueBackgroundWarm(ISSUE_002_START, ISSUE_003_START);
   }
   if (window.ReaderAccess.isIssueUnlocked("003")) {
-    for (let index = ISSUE_003_START; index < pageEntries.length; index += 1) {
-      warmPageImage(index);
-      injectLinkPreload(index);
-    }
+    queueBackgroundWarm(ISSUE_003_START, pageEntries.length);
   }
 }
 
@@ -662,6 +751,7 @@ function handlePageTurn(pageIndex) {
   }
   lastPageIndex = pageIndex;
   setPageLabel(pageIndex);
+  ensureNeighborhoodPages(pageIndex);
   preloadAround(pageIndex);
   return true;
 }
@@ -678,6 +768,7 @@ function requestPageTurn(targetIndex) {
 
 function warmFlipTargetsFromDirection(forward) {
   const step = forward ? 1 : -1;
+  ensureNeighborhoodPages(lastPageIndex + step);
   warmPageImage(lastPageIndex + step);
   warmPageImage(lastPageIndex + step * 2);
   warmPageImage(lastPageIndex + step * 3);
@@ -784,12 +875,12 @@ function createPageFlip(pageElements) {
     if (event.data !== "flipping") {
       return;
     }
+    ensureNeighborhoodPages(lastPageIndex);
     warmBothFlipDirections();
   });
 
   pageFlipInstance.loadFromHTML(pageElements);
-  bootstrapIssueOne();
-  bootstrapUnlockedIssues();
+  ensureNeighborhoodPages(0);
   preloadAround(0);
   return pageFlipInstance;
 }
@@ -799,6 +890,7 @@ function revealReader() {
     requestAnimationFrame(function () {
       setReaderPreparing(false);
       readerReady = true;
+      startPostUnveilWarmQueue();
       if (pendingIssueTwoLand) {
         pendingIssueTwoLand = false;
         landOnIssueTwoStart();

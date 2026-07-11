@@ -466,6 +466,17 @@ h1 {
   -webkit-user-drag: none;
 }
 
+/* Page-local placeholder when src is assigned but paint is incomplete —
+   avoids a solid white half-page during flip without re-showing the book veil. */
+.reader-page.is-loading {
+  background:
+    linear-gradient(180deg, rgba(34, 28, 22, 0.92) 0%, rgba(18, 14, 10, 0.98) 100%);
+}
+
+.reader-page.is-loading img {
+  opacity: 0;
+}
+
 /* Overlap facing pages 1px to hide center hairline (StPageFlip --left / --right) */
 .book .reader-page.--left img {
   width: calc(100% + 1px);
