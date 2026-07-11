@@ -787,16 +787,21 @@ assert(/forceShowSabellaLetter[\s\S]*?locked[\s\S]*?removeChild|locked\.parentNo
   'forceShow clears locked-msg before showing letter');
 assert(fogSrc.indexOf('Sabella left one more letter at') > -1,
   'Guide Me toast copy for single missing letter');
-assert(fogSrc.indexOf('Opening Sabella') > -1,
-  'Guide Me tip opens letter on arrive');
-assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?forceShowSabellaLetter/.test(fogSrc),
-  'Guide Me steers to first missing letter and force-shows when charted');
+assert(fogSrc.indexOf('Search with the lantern for Sabella') > -1,
+  'Guide Me tip prompts lantern search for missing letter');
+assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?enterLetterSearchMode/.test(fogSrc),
+  'Guide Me steers to first missing letter and starts letter lantern search when charted');
 assert(/else if \(isIndrasNaSealed\(\)\)[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc),
   'drawBeaconGlows draws sealed Indras Na beacon');
 assert(fogSrc.indexOf('maybeRecoverSabellaLetter(discLoc)') > -1,
   'clicking completed letter-stop recovers skipped letter');
-assert(fogSrc.indexOf('forceShowSabellaLetter(bestMiss)') > -1,
-  'dedicated missing-letter hit-test force-shows parchment');
+assert(fogSrc.indexOf('forceShowSabellaLetter(bestMiss)') === -1,
+  'no wide fog hit-test force-shows parchment (letter recovery is marker/Guide Me only)');
+assert(fogSrc.indexOf('function enterLetterSearchMode') > -1 &&
+  fogSrc.indexOf('letterRecovery: true') > -1,
+  'letter-recovery search mode places key on beacon');
+assert(/SABELLA_MESSAGES\[loc\.id\][\s\S]*?getInteractionLatLng|letterStop \|\| letterRecovery/.test(fogSrc),
+  'Sabella letter-stop keys align to interaction lat/lng (no random NE offset)');
 assert(/completeDiscovery[\s\S]*?maybeFlyToNextJourneyStep/.test(fogSrc),
   'completeDiscovery flies toward next/sealed Indras when off-screen');
 assert(fogSrc.indexOf('locked-msg-close') > -1 &&

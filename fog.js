@@ -572,28 +572,8 @@
         }
       }
 
-      // Missing Sabella letter at a completed stop — generous hit so recovery works
-      // even when the player is zoomed out / slightly off the mark.
-      if (!searchMode && isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
-        var missIds = getMissingSabellaLetterIds();
-        var bestMiss = null;
-        var bestMissDist = Infinity;
-        var mi;
-        for (mi = 0; mi < missIds.length; mi++) {
-          var mLoc = (window.LOCATIONS || []).find(function(l) { return l.id === missIds[mi]; });
-          if (!mLoc || !isFullyDiscovered(mLoc.id)) continue;
-          var mpt = map.latLngToContainerPoint(getInteractionLatLng(mLoc));
-          var md = Math.sqrt(Math.pow(x - mpt.x, 2) + Math.pow(y - mpt.y, 2));
-          if (md < 160 && md < bestMissDist) {
-            bestMiss = mLoc;
-            bestMissDist = md;
-          }
-        }
-        if (bestMiss && forceShowSabellaLetter(bestMiss)) {
-          e.stopPropagation(); e.preventDefault();
-          return;
-        }
-      }
+      // Sabella letter recovery is marker-only (discLoc path below) or Guide Me
+      // chime search — never a wide fog hit-test (160px caught random NE mist taps).
 
       // Vol 2 sealed beacon — click the dim star at Monastery of the Wind, etc.
       if (!searchMode && isVol2JourneyGateBlocking()) {
@@ -635,7 +615,11 @@
         if (keyDist < clickRadius) {
           e.stopPropagation();
           e.preventDefault();
-          completeDiscovery(searchMode.loc);
+          if (searchMode.letterRecovery) {
+            finishLetterRecoverySearch(searchMode.loc);
+          } else {
+            completeDiscovery(searchMode.loc);
+          }
           return;
         }
         // If the click hit a non-story location (region, city, etc), allow it through
@@ -704,27 +688,7 @@
       var x = touch.clientX - rect.left;
       var y = touch.clientY - rect.top;
 
-      // Missing Sabella letter recovery (touch) — same generous hit as click path
-      if (!searchMode && isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
-        var tMissIds = getMissingSabellaLetterIds();
-        var tBestMiss = null;
-        var tBestMissDist = Infinity;
-        var tmi;
-        for (tmi = 0; tmi < tMissIds.length; tmi++) {
-          var tMLoc = (window.LOCATIONS || []).find(function(l) { return l.id === tMissIds[tmi]; });
-          if (!tMLoc || !isFullyDiscovered(tMLoc.id)) continue;
-          var tMpt = map.latLngToContainerPoint(getInteractionLatLng(tMLoc));
-          var tMd = Math.sqrt(Math.pow(x - tMpt.x, 2) + Math.pow(y - tMpt.y, 2));
-          if (tMd < 160 && tMd < tBestMissDist) {
-            tBestMiss = tMLoc;
-            tBestMissDist = tMd;
-          }
-        }
-        if (tBestMiss && forceShowSabellaLetter(tBestMiss)) {
-          e.preventDefault();
-          return;
-        }
-      }
+      // Letter recovery on touch: marker hit only (discLoc below) — not wide fog taps.
 
       var locs = window.LOCATIONS || [];
       var closest = null, closestDist = Infinity;
@@ -743,7 +707,11 @@
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
         if (keyDist < touchClickRadius) { // slightly larger for touch
           e.preventDefault();
-          completeDiscovery(searchMode.loc);
+          if (searchMode.letterRecovery) {
+            finishLetterRecoverySearch(searchMode.loc);
+          } else {
+            completeDiscovery(searchMode.loc);
+          }
           return;
         }
         // Allow non-story locations (regions, cities) to be tapped during search
@@ -1372,7 +1340,7 @@
         : 'an unread letter along Elena\u2019s road';
       return 'Sabella\u2019s letters: ' + found + ' of ' + need +
         ' found. Still needed: ' + stillNeeded +
-        '. Tap a completed letter-stop again if you missed the parchment during the chime.';
+        '. Click the letter-stop marker, or use Guide Me and search with the lantern.';
     }
 
     return null;
@@ -1711,7 +1679,7 @@
         ? '<div style="font-size:13px;color:#9a8f7e;line-height:1.8;">' +
             '<span style="color:#d99040;">\u25C8 Orange shimmer in the fog</span> \u2014 an undiscovered territory. Click it to reveal.<br>' +
             '<span style="color:#d4a843;">\u2605 Amber star</span> \u2014 click once to search; move your lantern until it warms, then click again to chart.<br>' +
-            '<span style="color:#c4a882;">\u2709 Letters</span> \u2014 she also left notes along Elena\u2019s road (hut, monastery, tower, Sinn, and here).' +
+            '<span style="color:#c4a882;">\u2709 Letters</span> \u2014 Sabella left notes along Elena\u2019s road (hut, monastery, tower, Sinn). Find them with the lantern.' +
           '</div>'
         : '') +
       lockedMsgCloseHtml();
@@ -2880,26 +2848,42 @@
     });
   }
 
-  // Enter search mode — place a hidden key in the fog ring
-  function enterSearchMode(loc) {
-    // Random angle and distance for the key
-    var angle = Math.random() * Math.PI * 2;
-    var dist = 30 + Math.random() * 30; // world units from loc center (closer = findable)
+  // Enter search mode — place a hidden key in the fog ring.
+  // Sabella letter stops: key sits on the beacon/label (no random NE offset)
+  // so lantern-hot and clickable point match the monastery marker, not mist beside it.
+  function enterSearchMode(loc, opts) {
+    opts = opts || {};
+    var keyLat;
+    var keyLng;
+    var letterStop = !!(SABELLA_MESSAGES[loc.id]);
+    var letterRecovery = !!opts.letterRecovery;
+
+    if (letterStop || letterRecovery) {
+      var ll = getInteractionLatLng(loc);
+      keyLat = ll[0];
+      keyLng = ll[1];
+    } else {
+      var angle = Math.random() * Math.PI * 2;
+      var dist = 30 + Math.random() * 30; // world units from loc center
+      keyLat = loc.lat + Math.sin(angle) * dist;
+      keyLng = loc.lng + Math.cos(angle) * dist;
+    }
 
     searchMode = {
       locId: loc.id,
       loc: loc,
-      keyLat: loc.lat + Math.sin(angle) * dist,
-      keyLng: loc.lng + Math.cos(angle) * dist,
+      keyLat: keyLat,
+      keyLng: keyLng,
       startTime: Date.now(),
       mapClicks: 0,
       escapeBoost: false,
       escapeHintShown: false,
-      clueBandsFired: {}
+      clueBandsFired: {},
+      letterRecovery: letterRecovery
     };
 
-    // Initialize spotlight at the pinhole center so it works immediately
-    var pt = map.latLngToContainerPoint([loc.lat, loc.lng]);
+    // Initialize spotlight at the pinhole / beacon so warmth works immediately
+    var pt = map.latLngToContainerPoint([keyLat, keyLng]);
     spotlightPos = { x: pt.x, y: pt.y };
 
     if (map) map.getContainer().classList.add('chime-search-active');
@@ -2907,7 +2891,26 @@
     showChimeSearchTeachTip(loc);
     ensureChimeWarmthHud();
 
-    console.log('[FOG] Search mode: find the key for', loc.name);
+    console.log('[FOG] Search mode: find the key for', loc.name,
+      letterRecovery ? '(letter recovery)' : '');
+  }
+
+  // Re-enter chime search at a completed letter-stop so the parchment is found
+  // via lantern warmth — not a random fog click.
+  function enterLetterSearchMode(loc) {
+    if (!loc || !isSabellaMessagesEnabled()) return false;
+    if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return false;
+    if (!isFullyDiscovered(loc.id)) return false;
+    if (searchMode) exitSearchMode();
+    enterSearchMode(loc, { letterRecovery: true });
+    return true;
+  }
+
+  // Key found (or chime-hot) during letter-recovery search — show parchment, leave map as-is.
+  function finishLetterRecoverySearch(loc) {
+    if (searchMode) searchMode.silenced = true;
+    exitSearchMode();
+    if (loc) forceShowSabellaLetter(loc);
   }
 
   // Mute-safe teach tip on every search enter — does not rely on beeps.
@@ -2941,16 +2944,28 @@
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 8px 36px rgba(0,0,0,0.65),0 0 24px rgba(212,168,67,0.1);' +
       'opacity:0;transition:opacity 0.45s ease;';
+    var hasLetter = loc && SABELLA_MESSAGES[loc.id] && isSabellaMessagesEnabled();
+    var letterRecovery = !!(searchMode && searchMode.letterRecovery);
+    var teachBody;
+    if (letterRecovery) {
+      teachBody = 'Search with the lantern for Sabella\u2019s letter \u2014 move until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then click the mark.';
+    } else if (hasLetter) {
+      teachBody = firstTime
+        ? 'Sabella left a letter here \u2014 move your lantern until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> to find the parchment, then click again to chart the mark.'
+        : 'Lantern to <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter, then click to chart.';
+    } else {
+      teachBody = firstTime
+        ? 'The mark is hidden nearby \u2014 move your lantern until it glows warmer, then <strong style="color:#d4a843;font-weight:600;">click again</strong> to chart it.'
+        : 'Move your lantern closer until it warms, then click again to chart the mark.';
+    }
     tip.innerHTML =
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
-        'margin-bottom:8px;font-family:Cinzel,serif;">Search the fog</div>' +
-      '<div style="font-size:15px;line-height:1.55;color:#efe7d2;">' +
-        (firstTime
-          ? 'The mark is hidden nearby \u2014 move your lantern until it glows warmer, then <strong style="color:#d4a843;font-weight:600;">click again</strong> to chart it.'
-          : 'Move your lantern closer until it warms, then click again to chart the mark.') +
-      '</div>' +
+        'margin-bottom:8px;font-family:Cinzel,serif;">' +
+        (letterRecovery ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
+      '<div style="font-size:15px;line-height:1.55;color:#efe7d2;">' + teachBody + '</div>' +
       (loc && loc.name
-        ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">Charting ' + loc.name + '</div>'
+        ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">' +
+          (letterRecovery ? 'At ' : 'Charting ') + loc.name + '</div>'
         : '') +
       '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
     tip.addEventListener('click', function() {
@@ -2964,7 +2979,7 @@
     try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e3) {}
     chimeTeachTimer = setTimeout(function() {
       dismissChimeSearchTeachTip();
-    }, firstTime ? 10000 : 6500);
+    }, letterRecovery ? 9000 : (firstTime ? 10000 : 6500));
   }
 
   // On-screen cold/warm label — works with sound off (audio remains optional feedback)
@@ -3184,10 +3199,11 @@
      SABELLA JOURNEY LETTERS (chime-hot Secret finds, 4 stops)
      Last letter at Sinn; Indras Na has no parchment (congrats on complete).
      Primary: proximity crosses "hot" band during searchMode
-     Fallback: discovery-complete if still unseen (dedupe via seen LS)
+     Recovery: click the completed letter-stop marker, or Guide Me → lantern search
+     Never: random fog clicks away from the marker / search key
      Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
      Kill: localStorage intrepid_sabella_messages_disabled=1
-     ════════════════════════════════════════════════ */
+  ════════════════════════════════════════════════ */
   function isSabellaMessagesEnabled() {
     if (!ENABLE_SABELLA_MESSAGES) return false;
     try {
@@ -3310,11 +3326,18 @@
     return true;
   }
 
+  // Marker tap on a completed letter-stop: start lantern hunt (same as Guide Me).
+  // Falls back to force-show if search cannot start (e.g. already in searchMode edge cases).
   function maybeRecoverSabellaLetter(loc) {
+    if (!loc || !isSabellaMessagesEnabled()) return false;
+    if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return false;
+    if (!isFullyDiscovered(loc.id)) return false;
+    if (enterLetterSearchMode(loc)) return true;
     return forceShowSabellaLetter(loc);
   }
 
   // Primary letter path: fire once when chime search crosses "hot" (Secret find).
+  // Never from random fog clicks — only searchMode lantern proximity (or marker/Guide Me recovery).
   function maybeShowSabellaLetterOnChime(proximity) {
     if (!isSabellaMessagesEnabled() || !searchMode || searchMode.silenced) return;
     if (document.getElementById('sabella-message-popup')) return;
@@ -3329,7 +3352,13 @@
     if (!searchMode.clueBandsFired) searchMode.clueBandsFired = {};
     searchMode.clueBandsFired.hot = true;
 
+    var wasRecovery = !!searchMode.letterRecovery;
     showSabellaMessagePopup(locId, SABELLA_MESSAGES[locId]);
+    // Letter-recovery hunt ends when parchment appears (location already charted).
+    if (wasRecovery) {
+      if (searchMode) searchMode.silenced = true;
+      exitSearchMode();
+    }
   }
 
   function dismissSabellaMessagePopup() {
@@ -3411,6 +3440,7 @@
   // Fallback: discovery-complete if letter still unseen (e.g. skipped hot band).
   // Primary path is maybeShowSabellaLetterOnChime — seen LS dedupes both.
   // Optional onDismiss runs after Close (road letters only; Indras uses maybeShowVol2GateToast directly).
+  // Never wait forever on #locked-msg (that soft-locked Secrets at 3/4).
   function scheduleSabellaMessage(loc, onDismiss) {
     function finishSkip() {
       if (onDismiss) setTimeout(onDismiss, 1400);
@@ -3439,9 +3469,11 @@
       var cardOpen = cardEl && cardEl.classList.contains('visible');
       var tutToast = document.getElementById('tutorial-persistent-toast');
       var postHint = document.getElementById('post-tutorial-hint');
+      // Dismiss locked modal — letter reveal must not soft-lock behind it
       var lockedMsg = document.getElementById('locked-msg');
+      if (lockedMsg && lockedMsg.parentNode) lockedMsg.parentNode.removeChild(lockedMsg);
 
-      if (panelOpen || cardOpen || tutToast || postHint || lockedMsg) {
+      if (panelOpen || cardOpen || tutToast || postHint) {
         setTimeout(tryShow, 400);
         return;
       }
@@ -4379,7 +4411,7 @@
     var target = null;
     var hintLine1 = '';
     var hintLine2 = '';
-    var recoverLetterOnArrive = false;
+    var promptLetterSearch = false;
 
     // Priority 1: next unvisited journey step (golden glow — includes unlockable Indras Na)
     var nextId = getNextPathLocation();
@@ -4410,8 +4442,9 @@
               missName + '.';
           }
           if (isFullyDiscovered(missId)) {
-            hintLine2 = 'Opening Sabella\u2019s letter now \u2014 Secrets must reach 4 of 4.';
-            recoverLetterOnArrive = true;
+            // Charted but parchment skipped — start lantern search; do NOT auto-open letter.
+            hintLine2 = 'Search with the lantern for Sabella\u2019s letter';
+            promptLetterSearch = true;
           } else {
             hintLine2 = 'Follow the glow and find the letter with the chime.';
           }
@@ -4516,19 +4549,18 @@
       guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4500 };
     }, 900);
 
-    // Recover skipped letter immediately (don't wait on scheduleSabellaMessage / locked-msg)
-    if (recoverLetterOnArrive) {
-      forceShowSabellaLetter(target);
+    // Start lantern chime at the letter-stop — parchment fires on hot (or marker click).
+    if (promptLetterSearch) {
       setTimeout(function() {
-        forceShowSabellaLetter(target);
-      }, 1200);
+        enterLetterSearchMode(target);
+      }, 1100);
     }
 
     // Show hint toast
     setTimeout(function() {
       showGuideHint(
-        (recoverLetterOnArrive ? sabellaLetterDisplayName(target.id) : target.name) +
-          (target.sub && !recoverLetterOnArrive ? ' \u2014 ' + target.sub : ''),
+        (promptLetterSearch ? sabellaLetterDisplayName(target.id) : target.name) +
+          (target.sub && !promptLetterSearch ? ' \u2014 ' + target.sub : ''),
         hintLine1,
         hintLine2
       );
