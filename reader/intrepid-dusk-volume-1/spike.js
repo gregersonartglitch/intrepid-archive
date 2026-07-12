@@ -3,6 +3,16 @@ const READER_MAGNIFY_DISABLE_KEY = "intrepid_reader_magnify_disabled";
 const READER_MAGNIFY_ENABLED_KEY = "intrepid_reader_magnify_enabled";
 const READER_HELP_TIP_SEEN_KEY = "intrepid_reader_help_tip_seen_v1";
 
+// P0 page readiness contract — strangler under reader/plugins/page-lifecycle/
+// Kill switch: localStorage intrepid_reader_page_lifecycle_disabled = "1"
+const ENABLE_PAGE_LIFECYCLE = true;
+const PAGE_LIFECYCLE_DISABLE_KEY = "intrepid_reader_page_lifecycle_disabled";
+const PAGE_LIFECYCLE_MANIFEST_URL = "./assets/manifest.json";
+const PAGE_LIFECYCLE_MAX_IN_FLIGHT = 4;
+const PAGE_LIFECYCLE_TIMEOUT_MS = 8000;
+// Opening hard-fail deadline (must exceed per-image timeout; never soft-open empty book).
+const VEIL_OPENING_DEADLINE_MS = 16000;
+
 const issuePageCounts = [
   { issue: "001", pages: 21 },
   { issue: "002", pages: 21 },
@@ -67,17 +77,23 @@ const WARM_QUEUE_BATCH = 2;
 const WARM_QUEUE_GAP_MS = 100;
 const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
+// Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 172;
+const PAGE_ASSET_VERSION = 173;
 const SOFT_TOAST_MS = 4200;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
+// Legacy path: "load OK" set. Lifecycle path uses loader painted/decoded states instead.
 const decodedPages = new Set();
 const prefetchImages = {};
 const linkPreloads = {};
 let lastPageIndex = 0;
 let readerReady = false;
 let backgroundWarmTimer = null;
+let pageLifecycle = null;
+let pageManifestById = {};
+let openingPrimeIndices = [];
+let lifecycleBootPageElements = null;
 
 const elements = {
   book: document.querySelector("#book"),
@@ -105,6 +121,172 @@ function isReaderMagnifyRuntimeAllowed() {
   } catch (err) {
     return true;
   }
+}
+
+function isPageLifecycleEnabled() {
+  if (!ENABLE_PAGE_LIFECYCLE) {
+    return false;
+  }
+  try {
+    return localStorage.getItem(PAGE_LIFECYCLE_DISABLE_KEY) !== "1";
+  } catch (err) {
+    return true;
+  }
+}
+
+function loadPageLifecyclePlugin(callback) {
+  if (!isPageLifecycleEnabled()) {
+    if (typeof callback === "function") {
+      callback(false);
+    }
+    return;
+  }
+
+  if (window.LegendistPageLifecycle) {
+    if (elements.readerRoot) {
+      elements.readerRoot.classList.add("has-page-lifecycle");
+    }
+    if (typeof callback === "function") {
+      callback(true);
+    }
+    return;
+  }
+
+  var css = document.createElement("link");
+  css.rel = "stylesheet";
+  css.href = "../plugins/page-lifecycle/page-lifecycle.css?v=173";
+  document.head.appendChild(css);
+
+  var script = document.createElement("script");
+  script.src = "../plugins/page-lifecycle/page-loader.js?v=173";
+  script.onload = function () {
+    if (elements.readerRoot) {
+      elements.readerRoot.classList.add("has-page-lifecycle");
+    }
+    if (typeof callback === "function") {
+      callback(!!window.LegendistPageLifecycle);
+    }
+  };
+  script.onerror = function () {
+    if (typeof callback === "function") {
+      callback(false);
+    }
+  };
+  document.head.appendChild(script);
+}
+
+function manifestAssetIdForEntry(entry) {
+  if (!entry || entry.blank) {
+    return null;
+  }
+  if (entry.cover) {
+    return "cover-hardcover";
+  }
+  if (entry.contentNumber) {
+    return "page-" + String(entry.contentNumber).padStart(3, "0");
+  }
+  return null;
+}
+
+function lifecyclePrimaryUrl(pageIndex) {
+  var entry = pageEntries[pageIndex];
+  if (!entry || entry.blank) {
+    return "";
+  }
+  var id = manifestAssetIdForEntry(entry);
+  var asset = id && pageManifestById[id];
+  if (asset && window.LegendistPageLifecycle) {
+    return window.LegendistPageLifecycle.assetUrlFromManifest(
+      asset,
+      "webp",
+      "./assets/",
+    );
+  }
+  return entry.src || "";
+}
+
+function lifecycleFallbackUrl(pageIndex) {
+  var entry = pageEntries[pageIndex];
+  if (!entry || entry.blank) {
+    return "";
+  }
+  var id = manifestAssetIdForEntry(entry);
+  var asset = id && pageManifestById[id];
+  if (asset && window.LegendistPageLifecycle) {
+    return window.LegendistPageLifecycle.assetUrlFromManifest(
+      asset,
+      "fallback",
+      "./assets/",
+    );
+  }
+  if (entry.src && entry.src.indexOf(".webp") >= 0) {
+    return entry.src.replace(/\.webp(\?.*)?$/, ".jpg$1");
+  }
+  return "";
+}
+
+function updatePagePlaceholder(pageIndex, state) {
+  var image = pageImages[pageIndex];
+  if (!image || !image.parentElement) {
+    return;
+  }
+  var page = image.parentElement;
+  var ph = page.querySelector("[data-page-placeholder]");
+
+  if (state === "painted" || state === "decoded") {
+    if (ph && ph.parentNode) {
+      ph.parentNode.removeChild(ph);
+    }
+    return;
+  }
+
+  if (state !== "loading" && state !== "failed") {
+    return;
+  }
+
+  if (!ph) {
+    ph = document.createElement("div");
+    ph.className = "reader-page-placeholder";
+    ph.setAttribute("data-page-placeholder", "");
+    page.appendChild(ph);
+  }
+
+  if (state === "loading") {
+    ph.innerHTML =
+      '<p class="reader-page-placeholder__msg">Loading page&hellip;</p>';
+    return;
+  }
+
+  ph.innerHTML =
+    '<p class="reader-page-placeholder__msg">Page couldn&rsquo;t load</p>' +
+    '<button type="button" class="reader-page-placeholder__retry" data-page-retry>Retry</button>';
+  var btn = ph.querySelector("[data-page-retry]");
+  if (btn) {
+    btn.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (pageLifecycle) {
+        pageLifecycle.retry(pageIndex);
+      }
+    });
+  }
+}
+
+function createLifecycleLoader() {
+  if (!window.LegendistPageLifecycle) {
+    return null;
+  }
+  return window.LegendistPageLifecycle.create({
+    maxInFlight: PAGE_LIFECYCLE_MAX_IN_FLIGHT,
+    timeoutMs: PAGE_LIFECYCLE_TIMEOUT_MS,
+    assetVersion: PAGE_ASSET_VERSION,
+    pageImages: pageImages,
+    pageEntries: pageEntries,
+    canAccess: canAccessPageIndex,
+    getPrimaryUrl: lifecyclePrimaryUrl,
+    getFallbackUrl: lifecycleFallbackUrl,
+    onPlaceholder: updatePagePlaceholder,
+  });
 }
 
 function loadReaderMagnifyPlugin(callback) {
@@ -331,10 +513,25 @@ function pageAssetUrl(entry, attempt) {
 }
 
 function decodePageImage(pageIndex) {
+  if (pageLifecycle) {
+    return pageLifecycle.request(
+      pageIndex,
+      pageLifecycle.PRIORITY_NEIGHBOR,
+    );
+  }
   return ensurePageImageReady(pageIndex, { soft: true });
 }
 
 function ensurePageImageReady(pageIndex, options) {
+  if (pageLifecycle) {
+    var priority =
+      options && options.visible
+        ? pageLifecycle.PRIORITY_VISIBLE
+        : pageLifecycle.PRIORITY_NEIGHBOR;
+    pageLifecycle.enqueue(pageIndex, priority);
+    return pageLifecycle.whenSettled(pageIndex);
+  }
+
   var soft = !!(options && options.soft);
   return new Promise(function (resolve) {
     if (pageIndex < 0 || pageIndex >= pageEntries.length) {
@@ -383,8 +580,7 @@ function ensurePageImageReady(pageIndex, options) {
     }
 
     function afterLoaded() {
-      // Gate on load only — decode() is best-effort and must never block reveal.
-      // Some browsers leave decode() pending on large WebPs / detached nodes.
+      // Legacy gate on load only — lifecycle path uses decode→painted instead.
       markReady();
       if (typeof image.decode === "function") {
         image.decode().catch(function () {});
@@ -452,6 +648,10 @@ function ensurePageImageReady(pageIndex, options) {
 }
 
 function injectLinkPreload(pageIndex) {
+  // Lifecycle path owns every image request — skip orphan link preloads.
+  if (pageLifecycle || isPageLifecycleEnabled()) {
+    return;
+  }
   if (pageIndex < 0 || pageIndex >= pageEntries.length) {
     return;
   }
@@ -478,6 +678,9 @@ function injectLinkPreload(pageIndex) {
 }
 
 function syncLinkPreloads(centerIndex) {
+  if (pageLifecycle || isPageLifecycleEnabled()) {
+    return;
+  }
   for (let offset = 1; offset <= LINK_PRELOAD_AHEAD; offset += 1) {
     injectLinkPreload(centerIndex + offset);
     injectLinkPreload(centerIndex - offset);
@@ -485,11 +688,17 @@ function syncLinkPreloads(centerIndex) {
 }
 
 function assignPageImageSrc(pageIndex, attempt) {
+  if (pageLifecycle) {
+    pageLifecycle.enqueue(pageIndex, pageLifecycle.PRIORITY_NEIGHBOR);
+    return lifecyclePrimaryUrl(pageIndex);
+  }
   var entry = pageEntries[pageIndex];
   var image = pageImages[pageIndex];
   if (!entry || entry.blank || !image) {
     return "";
   }
+  // Eager before src on all assign paths.
+  image.loading = "eager";
   var href = pageAssetUrl(entry, attempt || 0);
   if (image.getAttribute("src") !== href) {
     image.src = href;
@@ -510,6 +719,9 @@ function pageImageIsPaintReady(pageIndex) {
   if (!entry || entry.blank) {
     return true;
   }
+  if (pageLifecycle) {
+    return pageLifecycle.isPaintReady(pageIndex);
+  }
   if (decodedPages.has(pageIndex)) {
     return true;
   }
@@ -517,7 +729,7 @@ function pageImageIsPaintReady(pageIndex) {
   return !!(image && image.complete && image.naturalWidth > 0);
 }
 
-function warmPageImage(pageIndex) {
+function warmPageImage(pageIndex, priority) {
   if (pageIndex < 0 || pageIndex >= pageEntries.length) {
     return;
   }
@@ -536,8 +748,19 @@ function warmPageImage(pageIndex) {
     return;
   }
 
-  assignPageImageSrc(pageIndex, 0);
+  if (pageLifecycle) {
+    var pri =
+      typeof priority === "number"
+        ? priority
+        : pageLifecycle.PRIORITY_NEIGHBOR;
+    pageLifecycle.enqueue(pageIndex, pri);
+    warmedPages.add(pageIndex);
+    return;
+  }
+
+  // Eager before src (legacy path).
   image.loading = "eager";
+  assignPageImageSrc(pageIndex, 0);
   if (!pageImageIsPaintReady(pageIndex)) {
     setPageImageLoading(pageIndex, true);
   }
@@ -552,26 +775,8 @@ function warmPageImage(pageIndex) {
   }
 
   warmedPages.add(pageIndex);
-
-  // StPageFlip may not mount lazy imgs until flip — probe warms HTTP cache + decode.
-  if (!prefetchImages[pageIndex]) {
-    const probe = new Image();
-    probe.decoding = "async";
-    probe.src = pageAssetUrl(entry, 0);
-    probe.addEventListener(
-      "load",
-      function onProbeLoad() {
-        probe.removeEventListener("load", onProbeLoad);
-        decodePageImage(pageIndex).then(function (ok) {
-          if (ok || pageImageIsPaintReady(pageIndex)) {
-            setPageImageLoading(pageIndex, false);
-          }
-        });
-      },
-      { once: true },
-    );
-    prefetchImages[pageIndex] = probe;
-  }
+  // Legacy dual-path probes removed from lifecycle; kill-switch keeps them off too
+  // once lifecycle ships — probes re-starve the pool without guaranteeing DOM paint.
 }
 
 // Assign src + warm decode for current page ± NEIGHBORHOOD_RADIUS before/during flip.
@@ -580,6 +785,10 @@ function ensureNeighborhoodPages(centerIndex) {
     typeof centerIndex === "number" && !isNaN(centerIndex)
       ? centerIndex
       : lastPageIndex;
+  if (pageLifecycle) {
+    pageLifecycle.setCenter(center, NEIGHBORHOOD_RADIUS, PRELOAD_AHEAD);
+    return;
+  }
   for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
     warmPageImage(center + offset);
   }
@@ -602,8 +811,12 @@ function queueBackgroundWarm(startIndex, endIndexExclusive) {
     var batch = 0;
     while (batch < WARM_QUEUE_BATCH && next < end) {
       if (canAccessPageIndex(next)) {
-        warmPageImage(next);
-        injectLinkPreload(next);
+        if (pageLifecycle) {
+          pageLifecycle.enqueue(next, pageLifecycle.PRIORITY_BACKGROUND);
+        } else {
+          warmPageImage(next);
+          injectLinkPreload(next);
+        }
         batch += 1;
       }
       next += 1;
@@ -675,15 +888,34 @@ function collectOpeningImageIndices() {
 
 function prepareOpeningPages(pageElements) {
   var indices = collectOpeningImageIndices();
+  openingPrimeIndices = indices.slice();
   var done = 0;
   updateLoadProgress(0, indices.length || 1);
 
-  for (var i = 0; i < indices.length; i += 1) {
-    injectLinkPreload(indices[i]);
-  }
-
   if (!indices.length) {
     return Promise.resolve(true);
+  }
+
+  if (pageLifecycle) {
+    var progressTimer = setInterval(function () {
+      var ready = 0;
+      for (var i = 0; i < indices.length; i += 1) {
+        if (pageLifecycle.isPaintReady(indices[i])) {
+          ready += 1;
+        }
+      }
+      updateLoadProgress(ready, indices.length);
+    }, 200);
+
+    return pageLifecycle.prime(indices).then(function (ok) {
+      clearInterval(progressTimer);
+      updateLoadProgress(ok ? indices.length : done, indices.length);
+      return ok;
+    });
+  }
+
+  for (var i = 0; i < indices.length; i += 1) {
+    injectLinkPreload(indices[i]);
   }
 
   return Promise.all(
@@ -705,7 +937,7 @@ function prepareOpeningPages(pageElements) {
           ? "Opening with pages still loading…"
           : "Almost ready…";
     }
-    // Never block the book on preload — report readiness only.
+    // Legacy: never block the book on preload — report readiness only.
     return failed === 0;
   });
 }
@@ -769,6 +1001,21 @@ function requestPageTurn(targetIndex) {
 function warmFlipTargetsFromDirection(forward) {
   const step = forward ? 1 : -1;
   ensureNeighborhoodPages(lastPageIndex + step);
+  if (pageLifecycle) {
+    pageLifecycle.enqueue(
+      lastPageIndex + step,
+      pageLifecycle.PRIORITY_VISIBLE,
+    );
+    pageLifecycle.enqueue(
+      lastPageIndex + step * 2,
+      pageLifecycle.PRIORITY_NEIGHBOR,
+    );
+    pageLifecycle.enqueue(
+      lastPageIndex + step * 3,
+      pageLifecycle.PRIORITY_BACKGROUND,
+    );
+    return;
+  }
   warmPageImage(lastPageIndex + step);
   warmPageImage(lastPageIndex + step * 2);
   warmPageImage(lastPageIndex + step * 3);
@@ -792,6 +1039,7 @@ function warmFlipTargetFromPointer(event) {
 
 function buildPageElements() {
   elements.book.innerHTML = "";
+  var useLifecycle = isPageLifecycleEnabled();
   return pageEntries.map((entry, index) => {
     const page = document.createElement("div");
     page.className = entry.blank
@@ -803,6 +1051,7 @@ function buildPageElements() {
 
     if (entry.blank) {
       page.setAttribute("aria-label", entry.label);
+      page.setAttribute("data-page-state", "painted");
       return page;
     }
 
@@ -814,9 +1063,13 @@ function buildPageElements() {
     image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";
     image.draggable = false;
-    // Only kick network for opening pages here. Assigning src on every page
-    // at boot starved the browser pool (~6 conns/host) and timed out the veil.
-    if (index <= OPENING_READY_LAST_INDEX) {
+    pageImages[index] = image;
+
+    if (useLifecycle) {
+      // Loader owns every request — no boot-time src flood.
+      image.loading = "eager";
+      page.setAttribute("data-page-state", "idle");
+    } else if (index <= OPENING_READY_LAST_INDEX) {
       image.loading = "eager";
       if ("fetchPriority" in image) {
         image.fetchPriority = "high";
@@ -825,7 +1078,6 @@ function buildPageElements() {
     } else {
       image.loading = "lazy";
     }
-    pageImages[index] = image;
 
     page.append(image);
     return page;
@@ -899,6 +1151,90 @@ function revealReader() {
   });
 }
 
+function clearOpeningHardFailUi() {
+  if (!elements.loadVeil) {
+    return;
+  }
+  elements.loadVeil.classList.remove("is-failed", "is-hard-failed");
+  var btn = elements.loadVeil.querySelector("[data-reader-load-retry]");
+  if (btn && btn.parentNode) {
+    btn.parentNode.removeChild(btn);
+  }
+}
+
+function showOpeningHardFail(message) {
+  if (!elements.loadVeil) {
+    return;
+  }
+  setReaderPreparing(true);
+  elements.loadVeil.classList.add("is-failed", "is-hard-failed");
+  if (elements.loadProgress) {
+    elements.loadProgress.textContent =
+      message || "Page couldn't load — Retry.";
+  }
+  var title = elements.loadVeil.querySelector(".reader-load-veil__title");
+  if (title) {
+    title.textContent = "Page couldn't load";
+  }
+  var inner = elements.loadVeil.querySelector(".reader-load-veil__inner");
+  var btn = elements.loadVeil.querySelector("[data-reader-load-retry]");
+  if (!btn && inner) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "reader-load-veil__retry";
+    btn.setAttribute("data-reader-load-retry", "");
+    btn.textContent = "Retry";
+    inner.appendChild(btn);
+  }
+  if (btn) {
+    btn.onclick = function () {
+      retryOpeningPrime();
+    };
+  }
+}
+
+function retryOpeningPrime() {
+  if (!pageLifecycle || !lifecycleBootPageElements) {
+    window.location.reload();
+    return;
+  }
+  clearOpeningHardFailUi();
+  if (elements.loadProgress) {
+    elements.loadProgress.textContent = "0%";
+  }
+  var title = elements.loadVeil &&
+    elements.loadVeil.querySelector(".reader-load-veil__title");
+  if (title) {
+    title.textContent = "Preparing the volume…";
+  }
+  setReaderPreparing(true);
+  bootOpened = false;
+  if (veilDeadlineId != null) {
+    clearTimeout(veilDeadlineId);
+    veilDeadlineId = null;
+  }
+  veilDeadlineId = setTimeout(function () {
+    if (!bootOpened) {
+      showOpeningHardFail("Page couldn't load — Retry.");
+    }
+  }, VEIL_OPENING_DEADLINE_MS);
+
+  pageLifecycle
+    .retryMany(openingPrimeIndices.length ? openingPrimeIndices : collectOpeningImageIndices())
+    .then(function (ok) {
+      if (ok) {
+        openBook(lifecycleBootPageElements, { softError: false });
+      } else if (!bootOpened) {
+        showOpeningHardFail("Page couldn't load — Retry.");
+      }
+    })
+    .catch(function () {
+      if (!bootOpened) {
+        showOpeningHardFail("Page couldn't load — Retry.");
+      }
+    });
+}
+
 function showSoftLoadToast(message) {
   if (!elements.stage || !message) {
     return;
@@ -932,6 +1268,7 @@ function openBook(pageElements, options) {
     clearTimeout(veilDeadlineId);
     veilDeadlineId = null;
   }
+  clearOpeningHardFailUi();
 
   try {
     if (!pageFlip) {
@@ -941,7 +1278,8 @@ function openBook(pageElements, options) {
     console.error("[reader] failed to mount page flip", err);
   }
 
-  if (options && options.softError) {
+  // Lifecycle path never soft-opens into an empty book.
+  if (options && options.softError && !pageLifecycle) {
     showSoftLoadToast("Pages are still loading — flip when ready.");
   }
 
@@ -953,9 +1291,7 @@ function openBook(pageElements, options) {
   initReaderHelpTip();
 }
 
-function bootReader() {
-  setReaderPreparing(true);
-  var pageElements = buildPageElements();
+function bootReaderLegacy(pageElements) {
   var openingFailed = false;
 
   veilDeadlineId = setTimeout(function () {
@@ -965,12 +1301,68 @@ function bootReader() {
   prepareOpeningPages(pageElements)
     .then(function (ok) {
       openingFailed = !ok;
-      // Prefer cover readiness, but never wait on a second full retry cycle.
       openBook(pageElements, { softError: openingFailed });
     })
     .catch(function () {
       openBook(pageElements, { softError: true });
     });
+}
+
+function bootReaderLifecycle(pageElements) {
+  lifecycleBootPageElements = pageElements;
+  pageLifecycle = createLifecycleLoader();
+  if (!pageLifecycle) {
+    bootReaderLegacy(pageElements);
+    return;
+  }
+
+  veilDeadlineId = setTimeout(function () {
+    if (!bootOpened) {
+      showOpeningHardFail("Page couldn't load — Retry.");
+    }
+  }, VEIL_OPENING_DEADLINE_MS);
+
+  prepareOpeningPages(pageElements)
+    .then(function (ok) {
+      if (bootOpened) {
+        return;
+      }
+      if (ok) {
+        openBook(pageElements, { softError: false });
+        return;
+      }
+      showOpeningHardFail("Page couldn't load — Retry.");
+    })
+    .catch(function () {
+      if (!bootOpened) {
+        showOpeningHardFail("Page couldn't load — Retry.");
+      }
+    });
+}
+
+function bootReader() {
+  setReaderPreparing(true);
+
+  loadPageLifecyclePlugin(function (pluginOk) {
+    var pageElements = buildPageElements();
+
+    if (!pluginOk || !isPageLifecycleEnabled() || !window.LegendistPageLifecycle) {
+      bootReaderLegacy(pageElements);
+      return;
+    }
+
+    window.LegendistPageLifecycle.loadManifest(PAGE_LIFECYCLE_MANIFEST_URL)
+      .then(function (manifest) {
+        pageManifestById = window.LegendistPageLifecycle.indexManifest(manifest);
+      })
+      .catch(function (err) {
+        console.warn("[reader] manifest load failed; using entry.src + .jpg fallback", err);
+        pageManifestById = {};
+      })
+      .then(function () {
+        bootReaderLifecycle(pageElements);
+      });
+  });
 }
 
 let pageFlip = null;

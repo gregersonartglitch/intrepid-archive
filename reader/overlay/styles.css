@@ -466,8 +466,8 @@ h1 {
   -webkit-user-drag: none;
 }
 
-/* Page-local placeholder when src is assigned but paint is incomplete —
-   avoids a solid white half-page during flip without re-showing the book veil. */
+/* Page-local placeholder when src is assigned but paint is incomplete.
+   Lifecycle plugin (has-page-lifecycle) replaces the dark void with paper UI. */
 .reader-page.is-loading {
   background:
     linear-gradient(180deg, rgba(34, 28, 22, 0.92) 0%, rgba(18, 14, 10, 0.98) 100%);
@@ -475,6 +475,11 @@ h1 {
 
 .reader-page.is-loading img {
   opacity: 0;
+}
+
+.reader.has-page-lifecycle .reader-page.is-loading {
+  background:
+    linear-gradient(180deg, #f3ead6 0%, #e8dcc0 48%, #ddd0b0 100%);
 }
 
 /* Overlap facing pages 1px to hide center hairline (StPageFlip --left / --right) */

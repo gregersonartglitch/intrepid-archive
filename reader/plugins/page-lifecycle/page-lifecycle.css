@@ -1,0 +1,116 @@
+/**
+ * Page lifecycle readiness UI (P0)
+ * Visible pages always show artwork, intentional blank, or an explicit
+ * paper-colored loading / error placeholder — never a dark ink void.
+ */
+
+.reader-page[data-page-state="loading"],
+.reader-page[data-page-state="failed"],
+.reader-page.is-loading,
+.reader-page.is-failed {
+  background:
+    linear-gradient(180deg, #f3ead6 0%, #e8dcc0 48%, #ddd0b0 100%);
+  position: relative;
+}
+
+/* Lifecycle overrides the legacy dark is-loading void. */
+.reader.has-page-lifecycle .reader-page.is-loading {
+  background:
+    linear-gradient(180deg, #f3ead6 0%, #e8dcc0 48%, #ddd0b0 100%);
+}
+
+.reader.has-page-lifecycle .reader-page.is-loading img,
+.reader-page[data-page-state="loading"] img,
+.reader-page[data-page-state="failed"] img,
+.reader-page.is-failed img {
+  opacity: 0;
+}
+
+.reader-page[data-page-state="decoded"] img,
+.reader-page[data-page-state="painted"] img,
+.reader-page.is-ready img {
+  opacity: 1;
+}
+
+.reader-page-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+  pointer-events: none;
+  color: #5c4e38;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.reader-page[data-page-state="failed"] .reader-page-placeholder,
+.reader-page.is-failed .reader-page-placeholder {
+  pointer-events: auto;
+}
+
+.reader-page-placeholder__msg {
+  margin: 0;
+  max-width: 12rem;
+  font-size: clamp(0.85rem, 2.2vw, 1rem);
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+}
+
+.reader-page-placeholder__retry {
+  pointer-events: auto;
+  appearance: none;
+  border: 1px solid rgba(92, 78, 56, 0.45);
+  border-radius: 2px;
+  background: rgba(255, 252, 245, 0.92);
+  color: #3d3224;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.reader-page-placeholder__retry:hover,
+.reader-page-placeholder__retry:focus-visible {
+  border-color: rgba(92, 78, 56, 0.75);
+  outline: none;
+}
+
+.reader-page[data-page-state="painted"] .reader-page-placeholder,
+.reader-page[data-page-state="decoded"] .reader-page-placeholder,
+.reader-page.is-ready .reader-page-placeholder {
+  display: none;
+}
+
+/* Opening veil hard-fail (Retry) — keep veil up; never soft-open an empty book. */
+.reader-load-veil.is-hard-failed {
+  pointer-events: auto;
+}
+
+.reader-load-veil.is-hard-failed .reader-load-veil__retry {
+  display: inline-block;
+  margin-top: 16px;
+  appearance: none;
+  border: 1px solid rgba(198, 141, 85, 0.55);
+  border-radius: 2px;
+  background: rgba(198, 141, 85, 0.16);
+  color: var(--bone, #efe7d2);
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.reader-load-veil:not(.is-hard-failed) .reader-load-veil__retry {
+  display: none;
+}
+
+.reader-load-veil.is-hard-failed .reader-load-veil__progress {
+  color: var(--gold, #c68d55);
+}
