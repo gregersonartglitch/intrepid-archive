@@ -849,5 +849,356 @@ try {
   fail('node --check fog.js: ' + (e.stderr ? e.stderr.toString() : e.message));
 }
 
+// ── [9] Glow-only sequential playthrough ─────────────────────
+// Simulates a real player: only click what isClickable() would allow
+// (visible beacon). No fog-lottery NE clicks for letters — letters fire
+// on chime-hot at letter stops (or Guide Me / marker recovery).
+console.log('\n[9] Glow-only sequential playthrough (visible beacons only)');
+
+var TERRITORY_GLOW_RADIUS = 500;
+var TERRITORY_FRONTIER_RADIUS = 1800;
+var SITE_NEAR_CLEARED = 400;
+
+function isTerritoryLoc(loc) {
+  return loc && (loc.type === 'region' || loc.type === 'water');
+}
+
+function distLL(a, b) {
+  var dx = a.lat - b.lat;
+  var dy = a.lng - b.lng;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function hasNearbyNonTerritoryDiscoveryPT(discovered, loc, radius) {
+  var nearby = false;
+  Object.keys(discovered).forEach(function(dId) {
+    if (nearby) return;
+    var dLoc = LOCATIONS.find(function(l) { return l.id === dId; });
+    if (!dLoc || isTerritoryLoc(dLoc)) return;
+    if (distLL(loc, dLoc) < radius) nearby = true;
+  });
+  return nearby;
+}
+
+function hasNearbyTerritoryDiscoveryPT(discovered, loc, radius) {
+  var nearby = false;
+  Object.keys(discovered).forEach(function(dId) {
+    if (nearby) return;
+    var dLoc = LOCATIONS.find(function(l) { return l.id === dId; });
+    if (!isTerritoryLoc(dLoc)) return;
+    if (distLL(loc, dLoc) < radius) nearby = true;
+  });
+  return nearby;
+}
+
+function getFallbackTerritoryIdPT(discovered) {
+  var undiscoveredTerritories = LOCATIONS.filter(function(l) {
+    return isTerritoryLoc(l) && !discovered[l.id];
+  });
+  if (!undiscoveredTerritories.length) return null;
+  var hasNormalGlow = undiscoveredTerritories.some(function(loc) {
+    return hasNearbyNonTerritoryDiscoveryPT(discovered, loc, TERRITORY_GLOW_RADIUS) ||
+           hasNearbyTerritoryDiscoveryPT(discovered, loc, TERRITORY_FRONTIER_RADIUS);
+  });
+  if (hasNormalGlow) return null;
+  var best = null;
+  var bestD = Infinity;
+  undiscoveredTerritories.forEach(function(loc) {
+    Object.keys(discovered).forEach(function(dId) {
+      var dLoc = LOCATIONS.find(function(l) { return l.id === dId; });
+      if (!dLoc || isTerritoryLoc(dLoc)) return;
+      var d = distLL(loc, dLoc);
+      if (d < bestD) { bestD = d; best = loc; }
+    });
+  });
+  return best ? best.id : null;
+}
+
+function territoryHasGlowPT(discovered, loc) {
+  return hasNearbyNonTerritoryDiscoveryPT(discovered, loc, TERRITORY_GLOW_RADIUS) ||
+         hasNearbyTerritoryDiscoveryPT(discovered, loc, TERRITORY_FRONTIER_RADIUS) ||
+         loc.id === getFallbackTerritoryIdPT(discovered);
+}
+
+function nearestTerritoryIsDiscoveredPT(discovered, loc) {
+  var nearestRegion = null;
+  var nrDist = Infinity;
+  LOCATIONS.forEach(function(r) {
+    if (!isTerritoryLoc(r)) return;
+    var d = distLL(loc, r);
+    if (d < nrDist) { nrDist = d; nearestRegion = r; }
+  });
+  return !!(nearestRegion && discovered[nearestRegion.id]);
+}
+
+function nearClearedFogPT(discovered, loc) {
+  var nearCleared = false;
+  Object.keys(discovered).forEach(function(dId) {
+    if (nearCleared) return;
+    var dLoc = LOCATIONS.find(function(l) { return l.id === dId; });
+    if (!dLoc) return;
+    if (distLL(loc, dLoc) < SITE_NEAR_CLEARED) nearCleared = true;
+  });
+  return nearCleared;
+}
+
+// Mirror fog.js isClickable — glow-only contract for the playthrough
+function isClickablePT(locId, discovered, journeyPath, revealedGods, tutorialHintId) {
+  if (isFullyDiscovered(locId, discovered, journeyPath)) return false;
+  var loc = LOCATIONS.find(function(l) { return l.id === locId; });
+  if (!loc) return false;
+
+  if (locId === SINN_CITY_ID) {
+    if (!meetsSinnTerritoryGate(discovered)) return false;
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
+  if (locId === FINAL_ELENA_STOP) {
+    if (!explorationComplete(discovered)) return false;
+    if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) return false;
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
+  if (isVol2LockedJourneyStep(locId, journeyPath, revealedGods, discovered)) return false;
+
+  // Tutorial gate: only the current hint glow
+  if (!discovered['sabellas-hut'] && tutorialHintId) {
+    return locId === tutorialHintId;
+  }
+
+  if (loc.type === 'story') {
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods) ||
+           nearClearedFogPT(discovered, loc);
+  }
+  if (isOnPath(locId, journeyPath)) {
+    return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
+  }
+  if (isTerritoryLoc(loc)) {
+    return territoryHasGlowPT(discovered, loc);
+  }
+  if (loc.cartographerSite) {
+    return nearClearedFogPT(discovered, loc) || nearestTerritoryIsDiscoveredPT(discovered, loc);
+  }
+  return false;
+}
+
+function listClickablesPT(discovered, journeyPath, revealedGods, tutorialHintId) {
+  return LOCATIONS.filter(function(l) {
+    return isClickablePT(l.id, discovered, journeyPath, revealedGods, tutorialHintId);
+  }).map(function(l) { return l.id; });
+}
+
+function runGlowOnlyPlaythrough() {
+  clearSabellaLetters();
+  var discovered = {};
+  var revealedGods = {};
+  var pathLog = [];
+  var stuck = null;
+  var maxSteps = 250;
+  var step = 0;
+  var sealedIndrasChecked = false;
+
+  // --- Tutorial: crossing-pool → dawn-spear → sabellas-hut ---
+  var tutorialOrder = ['crossing-pool', 'dawn-spear', 'sabellas-hut'];
+  for (var ti = 0; ti < tutorialOrder.length; ti++) {
+    var hintId = tutorialOrder[ti];
+    var clicks = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, hintId);
+    if (clicks.indexOf(hintId) < 0) {
+      stuck = 'tutorial: ' + hintId + ' not clickable (visible=' + clicks.join(',') + ')';
+      break;
+    }
+    // Soft-lock check: only the hint should be clickable during tutorial
+    if (clicks.length !== 1 || clicks[0] !== hintId) {
+      stuck = 'tutorial gate leak at ' + hintId + ': clickables=' + clicks.join(',');
+      break;
+    }
+    discovered[hintId] = { at: Date.now(), phase: 'complete' };
+    pathLog.push('T:' + hintId);
+    // Letter at hut fires on chime Hot (designed) — not fog lottery
+    if (SABELLA_LETTER_PREREQ_IDS.indexOf(hintId) >= 0) {
+      SABELLA_MESSAGES_SEEN[hintId] = Date.now();
+      pathLog.push('L:' + hintId);
+    }
+  }
+  if (stuck) return { ok: false, stuck: stuck, pathLog: pathLog, discovered: discovered };
+
+  // --- Post-tutorial free play following glows only ---
+  while (step < maxSteps && !isFullyDiscovered(FINAL_ELENA_STOP, discovered, JOURNEY_PATH)) {
+    step++;
+    var nextId = getNextPathLocation(discovered, JOURNEY_PATH, revealedGods);
+    var clickables = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, null);
+
+    // Sealed Indras: path through Sinn done, but gates remain — glow drawn, not clickable
+    if (isIndrasNaSealed(discovered, JOURNEY_PATH)) {
+      if (!sealedIndrasChecked) {
+        sealedIndrasChecked = true;
+        if (isClickablePT(FINAL_ELENA_STOP, discovered, JOURNEY_PATH, revealedGods, null)) {
+          stuck = 'sealed Indras Na was clickable while gated';
+          break;
+        }
+      }
+      // Letter recovery (designed): if letters missing at completed stops, collect via
+      // Guide Me / marker recovery — never invent a fog lottery click
+      if (isSabellaMessagesEnabled() && !sabellaPrereqLettersComplete()) {
+        var missId = getFirstMissingSabellaLetterId();
+        if (missId && isFullyDiscovered(missId, discovered, JOURNEY_PATH)) {
+          SABELLA_MESSAGES_SEEN[missId] = Date.now();
+          pathLog.push('Lrec:' + missId);
+          continue;
+        }
+        if (missId && clickables.indexOf(missId) >= 0) {
+          // Should not happen — letter stops on path are golden-only when incomplete
+        }
+      }
+    }
+
+    if (!clickables.length) {
+      stuck = 'soft-lock: no glowing clickables after ' + pathLog.join(' > ') +
+        ' (next=' + nextId + ', territories=' + getTerritoryDiscoveryCount(discovered) +
+        '/17, letters=' + countSabellaPrereqLettersCollected() + '/4, explore=' +
+        explorationComplete(discovered) + ')';
+      break;
+    }
+
+    var pick = null;
+    // Prefer golden journey next when glowing
+    if (nextId && clickables.indexOf(nextId) >= 0) {
+      pick = nextId;
+    } else {
+      // Need territories for Sinn / Indras, or sites for Indras — only glowing ones
+      var needTerr = getTerritoryDiscoveryCount(discovered) < 17 ||
+        (nextId == null && isSinnTerritoryGated(discovered, JOURNEY_PATH));
+      var needSites = !explorationComplete(discovered) &&
+        LOCATIONS.some(function(l) { return l.cartographerSite && !discovered[l.id]; });
+
+      if (needTerr) {
+        for (var ci = 0; ci < clickables.length; ci++) {
+          var cLoc = LOCATIONS.find(function(l) { return l.id === clickables[ci]; });
+          if (cLoc && cLoc.type === 'region') { pick = clickables[ci]; break; }
+        }
+        if (!pick) {
+          for (ci = 0; ci < clickables.length; ci++) {
+            cLoc = LOCATIONS.find(function(l) { return l.id === clickables[ci]; });
+            if (cLoc && isTerritoryLoc(cLoc)) { pick = clickables[ci]; break; }
+          }
+        }
+      }
+      if (!pick && needSites) {
+        for (ci = 0; ci < clickables.length; ci++) {
+          cLoc = LOCATIONS.find(function(l) { return l.id === clickables[ci]; });
+          if (cLoc && cLoc.cartographerSite && !isOnPath(cLoc.id, JOURNEY_PATH)) {
+            pick = clickables[ci];
+            break;
+          }
+        }
+        // mish is both site + journey — if still undisc and glowing, take it
+        if (!pick && clickables.indexOf('mish') >= 0 && !discovered.mish) pick = 'mish';
+      }
+      if (!pick) pick = clickables[0];
+    }
+
+    if (!isClickablePT(pick, discovered, JOURNEY_PATH, revealedGods, null)) {
+      stuck = 'chose non-clickable ' + pick;
+      break;
+    }
+
+    var pickLoc = LOCATIONS.find(function(l) { return l.id === pick; });
+    var phase = (isOnPath(pick, JOURNEY_PATH) || (pickLoc && pickLoc.type === 'story'))
+      ? 'complete'
+      : 'mist';
+    discovered[pick] = { at: Date.now(), phase: phase };
+    pathLog.push((isOnPath(pick, JOURNEY_PATH) ? 'J:' : (pickLoc && pickLoc.cartographerSite ? 'S:' : 'R:')) + pick);
+
+    // Sabella letter on chime Hot at letter-stop completion only
+    if (phase === 'complete' && SABELLA_LETTER_PREREQ_IDS.indexOf(pick) >= 0) {
+      SABELLA_MESSAGES_SEEN[pick] = Date.now();
+      pathLog.push('L:' + pick);
+    }
+  }
+
+  if (stuck) return { ok: false, stuck: stuck, pathLog: pathLog, discovered: discovered };
+  if (!isFullyDiscovered(FINAL_ELENA_STOP, discovered, JOURNEY_PATH)) {
+    return {
+      ok: false,
+      stuck: 'did not reach Indras Na in ' + maxSteps + ' steps; path=' + pathLog.join(' > '),
+      pathLog: pathLog,
+      discovered: discovered
+    };
+  }
+  return {
+    ok: true,
+    stuck: null,
+    pathLog: pathLog,
+    discovered: discovered,
+    territories: getTerritoryDiscoveryCount(discovered),
+    letters: countSabellaPrereqLettersCollected(),
+    journey: journeyCompleteCount(discovered, JOURNEY_PATH),
+    sealedIndrasChecked: sealedIndrasChecked
+  };
+}
+
+var pt = runGlowOnlyPlaythrough();
+assert(pt.ok, 'glow-only playthrough reaches Indras Na' +
+  (pt.stuck ? ' — STUCK: ' + pt.stuck : ''));
+if (pt.ok) {
+  pass('glow-only path length ' + pt.pathLog.length +
+    ' (journey ' + pt.journey + '/8, territories ' + pt.territories +
+    ', letters ' + pt.letters + '/4)');
+  // Path must include full Elena road in order
+  var journeyHits = pt.pathLog.filter(function(x) { return x.indexOf('J:') === 0 || x.indexOf('T:') === 0; })
+    .map(function(x) { return x.slice(2); });
+  var expectedJourney = JOURNEY_PATH.map(function(s) { return s.locationId; });
+  var jiOk = true;
+  var jpos = 0;
+  for (var jh = 0; jh < expectedJourney.length; jh++) {
+    var foundAt = journeyHits.indexOf(expectedJourney[jh], jpos);
+    if (foundAt < 0) { jiOk = false; break; }
+    jpos = foundAt + 1;
+  }
+  assert(jiOk, 'Elena journey stops charted in order via glows');
+  assert(pt.letters === 4, 'all 4 Sabella letters via chime-hot / designed recovery');
+  assert(explorationComplete(pt.discovered), 'all regions + cartographer sites charted before/with Indras');
+  assert(pt.sealedIndrasChecked, 'playthrough observed sealed Indras Na (glow without click) before unlock');
+  // Sanity: moon-stronghold never appears in playthrough
+  assert(pt.pathLog.every(function(x) { return x.indexOf('moon-stronghold') < 0; }),
+    'playthrough never touches moon-stronghold');
+} else {
+  console.error('  path so far: ' + pt.pathLog.join(' > '));
+}
+
+// Mid-path assertion: after hut, mish must be the golden clickable
+clearSabellaLetters();
+var postHut = {
+  'crossing-pool': { at: 1, phase: 'complete' },
+  'dawn-spear': { at: 1, phase: 'complete' },
+  'sabellas-hut': { at: 1, phase: 'complete' }
+};
+SABELLA_MESSAGES_SEEN['sabellas-hut'] = 1;
+assert(getNextPathLocation(postHut, JOURNEY_PATH, {}) === 'mish',
+  'post-hut golden next is mish');
+assert(isClickablePT('mish', postHut, JOURNEY_PATH, {}, null),
+  'post-hut mish is glow-clickable');
+assert(!isClickablePT('indras-na', postHut, JOURNEY_PATH, {}, null),
+  'post-hut indras-na not clickable');
+
+// After tower-nine with <10 territories: Sinn sealed, at least one territory glows
+clearSabellaLetters();
+var preSinn = makeJourneyCompleteThrough('sinn');
+SABELLA_LETTER_PREREQ_IDS.forEach(function(id) {
+  if (preSinn[id] || id === 'sinn') return;
+  if (isFullyDiscovered(id, preSinn, JOURNEY_PATH)) SABELLA_MESSAGES_SEEN[id] = 1;
+});
+assert(isSinnTerritoryGated(preSinn, JOURNEY_PATH),
+  'after tower-nine with 0 territories, Sinn is gated');
+assert(getNextPathLocation(preSinn, JOURNEY_PATH, {}) === null,
+  'Sinn gate: no golden next until 10 lands');
+assert(!isClickablePT('sinn', preSinn, JOURNEY_PATH, {}, null),
+  'gated Sinn is not clickable');
+var preSinnClicks = listClickablesPT(preSinn, JOURNEY_PATH, {}, null);
+var preSinnTerrGlow = preSinnClicks.some(function(id) {
+  var loc = LOCATIONS.find(function(l) { return l.id === id; });
+  return loc && isTerritoryLoc(loc);
+});
+assert(preSinnTerrGlow,
+  'when Sinn gated, at least one territory/water beacon is glow-clickable (no dead end)');
+
 console.log('\n=== ' + passes + ' passed, ' + failures.length + ' failed ===');
 process.exit(failures.length > 0 ? 1 : 0);
