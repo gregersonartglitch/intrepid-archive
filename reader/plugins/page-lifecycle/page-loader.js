@@ -173,6 +173,24 @@
 
     var seqCounter = 0;
 
+    function healIfBitmapReady(pageIndex) {
+      if (isBlank(pageIndex) || isPaintReady(pageIndex)) {
+        return false;
+      }
+      var image = imageAt(pageIndex);
+      if (!image || !(image.complete && image.naturalWidth > 0)) {
+        return false;
+      }
+      // Img already has pixels but state lagged (hung decode, missed load event,
+      // or StPageFlip remount). Promote without another network hop.
+      if (active[pageIndex]) {
+        finishJob(pageIndex, true);
+      } else {
+        markDecodedThenPainted(pageIndex);
+      }
+      return true;
+    }
+
     function enqueue(pageIndex, priority) {
       if (destroyed) {
         return;
@@ -185,6 +203,9 @@
       }
       if (isBlank(pageIndex)) {
         setState(pageIndex, STATE_PAINTED);
+        return;
+      }
+      if (healIfBitmapReady(pageIndex)) {
         return;
       }
       if (isPaintReady(pageIndex)) {
@@ -265,16 +286,22 @@
         return;
       }
 
-      function paint() {
-        setState(pageIndex, STATE_DECODED);
-        // HTML/StPageFlip path: decoded DOM img attached to the page node is painted.
-        setState(pageIndex, STATE_PAINTED);
-      }
+      // Paint immediately on successful load. Never gate readiness on image.decode():
+      // finishJob already cleared the active timeout/handlers, so a hung decode()
+      // (seen on Firefox / detached→mounted StPageFlip nodes) left pages stuck in
+      // "loading" forever with no Retry. Decode is best-effort only.
+      setState(pageIndex, STATE_DECODED);
+      setState(pageIndex, STATE_PAINTED);
 
       if (typeof image.decode === "function") {
-        image.decode().then(paint).catch(paint);
-      } else {
-        paint();
+        try {
+          var decoded = image.decode();
+          if (decoded && typeof decoded.catch === "function") {
+            decoded.catch(noop);
+          }
+        } catch (err) {
+          /* ignore decode errors — bitmap already paint-ready */
+        }
       }
     }
 

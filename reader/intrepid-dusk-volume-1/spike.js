@@ -5,7 +5,9 @@ const READER_HELP_TIP_SEEN_KEY = "intrepid_reader_help_tip_seen_v1";
 
 // P0 page readiness contract — strangler under reader/plugins/page-lifecycle/
 // Kill switch: localStorage intrepid_reader_page_lifecycle_disabled = "1"
-const ENABLE_PAGE_LIFECYCLE = true;
+// Build 175: default OFF — restore pre-173 readable book after Loading-stuck regression.
+// Opt-in: set localStorage intrepid_reader_page_lifecycle_enabled = "1" (and do not set disabled).
+const ENABLE_PAGE_LIFECYCLE = false;
 const PAGE_LIFECYCLE_DISABLE_KEY = "intrepid_reader_page_lifecycle_disabled";
 const PAGE_LIFECYCLE_MANIFEST_URL = "./assets/manifest.json";
 const PAGE_LIFECYCLE_MAX_IN_FLIGHT = 4;
@@ -79,7 +81,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 173;
+const PAGE_ASSET_VERSION = 175;
 const SOFT_TOAST_MS = 4200;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
@@ -124,14 +126,18 @@ function isReaderMagnifyRuntimeAllowed() {
 }
 
 function isPageLifecycleEnabled() {
-  if (!ENABLE_PAGE_LIFECYCLE) {
-    return false;
-  }
   try {
-    return localStorage.getItem(PAGE_LIFECYCLE_DISABLE_KEY) !== "1";
+    if (localStorage.getItem(PAGE_LIFECYCLE_DISABLE_KEY) === "1") {
+      return false;
+    }
+    // Default OFF (ENABLE_PAGE_LIFECYCLE false). Explicit opt-in for continued R&D.
+    if (localStorage.getItem("intrepid_reader_page_lifecycle_enabled") === "1") {
+      return true;
+    }
   } catch (err) {
-    return true;
+    /* ignore */
   }
+  return !!ENABLE_PAGE_LIFECYCLE;
 }
 
 function loadPageLifecyclePlugin(callback) {
@@ -154,11 +160,11 @@ function loadPageLifecyclePlugin(callback) {
 
   var css = document.createElement("link");
   css.rel = "stylesheet";
-  css.href = "../plugins/page-lifecycle/page-lifecycle.css?v=173";
+  css.href = "../plugins/page-lifecycle/page-lifecycle.css?v=175";
   document.head.appendChild(css);
 
   var script = document.createElement("script");
-  script.src = "../plugins/page-lifecycle/page-loader.js?v=173";
+  script.src = "../plugins/page-lifecycle/page-loader.js?v=175";
   script.onload = function () {
     if (elements.readerRoot) {
       elements.readerRoot.classList.add("has-page-lifecycle");
@@ -208,6 +214,11 @@ function lifecyclePrimaryUrl(pageIndex) {
 function lifecycleFallbackUrl(pageIndex) {
   var entry = pageEntries[pageIndex];
   if (!entry || entry.blank) {
+    return "";
+  }
+  // Only cover-hardcover.jpg ships today. Manifest lists .jpg for every page, but
+  // those 404 — a transient WebP error then became a hard fail. Cover keeps JPG.
+  if (!entry.cover) {
     return "";
   }
   var id = manifestAssetIdForEntry(entry);
@@ -1132,9 +1143,40 @@ function createPageFlip(pageElements) {
   });
 
   pageFlipInstance.loadFromHTML(pageElements);
+  // StPageFlip moves the same nodes into .stf__block; rebind so loader/placeholder
+  // updates always hit the live book imgs (not a stale detached reference).
+  rebindPageImagesFromDom();
   ensureNeighborhoodPages(0);
   preloadAround(0);
   return pageFlipInstance;
+}
+
+function rebindPageImagesFromDom() {
+  if (!elements.book) {
+    return;
+  }
+  var pages = elements.book.querySelectorAll(".reader-page[data-page-number]");
+  for (var i = 0; i < pages.length; i += 1) {
+    var page = pages[i];
+    var index = Number(page.getAttribute("data-page-number")) - 1;
+    if (index < 0 || index >= pageImages.length) {
+      continue;
+    }
+    var img = page.querySelector("img");
+    if (img) {
+      pageImages[index] = img;
+    }
+    // Heal: bitmap already ready but lifecycle state still loading/idle.
+    if (
+      pageLifecycle &&
+      img &&
+      img.complete &&
+      img.naturalWidth > 0 &&
+      !pageLifecycle.isPaintReady(index)
+    ) {
+      pageLifecycle.enqueue(index, pageLifecycle.PRIORITY_VISIBLE);
+    }
+  }
 }
 
 function revealReader() {

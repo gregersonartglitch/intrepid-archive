@@ -54,7 +54,8 @@ var imgs = pageEntries.map(function (entry, i) {
       });
     },
     decode: function () {
-      return Promise.resolve();
+      // Hung decode must NOT block painted (build 174 regression fix).
+      return new Promise(function () {});
     },
   };
   Object.defineProperty(el, "src", {
