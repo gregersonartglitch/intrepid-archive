@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Hollowlands — Intrepid Dusk Cartographer Archive</title>
-<meta name="description" content="Explore the ancient world of the Hollowlands. Issue 1 is for Wanderer tier and above; the character dossier is open to all; the Cartographer's Atlas is reserved for Cartographer tier and above.">
+<meta name="description" content="Explore the ancient world of the Hollowlands. Backer access codes unlock Volume 1 and the character dossier; the Cartographer's Atlas is reserved for Cartographer tier and above.">
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2704,7 +2704,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="entry-access-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Archive access word" aria-describedby="entry-access-msg">
       <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access code">
@@ -2731,7 +2731,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="landing-eyebrow">Intrepid Dusk Archive</div>
     <div class="landing-title">The Hollowlands</div>
     <div class="landing-rule"></div>
-    <div class="landing-subtitle" id="landing-subtitle">Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above.</div>
+    <div class="landing-subtitle" id="landing-subtitle">Backer-first window — enter your access password to open the reader and dossier. The Cartographer's Atlas remains reserved for Cartographer tier and above.</div>
     <div class="landing-actions">
       <button id="landing-reader" class="landing-action primary cuneiform-btn" type="button" aria-label="Read Issue 1">
         <span class="landing-action-title">
@@ -3073,7 +3073,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 177;
+window.INTREPID_BUILD = 178;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=11"></script>
@@ -3150,7 +3150,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=177"></script>
+<script src="fog.js?v=178"></script>
 <script>
 (function() {
   'use strict';
@@ -3658,7 +3658,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         entryGuestNote.textContent = 'Guests can read Issue 1 and browse the dossier without a code.';
       }
       if (entrySubtitle) {
-        entrySubtitle.innerHTML = 'Enter your backer access word to unlock the full archive.<br>Issue 1 and the character dossier are open to all.';
+        entrySubtitle.innerHTML = 'Enter your backer access word to unlock the full archive.<br>Or continue as guest for Issue 1 and the dossier.';
       }
       return;
     }
@@ -3729,7 +3729,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
     if (landingSubtitle) {
       landingSubtitle.textContent = canBrowse
-        ? "Three paths into the Hollowlands — each crafted for a different part of the journey. Issue 1 is for Wanderer tier and above. The character dossier is open to all. The Cartographer's Atlas is reserved for Cartographer tier and above."
+        ? "Three paths into the Hollowlands — each crafted for a different part of the journey. Your access word opens Volume 1 and the dossier. The Cartographer's Atlas is reserved for Cartographer tier and above."
         : "Backer-first window — enter your access password to open the reader and dossier. The Cartographer's Atlas remains reserved for Cartographer tier and above.";
     }
   }

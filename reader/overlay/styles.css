@@ -467,8 +467,9 @@ h1 {
 }
 
 /* Page-local placeholder when src is assigned but paint is incomplete.
-   Build 177: never fully hide in-flight art (opacity 0 made healthy WebPs look
-   like a dead reader under pool starvation / fast Issue 1→2 flips). */
+   Build 178 nail: never hide in-flight art (opacity 0 made healthy WebPs look
+   like a dead reader). Paper under + Loading/Retry overlay; img stays opacity 1
+   so bytes paint the moment the browser has a bitmap. */
 .reader-page.is-loading {
   background:
     linear-gradient(180deg, #f3ead6 0%, #e8dcc0 48%, #ddd0b0 100%);
@@ -476,7 +477,7 @@ h1 {
 }
 
 .reader-page.is-loading img {
-  opacity: 0.55;
+  opacity: 1;
 }
 
 .reader-page.is-failed {

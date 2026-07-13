@@ -81,14 +81,16 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 177;
+const PAGE_ASSET_VERSION = 178;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
-// cannot starve the spread the reader is looking at (build 177).
+// cannot starve the spread the reader is looking at (build 178 nail).
 const LEGACY_MAX_IN_FLIGHT = 4;
+const LEGACY_NEIGHBOR_BURST = 2; // neighbors may briefly exceed MAX by this
 const LEGACY_PRIORITY_VISIBLE = 0;
 const LEGACY_PRIORITY_NEIGHBOR = 1;
 const LEGACY_PRIORITY_BACKGROUND = 2;
+const VISIBLE_WATCHDOG_MS = 5000;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
 // Legacy path: "load OK" set. Lifecycle path uses loader painted/decoded states instead.
@@ -102,6 +104,7 @@ let backgroundWarmTimer = null;
 let backgroundWarmRanges = [];
 let legacyInFlight = 0;
 const legacyInFlightPages = new Set();
+let visibleWatchdogTimer = null;
 let pageLifecycle = null;
 let pageManifestById = {};
 let openingPrimeIndices = [];
@@ -720,9 +723,9 @@ function ensurePageImageReady(pageIndex, options) {
         afterLoaded();
         return;
       }
-      // Soft timeout: keep listening so a late load still paints; visible pages
-      // get one forced retry instead of sitting forever at is-loading.
-      if (visible && attempt + 1 < IMAGE_LOAD_MAX_ATTEMPTS) {
+      // Near-visible pages never soft-abandon into a silent blank — retry then fail.
+      var nearVisible = isNearVisiblePage(pageIndex) || visible;
+      if (nearVisible && attempt + 1 < IMAGE_LOAD_MAX_ATTEMPTS) {
         attempt += 1;
         image.src = pageAssetUrl(entry, attempt);
         bindAttempt();
@@ -743,11 +746,20 @@ function ensurePageImageReady(pageIndex, options) {
         settle(true);
         return;
       }
+      if (nearVisible) {
+        markFailed();
+        return;
+      }
+      // Far background: free the slot but KEEP is-loading; late load still paints.
       settle(false);
-    }, soft ? Math.min(2500, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
+    }, soft && !visible ? Math.min(2500, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
 
     bindAttempt();
   });
+}
+
+function isNearVisiblePage(pageIndex) {
+  return Math.abs(pageIndex - lastPageIndex) <= NEIGHBORHOOD_RADIUS;
 }
 
 function releaseLegacyInFlight(pageIndex) {
@@ -809,8 +821,8 @@ function beginLegacyPageLoad(pageIndex, priority) {
     updatePagePlaceholder(pageIndex, "loading");
   }
   ensurePageImageReady(pageIndex, {
-    soft: priority > LEGACY_PRIORITY_VISIBLE,
-    visible: priority <= LEGACY_PRIORITY_VISIBLE,
+    soft: priority > LEGACY_PRIORITY_NEIGHBOR,
+    visible: priority <= LEGACY_PRIORITY_VISIBLE || isNearVisiblePage(pageIndex),
   }).then(function (ok) {
     if (ok || pageImageHasBitmap(pageIndex) || pageImageIsPaintReady(pageIndex)) {
       setPageImageLoading(pageIndex, false);
@@ -818,11 +830,10 @@ function beginLegacyPageLoad(pageIndex, priority) {
         image.parentElement.classList.remove("is-failed");
       }
       updatePagePlaceholder(pageIndex, "painted");
-    } else if (!ok) {
-      if (!image.parentElement || !image.parentElement.classList.contains("is-failed")) {
-        setPageImageLoading(pageIndex, false);
-      }
+      return;
     }
+    // !ok: markFailed already set failed+Retry when attempts exhausted.
+    // Soft background settle(false) keeps is-loading so we never flash a void.
   });
 }
 
@@ -857,17 +868,12 @@ function injectLinkPreload(pageIndex) {
 }
 
 function syncLinkPreloads(centerIndex) {
+  // Legacy nail (build 178): link preloads re-starve the host pool under Firefox
+  // and do not guarantee DOM paint. Neighborhood warm owns readiness instead.
   if (pageLifecycle || isPageLifecycleEnabled()) {
     return;
   }
-  // Skip orphan link preloads while the visible neighborhood is still hungry.
-  if (neighborhoodNeedsBandwidth() || legacyInFlight >= LEGACY_MAX_IN_FLIGHT) {
-    return;
-  }
-  for (let offset = 1; offset <= LINK_PRELOAD_AHEAD; offset += 1) {
-    injectLinkPreload(centerIndex + offset);
-    injectLinkPreload(centerIndex - offset);
-  }
+  void centerIndex;
 }
 
 function assignPageImageSrc(pageIndex, attempt) {
@@ -961,10 +967,21 @@ function warmPageImage(pageIndex, priority) {
     return;
   }
 
-  // Visible / neighborhood always assign immediately (may briefly exceed cap).
-  if (pri <= LEGACY_PRIORITY_NEIGHBOR) {
+  // Visible always assigns immediately. Neighbors may briefly exceed MAX by
+  // LEGACY_NEIGHBOR_BURST; beyond that they queue so speed-flips cannot reopen
+  // the uncapped flood that starved Issue 2.
+  if (pri <= LEGACY_PRIORITY_VISIBLE) {
     beginLegacyPageLoad(pageIndex, pri);
     warmedPages.add(pageIndex);
+    return;
+  }
+  if (pri <= LEGACY_PRIORITY_NEIGHBOR) {
+    if (legacyInFlight < LEGACY_MAX_IN_FLIGHT + LEGACY_NEIGHBOR_BURST) {
+      beginLegacyPageLoad(pageIndex, pri);
+      warmedPages.add(pageIndex);
+    } else {
+      enqueueBackgroundPage(pageIndex);
+    }
     return;
   }
 
@@ -999,9 +1016,43 @@ function ensureNeighborhoodPages(centerIndex) {
   }
   for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
     var pri =
-      offset === 0 ? LEGACY_PRIORITY_VISIBLE : LEGACY_PRIORITY_NEIGHBOR;
+      Math.abs(offset) <= 1 ? LEGACY_PRIORITY_VISIBLE : LEGACY_PRIORITY_NEIGHBOR;
     warmPageImage(center + offset, pri);
   }
+}
+
+function armVisibleWatchdog(centerIndex) {
+  if (pageLifecycle) {
+    return;
+  }
+  var center =
+    typeof centerIndex === "number" && !isNaN(centerIndex)
+      ? centerIndex
+      : lastPageIndex;
+  if (visibleWatchdogTimer != null) {
+    clearTimeout(visibleWatchdogTimer);
+    visibleWatchdogTimer = null;
+  }
+  visibleWatchdogTimer = setTimeout(function () {
+    visibleWatchdogTimer = null;
+    for (var offset = -1; offset <= 1; offset += 1) {
+      var idx = center + offset;
+      if (idx < 0 || idx >= pageEntries.length) {
+        continue;
+      }
+      var entry = pageEntries[idx];
+      if (!entry || entry.blank || !canAccessPageIndex(idx)) {
+        continue;
+      }
+      if (pageImageIsPaintReady(idx) || pageImageHasBitmap(idx)) {
+        setPageImageLoading(idx, false);
+        updatePagePlaceholder(idx, "painted");
+        continue;
+      }
+      // Still blank after watchdog — force cache-busted retry → fail+Retry UI.
+      retryLegacyPageImage(idx);
+    }
+  }, VISIBLE_WATCHDOG_MS);
 }
 
 function scheduleBackgroundWarmTick() {
@@ -1066,9 +1117,8 @@ function tickBackgroundWarm() {
       continue;
     }
     warmPageImage(pageIndex, LEGACY_PRIORITY_BACKGROUND);
-    if (!neighborhoodNeedsBandwidth() && legacyInFlight < LEGACY_MAX_IN_FLIGHT) {
-      injectLinkPreload(pageIndex);
-    }
+    // No orphan <link rel=preload> — doubles pool demand without guaranteeing
+    // the StPageFlip DOM img paints (see docs/READER-BLANK-NAIL.md).
     batch += 1;
   }
 
@@ -1157,13 +1207,12 @@ function prepareOpeningPages(pageElements) {
     });
   }
 
-  for (var i = 0; i < indices.length; i += 1) {
-    injectLinkPreload(indices[i]);
-  }
+  // Opening imgs already have eager src from buildPageElements — no link preload.
 
   return Promise.all(
     indices.map(function (pageIndex) {
-      return ensurePageImageReady(pageIndex).then(function (ok) {
+      claimLegacyInFlight(pageIndex);
+      return ensurePageImageReady(pageIndex, { visible: true, soft: false }).then(function (ok) {
         done += 1;
         updateLoadProgress(done, indices.length);
         return ok;
@@ -1236,6 +1285,7 @@ function handlePageTurn(pageIndex) {
   setPageLabel(pageIndex);
   ensureNeighborhoodPages(pageIndex);
   preloadAround(pageIndex);
+  armVisibleWatchdog(pageIndex);
   return true;
 }
 
