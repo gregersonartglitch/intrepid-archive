@@ -40,7 +40,7 @@
 3. **Stress pixel sample** — `scripts/stress-reader-issue-boundaries.mjs` probes top vs bottom thirds for half-white.
 4. **Deferred** — reader-sized derivative WebPs (lighter display res) are **not** generated this pass; keep full 2200×3348 until a dedicated pipeline.
 
-**Residual risks:** StPageFlip can still curl DOM mid-transfer if something else clears Loading early; pixel probe samples DOM `<img>` not the curl canvas; very light/splash pages with intentional large white regions could false-positive half-white (thresholds tuned to Chapter 3 class).
+**Residual risks:** StPageFlip can still curl DOM mid-transfer if something else clears Loading early; pixel probe samples DOM `<img>` not the curl canvas; very light/splash pages with intentional large white regions could false-positive half-white (thresholds tuned to Chapter 3 class). Cold first paint of ~1MB Chapter 3 WebPs over the network can still show Loading briefly until `complete` — immutable cache makes the second visit cheap; derivatives still deferred.
 
 
 ---

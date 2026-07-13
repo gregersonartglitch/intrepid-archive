@@ -138,12 +138,21 @@ async function snap(page, tag) {
     )
       .map((el) => {
         const img = el.querySelector("img");
+        const rect = el.getBoundingClientRect();
+        const onScreen =
+          rect.width > 40 &&
+          rect.height > 40 &&
+          rect.bottom > 40 &&
+          rect.top < window.innerHeight - 40 &&
+          rect.right > 40 &&
+          rect.left < window.innerWidth - 40;
         if (!img) {
           return {
             pageNumber: el.getAttribute("data-page-number"),
             blank: el.classList.contains("reader-page--blank"),
             isLoading: el.classList.contains("is-loading"),
             isFailed: el.classList.contains("is-failed"),
+            onScreen,
             ok: el.classList.contains("reader-page--blank"),
             pixelOk: true,
           };
@@ -174,6 +183,7 @@ async function snap(page, tag) {
           isLoading,
           isFailed,
           hasSrc,
+          onScreen,
           pixel: probe,
           pixelOk: probe.pixelOk,
           ok,
@@ -184,7 +194,9 @@ async function snap(page, tag) {
         return arr.findIndex((x) => x.pageNumber === v.pageNumber) === i;
       });
 
-    const contentImgs = visible.filter((v) => v.src && !v.blank);
+    // Assert only on-screen spread pages — StPageFlip keeps off-screen clones
+    // in-dom that may still be decoding (prod cold ~1MB WebPs).
+    const contentImgs = visible.filter((v) => v.src && !v.blank && v.onScreen);
     const failures = contentImgs.filter((v) => !v.ok);
     const pixelFailures = contentImgs.filter((v) => v.pixel && v.pixel.halfWhite);
 
@@ -263,12 +275,12 @@ async function speedFlipTo(page, targetContent, maxClicks) {
   );
 }
 
-async function settleVisible(page, tag, attempts = 8) {
+async function settleVisible(page, tag, attempts = 16) {
   let last = null;
   for (let i = 0; i < attempts; i++) {
     last = await snap(page, `${tag}-t${i}`);
-    if (last.pass) return last;
-    await sleep(400);
+    if (last.pass && last.pixelOk) return last;
+    await sleep(500);
   }
   return last;
 }
@@ -322,7 +334,7 @@ for (const boundary of BOUNDARIES) {
     boundary.maxClicks,
   );
   const immediate = await snap(page, `${boundary.name}-immediate`);
-  const settled = await settleVisible(page, boundary.name, 10);
+  const settled = await settleVisible(page, boundary.name, 20);
   await page.screenshot({
     path: path.join(outDir, `${boundary.name}.png`),
     fullPage: false,
