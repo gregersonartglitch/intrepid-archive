@@ -286,10 +286,11 @@
         return;
       }
 
-      // Paint immediately on successful load. Never gate readiness on image.decode():
-      // finishJob already cleared the active timeout/handlers, so a hung decode()
-      // (seen on Firefox / detached→mounted StPageFlip nodes) left pages stuck in
-      // "loading" forever with no Retry. Decode is best-effort only.
+      // Paint immediately once complete+naturalWidth. Never *block* readiness on
+      // image.decode(): finishJob already cleared the active timeout/handlers, so
+      // a hung decode() (Firefox / StPageFlip remount) left pages stuck in
+      // "loading" forever with no Retry (build 173). Decode is best-effort only;
+      // naturalWidth-without-complete must never promote to painted (half-white).
       setState(pageIndex, STATE_DECODED);
       setState(pageIndex, STATE_PAINTED);
 

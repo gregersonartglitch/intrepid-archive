@@ -1,12 +1,20 @@
 /**
  * Adversarial Issue 1→2→3 boundary stress test (legacy path, lifecycle OFF).
  *
- * Asserts visible StPageFlip pages have naturalWidth > 0 and are not stuck
+ * Asserts visible StPageFlip pages have complete+naturalWidth and are not stuck
  * in a void/failed state after rapid flips across issue boundaries.
+ * Also pixel-samples visible <img> bitmaps to catch half-white failures that
+ * naturalWidth alone misses (Chapter 3 splash class).
  *
  * Usage:
+ *   npx -y http-server . -p 8080 --cors -c-1
  *   node scripts/stress-reader-issue-boundaries.mjs [url]
  * Default url: http://127.0.0.1:8080/reader/intrepid-dusk-volume-1/
+ *
+ * Prod:
+ *   node scripts/stress-reader-issue-boundaries.mjs https://archive.intrepidgraphicnovel.com/reader/intrepid-dusk-volume-1/
+ *
+ * Expect: ok:true, hasLifecycle:false, each boundary pass:true, pixelOk:true.
  */
 import fs from "fs";
 import path from "path";
@@ -54,6 +62,74 @@ const BOUNDARIES = [
 
 async function snap(page, tag) {
   return page.evaluate((tagName) => {
+    /** Sample top vs bottom thirds of a fully loaded img for half-white art. */
+    function pixelProbe(img) {
+      if (!img || !img.complete || !(img.naturalWidth > 0) || !(img.naturalHeight > 0)) {
+        return {
+          pixelOk: false,
+          reason: "not-complete",
+          halfWhite: false,
+        };
+      }
+      try {
+        const sw = 48;
+        const sh = 72;
+        const canvas = document.createElement("canvas");
+        canvas.width = sw;
+        canvas.height = sh;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) {
+          return { pixelOk: true, reason: "no-2d", halfWhite: false, skipped: true };
+        }
+        ctx.drawImage(img, 0, 0, sw, sh);
+        const third = Math.floor(sh / 3);
+        const top = ctx.getImageData(0, 0, sw, third).data;
+        const bot = ctx.getImageData(0, sh - third, sw, third).data;
+
+        function bandStats(data) {
+          const n = data.length / 4;
+          let white = 0;
+          let ink = 0;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+            if (a < 8) continue;
+            if (r > 245 && g > 245 && b > 245) white += 1;
+            else ink += 1;
+          }
+          return {
+            whiteRatio: white / Math.max(1, n),
+            inkRatio: ink / Math.max(1, n),
+          };
+        }
+
+        const topS = bandStats(top);
+        const botS = bandStats(bot);
+        // Half-white: top has ink/art, bottom is overwhelmingly paper-white.
+        const halfWhite =
+          topS.inkRatio > 0.08 && botS.whiteRatio > 0.88 && botS.inkRatio < 0.05;
+        return {
+          pixelOk: !halfWhite,
+          halfWhite,
+          topInk: Number(topS.inkRatio.toFixed(3)),
+          botWhite: Number(botS.whiteRatio.toFixed(3)),
+          botInk: Number(botS.inkRatio.toFixed(3)),
+          nw: img.naturalWidth,
+          nh: img.naturalHeight,
+        };
+      } catch (err) {
+        // Cross-origin or tainted canvas — skip pixel assert, keep DOM gate.
+        return {
+          pixelOk: true,
+          skipped: true,
+          reason: String(err && err.message ? err.message : err),
+          halfWhite: false,
+        };
+      }
+    }
+
     const label = document.querySelector("[data-page]")?.textContent || "";
     const visible = Array.from(
       document.querySelectorAll(
@@ -69,6 +145,7 @@ async function snap(page, tag) {
             isLoading: el.classList.contains("is-loading"),
             isFailed: el.classList.contains("is-failed"),
             ok: el.classList.contains("reader-page--blank"),
+            pixelOk: true,
           };
         }
         const cs = getComputedStyle(img);
@@ -77,23 +154,28 @@ async function snap(page, tag) {
         const isLoading = el.classList.contains("is-loading");
         const isFailed = el.classList.contains("is-failed");
         const hasSrc = !!img.getAttribute("src");
+        const complete = !!img.complete;
+        const probe = pixelProbe(img);
         const ok =
+          complete &&
           nw > 0 &&
           opacity > 0.2 &&
           !isFailed &&
           hasSrc &&
-          // Loading overlay is OK only briefly; bitmap must already exist.
-          (nw > 0);
+          probe.pixelOk;
         return {
           pageNumber: el.getAttribute("data-page-number"),
           src: (img.getAttribute("src") || "").replace(/.*\//, ""),
           nw,
-          complete: img.complete,
+          nh: img.naturalHeight,
+          complete,
           opacity: cs.opacity,
           loading: img.loading,
           isLoading,
           isFailed,
           hasSrc,
+          pixel: probe,
+          pixelOk: probe.pixelOk,
           ok,
         };
       })
@@ -104,6 +186,7 @@ async function snap(page, tag) {
 
     const contentImgs = visible.filter((v) => v.src && !v.blank);
     const failures = contentImgs.filter((v) => !v.ok);
+    const pixelFailures = contentImgs.filter((v) => v.pixel && v.pixel.halfWhite);
 
     return {
       tag: tagName,
@@ -126,6 +209,8 @@ async function snap(page, tag) {
       visible,
       contentImgs,
       failures,
+      pixelFailures,
+      pixelOk: pixelFailures.length === 0,
       pass: failures.length === 0 && contentImgs.length > 0,
     };
   }, tag);
@@ -142,6 +227,7 @@ async function waitReady(page) {
         !!root &&
         !root.classList.contains("is-preparing") &&
         cover &&
+        cover.complete &&
         cover.naturalWidth > 0
       );
     });
@@ -248,7 +334,13 @@ for (const boundary of BOUNDARIES) {
     lastClick: clicks[clicks.length - 1] || null,
     immediate,
     settled,
-    pass: !!(settled && settled.pass && !settled.hasLifecycle && !settled.gateVisible),
+    pass: !!(
+      settled &&
+      settled.pass &&
+      settled.pixelOk &&
+      !settled.hasLifecycle &&
+      !settled.gateVisible
+    ),
   };
   report.boundaries.push(entry);
   if (!entry.pass) allPass = false;
@@ -266,6 +358,8 @@ const summary = {
     pass: b.pass,
     label: b.settled?.label,
     failures: b.settled?.failures,
+    pixelFailures: b.settled?.pixelFailures,
+    pixelOk: b.settled?.pixelOk,
     failedCount: b.settled?.failedCount,
     loadingCount: b.settled?.loadingCount,
   })),

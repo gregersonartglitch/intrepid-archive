@@ -21,16 +21,27 @@
 
 **Prod URL:** https://archive.intrepidgraphicnovel.com/reader/intrepid-dusk-volume-1/
 
-### Current build / flags (verified 2026-07-13)
+### Current build / flags (verified 2026-07-13 — **build 179 shipped**)
 
-| Knob | Prod (live fetch) | Local repo |
-|------|-------------------|------------|
-| `PAGE_ASSET_VERSION` | **178** | **178** |
+| Knob | Prod (after deploy) | Local repo |
+|------|---------------------|------------|
+| `PAGE_ASSET_VERSION` | **179** | **179** |
 | `ENABLE_PAGE_LIFECYCLE` | **`false`** (default OFF) | **`false`** |
-| Reader script cache | `spike.js?v=178` | `spike.js?v=178` |
-| Map shell `INTREPID_BUILD` | (see site `/`) | **180** (map copy/other; reader asset stamp still 178) |
+| Reader script cache | `spike.js?v=179` | `spike.js?v=179` |
+| Map shell `INTREPID_BUILD` | **181** | **181** |
+| Page asset Cache-Control | `public, max-age=31536000, immutable` | via `netlify.toml` |
 
-**Invariant for triage:** lifecycle stays **default OFF** as of build **178**. Opt-in only via `localStorage intrepid_reader_page_lifecycle_enabled=1` (and not `…_disabled=1`). Do not “fix” loading by turning lifecycle on as default.
+**Invariant for triage:** lifecycle stays **default OFF** as of build **178+**. Opt-in only via `localStorage intrepid_reader_page_lifecycle_enabled=1` (and not `…_disabled=1`). Do not “fix” loading by turning lifecycle on as default.
+
+### Shipped this pass (tech-director triage → build 179)
+
+1. **Immutable page-asset caching** — `netlify.toml` headers for `/reader/.../assets/pages/*`. Bust with `?v=PAGE_ASSET_VERSION`. HTML/JS stay short-cache / versioned.
+2. **Honest painted gate (legacy)** — stop clearing Loading on `naturalWidth > 0` alone; require `complete && naturalWidth > 0`. Visible/near-visible: guarded `decode()` with 1.2s timeout; hang falls back to complete+width (no 173-style infinite Loading).
+3. **Stress pixel sample** — `scripts/stress-reader-issue-boundaries.mjs` probes top vs bottom thirds for half-white.
+4. **Deferred** — reader-sized derivative WebPs (lighter display res) are **not** generated this pass; keep full 2200×3348 until a dedicated pipeline.
+
+**Residual risks:** StPageFlip can still curl DOM mid-transfer if something else clears Loading early; pixel probe samples DOM `<img>` not the curl canvas; very light/splash pages with intentional large white regions could false-positive half-white (thresholds tuned to Chapter 3 class).
+
 
 ---
 
@@ -190,8 +201,8 @@ node scripts/stress-reader-issue-boundaries.mjs http://127.0.0.1:8080/reader/int
 node scripts/stress-reader-issue-boundaries.mjs https://archive.intrepidgraphicnovel.com/reader/intrepid-dusk-volume-1/
 ```
 
-Expect `ok: true`, `hasLifecycle: false`, boundaries `pass: true` with visible `naturalWidth > 0`.  
-**Note:** stress asserts paint/void class — it may **not** catch half-white-in-one-img unless you extend the probe (compare `naturalHeight` vs drawn rect / pixel sample).
+Expect `ok: true`, `hasLifecycle: false`, boundaries `pass: true` with visible `complete && naturalWidth > 0` and `pixelOk: true`.  
+**Note:** stress now pixel-samples top/bottom thirds to catch half-white that `naturalWidth` alone misses.
 
 ### Lifecycle R&D only
 
@@ -390,12 +401,11 @@ function bootReaderLifecycle(pageElements) {
 ## 10. Success criteria for this triage pass
 
 - Root cause of **Chapter 3 half-white** classified as **asset / renderer / loader** with evidence.
-- If loader: patch that preserves readiness invariants (§6) and keeps lifecycle **default OFF**.
-- If asset: name exact file(s) + re-encode path (Sharon PDF → WebP).
-- If StPageFlip: minimal adapter-side fix; **no engine replacement**.
-- Stress script updated if half-white can slip past `naturalWidth > 0`.
-- No map/`fog.js` changes in this track.
+- **Shipped build 179:** immutable page-asset cache + honest `complete&&naturalWidth` gate + stress pixel probe (see §1 “Shipped this pass”). Lifecycle stays **default OFF**.
+- Assets 043–045 validated as complete WebPs — half-white class attributed to **loader readiness / cache revalidation / StPageFlip early sample**, not corrupt files.
+- **Deferred:** reader-sized derivative WebPs (no full pipeline this pass).
+- No map/`fog.js` logic changes in this track (build stamp only).
 
 ---
 
-*Handoff generated for Jon → Codex/Fable. Reader-only; map work may proceed in parallel elsewhere.*
+*Handoff generated for Jon → Codex/Fable. Updated 2026-07-13 after build 179 ship. Reader-only; map work may proceed in parallel elsewhere.*

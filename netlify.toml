@@ -1,0 +1,35 @@
+[build]
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# index.html is the shell — no long-lived browser cache (build 125 header fix)
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+
+# Reader page art — long-lived immutable cache. Bust via ?v=PAGE_ASSET_VERSION
+# (or content-hash). Do NOT apply this to spike.js / index.html / CSS.
+[[headers]]
+  for = "/reader/intrepid-dusk-volume-1/assets/pages/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/reader/*/assets/pages/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200

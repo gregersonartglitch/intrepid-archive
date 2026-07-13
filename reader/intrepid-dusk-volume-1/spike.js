@@ -81,7 +81,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 178;
+const PAGE_ASSET_VERSION = 179;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
@@ -91,6 +91,9 @@ const LEGACY_PRIORITY_VISIBLE = 0;
 const LEGACY_PRIORITY_NEIGHBOR = 1;
 const LEGACY_PRIORITY_BACKGROUND = 2;
 const VISIBLE_WATCHDOG_MS = 5000;
+// Guarded decode race for visible/near-visible — never block Loading forever
+// (build 173 decode-hang). Timeout falls back to complete+naturalWidth.
+const LEGACY_DECODE_TIMEOUT_MS = 1200;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
 // Legacy path: "load OK" set. Lifecycle path uses loader painted/decoded states instead.
@@ -646,15 +649,9 @@ function ensurePageImageReady(pageIndex, options) {
       settle(false);
     }
 
-    function afterLoaded() {
-      // Legacy gate on load only — lifecycle path uses decode→painted instead.
-      markReady();
-      if (typeof image.decode === "function") {
-        image.decode().catch(function () {});
-      }
-    }
-
     function isLoaded() {
+      // Honest paint gate: naturalWidth alone can appear before decode finishes
+      // (StPageFlip may sample a half-white incomplete bitmap). Require complete.
       return !!(image.complete && image.naturalWidth > 0);
     }
 
@@ -662,12 +659,67 @@ function ensurePageImageReady(pageIndex, options) {
       return !!(image.complete && image.naturalWidth === 0 && image.getAttribute("src"));
     }
 
-    function revealIfBitmap() {
-      // Headers can expose naturalWidth before complete — never keep a void page
-      // once any bitmap dimensions exist.
-      if (image.naturalWidth > 0) {
+    function revealIfPaintReady() {
+      // Never clear Loading / declare painted on mere naturalWidth > 0.
+      if (isLoaded()) {
         setPageImageLoading(pageIndex, false);
         updatePagePlaceholder(pageIndex, "painted");
+      }
+    }
+
+    function afterLoaded() {
+      if (!isLoaded()) {
+        return;
+      }
+      var nearVisible = isNearVisiblePage(pageIndex) || visible;
+      // Far background: mark ready on complete+width; decode is fire-and-forget.
+      if (!nearVisible || typeof image.decode !== "function") {
+        markReady();
+        if (typeof image.decode === "function") {
+          try {
+            var bgDecode = image.decode();
+            if (bgDecode && typeof bgDecode.catch === "function") {
+              bgDecode.catch(function () {});
+            }
+          } catch (errBg) {
+            /* ignore */
+          }
+        }
+        return;
+      }
+      // Visible/near-visible: brief decode race. Hang must NOT leave infinite
+      // Loading (173 regression) — timeout falls back to complete+naturalWidth.
+      var decodeSettled = false;
+      function finishPaint() {
+        if (decodeSettled) {
+          return;
+        }
+        decodeSettled = true;
+        if (isLoaded()) {
+          markReady();
+        }
+        // If bitmap somehow vanished, leave Loading; outer timeout / watchdog fails.
+      }
+      var decodeTimer = setTimeout(finishPaint, LEGACY_DECODE_TIMEOUT_MS);
+      try {
+        var decoded = image.decode();
+        if (decoded && typeof decoded.then === "function") {
+          decoded
+            .then(function () {
+              clearTimeout(decodeTimer);
+              finishPaint();
+            })
+            .catch(function () {
+              clearTimeout(decodeTimer);
+              finishPaint();
+            });
+        } else {
+          clearTimeout(decodeTimer);
+          markReady();
+        }
+      } catch (errDecode) {
+        clearTimeout(decodeTimer);
+        markReady();
       }
     }
 
@@ -713,10 +765,10 @@ function ensurePageImageReady(pageIndex, options) {
       if (!image.getAttribute("src")) {
         image.src = pageAssetUrl(entry, attempt);
       }
-      revealIfBitmap();
+      revealIfPaintReady();
     }
 
-    progressiveId = setInterval(revealIfBitmap, 200);
+    progressiveId = setInterval(revealIfPaintReady, 200);
 
     timeoutId = setTimeout(function () {
       if (isLoaded()) {
@@ -732,18 +784,15 @@ function ensurePageImageReady(pageIndex, options) {
         timeoutId = setTimeout(function () {
           if (isLoaded()) {
             afterLoaded();
-          } else if (image.naturalWidth > 0) {
-            revealIfBitmap();
-            settle(true);
           } else {
             markFailed();
           }
         }, IMAGE_LOAD_TIMEOUT_MS);
         return;
       }
-      if (image.naturalWidth > 0) {
-        revealIfBitmap();
-        settle(true);
+      // Do NOT settle(true) on naturalWidth-without-complete (half-white risk).
+      if (isLoaded()) {
+        afterLoaded();
         return;
       }
       if (nearVisible) {
@@ -801,7 +850,9 @@ function neighborhoodNeedsBandwidth() {
 
 function pageImageHasBitmap(pageIndex) {
   var image = pageImages[pageIndex];
-  return !!(image && image.naturalWidth > 0);
+  // Same contract as paint-ready: complete + dimensions. naturalWidth alone
+  // is not enough (incremental decode / StPageFlip half-white sample).
+  return !!(image && image.complete && image.naturalWidth > 0);
 }
 
 function beginLegacyPageLoad(pageIndex, priority) {
