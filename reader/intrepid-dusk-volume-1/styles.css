@@ -467,14 +467,60 @@ h1 {
 }
 
 /* Page-local placeholder when src is assigned but paint is incomplete.
-   Lifecycle plugin (has-page-lifecycle) replaces the dark void with paper UI. */
+   Build 177: never fully hide in-flight art (opacity 0 made healthy WebPs look
+   like a dead reader under pool starvation / fast Issue 1→2 flips). */
 .reader-page.is-loading {
   background:
-    linear-gradient(180deg, rgba(34, 28, 22, 0.92) 0%, rgba(18, 14, 10, 0.98) 100%);
+    linear-gradient(180deg, #f3ead6 0%, #e8dcc0 48%, #ddd0b0 100%);
+  position: relative;
 }
 
 .reader-page.is-loading img {
-  opacity: 0;
+  opacity: 0.55;
+}
+
+.reader-page.is-failed {
+  background:
+    linear-gradient(180deg, #efe2c8 0%, #e2d2b0 100%);
+  position: relative;
+}
+
+.reader-page.is-failed img {
+  opacity: 0.2;
+}
+
+.reader-page-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  pointer-events: none;
+  color: #5a4a32;
+  font-family: Georgia, "Times New Roman", serif;
+  text-align: center;
+}
+
+.reader-page-placeholder__msg {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.reader-page-placeholder__retry {
+  pointer-events: auto;
+  cursor: pointer;
+  border: 1px solid rgba(90, 74, 50, 0.35);
+  border-radius: 4px;
+  background: rgba(255, 250, 240, 0.9);
+  color: #3d3224;
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
 }
 
 .reader.has-page-lifecycle .reader-page.is-loading {

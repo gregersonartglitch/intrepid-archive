@@ -76,13 +76,19 @@ const LINK_PRELOAD_AHEAD = 3;
 const OPENING_READY_LAST_INDEX = 7;
 const NEIGHBORHOOD_RADIUS = 2;
 const WARM_QUEUE_BATCH = 2;
-const WARM_QUEUE_GAP_MS = 100;
+const WARM_QUEUE_GAP_MS = 120;
 const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
 const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 175;
+const PAGE_ASSET_VERSION = 177;
 const SOFT_TOAST_MS = 4200;
+// Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
+// cannot starve the spread the reader is looking at (build 177).
+const LEGACY_MAX_IN_FLIGHT = 4;
+const LEGACY_PRIORITY_VISIBLE = 0;
+const LEGACY_PRIORITY_NEIGHBOR = 1;
+const LEGACY_PRIORITY_BACKGROUND = 2;
 const pageImages = new Array(pageEntries.length);
 const warmedPages = new Set();
 // Legacy path: "load OK" set. Lifecycle path uses loader painted/decoded states instead.
@@ -92,6 +98,10 @@ const linkPreloads = {};
 let lastPageIndex = 0;
 let readerReady = false;
 let backgroundWarmTimer = null;
+// Non-cancelling range list: Issue 1 → 2 → 3 chain without aborting prior work.
+let backgroundWarmRanges = [];
+let legacyInFlight = 0;
+const legacyInFlightPages = new Set();
 let pageLifecycle = null;
 let pageManifestById = {};
 let openingPrimeIndices = [];
@@ -278,9 +288,32 @@ function updatePagePlaceholder(pageIndex, state) {
       event.stopPropagation();
       if (pageLifecycle) {
         pageLifecycle.retry(pageIndex);
+      } else {
+        retryLegacyPageImage(pageIndex);
       }
     });
   }
+}
+
+function retryLegacyPageImage(pageIndex) {
+  var image = pageImages[pageIndex];
+  var entry = pageEntries[pageIndex];
+  if (!image || !entry || entry.blank) {
+    return;
+  }
+  warmedPages.delete(pageIndex);
+  decodedPages.delete(pageIndex);
+  if (image.parentElement) {
+    image.parentElement.classList.remove("is-failed");
+  }
+  setPageImageLoading(pageIndex, true);
+  updatePagePlaceholder(pageIndex, "loading");
+  image.loading = "eager";
+  if ("fetchPriority" in image) {
+    image.fetchPriority = "high";
+  }
+  image.src = pageAssetUrl(entry, 1);
+  beginLegacyPageLoad(pageIndex, LEGACY_PRIORITY_VISIBLE);
 }
 
 function createLifecycleLoader() {
@@ -544,6 +577,7 @@ function ensurePageImageReady(pageIndex, options) {
   }
 
   var soft = !!(options && options.soft);
+  var visible = !!(options && options.visible);
   return new Promise(function (resolve) {
     if (pageIndex < 0 || pageIndex >= pageEntries.length) {
       resolve(false);
@@ -570,6 +604,7 @@ function ensurePageImageReady(pageIndex, options) {
     var attempt = 0;
     var settled = false;
     var timeoutId = null;
+    var progressiveId = null;
 
     function settle(ok) {
       if (settled) {
@@ -580,6 +615,11 @@ function ensurePageImageReady(pageIndex, options) {
         clearTimeout(timeoutId);
         timeoutId = null;
       }
+      if (progressiveId != null) {
+        clearInterval(progressiveId);
+        progressiveId = null;
+      }
+      releaseLegacyInFlight(pageIndex);
       resolve(ok);
     }
 
@@ -587,7 +627,20 @@ function ensurePageImageReady(pageIndex, options) {
       decodedPages.add(pageIndex);
       warmedPages.add(pageIndex);
       setPageImageLoading(pageIndex, false);
+      if (image.parentElement) {
+        image.parentElement.classList.remove("is-failed");
+      }
+      updatePagePlaceholder(pageIndex, "painted");
       settle(true);
+    }
+
+    function markFailed() {
+      setPageImageLoading(pageIndex, false);
+      if (image.parentElement) {
+        image.parentElement.classList.add("is-failed");
+      }
+      updatePagePlaceholder(pageIndex, "failed");
+      settle(false);
     }
 
     function afterLoaded() {
@@ -604,6 +657,15 @@ function ensurePageImageReady(pageIndex, options) {
 
     function isBrokenComplete() {
       return !!(image.complete && image.naturalWidth === 0 && image.getAttribute("src"));
+    }
+
+    function revealIfBitmap() {
+      // Headers can expose naturalWidth before complete — never keep a void page
+      // once any bitmap dimensions exist.
+      if (image.naturalWidth > 0) {
+        setPageImageLoading(pageIndex, false);
+        updatePagePlaceholder(pageIndex, "painted");
+      }
     }
 
     function bindAttempt() {
@@ -630,7 +692,7 @@ function ensurePageImageReady(pageIndex, options) {
       function retryOrFail() {
         attempt += 1;
         if (attempt >= IMAGE_LOAD_MAX_ATTEMPTS) {
-          settle(false);
+          markFailed();
           return;
         }
         image.src = pageAssetUrl(entry, attempt);
@@ -648,13 +710,119 @@ function ensurePageImageReady(pageIndex, options) {
       if (!image.getAttribute("src")) {
         image.src = pageAssetUrl(entry, attempt);
       }
+      revealIfBitmap();
     }
 
+    progressiveId = setInterval(revealIfBitmap, 200);
+
     timeoutId = setTimeout(function () {
-      settle(isLoaded());
+      if (isLoaded()) {
+        afterLoaded();
+        return;
+      }
+      // Soft timeout: keep listening so a late load still paints; visible pages
+      // get one forced retry instead of sitting forever at is-loading.
+      if (visible && attempt + 1 < IMAGE_LOAD_MAX_ATTEMPTS) {
+        attempt += 1;
+        image.src = pageAssetUrl(entry, attempt);
+        bindAttempt();
+        timeoutId = setTimeout(function () {
+          if (isLoaded()) {
+            afterLoaded();
+          } else if (image.naturalWidth > 0) {
+            revealIfBitmap();
+            settle(true);
+          } else {
+            markFailed();
+          }
+        }, IMAGE_LOAD_TIMEOUT_MS);
+        return;
+      }
+      if (image.naturalWidth > 0) {
+        revealIfBitmap();
+        settle(true);
+        return;
+      }
+      settle(false);
     }, soft ? Math.min(2500, IMAGE_LOAD_TIMEOUT_MS) : IMAGE_LOAD_TIMEOUT_MS);
 
     bindAttempt();
+  });
+}
+
+function releaseLegacyInFlight(pageIndex) {
+  if (legacyInFlightPages.has(pageIndex)) {
+    legacyInFlightPages.delete(pageIndex);
+    legacyInFlight = Math.max(0, legacyInFlight - 1);
+  }
+  scheduleBackgroundWarmTick();
+}
+
+function claimLegacyInFlight(pageIndex) {
+  if (legacyInFlightPages.has(pageIndex)) {
+    return true;
+  }
+  legacyInFlightPages.add(pageIndex);
+  legacyInFlight += 1;
+  return true;
+}
+
+function neighborhoodNeedsBandwidth() {
+  for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
+    var idx = lastPageIndex + offset;
+    if (idx < 0 || idx >= pageEntries.length) {
+      continue;
+    }
+    var entry = pageEntries[idx];
+    if (!entry || entry.blank) {
+      continue;
+    }
+    if (!canAccessPageIndex(idx)) {
+      continue;
+    }
+    if (!pageImageIsPaintReady(idx) && !pageImageHasBitmap(idx)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function pageImageHasBitmap(pageIndex) {
+  var image = pageImages[pageIndex];
+  return !!(image && image.naturalWidth > 0);
+}
+
+function beginLegacyPageLoad(pageIndex, priority) {
+  var image = pageImages[pageIndex];
+  if (!image) {
+    return;
+  }
+  claimLegacyInFlight(pageIndex);
+  image.loading = "eager";
+  if ("fetchPriority" in image) {
+    image.fetchPriority =
+      priority <= LEGACY_PRIORITY_NEIGHBOR ? "high" : "low";
+  }
+  assignPageImageSrc(pageIndex, 0);
+  if (!pageImageHasBitmap(pageIndex)) {
+    setPageImageLoading(pageIndex, true);
+    updatePagePlaceholder(pageIndex, "loading");
+  }
+  ensurePageImageReady(pageIndex, {
+    soft: priority > LEGACY_PRIORITY_VISIBLE,
+    visible: priority <= LEGACY_PRIORITY_VISIBLE,
+  }).then(function (ok) {
+    if (ok || pageImageHasBitmap(pageIndex) || pageImageIsPaintReady(pageIndex)) {
+      setPageImageLoading(pageIndex, false);
+      if (image.parentElement) {
+        image.parentElement.classList.remove("is-failed");
+      }
+      updatePagePlaceholder(pageIndex, "painted");
+    } else if (!ok) {
+      if (!image.parentElement || !image.parentElement.classList.contains("is-failed")) {
+        setPageImageLoading(pageIndex, false);
+      }
+    }
   });
 }
 
@@ -692,6 +860,10 @@ function syncLinkPreloads(centerIndex) {
   if (pageLifecycle || isPageLifecycleEnabled()) {
     return;
   }
+  // Skip orphan link preloads while the visible neighborhood is still hungry.
+  if (neighborhoodNeedsBandwidth() || legacyInFlight >= LEGACY_MAX_IN_FLIGHT) {
+    return;
+  }
   for (let offset = 1; offset <= LINK_PRELOAD_AHEAD; offset += 1) {
     injectLinkPreload(centerIndex + offset);
     injectLinkPreload(centerIndex - offset);
@@ -723,6 +895,9 @@ function setPageImageLoading(pageIndex, isLoading) {
     return;
   }
   image.parentElement.classList.toggle("is-loading", !!isLoading);
+  if (!isLoading) {
+    image.parentElement.classList.remove("is-failed");
+  }
 }
 
 function pageImageIsPaintReady(pageIndex) {
@@ -759,35 +934,57 @@ function warmPageImage(pageIndex, priority) {
     return;
   }
 
+  var pri =
+    typeof priority === "number" ? priority : LEGACY_PRIORITY_NEIGHBOR;
+
   if (pageLifecycle) {
-    var pri =
-      typeof priority === "number"
-        ? priority
-        : pageLifecycle.PRIORITY_NEIGHBOR;
-    pageLifecycle.enqueue(pageIndex, pri);
+    var lifePri =
+      pri <= LEGACY_PRIORITY_VISIBLE
+        ? pageLifecycle.PRIORITY_VISIBLE
+        : pri <= LEGACY_PRIORITY_NEIGHBOR
+          ? pageLifecycle.PRIORITY_NEIGHBOR
+          : pageLifecycle.PRIORITY_BACKGROUND;
+    pageLifecycle.enqueue(pageIndex, lifePri);
     warmedPages.add(pageIndex);
     return;
   }
 
-  // Eager before src (legacy path).
-  image.loading = "eager";
-  assignPageImageSrc(pageIndex, 0);
-  if (!pageImageIsPaintReady(pageIndex)) {
-    setPageImageLoading(pageIndex, true);
-  }
-  decodePageImage(pageIndex).then(function (ok) {
-    if (ok || pageImageIsPaintReady(pageIndex)) {
-      setPageImageLoading(pageIndex, false);
-    }
-  });
-
-  if (warmedPages.has(pageIndex)) {
+  if (pageImageIsPaintReady(pageIndex) || pageImageHasBitmap(pageIndex)) {
+    setPageImageLoading(pageIndex, false);
+    warmedPages.add(pageIndex);
     return;
   }
 
+  // Already fetching this DOM img — don't stack duplicate load watchers.
+  if (legacyInFlightPages.has(pageIndex) && image.getAttribute("src")) {
+    warmedPages.add(pageIndex);
+    return;
+  }
+
+  // Visible / neighborhood always assign immediately (may briefly exceed cap).
+  if (pri <= LEGACY_PRIORITY_NEIGHBOR) {
+    beginLegacyPageLoad(pageIndex, pri);
+    warmedPages.add(pageIndex);
+    return;
+  }
+
+  // Background: only assign src when under the concurrency cap so Issue 3
+  // trickle cannot starve Issue 2 destination pages during a fast flip.
+  if (legacyInFlight >= LEGACY_MAX_IN_FLIGHT || neighborhoodNeedsBandwidth()) {
+    enqueueBackgroundPage(pageIndex);
+    return;
+  }
+
+  beginLegacyPageLoad(pageIndex, pri);
   warmedPages.add(pageIndex);
-  // Legacy dual-path probes removed from lifecycle; kill-switch keeps them off too
-  // once lifecycle ships — probes re-starve the pool without guaranteeing DOM paint.
+}
+
+function enqueueBackgroundPage(pageIndex) {
+  backgroundWarmRanges.unshift({
+    next: pageIndex,
+    end: pageIndex + 1,
+  });
+  scheduleBackgroundWarmTick();
 }
 
 // Assign src + warm decode for current page ± NEIGHBORHOOD_RADIUS before/during flip.
@@ -801,60 +998,95 @@ function ensureNeighborhoodPages(centerIndex) {
     return;
   }
   for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
-    warmPageImage(center + offset);
+    var pri =
+      offset === 0 ? LEGACY_PRIORITY_VISIBLE : LEGACY_PRIORITY_NEIGHBOR;
+    warmPageImage(center + offset, pri);
   }
 }
 
-// After unveil: trickle-warm upcoming pages so flips stay full without
- // re-starving the pool the way bootstrapIssueOne used to.
-function queueBackgroundWarm(startIndex, endIndexExclusive) {
+function scheduleBackgroundWarmTick() {
   if (backgroundWarmTimer != null) {
-    clearTimeout(backgroundWarmTimer);
-    backgroundWarmTimer = null;
+    return;
   }
+  if (!backgroundWarmRanges.length) {
+    return;
+  }
+  backgroundWarmTimer = setTimeout(tickBackgroundWarm, WARM_QUEUE_GAP_MS);
+}
+
+// After unveil: trickle-warm upcoming pages so flips stay full without
+// re-starving the pool the way bootstrapIssueOne used to.
+// CRITICAL: ranges APPEND — never cancel an in-flight Issue 1/2 warm when
+// Issue 2/3 unlock scheduling fires (that left Issue 2 cold for backers).
+function queueBackgroundWarm(startIndex, endIndexExclusive) {
   var next = Math.max(0, startIndex | 0);
   var end = Math.min(
     pageEntries.length,
     typeof endIndexExclusive === "number" ? endIndexExclusive : pageEntries.length,
   );
+  if (next >= end) {
+    return;
+  }
+  backgroundWarmRanges.push({ next: next, end: end });
+  if (backgroundWarmTimer == null) {
+    backgroundWarmTimer = setTimeout(tickBackgroundWarm, 0);
+  }
+}
 
-  function tick() {
-    var batch = 0;
-    while (batch < WARM_QUEUE_BATCH && next < end) {
-      if (canAccessPageIndex(next)) {
-        if (pageLifecycle) {
-          pageLifecycle.enqueue(next, pageLifecycle.PRIORITY_BACKGROUND);
-        } else {
-          warmPageImage(next);
-          injectLinkPreload(next);
-        }
-        batch += 1;
-      }
-      next += 1;
-    }
-    if (next < end) {
-      backgroundWarmTimer = setTimeout(tick, WARM_QUEUE_GAP_MS);
-    } else {
-      backgroundWarmTimer = null;
-    }
+function tickBackgroundWarm() {
+  backgroundWarmTimer = null;
+
+  if (neighborhoodNeedsBandwidth() || legacyInFlight >= LEGACY_MAX_IN_FLIGHT) {
+    scheduleBackgroundWarmTick();
+    return;
   }
 
-  backgroundWarmTimer = setTimeout(tick, 0);
+  var batch = 0;
+  while (batch < WARM_QUEUE_BATCH && backgroundWarmRanges.length) {
+    if (legacyInFlight >= LEGACY_MAX_IN_FLIGHT || neighborhoodNeedsBandwidth()) {
+      break;
+    }
+    var range = backgroundWarmRanges[0];
+    while (range.next < range.end && !canAccessPageIndex(range.next)) {
+      range.next += 1;
+    }
+    if (range.next >= range.end) {
+      backgroundWarmRanges.shift();
+      continue;
+    }
+    var pageIndex = range.next;
+    range.next += 1;
+    if (range.next >= range.end) {
+      backgroundWarmRanges.shift();
+    }
+    if (pageImageIsPaintReady(pageIndex) || pageImageHasBitmap(pageIndex)) {
+      continue;
+    }
+    if (legacyInFlightPages.has(pageIndex)) {
+      continue;
+    }
+    warmPageImage(pageIndex, LEGACY_PRIORITY_BACKGROUND);
+    if (!neighborhoodNeedsBandwidth() && legacyInFlight < LEGACY_MAX_IN_FLIGHT) {
+      injectLinkPreload(pageIndex);
+    }
+    batch += 1;
+  }
+
+  if (backgroundWarmRanges.length) {
+    scheduleBackgroundWarmTick();
+  }
 }
 
 function startPostUnveilWarmQueue() {
-  // Opening window already eager; continue through Issue 1 then unlocked issues.
+  // Opening window already eager; continue Issue 1 → unlocked 2 → unlocked 3
+  // as one non-cancelling chain (append-only ranges).
   queueBackgroundWarm(OPENING_READY_LAST_INDEX + 1, ISSUE_001_LAST_INDEX + 1);
   if (window.ReaderAccess) {
     if (window.ReaderAccess.isIssueUnlocked("002")) {
-      setTimeout(function () {
-        queueBackgroundWarm(ISSUE_002_START, ISSUE_003_START);
-      }, 400);
+      queueBackgroundWarm(ISSUE_002_START, ISSUE_003_START);
     }
     if (window.ReaderAccess.isIssueUnlocked("003")) {
-      setTimeout(function () {
-        queueBackgroundWarm(ISSUE_003_START, pageEntries.length);
-      }, 800);
+      queueBackgroundWarm(ISSUE_003_START, pageEntries.length);
     }
   }
 }
@@ -955,7 +1187,14 @@ function prepareOpeningPages(pageElements) {
 
 function preloadAround(centerIndex) {
   for (let offset = -PRELOAD_BACK; offset <= PRELOAD_AHEAD; offset += 1) {
-    warmPageImage(centerIndex + offset);
+    var abs = Math.abs(offset);
+    var pri =
+      abs === 0
+        ? LEGACY_PRIORITY_VISIBLE
+        : abs <= NEIGHBORHOOD_RADIUS
+          ? LEGACY_PRIORITY_NEIGHBOR
+          : LEGACY_PRIORITY_BACKGROUND;
+    warmPageImage(centerIndex + offset, pri);
   }
   syncLinkPreloads(centerIndex);
 }
@@ -966,6 +1205,7 @@ function bootstrapIssueOne() {
 }
 
 function bootstrapUnlockedIssues() {
+  // Append-only — safe to call both; does not cancel Issue 2 for Issue 3.
   if (!window.ReaderAccess) {
     return;
   }
@@ -1027,9 +1267,9 @@ function warmFlipTargetsFromDirection(forward) {
     );
     return;
   }
-  warmPageImage(lastPageIndex + step);
-  warmPageImage(lastPageIndex + step * 2);
-  warmPageImage(lastPageIndex + step * 3);
+  warmPageImage(lastPageIndex + step, LEGACY_PRIORITY_VISIBLE);
+  warmPageImage(lastPageIndex + step * 2, LEGACY_PRIORITY_NEIGHBOR);
+  warmPageImage(lastPageIndex + step * 3, LEGACY_PRIORITY_BACKGROUND);
   preloadAround(lastPageIndex + step);
 }
 
