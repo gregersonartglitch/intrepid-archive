@@ -1559,11 +1559,14 @@
       if (Math.sqrt(dx * dx + dy * dy) < 400) nearCleared = true;
     });
 
-    // Story path locations: clickable if it's the next step (golden glow)
-    // OR if cleared fog has reached it (amber star visible)
-    // OR if it's a revealed cluster companion at this tower
+    // Story locations — must match drawBeaconGlows amber/golden rules:
+    //   golden = next journey step; amber = near cleared fog AND (on-path OR cluster peek).
+    // Cluster companions (e.g. maxim-stone) stay dark until peekClusterSites runs —
+    // nearCleared alone must NOT unlock them (Sabella/tutorial are within 400 of the Stone).
     if (loc.type === 'story') {
-      return locId === getNextPathLocation() || nearCleared || !!clusterPeek[locId];
+      if (locId === getNextPathLocation()) return true;
+      if (!nearCleared) return false;
+      return isOnPath(locId) || !!clusterPeek[locId];
     }
 
     // Journey cities (Sinn, Indras Na, etc.) — follow the golden path only
@@ -3548,10 +3551,11 @@
       scheduleSabellaMessage(loc);
     }
 
-    // Tower cluster: reveal companion site (Maxim Stone)
+    // Tower cluster: peek Maxim Stone immediately so amber glow ↔ clickable stay in sync.
+    // Hint toast stays delayed so it doesn't fight the tower celebration.
     if (loc.id === 'tower-nine') {
+      peekClusterSites('tower-nine');
       setTimeout(function() {
-        peekClusterSites('tower-nine');
         showTowerClusterHint();
       }, 1800);
     }

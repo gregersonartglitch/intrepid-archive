@@ -943,10 +943,11 @@ function nearClearedFogPT(discovered, loc) {
 }
 
 // Mirror fog.js isClickable — glow-only contract for the playthrough
-function isClickablePT(locId, discovered, journeyPath, revealedGods, tutorialHintId) {
+function isClickablePT(locId, discovered, journeyPath, revealedGods, tutorialHintId, clusterPeek) {
   if (isFullyDiscovered(locId, discovered, journeyPath)) return false;
   var loc = LOCATIONS.find(function(l) { return l.id === locId; });
   if (!loc) return false;
+  clusterPeek = clusterPeek || {};
 
   if (locId === SINN_CITY_ID) {
     if (!meetsSinnTerritoryGate(discovered)) return false;
@@ -964,9 +965,11 @@ function isClickablePT(locId, discovered, journeyPath, revealedGods, tutorialHin
     return locId === tutorialHintId;
   }
 
+  // Match fog.js drawBeaconGlows: golden next-step, or amber on-path/cluster-peek near fog
   if (loc.type === 'story') {
-    return locId === getNextPathLocation(discovered, journeyPath, revealedGods) ||
-           nearClearedFogPT(discovered, loc);
+    if (locId === getNextPathLocation(discovered, journeyPath, revealedGods)) return true;
+    if (!nearClearedFogPT(discovered, loc)) return false;
+    return isOnPath(locId, journeyPath) || !!clusterPeek[locId];
   }
   if (isOnPath(locId, journeyPath)) {
     return locId === getNextPathLocation(discovered, journeyPath, revealedGods);
@@ -980,9 +983,9 @@ function isClickablePT(locId, discovered, journeyPath, revealedGods, tutorialHin
   return false;
 }
 
-function listClickablesPT(discovered, journeyPath, revealedGods, tutorialHintId) {
+function listClickablesPT(discovered, journeyPath, revealedGods, tutorialHintId, clusterPeek) {
   return LOCATIONS.filter(function(l) {
-    return isClickablePT(l.id, discovered, journeyPath, revealedGods, tutorialHintId);
+    return isClickablePT(l.id, discovered, journeyPath, revealedGods, tutorialHintId, clusterPeek);
   }).map(function(l) { return l.id; });
 }
 
@@ -990,6 +993,7 @@ function runGlowOnlyPlaythrough() {
   clearSabellaLetters();
   var discovered = {};
   var revealedGods = {};
+  var clusterPeek = {};
   var pathLog = [];
   var stuck = null;
   var maxSteps = 250;
@@ -1000,7 +1004,7 @@ function runGlowOnlyPlaythrough() {
   var tutorialOrder = ['crossing-pool', 'dawn-spear', 'sabellas-hut'];
   for (var ti = 0; ti < tutorialOrder.length; ti++) {
     var hintId = tutorialOrder[ti];
-    var clicks = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, hintId);
+    var clicks = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, hintId, clusterPeek);
     if (clicks.indexOf(hintId) < 0) {
       stuck = 'tutorial: ' + hintId + ' not clickable (visible=' + clicks.join(',') + ')';
       break;
@@ -1024,13 +1028,13 @@ function runGlowOnlyPlaythrough() {
   while (step < maxSteps && !isFullyDiscovered(FINAL_ELENA_STOP, discovered, JOURNEY_PATH)) {
     step++;
     var nextId = getNextPathLocation(discovered, JOURNEY_PATH, revealedGods);
-    var clickables = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, null);
+    var clickables = listClickablesPT(discovered, JOURNEY_PATH, revealedGods, null, clusterPeek);
 
     // Sealed Indras: path through Sinn done, but gates remain — glow drawn, not clickable
     if (isIndrasNaSealed(discovered, JOURNEY_PATH)) {
       if (!sealedIndrasChecked) {
         sealedIndrasChecked = true;
-        if (isClickablePT(FINAL_ELENA_STOP, discovered, JOURNEY_PATH, revealedGods, null)) {
+        if (isClickablePT(FINAL_ELENA_STOP, discovered, JOURNEY_PATH, revealedGods, null, clusterPeek)) {
           stuck = 'sealed Indras Na was clickable while gated';
           break;
         }
@@ -1092,10 +1096,14 @@ function runGlowOnlyPlaythrough() {
         // mish is both site + journey — if still undisc and glowing, take it
         if (!pick && clickables.indexOf('mish') >= 0 && !discovered.mish) pick = 'mish';
       }
+      // Tower cluster companion once peeked
+      if (!pick && clickables.indexOf('maxim-stone') >= 0 && !discovered['maxim-stone']) {
+        pick = 'maxim-stone';
+      }
       if (!pick) pick = clickables[0];
     }
 
-    if (!isClickablePT(pick, discovered, JOURNEY_PATH, revealedGods, null)) {
+    if (!isClickablePT(pick, discovered, JOURNEY_PATH, revealedGods, null, clusterPeek)) {
       stuck = 'chose non-clickable ' + pick;
       break;
     }
@@ -1105,6 +1113,11 @@ function runGlowOnlyPlaythrough() {
       ? 'complete'
       : 'mist';
     discovered[pick] = { at: Date.now(), phase: phase };
+    delete clusterPeek[pick];
+    // Mirror fog.js: tower-nine immediately peeks maxim-stone
+    if (pick === 'tower-nine') {
+      clusterPeek['maxim-stone'] = true;
+    }
     pathLog.push((isOnPath(pick, JOURNEY_PATH) ? 'J:' : (pickLoc && pickLoc.cartographerSite ? 'S:' : 'R:')) + pick);
 
     // Sabella letter on chime Hot at letter-stop completion only
@@ -1178,6 +1191,18 @@ assert(isClickablePT('mish', postHut, JOURNEY_PATH, {}, null),
   'post-hut mish is glow-clickable');
 assert(!isClickablePT('indras-na', postHut, JOURNEY_PATH, {}, null),
   'post-hut indras-na not clickable');
+// Maxim Stone: near Sabella fog but off journey — no amber until tower peeks cluster
+assert(!isClickablePT('maxim-stone', postHut, JOURNEY_PATH, {}, null, {}),
+  'post-hut maxim-stone not clickable without cluster peek (glow sync)');
+var postTower = Object.assign({}, postHut, {
+  mish: { at: 1, phase: 'complete' },
+  'monastery-wind': { at: 1, phase: 'complete' },
+  'tower-nine': { at: 1, phase: 'complete' }
+});
+assert(!isClickablePT('maxim-stone', postTower, JOURNEY_PATH, {}, null, {}),
+  'post-tower maxim-stone still dark without clusterPeek');
+assert(isClickablePT('maxim-stone', postTower, JOURNEY_PATH, {}, null, { 'maxim-stone': true }),
+  'post-tower maxim-stone glow-clickable after cluster peek');
 
 // After tower-nine with <10 territories: Sinn sealed, at least one territory glows
 clearSabellaLetters();
