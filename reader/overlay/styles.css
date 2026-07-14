@@ -313,6 +313,30 @@ h1 {
   color: var(--gold);
 }
 
+/* Opening veil hard-fail (Retry) — legacy path; never soft-open an empty book. */
+.reader-load-veil.is-hard-failed {
+  pointer-events: auto;
+}
+
+.reader-load-veil.is-hard-failed .reader-load-veil__retry {
+  display: inline-block;
+  margin-top: 16px;
+  appearance: none;
+  border: 1px solid rgba(198, 141, 85, 0.55);
+  border-radius: 2px;
+  background: rgba(198, 141, 85, 0.16);
+  color: var(--bone);
+  padding: 10px 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.reader-load-veil:not(.is-hard-failed) .reader-load-veil__retry {
+  display: none;
+}
+
 .reader-soft-toast {
   position: absolute;
   left: 50%;
