@@ -76,8 +76,10 @@ window.LOCATIONS = [
     name: 'Kingdom of the Moon Queen',
     sub: 'Western Territories',
     type: 'region',
-    lat: 3804,
-    lng: 1222,
+    // Was 3804/1222 — AABB/centroid sat in open water west of Sinn (build 182).
+    // Anchored on land just east of Sinn, inside moon-queen-realm polygon.
+    lat: 4400,
+    lng: 1680,
     desc: 'The last sovereign territory not claimed by Titan or Empire, locked in perpetual silver dusk. The kingdom appeared within living memory, carved from wilderness by a woman no one could place, who spoke with an authority the wilderness obeyed.',
     lore: '"She came from nowhere with nothing and built a kingdom that the Titans cannot enter. Ask yourself what manner of woman accomplishes this."',
     journeyStep: null,

@@ -2348,8 +2348,10 @@ body.edit-mode .mk-dot-wrap > * {
   background-size: 125%;
   background-position: center center;
   border: 1px solid rgba(198,141,85,0.3);
-  background-color: rgba(12,10,8,0.9);
+  /* Dark ring placeholder — never flash empty/white while sprite decodes */
+  background-color: rgba(12,10,8,0.95);
   box-shadow: 0 0 0 1px rgba(198,141,85,0.15), 0 4px 16px rgba(0,0,0,0.5);
+  transition: opacity 0.25s ease;
 }
 .dc-type {
   font-family: var(--font-ui);
@@ -3073,10 +3075,10 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 181;
+window.INTREPID_BUILD = 182;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
-<script src="data.js?v=11"></script>
+<script src="data.js?v=12"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
@@ -3150,7 +3152,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=181"></script>
+<script src="fog.js?v=182"></script>
 <script>
 (function() {
   'use strict';
@@ -3968,14 +3970,38 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         artEl.style.backgroundSize = m.artZoom || '125%';
         artEl.style.backgroundRepeat = 'no-repeat';
         artEl.style.backgroundPosition = m.artPosition || 'center center';
-        if (isRevealed) {
-          artEl.style.filter = 'none';
-          artEl.style.backgroundImage = 'url(' + m.spriteFile + ')';
-        } else {
-          artEl.style.filter = 'grayscale(0.6) brightness(0.7)';
-          artEl.style.backgroundImage = 'url(assets/question_mark.png)';
+        artEl.style.filter = isRevealed ? 'none' : 'grayscale(0.6) brightness(0.7)';
+        // Decode before paint — bare background-image swap flashes empty/white on cold loads
+        var url = isRevealed ? m.spriteFile : 'assets/question_mark.png';
+        var gen = (parseInt(artEl.dataset.artGen || '0', 10) || 0) + 1;
+        artEl.dataset.artGen = String(gen);
+        artEl.style.opacity = '0';
+        artEl.style.backgroundImage = 'none';
+        var img = new Image();
+        function revealArt() {
+          if (artEl.dataset.artGen !== String(gen)) return;
+          artEl.style.backgroundImage = 'url(' + url + ')';
+          artEl.style.opacity = '1';
         }
+        img.onload = revealArt;
+        img.onerror = function() {
+          if (artEl.dataset.artGen !== String(gen)) return;
+          artEl.style.opacity = '1';
+        };
+        img.src = url;
+        if (img.complete && img.naturalWidth > 0) revealArt();
       }
+
+      // Warm medallion sprites so first awaken / hover does not wait on cold PNG decode
+      MEDALLIONS.forEach(function(m) {
+        if (!m.spriteFile) return;
+        var warm = new Image();
+        warm.src = m.spriteFile;
+      });
+      (function warmupQuestionMark() {
+        var q = new Image();
+        q.src = 'assets/question_mark.png';
+      })();
 
       function showProximityCard(m) {
         if (!card) return;
@@ -5249,7 +5275,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       const lblClass = 'mk-' + t + '-lbl';
       const labelSplits = {
         'tower-nine': ['Tower of', 'the Nine'],
-        'maxim-stone': ['The Maxim', 'Stone']
+        'maxim-stone': ['The Maxim', 'Stone'],
+        'moon-queen-kingdom': ['Kingdom of the', 'Moon Queen']
       };
       const labelClusterClass = {
         'tower-nine': ' lbl-tower-nine',
@@ -5258,7 +5285,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       // Short directional nudge from dot — only for genuine label collisions
       const labelDirections = {
         'maxim-stone': 'below-right',
-        'sinn': 'below-left'
+        'sinn': 'below-left',
+        'moon-queen-kingdom': 'below-right'
       };
       const labelHtml = labelSplits[loc.id]
         ? labelSplits[loc.id].map(line => '<span class="label-line">' + line + '</span>').join('')
@@ -5379,8 +5407,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
       const polygon = L.polygon(coords, style);
 
-      // Add region name label in center
-      const center = polygon.getBounds().getCenter();
+      // Add region name label — prefer explicit land anchor when AABB center is water
+      const center = (props.label_lat != null && props.label_lng != null)
+        ? L.latLng(props.label_lat, props.label_lng)
+        : polygon.getBounds().getCenter();
       const labelHtml = state === 'silhouette'
         ? '<div class="veil-label veil-label-silhouette">' + props.name + '</div>'
         : '<div class="veil-label veil-label-veiled">'
@@ -5686,6 +5716,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (wrapper) wrapper.classList.add('loaded');
     };
     img.src = 'frame_original_02.png';
+    // Prefetch lit frame so permanent medallion glow holes do not flash blank on first awaken
+    var lit = new Image();
+    lit.src = 'frame_original_02_on_state.png?v=1782250059';
   }
 
   /* ═══════════════════════════════════════════

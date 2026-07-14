@@ -264,7 +264,9 @@
           "sinn",
           "indras-na"
         ],
-        "horizon_text": null
+        "horizon_text": null,
+        "label_lat": 4400,
+        "label_lng": 1680
       },
       "geometry": {
         "type": "Polygon",
