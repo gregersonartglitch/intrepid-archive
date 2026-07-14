@@ -71,17 +71,18 @@ const PRELOAD_BACK = 3;
 const PRELOAD_AHEAD = 5;
 const LINK_PRELOAD_AHEAD = 3;
 // Cover spread (0–1) + first 2–3 content spreads (2–7). Prefer these before
- // reveal, but never hard-block past VEIL_HARD_DEADLINE_MS. Keep well below
- // full-book so ~70 concurrent WebPs cannot starve the connection pool.
+// reveal. Keep well below full-book so ~70 concurrent WebPs cannot starve the pool.
 const OPENING_READY_LAST_INDEX = 7;
+// First visible art must be paint-ready before unveil (index 0 is blank tip-in).
+const OPENING_CRITICAL_LAST_INDEX = 1;
 const NEIGHBORHOOD_RADIUS = 2;
 const WARM_QUEUE_BATCH = 2;
 const WARM_QUEUE_GAP_MS = 120;
 const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
-// Legacy soft-unveil deadline (kill-switch / pre-lifecycle path only).
-const VEIL_HARD_DEADLINE_MS = 3500;
-const PAGE_ASSET_VERSION = 179;
+// Build 180: legacy no longer soft-opens empty/white. Deadline hard-fails like
+// lifecycle unless the critical opening spread is already paint-ready.
+const PAGE_ASSET_VERSION = 180;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
@@ -605,6 +606,13 @@ function ensurePageImageReady(pageIndex, options) {
     if (!image) {
       resolve(false);
       return;
+    }
+
+    // Opening / visible waits must show paper Loading — never a bare white sheet
+    // while bytes are still in flight (build 180).
+    if (!decodedPages.has(pageIndex) && !(image.complete && image.naturalWidth > 0)) {
+      setPageImageLoading(pageIndex, true);
+      updatePagePlaceholder(pageIndex, "loading");
     }
 
     var attempt = 0;
@@ -1230,6 +1238,32 @@ function collectOpeningImageIndices() {
   return indices;
 }
 
+function collectOpeningCriticalIndices() {
+  var indices = [];
+  var last = Math.min(OPENING_CRITICAL_LAST_INDEX, pageEntries.length - 1);
+  for (var index = 0; index <= last; index += 1) {
+    var entry = pageEntries[index];
+    if (entry && !entry.blank) {
+      indices.push(index);
+    }
+  }
+  return indices;
+}
+
+// Cover (and any other first-spread art) must be complete+painted before unveil.
+function openingCriticalPaintReady() {
+  var indices = collectOpeningCriticalIndices();
+  if (!indices.length) {
+    return true;
+  }
+  for (var i = 0; i < indices.length; i += 1) {
+    if (!pageImageIsPaintReady(indices[i]) && !pageImageHasBitmap(indices[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function prepareOpeningPages(pageElements) {
   var indices = collectOpeningImageIndices();
   openingPrimeIndices = indices.slice();
@@ -1427,11 +1461,17 @@ function buildPageElements() {
         image.fetchPriority = "high";
       }
       image.src = pageAssetUrl(entry, 0);
+      // Paper Loading until complete+painted — never soft-open a white sheet.
+      page.classList.add("is-loading");
+      page.setAttribute("data-page-state", "loading");
     } else {
       image.loading = "lazy";
     }
 
     page.append(image);
+    if (page.classList.contains("is-loading")) {
+      updatePagePlaceholder(index, "loading");
+    }
     return page;
   });
 }
@@ -1675,19 +1715,46 @@ function openBook(pageElements, options) {
 }
 
 function bootReaderLegacy(pageElements) {
-  var openingFailed = false;
+  // Keep for Retry (legacy Retry reloads; store elements for parity).
+  lifecycleBootPageElements = pageElements;
 
+  // Never soft-open into a white incomplete cover/first page (build 180).
+  // Long deadline: hard-fail Retry unless critical opening art is paint-ready.
   veilDeadlineId = setTimeout(function () {
-    openBook(pageElements, { softError: true });
-  }, VEIL_HARD_DEADLINE_MS);
+    if (bootOpened) {
+      return;
+    }
+    if (openingCriticalPaintReady()) {
+      openBook(pageElements, { softError: true });
+      return;
+    }
+    showOpeningHardFail("Page couldn't load — Retry.");
+  }, VEIL_OPENING_DEADLINE_MS);
 
   prepareOpeningPages(pageElements)
     .then(function (ok) {
-      openingFailed = !ok;
-      openBook(pageElements, { softError: openingFailed });
+      if (bootOpened) {
+        return;
+      }
+      if (ok) {
+        openBook(pageElements, { softError: false });
+        return;
+      }
+      if (openingCriticalPaintReady()) {
+        openBook(pageElements, { softError: true });
+        return;
+      }
+      showOpeningHardFail("Page couldn't load — Retry.");
     })
     .catch(function () {
-      openBook(pageElements, { softError: true });
+      if (bootOpened) {
+        return;
+      }
+      if (openingCriticalPaintReady()) {
+        openBook(pageElements, { softError: true });
+        return;
+      }
+      showOpeningHardFail("Page couldn't load — Retry.");
     });
 }
 
