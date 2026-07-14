@@ -2,6 +2,18 @@
 
 Onboarding for any agent working on **intrepid-map** (deploy site) and its integration with **Legendist reader R&D** (Codex repo).
 
+### Recent session handoffs
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/SESSION-HANDOFF-2026-07-13.md`](docs/SESSION-HANDOFF-2026-07-13.md) | **Jul 13 clean-cut** — live stamps, shipped arc, Mish fly P0, reader 180, beta next |
+
+### Beta go-live (Jul 13–14, 2026)
+
+| Doc | Purpose |
+|-----|---------|
+| [`docs/BETA-GO-LIVE-2026-07-13.md`](docs/BETA-GO-LIVE-2026-07-13.md) | **Today/tomorrow beta LIVE checklist** — definition, Sev-0, flag lock, codes/email, exit criteria, holds |
+
 ### Fable / external audit
 
 | Doc | Purpose |
@@ -183,6 +195,48 @@ npx http-server . -p 8080 --cors -c-1
 6. Tag: `git tag build-N`
 7. Deploy: `netlify deploy --prod --dir .` (Forbidden workaround: draft deploy + `netlify api restoreSiteDeploy`)
 8. Verify live: console build stamp, gate behavior, reader pages
+
+---
+
+## Rapid redeploy
+
+### Preflight
+
+- Confirm repo root and linked Netlify site (`aesthetic-salmiakki-cf6713`)
+- Confirm changed files only include intended deploy scope
+- Run `node --check fog.js` when `fog.js` changed
+
+### Build/version bump locations
+
+- `index.html`: `window.INTREPID_BUILD = N`
+- `index.html`: `<script src="archive-access.js?v=N"></script>`
+- `index.html`: `<script src="fog.js?v=N"></script>`
+- Reader script tags are separate cache tags (`reader/intrepid-dusk-volume-1/index.html` and `reader/overlay/index.html`): `backer-gate.js?v=...`, `spike.js?v=...` (bump only when those assets change)
+
+### Exact deploy command
+
+```powershell
+netlify deploy --prod --dir .
+```
+
+### Production verification command
+
+```powershell
+(Invoke-WebRequest https://archive.intrepidgraphicnovel.com/ -UseBasicParsing).Content -match 'INTREPID_BUILD\s*=\s*(\d+)'
+```
+
+Expected: `True` and the captured build number equals the intended deploy.
+
+### Common failures + quick fixes
+
+- `403/Forbidden` on prod deploy: run `netlify deploy --dir .` then restore with `netlify api restoreSiteDeploy` (see `.planning/debug/ship-triage-build95.md`)
+- Live page still old build: hard refresh/incognito and confirm script `?v=` tags match `INTREPID_BUILD`
+- Map/reader gating mismatch after deploy: clear `localStorage` + `sessionStorage`, then retest guest/backer/cartographer flows
+
+### Guest entry flag (build 114 shutdown)
+
+- Location: `archive-access.js` (`var ENABLE_GUEST_ENTRY = false;`)
+- Re-enable guest entry: set `ENABLE_GUEST_ENTRY` to `true`, then bump `INTREPID_BUILD` and script cache tags in `index.html` before deploy
 
 ---
 
