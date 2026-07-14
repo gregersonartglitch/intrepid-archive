@@ -55,7 +55,7 @@ New features must be reversible without a deploy rollback. Bug fixes do **not** 
 - Proximity distances are in map units (400 units ≈ nearby cluster)
 
 ## Journey Path (in order)
-1. crossing-pool → 2. dawn-spear → 3. sabellas-hut (tutorial ends) → 4. mish → 5. monastery-wind → 6. tower-nine → 7. sinn → 8. indras-na (FINAL, requires all territories + sites)
+1. crossing-pool → 2. dawn-spear → 3. sabellas-hut (tutorial ends) → 4. monastery-wind → 5. tower-nine → 6. sinn → 7. indras-na (FINAL, requires all territories + sites)
 
 ## Dev Server
 ```

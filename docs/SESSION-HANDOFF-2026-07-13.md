@@ -12,7 +12,7 @@
 
 A long multitask thread (~days) mixed map polish, reader blank-page triage, beta go-live prep, dossier, and perf. Context length caused drift and missed intent. **Jon wants a clean cut** — next agent/session starts from this doc + the linked docs below, not from chat scrollback.
 
-Screenshot that triggered the cut: after early journey / Grandma Bella (Sabella) letter, the map still **animates / flies over to Mish** (Mish label centered in fog with lantern). Treat that as an open UX complaint, not “working as intended.”
+Screenshot that triggered the cut: after early journey / Grandma Bella (Sabella) letter, the map still **animates / flies over to Mish**. **Root cause fixed in build 185** — Mish was wrongly step 4 on Elena’s Journey; she never goes there. Next glow/fly is monastery-wind.
 
 ---
 
@@ -20,8 +20,9 @@ Screenshot that triggered the cut: after early journey / Grandma Bella (Sabella)
 
 | Knob | Local (working tree) | Prod (archive.intrepidgraphicnovel.com) |
 |------|----------------------|-------------------------------------------|
-| Map `INTREPID_BUILD` | **184** | **184** |
-| `fog.js?v=` | **184** | **184** |
+| Map `INTREPID_BUILD` | **185** | **185** (deploy after Mish journey removal) |
+| `fog.js?v=` | **185** | **185** |
+| `data.js?v=` | **13** | **13** |
 | Reader `spike.js?v=` | **180** | **180** |
 | `PAGE_ASSET_VERSION` | **180** | **180** |
 | `ENABLE_PAGE_LIFECYCLE` | **`false`** | **`false`** |
@@ -41,7 +42,7 @@ Screenshot that triggered the cut: after early journey / Grandma Bella (Sabella)
 
 **Guest / Wanderer entry:** OFF. Do not invite with a naked URL alone.
 
-**Caution on stamps:** latest *committed* map work in git log is build **183** (`37eb7d5`). Working-tree `index.html` shows an uncommitted **183 → 184** stamp-only bump that matches prod. Next agent: confirm whether 184 was deployed from a dirty tree before assuming HEAD == prod.
+**Caution on stamps:** build **185** removes Mish from Elena’s Journey. Journey counter is **X/7**.
 
 **Branch:** `feature/cuneiform-buttons`  
 **Working tree:** dirty — many untracked `.tmp/` scratch files, assorted docs, `docs/MAP-PERF-AUDIT.md`, zips, dossier portraits dir, etc. **Commit carefully; never stage `.tmp/`.**
@@ -85,29 +86,17 @@ Screenshot that triggered the cut: after early journey / Grandma Bella (Sabella)
 
 ## 4. OPEN / NEXT (Jon’s priorities)
 
-### P0 — Map camera fly to Mish (Jon hate)
+### DONE — Mish removed from Elena’s Journey (build 185)
 
-**Symptom:** After early journey / Sabella letter, map still wants to **animate/fly** so Mish is centered in fog.
+**Jon clarified:** Elena never goes to Mish. Mish is a territory/guardian city — not a journey stop.
 
-**Code reality (do not hand-wave):** In `fog.js` post-init, a comment claims *“no auto-fly to distant Mish”* but the call remains:
-
-```text
-// Post-tutorial: golden glow guides the player — no auto-fly to distant Mish.
-if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
-  maybeFlyToNextJourneyStep(2000);   // <-- still flies
-  setTimeout(schedulePostTutorialHint, 2000);
-}
-```
-
-`maybeFlyToNextJourneyStep` is also invoked after other journey stops (~1800 ms). Comment ≠ product.
-
-**Decide with Jon (do not assume “intended” closes the complaint):**
-
-1. Remove auto-fly after Sabella / post-tutorial (glow only), or  
-2. Soften (longer delay / only if next step fully off-screen / no fly when letter UI open), or  
-3. Remove fly entirely from journey completion.
-
-**Acceptance:** Jon no longer sees the cam yank to Mish after the Bella letter unless he pans himself.
+**Shipped:**
+- Removed `mish` from `JOURNEY_PATH` / `journeyStep` / journey polyline source / progress **X/7**
+- New path: `crossing-pool → dawn-spear → sabellas-hut → monastery-wind → tower-nine → sinn → indras-na` (7 stops)
+- Post-Sabella golden glow + `maybeFlyToNextJourneyStep` now target **monastery-wind** (not Mish)
+- Mish remains discoverable cartographer site / guardian unlock (Indras Na + territories)
+- Sabella letters unchanged: hut / monastery / tower / sinn
+- Smoke + soft-lock glow path updated; 158/158 green
 
 ### P0 — Reader first-page / white pages
 
@@ -165,9 +154,9 @@ if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
 
 ## 7. Suggested first tasks for next session
 
-1. **Soften/remove Mish auto-fly** after Sabella / post-tutorial — Jon’s explicit hate; verify with screenshot/repro (letter open → no cam yank).
-2. **Confirm reader cold open never white on 180+** on Jon’s browser; capture residual if any.
-3. **Beta flag lock + deploy readiness** — cuneiform decision, guest-off copy, codes in email, stamps committed (`INTREPID_BUILD` / `fog.js?v=` / reader `spike.js?v=`).
+1. **Confirm reader cold open never white on 180+** on Jon’s browser; capture residual if any.
+2. **Beta flag lock + deploy readiness** — cuneiform decision, guest-off copy, codes in email, stamps committed (`INTREPID_BUILD` / `fog.js?v=` / reader `spike.js?v=`).
+3. After Sabella letter: verify glow/fly go to **Monastery of the Wind**, not Mish (build 185).
 
 ---
 

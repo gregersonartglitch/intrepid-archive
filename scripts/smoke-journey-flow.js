@@ -41,6 +41,9 @@ assert(!LOCATIONS.some(function(l) { return l.id === 'moon-stronghold'; }),
   'moon-stronghold removed from LOCATIONS');
 assert(JOURNEY_PATH.every(function(s) { return s.locationId !== 'moon-stronghold'; }),
   'moon-stronghold not on journey path');
+assert(JOURNEY_PATH.every(function(s) { return s.locationId !== 'mish'; }),
+  'mish is territory/guardian — not on Elena journey');
+assert(JOURNEY_PATH.length === 7, 'Elena journey has 7 stops');
 var sinnLoc = LOCATIONS.find(function(l) { return l.id === 'sinn'; });
 assert(!!sinnLoc && /silver-walled seat/.test(sinnLoc.desc || ''),
   'sinn desc folds stronghold / Sabella seat lore');
@@ -464,21 +467,21 @@ console.log('\n[1] Post-Sabella next glow');
 var postSabella = makeJourneyCompleteThrough('sabellas-hut');
 postSabella['sabellas-hut'] = { at: Date.now(), phase: 'complete' };
 var nextAfterSabella = getNextPathLocation(postSabella, JOURNEY_PATH, {});
-assert(nextAfterSabella === 'mish', 'getNextPathLocation after Sabella is mish (not null)');
+assert(nextAfterSabella === 'monastery-wind', 'getNextPathLocation after Sabella is monastery-wind (not mish)');
 
-console.log('\n[2] Journey 6/8 + 8 territories — clock caps at Rapha (3pm), not Mish');
+console.log('\n[2] Journey 5/7 + 8 territories — clock caps at Rapha (3pm), not Mish');
 var sixEight = makeJourneyCompleteThrough('tower-nine');
 sixEight['tower-nine'] = { at: Date.now(), phase: 'complete' };
 padTerritories(sixEight, 8);
 var validAt8 = getValidRevealedGodsForCount(8, MEDALLION_UNLOCKS, sixEight, JOURNEY_PATH);
-assert(journeyCompleteCount(sixEight, JOURNEY_PATH) === 6, 'journey progress is 6/8');
+assert(journeyCompleteCount(sixEight, JOURNEY_PATH) === 5, 'journey progress is 5/7');
 assert(validAt8.Utu && validAt8['Sham & Mash'] && validAt8.Elil && validAt8.Rapha,
   'at 8 territories clock chain reaches Rapha (4th guardian)');
 assert(!validAt8.Ningal, 'Ningal (4pm) not lit at 8 territories');
 assert(!validAt8.An, 'An (5pm) not lit at 8 territories');
 assert(!validAt8.Mish, 'Mish (6pm) not lit without Indras Na');
 var revealedMid = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true };
-assert(!isMishGuardianRevealed(revealedMid, sixEight, JOURNEY_PATH), 'Mish guardian not awakened at 6/8 + Rapha only');
+assert(!isMishGuardianRevealed(revealedMid, sixEight, JOURNEY_PATH), 'Mish guardian not awakened at 5/7 + Rapha only');
 assert(!isVol2JourneyGateBlocking(revealedMid, sixEight, JOURNEY_PATH), 'Vol2 gate not blocking before Mish guardian');
 var lsMid = {};
 assert(!maybeShowVol2GateToast(revealedMid, sixEight, JOURNEY_PATH, lsMid), 'Vol2 reward toast not eligible before Indras Na complete');
@@ -620,16 +623,16 @@ assert(isJourneyPathClickable(FINAL_ELENA_STOP, flagOffSnap, JOURNEY_PATH, {}),
 ENABLE_SABELLA_MESSAGES = true;
 collectSabellaPrereqLetters();
 
-console.log('\n[2f] User snapshot — 7/8 journey, 17/17 territories, 13/13 sites + 4 letters → indras-na clickable');
+console.log('\n[2f] User snapshot — 6/7 journey, 17/17 territories, 13/13 sites + 4 letters → indras-na clickable');
 collectSabellaPrereqLetters();
 var userSnap = makeJourneyCompleteThrough('sinn');
 userSnap['sinn'] = { at: Date.now(), phase: 'complete' };
 padAllExploration(userSnap);
-assert(journeyCompleteCount(userSnap, JOURNEY_PATH) === 7, 'journey progress is 7/8');
+assert(journeyCompleteCount(userSnap, JOURNEY_PATH) === 6, 'journey progress is 6/7');
 assert(getTerritoryDiscoveryCount(userSnap) === 17, 'all 17 territories charted');
 assert(explorationComplete(userSnap), 'exploration complete for finale unlock');
 assert(getNextPathLocation(userSnap, JOURNEY_PATH, {}) === FINAL_ELENA_STOP,
-  'golden glow targets indras-na at 7/8 with full map');
+  'golden glow targets indras-na at 6/7 with full map');
 assert(isJourneyPathClickable(FINAL_ELENA_STOP, userSnap, JOURNEY_PATH, {}),
   'indras-na clickable at user snapshot state');
 var staleMishGods = { Utu: true, 'Sham & Mash': true, Elil: true, Rapha: true, Ningal: true, An: true, Mish: true };
@@ -720,12 +723,12 @@ var mishReveal = simulateRevealGod(
 assert(!mishReveal.toastFired, 'Mish guardian reveal does not fire Vol1 reward toast');
 assert(!lsMishOnly[VOL2_GATE_TOAST_LS], 'reward LS flag unset after Mish reveal without Indras Na ceremony path');
 
-console.log('\n[4d] Mid-journey (5/8) never triggers reward toast');
+console.log('\n[4d] Mid-journey (4/7) never triggers reward toast');
 var midJourney = makeJourneyCompleteThrough('monastery-wind');
 midJourney['monastery-wind'] = { at: Date.now(), phase: 'complete' };
 var lsMidJourney = {};
 assert(!maybeShowVol2GateToast({}, midJourney, JOURNEY_PATH, lsMidJourney),
-  'reward toast not eligible at 5/8 journey without Indras Na');
+  'reward toast not eligible at 4/7 journey without Indras Na');
 
 console.log('\n[5] Elil reveal after Mish already revealed — no duplicate toast');
 var elilReady = makeJourneyCompleteThrough('monastery-wind');
@@ -753,6 +756,13 @@ assert(/isVol2LockedJourneyStep[\s\S]*?locId === FINAL_ELENA_STOP/.test(fogSrc),
   'indras-na excluded from Vol2 journey seal');
 assert(/maybeShowVol2GateToast[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.test(fogSrc),
   'reward toast gated on Indras Na completion');
+assert(fogSrc.indexOf('function runAfterCeremonyClear') > -1 &&
+  fogSrc.indexOf('function isBlockingCeremonyOpen') > -1,
+  'ceremony queue helpers exist (defer congrats over guardian lore)');
+assert(/checkJourneyFinale[\s\S]*?runAfterCeremonyClear\(showJourneyToast/.test(fogSrc),
+  'archive-complete overlay deferred until ceremony clear');
+assert(/maybeShowVol2GateToast[\s\S]*?runAfterCeremonyClear\(/.test(fogSrc),
+  'Vol2 Indras congrats deferred until ceremony clear');
 assert(fogSrc.indexOf('maybeShowVol2GateToast();') > -1 &&
   /completeDiscovery[\s\S]*?FINAL_ELENA_STOP[\s\S]*?maybeShowVol2GateToast/.test(fogSrc),
   'completeDiscovery triggers reward toast on Indras Na');
@@ -1102,7 +1112,7 @@ function runGlowOnlyPlaythrough() {
             break;
           }
         }
-        // mish is both site + journey — if still undisc and glowing, take it
+        // mish is cartographer site (not journey) — take if glowing
         if (!pick && clickables.indexOf('mish') >= 0 && !discovered.mish) pick = 'mish';
       }
       // Tower cluster companion once peeked
@@ -1162,7 +1172,7 @@ assert(pt.ok, 'glow-only playthrough reaches Indras Na' +
   (pt.stuck ? ' — STUCK: ' + pt.stuck : ''));
 if (pt.ok) {
   pass('glow-only path length ' + pt.pathLog.length +
-    ' (journey ' + pt.journey + '/8, territories ' + pt.territories +
+    ' (journey ' + pt.journey + '/7, territories ' + pt.territories +
     ', letters ' + pt.letters + '/4)');
   // Path must include full Elena road in order
   var journeyHits = pt.pathLog.filter(function(x) { return x.indexOf('J:') === 0 || x.indexOf('T:') === 0; })
@@ -1186,7 +1196,7 @@ if (pt.ok) {
   console.error('  path so far: ' + pt.pathLog.join(' > '));
 }
 
-// Mid-path assertion: after hut, mish must be the golden clickable
+// Mid-path assertion: after hut, monastery-wind is the golden clickable (Mish is not journey)
 clearSabellaLetters();
 var postHut = {
   'crossing-pool': { at: 1, phase: 'complete' },
@@ -1194,17 +1204,19 @@ var postHut = {
   'sabellas-hut': { at: 1, phase: 'complete' }
 };
 SABELLA_MESSAGES_SEEN['sabellas-hut'] = 1;
-assert(getNextPathLocation(postHut, JOURNEY_PATH, {}) === 'mish',
-  'post-hut golden next is mish');
-assert(isClickablePT('mish', postHut, JOURNEY_PATH, {}, null),
-  'post-hut mish is glow-clickable');
+assert(getNextPathLocation(postHut, JOURNEY_PATH, {}) === 'monastery-wind',
+  'post-hut golden next is monastery-wind');
+assert(isClickablePT('monastery-wind', postHut, JOURNEY_PATH, {}, null),
+  'post-hut monastery-wind is glow-clickable');
+assert(!isClickablePT('mish', postHut, JOURNEY_PATH, {}, null),
+  'post-hut mish is not journey-glow clickable');
 assert(!isClickablePT('indras-na', postHut, JOURNEY_PATH, {}, null),
   'post-hut indras-na not clickable');
 // Maxim Stone: near Sabella fog but off journey — no amber until tower peeks cluster
 assert(!isClickablePT('maxim-stone', postHut, JOURNEY_PATH, {}, null, {}),
   'post-hut maxim-stone not clickable without cluster peek (glow sync)');
 var postTower = Object.assign({}, postHut, {
-  mish: { at: 1, phase: 'complete' },
+  mish: { at: 1, phase: 'mist' },
   'monastery-wind': { at: 1, phase: 'complete' },
   'tower-nine': { at: 1, phase: 'complete' }
 });

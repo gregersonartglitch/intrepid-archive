@@ -116,7 +116,7 @@ node --check fog.js
 
 ### Journey path (order)
 
-crossing-pool → dawn-spear → sabellas-hut (tutorial ends) → mish → monastery-wind → tower-nine → sinn → indras-na (FINAL)
+crossing-pool → dawn-spear → sabellas-hut (tutorial ends) → monastery-wind → tower-nine → sinn → indras-na (FINAL)
 
 ---
 

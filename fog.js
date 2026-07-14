@@ -420,7 +420,7 @@
     if (tutorialStep < TUTORIAL_STEPS) {
       startTutorial();
     }
-    // Post-tutorial: golden glow guides the player — no auto-fly to distant Mish.
+    // Post-tutorial: golden glow → next journey stop (monastery-wind). Fly only if off-screen.
 
     if (isFullyDiscovered('sabellas-hut') && shouldShowPostTutorialHint()) {
       maybeFlyToNextJourneyStep(2000);
@@ -1351,7 +1351,7 @@
   }
 
   // True when Elena's road through Sinn is done but Indras Na is still gated
-  // (territories/sites/letters). Drives sealed finale beacon — never leave 7/8 dark.
+  // (territories/sites/letters). Drives sealed finale beacon — never leave 6/7 dark.
   function isIndrasNaSealed() {
     if (isFullyDiscovered(FINAL_ELENA_STOP)) return false;
     var ji;

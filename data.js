@@ -288,7 +288,7 @@ window.LOCATIONS = [
     lng: 2504,
     desc: 'Market stalls and caravansary commerce fill the streets of Mish, where empty thrones sit in the old palace district and no one asks who broke the dynasty. Atrus Nul purged the last human kings here without declaration; the city survived, the crown did not, and the broken hills around it keep the Empire from finishing the job.',
     lore: '"Mish remembers its kings the way a scar remembers the wound: not with grief, but with the shape."',
-    journeyStep: 4,
+    journeyStep: null,
     volume1: true
   },
   {
@@ -558,7 +558,7 @@ window.LOCATIONS = [
     lng: 4509,
     desc: 'A sanctuary carved into a windswept peak, a golden tree at its heart, visible for a day\'s ride. The Oracle Isin Ada reads what is coming in its dust and its leaves. Elena climbed here for direction and received a prophecy she did not want.',
     lore: '"A book of gold winds around the tree, an old mechanism that scrolls at the Oracle\'s word and presses buried truths onto foil the tree yields like leaves, as if the wood still remembers the words. Three will rise, it has read: One Dusk, One Dark, One Dawn, and the Stone undone. Isin Ada spoke this once and wept for six days."',
-    journeyStep: 5,
+    journeyStep: 4,
     volume1: true,
     art: 'monastery-wind.jpg'
   },
@@ -586,7 +586,7 @@ window.LOCATIONS = [
     lng: 4097,
     desc: 'A tower of nine stories, one for each old god the Tetrad cast into Kur, older than the Empire or the Titan courts. At its heart sits the Maxim Stone, ringed by statues of the Nine that face inward, toward the Stone, not outward. Whatever the Tower was built to contain, it has not forgotten.',
     lore: '"The Tower was not built to honor the Nine. It was built to cage them. The ceremonies are not worship. They are lockpicking."',
-    journeyStep: 6,
+    journeyStep: 5,
     volume1: true,
     art: 'tower-nine.jpg'
   },
@@ -735,7 +735,7 @@ window.LOCATIONS = [
     lng: 1394,
     desc: 'The judicial heart of the Moon Queen\'s domain — and the silver-walled seat from which Sabella, Elena\'s grandmother, governs the last free territory in the Hollowlands. Verdicts are written in silver ink that fades by dawn; the streets spiral inward like a nautilus shell. Elena stood before her here and understood: rescue is not always what the rescued want.',
     lore: '"The Moon Queen built her throne from the wreckage of a life she chose to leave behind. She did not look back. Looking back is for those who believe they left something worth returning to."',
-    journeyStep: 7,
+    journeyStep: 6,
     volume1: true
   },
   {
@@ -747,7 +747,7 @@ window.LOCATIONS = [
     lng: 1022,
     desc: 'The garrison that guards the Moon Queen\'s border against Imperial incursion, staffed by soldiers bound by oath, not conscription, to a queen they may never meet. The walls are lined with mirrors that turn moonlight into silver tripwires. Those who attempted siege spoke of blindness and the sound of laughter.',
     lore: '"Indras Na has never fallen. This is not because it cannot be taken. It is because those who try forget why they came."',
-    journeyStep: 8,
+    journeyStep: 7,
     volume1: true
   },
   {
@@ -945,18 +945,18 @@ window.LOCATIONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// ELENA'S JOURNEY — Volume 1 Path (11 Steps)
+// ELENA'S JOURNEY — Volume 1 Path (7 steps)
+// Mish is a territory/guardian city — NOT on Elena's journey.
 // ═══════════════════════════════════════════════════════════════
 
 window.JOURNEY_PATH = [
   { step: 1, locationId: 'crossing-pool',  label: 'Into the Hollowlands' },
   { step: 2, locationId: 'dawn-spear',     label: 'Sabella\'s Clearing' },
   { step: 3, locationId: 'sabellas-hut',   label: 'Grandmother\'s Trail' },
-  { step: 4, locationId: 'mish',           label: 'The Town' },
-  { step: 5, locationId: 'monastery-wind', label: 'The Oracle' },
-  { step: 6, locationId: 'tower-nine',     label: 'The Tower of the Nine' },
-  { step: 7, locationId: 'sinn',           label: 'The Moon Court' },
-  { step: 8, locationId: 'indras-na',      label: 'The Western Garrison' }
+  { step: 4, locationId: 'monastery-wind', label: 'The Oracle' },
+  { step: 5, locationId: 'tower-nine',     label: 'The Tower of the Nine' },
+  { step: 6, locationId: 'sinn',           label: 'The Moon Court' },
+  { step: 7, locationId: 'indras-na',      label: 'The Western Garrison' }
 ];
 
 // ═══════════════════════════════════════════════════════════════

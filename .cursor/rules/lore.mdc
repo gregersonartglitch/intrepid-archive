@@ -11,7 +11,7 @@ When writing or editing location `desc` or `lore` fields in data.js, always refe
 ## Lore Files (auto-indexed by Cursor)
 - `@lore/world.md` — world overview, The Split, the Tetrad, the Nine
 - `@lore/characters.md` — Elena, Sabella, Isin Ada, Nick
-- `@lore/journey-locations.md` — all 8 journey stops with full lore
+- `@lore/journey-locations.md` — Elena's Volume 1 journey stops (7; Mish is territory, not journey)
 - `@lore/writing-style.md` — voice, tone, formulas, proper noun capitalization
 
 ## Rules for Writing New Lore
@@ -27,6 +27,6 @@ When writing or editing location `desc` or `lore` fields in data.js, always refe
 - If unsure about world consistency, ask before inventing
 
 ## Placeholder Locations (need lore written)
-- `mish` — step 4, coordinates lat 3136 lng 2504, no lore yet
-- `sinn` — step 7, coordinates TBD, no lore yet  
-- `indras-na` — step 8 FINAL, coordinates TBD, no lore yet
+- `mish` — territory/guardian city (NOT on Elena's journey), lat 3136 lng 2504
+- `sinn` — journey step 6, coordinates TBD, no lore yet  
+- `indras-na` — journey step 7 FINAL, coordinates TBD, no lore yet
