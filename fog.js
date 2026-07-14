@@ -71,8 +71,8 @@
       burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil — then click.' }
     }
   };
-  // Sabella journey letters at five stops — ON for local demo on this branch; set false before prod.
-  // Kill switch: localStorage intrepid_sabella_messages_disabled=1 (or ?nosabellamessages)
+  // Sabella journey letters — intentionally ON (Jon 2026-07-10 / beta lock). Do NOT flip false for prod.
+  // Per-player kill: localStorage intrepid_sabella_messages_disabled=1 (or ?nosabellamessages)
   // Docs: docs/SABELLA-CLUE-POPUPS.md
   var ENABLE_SABELLA_MESSAGES = true;
   var SABELLA_MESSAGES_DISABLED_LS = 'intrepid_sabella_messages_disabled';
@@ -3267,8 +3267,8 @@
        keys sit on the beacon — enterSearchMode / KEY_CLICK also grant Hot)
      Recovery: click the completed letter-stop marker, or Guide Me → lantern search
      Never: random fog clicks away from the marker / search key
-     Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
-     Kill: localStorage intrepid_sabella_messages_disabled=1
+     Flag: ENABLE_SABELLA_MESSAGES — intentionally ON for beta (do not flip false for prod)
+     Per-player kill: localStorage intrepid_sabella_messages_disabled=1
   ════════════════════════════════════════════════ */
   function isSabellaMessagesEnabled() {
     if (!ENABLE_SABELLA_MESSAGES) return false;

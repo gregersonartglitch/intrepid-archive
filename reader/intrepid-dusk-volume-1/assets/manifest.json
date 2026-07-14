@@ -391,6 +391,15 @@
       "fallback": "./pages/page-042.jpg"
     },
     {
+      "id": "chapter-3-spacer",
+      "role": "spacer",
+      "label": "Chapter 3 spacer",
+      "width": 2200,
+      "height": 3338,
+      "webp": "./pages/chapter-3-spacer.webp",
+      "fallback": "./pages/chapter-3-spacer.jpg"
+    },
+    {
       "id": "page-043",
       "issue": "003",
       "issuePage": 1,

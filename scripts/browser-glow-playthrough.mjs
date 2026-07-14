@@ -78,7 +78,8 @@ async function main() {
   await page.waitForFunction(
     () => {
       if (!window.FogSystem || !window.LOCATIONS || !window.JOURNEY_PATH) return false;
-      if (!window.JOURNEY_PATH.length || window.JOURNEY_PATH.length < 8) return false;
+      // Build 185+: Mish off Elena's Journey — live path is 7 stops
+      if (!window.JOURNEY_PATH.length || window.JOURNEY_PATH.length < 7) return false;
       if (!window.FogSystem.getNextLocation) return false;
       return window.FogSystem.getNextLocation() === 'crossing-pool';
     },
@@ -323,10 +324,10 @@ async function main() {
       }
     }
 
-    // Sanity after hut
+    // Sanity after hut (build 185+: next is monastery-wind, not mish)
     out.postHutNext = getNext();
-    if (out.postHutNext !== 'mish') {
-      out.stuck = 'post-hut live next should be mish, got ' + out.postHutNext;
+    if (out.postHutNext !== 'monastery-wind') {
+      out.stuck = 'post-hut live next should be monastery-wind, got ' + out.postHutNext;
       return out;
     }
 

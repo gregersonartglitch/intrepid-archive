@@ -13,6 +13,7 @@
      ════════════════════════════════════════════════ */
   var LANDMARK_ART = {
     'crossing-pool':   'crossing-pool.jpg',
+    'dawn-spear':      'dawn-spear.jpg',
     'tower-nine':      'tower-nine.jpg',
     'sabellas-hut':    'sabellas-hut.jpg',
     'monastery-wind':  'monastery-wind.jpg',

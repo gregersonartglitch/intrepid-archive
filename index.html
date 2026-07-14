@@ -3075,10 +3075,10 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 185;
+window.INTREPID_BUILD = 186;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
-<script src="data.js?v=13"></script>
+<script src="data.js?v=14"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
@@ -3152,7 +3152,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=185"></script>
+<script src="fog.js?v=186"></script>
 <script>
 (function() {
   'use strict';
@@ -5448,6 +5448,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      ═══════════════════════════════════════════ */
   const LANDMARK_ART = {
     'crossing-pool':   'crossing-pool.jpg',
+    'dawn-spear':      'dawn-spear.jpg',
     'tower-nine':      'tower-nine.jpg',
     'sabellas-hut':    'sabellas-hut.jpg',
     'monastery-wind':  'monastery-wind.jpg',
@@ -5592,7 +5593,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     let html = '';
 
     // Landmark art — show as a clean image at top of panel
-    const artPath = LANDMARK_ART[loc.id];
+    const artPath = loc.art || LANDMARK_ART[loc.id];
     if (artPath) {
       html += '<div class="panel-art"><img src="' + artPath + '" alt="' + (loc.name || '') + '"></div>';
     }

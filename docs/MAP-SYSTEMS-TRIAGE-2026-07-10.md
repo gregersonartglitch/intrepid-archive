@@ -1,6 +1,6 @@
 # Hollowlands Map Systems — Tactical Triage
 
-**Date:** 2026-07-10  
+**Date:** 2026-07-10 (journey path **refreshed 2026-07-14** for build 185 — Mish off Elena’s Journey; 7 stops)  
 **Branch:** `feature/cuneiform-buttons`  
 **Sources:** `fog.js`, `data.js`, `index.html` (current code only — no future proposals)  
 **Audience:** Jon — tactical triage of what the cartographer map *is* today
@@ -9,7 +9,7 @@
 
 ## Executive snapshot
 
-The map is a fog-of-war charting game with four progress tracks, three glow languages, a chime-search minigame on journey stops, a frame medallion “clock,” and a Volume 2 gate that is armed but largely toast-only on the current 8-stop path. Collection tiers exist in the UI; the *economy* between them (why chart a territory vs a site vs a letter) is thin.
+The map is a fog-of-war charting game with four progress tracks, three glow languages, a chime-search minigame on journey stops, a frame medallion “clock,” and a Volume 2 gate that is armed but largely toast-only on the current **7-stop** path. Collection tiers exist in the UI; the *economy* between them (why chart a territory vs a site vs a letter) is thin.
 
 ---
 
@@ -19,28 +19,29 @@ Progress panel (`#progress-container` in `index.html`, filled by `updateProgress
 
 | Track | Count | What counts | Unlock / gate role |
 |-------|------:|-------------|--------------------|
-| **Elena’s Journey** | **8** | `JOURNEY_PATH` stops fully discovered (`phase === 'complete'`) | Drives golden glow; Indras Na is last |
-| **Territories** | **17** | `type === 'region'` only (waters excluded from this bar) | Paces guardian clock; required for Indras Na + Mish |
+| **Elena’s Journey** | **7** | `JOURNEY_PATH` stops fully discovered (`phase === 'complete'`) | Drives golden glow; Indras Na is last |
+| **Territories** | **17** | `type === 'region'` only (waters excluded from this bar) | Paces guardian clock; required for Indras Na + Mish guardian |
 | **Cities & Sites** | **13** | `cartographerSite: true` | Required for Indras Na (`explorationComplete`) |
 | **Secrets** | **4** | Sabella letters seen (`intrepid_sabella_messages_seen`) | Row shown only when Sabella messages enabled; all 4 gate Indras Na |
 
-### 1.1 Elena’s Journey (8)
+### 1.1 Elena’s Journey (7)
 
-Order in `data.js` → `window.JOURNEY_PATH`:
+Order in `data.js` → `window.JOURNEY_PATH` (build 185+):
 
 1. `crossing-pool` — Into the Hollowlands  
 2. `dawn-spear` — Sabella’s Clearing  
 3. `sabellas-hut` — Grandmother’s Trail (**tutorial ends** when this is discovered)  
-4. `mish` — The Town  
-5. `monastery-wind` — The Oracle  
-6. `tower-nine` — The Tower of the Nine  
-7. `sinn` — The Moon Court  
-8. `indras-na` — The Western Garrison (**finale**)
+4. `monastery-wind` — The Oracle  
+5. `tower-nine` — The Tower of the Nine  
+6. `sinn` — The Moon Court  
+7. `indras-na` — The Western Garrison (**finale**)
+
+(`mish` is a **cartographer site** and guardian name only — not a journey step.)
 
 **Unlock rules**
 
 - Next incomplete step gets the **golden glow** (`getNextPathLocation` → `drawBeaconGlows`).
-- Journey stops use **chime / hotspot search** (pinhole → find key), including city-typed stops on the path (`mish`, `sinn`, `indras-na`).
+- Journey stops use **chime / hotspot search** (pinhole → find key), including city-typed stops on the path (`sinn`, `indras-na`).
 - Tutorial (`!discovered['sabellas-hut']`): only `tutorialHintLoc` is clickable.
 - **Indras Na** stays sealed until:
   1. All prior journey steps complete, **and**
@@ -52,7 +53,7 @@ Order in `data.js` → `window.JOURNEY_PATH`:
 - Fog clear + marker + discovery panel  
 - Advances golden glow to the next step  
 - May fire a Sabella letter (Secrets) at five stops when messages are enabled  
-- Completing all 8 + regions triggers journey finale constellation / toast (`checkJourneyFinale`)  
+- Completing all 7 + regions triggers journey finale constellation / toast (`checkJourneyFinale`)  
 - Completing Indras Na can show the Vol 2 congratulations toast (`maybeShowVol2GateToast`)
 
 ### 1.2 Territories (17 regions)
@@ -82,7 +83,7 @@ IDs (`cartographerSite: true`):
 
 `nin`, `atras-lin`, `erra`, `mish`, `denegoth`, `belu`, `caeth-nul`, `caeti`, `brea`, `skull-city`, `port-sham`, `ashal`, `the-gates`
 
-Note: `mish` is both a journey stop and a cartographer site.
+Note: `mish` is a cartographer site (and guardian name) — **not** on Elena’s Journey (build 185+).
 
 **Unlock rules (amber beacon)**
 
@@ -227,7 +228,7 @@ One-shot post-tutorial toast after Sabella’s Hut (`showPostTutorialHint`, LS `
 | Flag | File | Value | Notes |
 |------|------|-------|-------|
 | `ENABLE_VOL2_JOURNEY_GATE` | `fog.js` | **true** | Prod-intended; kill switch available |
-| `ENABLE_SABELLA_MESSAGES` | `fog.js` | **true** | Comment: local demo ON; set false before prod |
+| `ENABLE_SABELLA_MESSAGES` | `fog.js` | **true** | Intentionally ON for beta (Jon 2026-07-10); per-player kill LS |
 | `ENABLE_SABELLA_CLUE_POPUPS` | `fog.js` | **false** | Opt-in via `?sabellaclues` / LS |
 | `ENABLE_CUNEIFORM_BUTTONS` | `index.html` | **true** | Comment: local demo only — revert before prod |
 | `ENABLE_READER_MAGNIFY` | `reader/overlay/spike.js` | **true** | Reader plugin; separate from map fog |
@@ -239,7 +240,7 @@ One-shot post-tutorial toast after Sabella’s Hut (`showPostTutorialHint`, LS `
 1. Pass cartographer gate (`hollowlands9` → `intrepid_cartographer_unlocked`).  
 2. Tutorial: click golden lights at crossing-pool → dawn-spear (instant); read/close card when prompted.  
 3. Sabella’s Hut: first full chime search; letter may fire (Secrets). Tutorial ends; Cartographer’s Charge explains glow colors.  
-4. Follow **golden** glow along Elena’s path (mish → … → sinn), using chime search at each stop; optional letters at monastery / tower / sinn.  
+4. Follow **golden** glow along Elena’s path (monastery-wind → tower-nine → sinn → indras-na), using chime search at each stop; optional letters at monastery / tower / sinn.  
 5. In parallel / between stops: click **orange** territories and **amber** sites as they appear near cleared fog; ranks and guardian clock advance with regions.  
 6. Use **Guide Me** if lost; progress panel shows four tracks.  
 7. When all regions + sites (+ 4 letters if messages on) are done and path is through sinn, **Indras Na** golden-glows; chime search then Vol 1 congrats (no letter at Indras).  
@@ -265,8 +266,8 @@ One-shot post-tutorial toast after Sabella’s Hut (`showPostTutorialHint`, LS `
 - **“Random glowing dots”:** Post-tutorial, orange + amber beacons can litter the viewport whenever proximity rules fire. Charge explains colors once; afterward there is little *priority* besides Guide Me / golden path. Multiple amber sites can feel samey.  
 - **Weak economy between tiers:** Territories buy clock unlocks; sites mostly buy Indras Na checklist progress; letters buy Indras Na (when flag on) + Secrets bar. Completing a site rarely *changes* what you can do next beyond the bar. Journey is the only track with a strong sequential fantasy.  
 - **Reading lore is optional:** After tutorial close-card, discovery opens the side panel automatically but nothing gates progress on reading `desc`/`lore`. Skip-clicking is optimal for completionists.  
-- **Data vs playable set:** Large `LOCATIONS` catalog vs 17+13+8(+5) collectibles — many named places never glow. Atlas richness without interaction.  
-- **Dual identity of Mish:** City site + journey stop + guardian name — easy to conflate “found Mish on the map” with “Mish guardian awakened.”  
+- **Data vs playable set:** Large `LOCATIONS` catalog vs 17+13+7(+4) collectibles — many named places never glow. Atlas richness without interaction.  
+- **Dual identity of Mish:** City site + guardian name — easy to conflate “found Mish on the map” with “Mish guardian awakened” (Mish is **not** a journey step as of build 185).  
 - **Vol 2 gate vs path length:** Gate code is live, but with only indras-na after sinn, sealing logic does little; toast carries the narrative. Risk of over-promising “sealed road” that isn’t on the map yet.  
 - **Waters vs Territories bar:** Seas glow/click as territories but do not increment the Territories / clock counter — subtle inconsistency.  
 - **Secrets row** appears only with a demo flag; prod-off would hide a whole track players may have seen in demos.

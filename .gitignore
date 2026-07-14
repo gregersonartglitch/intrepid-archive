@@ -1,2 +1,5 @@
 # Local Netlify folder
 .netlify
+
+# npm (Stripe SDK for Netlify functions)
+node_modules/

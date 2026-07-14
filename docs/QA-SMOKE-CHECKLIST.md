@@ -11,11 +11,11 @@ node scripts/smoke-journey-flow.js
 
 Smoke script must exit **0**. It checks:
 
-- Post-Sabella `getNextPathLocation()` → `mish` (not null)
-- Journey 5/8 + Elil awakened → Vol2 gate **not** blocking, toast flag **not** set
+- Post-Sabella `getNextPathLocation()` → `monastery-wind` (not null; Mish is **off** Elena’s Journey)
+- Journey ~5/7 (through monastery / tower) + Elil awakened → Vol2 gate **not** blocking, toast flag **not** set
 - Stale `revealedGods.Mish` below discovery 13 → pruned, gate stays off
-- First Mish guardian reveal → gate blocks, toast eligible
-- Elil reveal after Mish → no duplicate Vol2 toast
+- First Mish **guardian** reveal → gate blocks, toast eligible (guardian ≠ map stop)
+- Elil reveal after Mish guardian → no duplicate Vol2 toast
 - Chime `exitSearchMode()` clears `searchMode` on key found
 
 ## Manual browser pass
@@ -25,18 +25,19 @@ Dev server: `npx http-server . -p 8080 --cors -c-1` → `http://localhost:8080`
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | Fresh `?reset` → enter `hollowlands9` | Tutorial starts at Crossing Pool |
-| 2 | Complete tutorial through Sabella's Hut | Golden glow on **mish** (town); orange/yellow beacons appear |
-| 3 | Advance journey to ~5/8 (through Monastery of the Wind) | No "Congratulations" Vol2 modal |
-| 4 | Awaken frame gods through Elil (2pm) without Mish (6pm) | Elil ceremony only; **no** Vol2 modal |
+| 2 | Complete tutorial through Sabella's Hut | Golden glow on **monastery-wind**; orange/yellow beacons appear |
+| 3 | Advance journey to ~5/7 (through Monastery of the Wind / Tower Nine) | No "Congratulations" Vol2 modal |
+| 4 | Awaken frame gods through Elil (2pm) without Mish guardian (6pm) | Elil ceremony only; **no** Vol2 modal |
 | 5 | Reach discovery **13** — Mish guardian (6pm) awakens | Mish medallion ceremony **then** Vol2 congratulations modal |
 | 6 | Complete a chime search (key found) | Directional arrow / lantern gone immediately; no lingering search UI |
 | 7 | After Mish guardian, journey continues | Golden glow on **tower-nine** / **sinn** — not sealed until post-sinn |
 
 ## Vol2 gate invariants
 
-- Toast + journey seal tied to **Mish guardian** (`revealGod`, unlock 13) — **not** Mish map location, not discovery count alone, not Elil/other gods
+- Toast + journey seal tied to **Mish guardian** (`revealGod`, unlock 13) — **not** Mish map location (Mish is cartographer site only, not a journey step), not discovery count alone, not Elil/other gods
 - `VOL2_JOURNEY_CAP_ID` = `sinn` — player finishes sinn before `indras-na` seals
 - Kill switch: `ENABLE_VOL2_JOURNEY_GATE = false` in `fog.js`
+- Live path (build 185+): **7** stops — `crossing-pool` → `dawn-spear` → `sabellas-hut` → `monastery-wind` → `tower-nine` → `sinn` → `indras-na`
 
 ## When to run smoke script
 

@@ -60,11 +60,13 @@ Prefer **B-thin first:** dim non-focus beacons — **do not hide** — before Pr
 
 ---
 
-## Decide first (blocking)
+## Decided — Sabella letters: ON
 
-**Secrets / Sabella letters:** ship **ON**, **OFF**, or **opt-in**?
+**Jon's call, 2026-07-10: `ENABLE_SABELLA_MESSAGES` stays ON for the reviewer round.** Letters are the strongest story fruit in the build and the reviewers are exactly who should react to them. Prod decision follows reviewer feedback.
 
-Today the flag is demo-ON, and letters 1–4 gate Indras Na when ON. Collection economy sits on sand until this is decided for reviewers and prod.
+**Known cost:** letters 1–4 gate Indras Na while ON. If any reviewer reports being stuck at the finale, the letter gate is the first suspect — check `intrepid_sabella_messages_seen` before debugging anything else.
+
+**Prod note:** the "set false before prod" comment in `fog.js` is now superseded for the reviewer deploy; final prod state still TBD after feedback.
 
 ---
 
@@ -73,7 +75,7 @@ Today the flag is demo-ON, and letters 1–4 gate Indras Na when ON. Collection 
 | Flag | Risk |
 |------|------|
 | `ENABLE_CUNEIFORM_BUTTONS` | Demo-only ON — confirm before prod / before reviewers ≠ local demo |
-| `ENABLE_SABELLA_MESSAGES` | Demo-only ON — same; ties to Indras Na letter gate |
+| `ENABLE_SABELLA_MESSAGES` | **Decided ON for reviewer round** (Jon, 2026-07-10) — letter gate on Indras Na is live; see Decided section |
 | `ENABLE_VOL2_JOURNEY_GATE` | Armed; after Sinn the map is mostly toast-only today |
 
 Map’s next real product job is the **bridge to Vol 2 KS (Dec)**. Copy polish serves that better than new gate systems.

@@ -56,7 +56,16 @@ const pageEntries = [
   ...coverSpread,
   ...contentPages.flatMap((page) => {
     if (page.contentNumber === 43) {
-      return [{ blank: true, label: "Chapter 3 spacer" }, page];
+      // PrologueReversed tip-in: left page of the Chapter 3 cover spread.
+      // Keeps Ch.3 opener on the right; not a content-number slot (counter stays 43/68).
+      return [
+        {
+          spacer: true,
+          label: "Chapter 3 spacer",
+          src: "./assets/pages/chapter-3-spacer.webp",
+        },
+        page,
+      ];
     }
 
     return [page];
@@ -82,7 +91,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Build 180: legacy no longer soft-opens empty/white. Deadline hard-fails like
 // lifecycle unless the critical opening spread is already paint-ready.
-const PAGE_ASSET_VERSION = 180;
+const PAGE_ASSET_VERSION = 181;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
@@ -204,6 +213,9 @@ function manifestAssetIdForEntry(entry) {
   }
   if (entry.cover) {
     return "cover-hardcover";
+  }
+  if (entry.spacer) {
+    return "chapter-3-spacer";
   }
   if (entry.contentNumber) {
     return "page-" + String(entry.contentNumber).padStart(3, "0");
@@ -1444,7 +1456,9 @@ function buildPageElements() {
     const image = document.createElement("img");
     image.alt = entry.cover
       ? "Intrepid Dusk Volume 1 cover"
-      : `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
+      : entry.spacer
+        ? entry.label || "Intrepid Dusk Volume 1 chapter tip-in"
+        : `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
     image.width = NATIVE_PAGE_WIDTH;
     image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";

@@ -72,18 +72,17 @@ Everything is inside one large IIFE `(function() { ... })()`. Key sections:
 }
 ```
 
-### Journey Path (8 steps)
+### Journey Path (7 steps — Mish off Elena’s Journey as of build 185)
 ```
 1. crossing-pool    → Into the Hollowlands
 2. dawn-spear       → Sabella's Clearing  
 3. sabellas-hut     → Grandmother's Trail  ← tutorial ends here
-4. mish             → step 4
-5. monastery-wind   → The Oracle
-6. tower-nine       → Tower of the Nine
-7. sinn             → step 7
-8. indras-na        → FINAL STOP (locked until all territories + 12 sites found)
+4. monastery-wind   → The Oracle
+5. tower-nine       → Tower of the Nine
+6. sinn             → The Moon Court
+7. indras-na        → FINAL STOP (locked until all territories + sites found)
 ```
-
+(`mish` remains a cartographer site / guardian name — **not** a journey step.)
 ---
 
 ## Current Game Logic Rules
@@ -125,8 +124,7 @@ Locked behind ALL territories (17) AND ALL cartographer sites (13) being discove
 
 ### High Priority
 - [ ] **Location positions** — many locations need repositioning. Use `?edit` URL param to drag-and-drop in the browser. Coordinates log to F12 Console. Update `data.js` with new `lat`/`lng` values.
-- [ ] **Monastery of the Wind** — verify it has a visible glow and is clickable after Tower of Nine area is reached (they're both story types, proximity 234 units from Sabella's Hut)
-- [ ] **Mish (step 4)** — golden glow clickability. Direct glow-click bypass is in fog.js (lines ~370-390) but needs testing. Mish is ~2000 units from tutorial cluster so the golden glow (section 3) is the only indicator.
+- [ ] **Monastery of the Wind (step 4)** — post-Sabella golden glow / clickability. Next stop after tutorial (build 185+); Mish is **not** on Elena’s Journey.
 - [ ] **Section 3b gate** — currently uses `!discovered['sabellas-hut']` as the gate. After tutorial, territories within 500 units of any discovered non-territory location show orange glows.
 
 ### Medium Priority
@@ -158,7 +156,7 @@ Locked behind ALL territories (17) AND ALL cartographer sites (13) being discove
 
 ### Left Panel
 - Cartographer progress panel (bottom-left, fixed)
-- Shows: Elena's Journey X/8, Territories X/17, Cities & Sites X/13
+- Shows: Elena's Journey X/7, Territories X/17, Cities & Sites X/13
 
 ---
 
@@ -193,10 +191,10 @@ assets/gods/          — god/guardian sprites
 1. **Fixed black map** — corrupted `if (state === 'clear') return;` in Leaflet region renderer (index.html ~line 3161) was replaced with a close-button check; restored correctly.
 2. **isClickable rewrite** — now enforces glow-visibility = clickable. No glow → not clickable, full stop.
 3. **Tutorial lock** — during tutorial (before sabellas-hut found), ONLY the golden hint glow is clickable. No territories, no cities.
-4. **tutorialBlocked fix** — golden glow for Mish now shows immediately when sabellas-hut is discovered (not waiting for auto-toast timers).
+4. **tutorialBlocked fix** — golden glow for next journey stop (now monastery-wind) shows immediately when sabellas-hut is discovered (not waiting for auto-toast timers).
 5. **Direct glow click bypass** — clicking within 130px of section-3 golden glow triggers next journey step directly.
 6. **Orange/Yellow beacon rewrite** — territories = orange (unlocked by nearby discovery), locations = yellow.
-7. **Removed auto-pan to Mish** — was jarring; user explores at own pace.
+7. **Removed auto-pan to distant next stop** — was jarring; user explores at own pace.
 8. **Golden glow reduced** — from 90px outer radius to 50px, less sun-like.
 9. **Button layout** — Elena's Journey and Guide Me now sit side-by-side, not stacked.
 10. **Close button** — now reads "✕ Close" (text label), amber colored, clearly visible.

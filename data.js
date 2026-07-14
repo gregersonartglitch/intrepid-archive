@@ -533,7 +533,8 @@ window.LOCATIONS = [
     desc: 'A clearing in the Matgul canopy where light falls in a single shaft regardless of cloud or hour. Here Elena found the Dawn Spear waiting in the hollow of a dead tree, untouched by rot, humming at a frequency she recognized though she had never heard it before.',
     lore: '"The Spear was not forged. The Spear was promised. It waited in the wood for the one who would carry the promise forward."',
     journeyStep: 2,
-    volume1: true
+    volume1: true,
+    art: 'dawn-spear.jpg'
   },
   {
     id: 'sabellas-hut',
