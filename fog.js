@@ -615,6 +615,9 @@
         if (keyDist < clickRadius) {
           e.stopPropagation();
           e.preventDefault();
+          // Charting the mark must not skip an unseen Sabella letter (KEY_CLICK
+          // does not require Hot — grant parchment first, then chart / recover).
+          ensureSabellaLetterBeforeChart(searchMode.loc);
           if (searchMode.letterRecovery) {
             finishLetterRecoverySearch(searchMode.loc);
           } else {
@@ -707,6 +710,7 @@
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
         if (keyDist < touchClickRadius) { // slightly larger for touch
           e.preventDefault();
+          ensureSabellaLetterBeforeChart(searchMode.loc);
           if (searchMode.letterRecovery) {
             finishLetterRecoverySearch(searchMode.loc);
           } else {
@@ -1731,8 +1735,52 @@
     wireLockedMsgDismiss(el, isWelcome ? 9000 : 7000);
   }
 
+  // Ceremony queue — never auto-cover guardian medallion lore / Sabella parchment / locked-msg.
+  // Used by archive-complete toast + Vol2 Indras congrats. Sequencing only — no feature flag.
+  function isBlockingCeremonyOpen() {
+    var card = document.getElementById('discovery-card');
+    if (card && card.classList.contains('visible')) return true;
+    if (document.getElementById('sabella-message-popup')) return true;
+    if (document.getElementById('locked-msg')) return true;
+    return false;
+  }
+
+  // Queue a congrats modal until open lore UI is dismissed. graceForOpen waits for a
+  // ceremony that is about to open (e.g. revealGod → showMedallionCard at ~600ms).
+  function runAfterCeremonyClear(fn, opts) {
+    opts = opts || {};
+    var minDelay = opts.minDelay != null ? opts.minDelay : 0;
+    var graceForOpen = opts.graceForOpen != null ? opts.graceForOpen : 1600;
+    var pollMs = 400;
+    var started = Date.now();
+    var sawCeremony = false;
+
+    function tick() {
+      var elapsed = Date.now() - started;
+      var open = isBlockingCeremonyOpen();
+      if (open) sawCeremony = true;
+
+      if (elapsed < minDelay) {
+        setTimeout(tick, Math.min(pollMs, minDelay - elapsed));
+        return;
+      }
+      if (open) {
+        setTimeout(tick, pollMs);
+        return;
+      }
+      // Still in grace and nothing opened yet — give Mish/guardian card time to appear
+      if (!sawCeremony && elapsed < minDelay + graceForOpen) {
+        setTimeout(tick, Math.min(200, (minDelay + graceForOpen) - elapsed));
+        return;
+      }
+      fn();
+    }
+    setTimeout(tick, 0);
+  }
+
   // Vol 1 finale reward — fires once when Indras Na is fully discovered (not on Mish reveal).
   // No Sabella letter at Indras Na; congrats runs on discovery complete (letters end at Sinn).
+  // Deferred if Mish guardian card (or other lore ceremony) is open / about to open.
   function maybeShowVol2GateToast() {
     if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return;
     if (!isFullyDiscovered(FINAL_ELENA_STOP)) return;
@@ -1740,7 +1788,10 @@
       if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
       localStorage.setItem(VOL2_GATE_TOAST_LS, '1');
     } catch (e) {}
-    setTimeout(function() { showVol2LockedMessage(true); }, 1400);
+    runAfterCeremonyClear(function() { showVol2LockedMessage(true); }, {
+      minDelay: 1400,
+      graceForOpen: 1600
+    });
   }
 
 
@@ -2894,6 +2945,17 @@
     showChimeSearchTeachTip(loc);
     ensureChimeWarmthHud();
 
+    // Letter-stop keys sit on the beacon — Hot is already true at the mark.
+    // Do not wait for draw()+spotlight: mousemove often detaches the lantern
+    // before the first Hot check, so the parchment never fires until Guide Me.
+    if ((letterStop || letterRecovery) && isSabellaMessagesEnabled() &&
+        hasUnseenSabellaMessage(loc.id)) {
+      setTimeout(function() {
+        if (!searchMode || searchMode.locId !== loc.id || searchMode.silenced) return;
+        maybeShowSabellaLetterOnChime(1);
+      }, 500);
+    }
+
     console.log('[FOG] Search mode: find the key for', loc.name,
       letterRecovery ? '(letter recovery)' : '');
   }
@@ -2954,8 +3016,8 @@
       teachBody = 'Search with the lantern for Sabella\u2019s letter \u2014 move until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then click the mark.';
     } else if (hasLetter) {
       teachBody = firstTime
-        ? 'Sabella left a letter here \u2014 move your lantern until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> to find the parchment, then click again to chart the mark.'
-        : 'Lantern to <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter, then click to chart.';
+        ? 'Sabella left a letter at this mark \u2014 keep the lantern on the glow until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> (the parchment appears), then click again to chart the place.'
+        : 'Lantern on the mark until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter, then click to chart.';
     } else {
       teachBody = firstTime
         ? 'The mark is hidden nearby \u2014 move your lantern until it glows warmer, then <strong style="color:#d4a843;font-weight:600;">click again</strong> to chart it.'
@@ -3201,7 +3263,8 @@
   /* ════════════════════════════════════════════════
      SABELLA JOURNEY LETTERS (chime-hot Secret finds, 4 stops)
      Last letter at Sinn; Indras Na has no parchment (congrats on complete).
-     Primary: proximity crosses "hot" band during searchMode
+     Primary: proximity crosses "hot" band during searchMode (letter-stop
+       keys sit on the beacon — enterSearchMode / KEY_CLICK also grant Hot)
      Recovery: click the completed letter-stop marker, or Guide Me → lantern search
      Never: random fog clicks away from the marker / search key
      Flag: ENABLE_SABELLA_MESSAGES — local demo ON; false before prod
@@ -3344,7 +3407,8 @@
   function maybeShowSabellaLetterOnChime(proximity) {
     if (!isSabellaMessagesEnabled() || !searchMode || searchMode.silenced) return;
     if (document.getElementById('sabella-message-popup')) return;
-    if (sabellaMessagePending) return;
+    // Note: do not bail on sabellaMessagePending — scheduled chart-fallback must not
+    // block Hot / beacon grant while the player is still in searchMode.
 
     var locId = searchMode.locId;
     if (!SABELLA_MESSAGES[locId] || !hasUnseenSabellaMessage(locId)) return;
@@ -3354,6 +3418,7 @@
     searchMode.sabellaLetterFired = true;
     if (!searchMode.clueBandsFired) searchMode.clueBandsFired = {};
     searchMode.clueBandsFired.hot = true;
+    sabellaMessagePending = false;
 
     var wasRecovery = !!searchMode.letterRecovery;
     showSabellaMessagePopup(locId, SABELLA_MESSAGES[locId]);
@@ -3362,6 +3427,34 @@
       if (searchMode) searchMode.silenced = true;
       exitSearchMode();
     }
+  }
+
+  // KEY_CLICK can chart without ever reading Hot in the HUD — still grant the letter.
+  function ensureSabellaLetterBeforeChart(loc) {
+    if (!loc || !searchMode) return;
+    if (!isSabellaMessagesEnabled()) return;
+    if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return;
+    if (searchMode.sabellaLetterFired) return;
+    maybeShowSabellaLetterOnChime(1);
+  }
+
+  // Overlays that should delay parchment (visible only — faded tut toasts must not soft-lock).
+  function isSabellaLetterUiBlocked() {
+    var panelEl = document.getElementById('panel');
+    var cardEl = document.getElementById('discovery-card');
+    if (panelEl && panelEl.classList.contains('open')) return true;
+    if (cardEl && cardEl.classList.contains('visible')) return true;
+    function overlayVisible(id) {
+      var el = document.getElementById(id);
+      if (!el) return false;
+      try {
+        var op = parseFloat(window.getComputedStyle(el).opacity);
+        if (!isNaN(op) && op < 0.05) return false;
+      } catch (e) {}
+      return true;
+    }
+    return overlayVisible('tutorial-persistent-toast') ||
+      overlayVisible('post-tutorial-hint');
   }
 
   function dismissSabellaMessagePopup() {
@@ -3443,7 +3536,7 @@
   // Fallback: discovery-complete if letter still unseen (e.g. skipped hot band).
   // Primary path is maybeShowSabellaLetterOnChime — seen LS dedupes both.
   // Optional onDismiss runs after Close (road letters only; Indras uses maybeShowVol2GateToast directly).
-  // Never wait forever on #locked-msg (that soft-locked Secrets at 3/4).
+  // Never wait forever on #locked-msg / invisible tut toasts (that soft-locked Secrets).
   function scheduleSabellaMessage(loc, onDismiss) {
     function finishSkip() {
       if (onDismiss) setTimeout(onDismiss, 1400);
@@ -3464,19 +3557,16 @@
 
     sabellaMessagePending = true;
     sabellaMessageOnDismiss = onDismiss || null;
+    var startedAt = Date.now();
+    var maxWaitMs = 12000;
 
     function tryShow() {
-      var panelEl = document.getElementById('panel');
-      var cardEl = document.getElementById('discovery-card');
-      var panelOpen = panelEl && panelEl.classList.contains('open');
-      var cardOpen = cardEl && cardEl.classList.contains('visible');
-      var tutToast = document.getElementById('tutorial-persistent-toast');
-      var postHint = document.getElementById('post-tutorial-hint');
       // Dismiss locked modal — letter reveal must not soft-lock behind it
       var lockedMsg = document.getElementById('locked-msg');
       if (lockedMsg && lockedMsg.parentNode) lockedMsg.parentNode.removeChild(lockedMsg);
 
-      if (panelOpen || cardOpen || tutToast || postHint) {
+      var waitedLong = (Date.now() - startedAt) >= maxWaitMs;
+      if (!waitedLong && isSabellaLetterUiBlocked()) {
         setTimeout(tryShow, 400);
         return;
       }
@@ -3931,10 +4021,12 @@
     finaleState.journey = true;
     try { localStorage.setItem('intrepid_atlas_finales', JSON.stringify(finaleState)); } catch(e) {}
     if (window.closeLocationPanel) window.closeLocationPanel();
-    // Brief beat for the last chime, then constellation + congratulations
+    // Brief beat for the last chime, then constellation. Archive-complete overlay
+    // waits until Mish (or any) guardian/lore card is dismissed — same progress tick
+    // often reveals Mish (Indras Na + 17 territories) while journey finale also fires.
     buildConstellationLines();
     setTimeout(drawConstellationAnimation, 350);
-    setTimeout(showJourneyToast, 1100);
+    runAfterCeremonyClear(showJourneyToast, { minDelay: 1100, graceForOpen: 1600 });
   }
 
   function checkVol1Finale() {

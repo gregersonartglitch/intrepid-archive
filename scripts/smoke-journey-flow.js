@@ -802,6 +802,15 @@ assert(fogSrc.indexOf('function enterLetterSearchMode') > -1 &&
   'letter-recovery search mode places key on beacon');
 assert(/SABELLA_MESSAGES\[loc\.id\][\s\S]*?getInteractionLatLng|letterStop \|\| letterRecovery/.test(fogSrc),
   'Sabella letter-stop keys align to interaction lat/lng (no random NE offset)');
+assert(fogSrc.indexOf('function ensureSabellaLetterBeforeChart') > -1 &&
+  fogSrc.indexOf('ensureSabellaLetterBeforeChart(searchMode.loc)') > -1,
+  'KEY_CLICK grants Sabella letter before charting (cannot skip Hot)');
+assert(/maybeShowSabellaLetterOnChime\(1\)/.test(fogSrc) &&
+  /letterStop \|\| letterRecovery/.test(fogSrc),
+  'letter-stop enterSearchMode grants Hot parchment without waiting on spotlight draw');
+assert(fogSrc.indexOf('function isSabellaLetterUiBlocked') > -1 &&
+  fogSrc.indexOf('maxWaitMs') > -1,
+  'scheduleSabellaMessage uses visible-overlay gate + max wait (no soft-lock)');
 assert(/completeDiscovery[\s\S]*?maybeFlyToNextJourneyStep/.test(fogSrc),
   'completeDiscovery flies toward next/sealed Indras when off-screen');
 assert(fogSrc.indexOf('locked-msg-close') > -1 &&
