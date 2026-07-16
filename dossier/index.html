@@ -6,7 +6,7 @@
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="preload" as="image" href="character%20dossier_Elena.png?v=2" fetchpriority="high">
+<link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=4" fetchpriority="high">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -160,6 +160,7 @@ body {
 
 .ri-avatar {
   width: 48px; height: 48px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
   border: 1.5px solid rgba(198,141,85,0.25);
@@ -237,6 +238,7 @@ body {
 
 .detail-portrait {
   width: 220px; height: 220px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   overflow: hidden;
   margin: 0 auto 28px;
@@ -352,15 +354,21 @@ body {
 // ═══════════════════════════════════════════
 // CHARACTER DATA
 // ═══════════════════════════════════════════
-var CACHE_V = '2';
+/* Bump when thumbs/portraits change. Source PNGs are not served (see .netlifyignore). */
+var CACHE_V = '4';
+var DOSSIER_BASE = '/dossier/';
 
-function thumbSrc(imgPath) {
-  var name = decodeURIComponent(imgPath).replace(/\.png$/i, '');
-  return 'thumbs/' + name.replace(/ /g, '_') + '.webp?v=' + CACHE_V;
+function assetBaseName(imgPath) {
+  return decodeURIComponent(imgPath).replace(/\.png$/i, '').replace(/ /g, '_');
 }
 
-function fullSrc(imgPath) {
-  return imgPath + '?v=' + CACHE_V;
+function thumbSrc(imgPath) {
+  return DOSSIER_BASE + 'thumbs/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
+}
+
+/* Medium WebP for detail (~640px). Absolute path avoids /dossier vs /dossier/ breakage. */
+function portraitSrc(imgPath) {
+  return DOSSIER_BASE + 'portraits/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
 }
 
 function bindPortraitLoad(img, container) {
@@ -374,9 +382,25 @@ function bindPortraitLoad(img, container) {
   } else {
     img.addEventListener('load', done, { once: true });
     img.addEventListener('error', function() {
+      /* Never leave the gold circle empty — keep shimmer off and show whatever we can. */
       if (container) container.classList.remove('is-loading');
+      if (!img.classList.contains('is-loaded')) {
+        img.classList.add('is-loaded');
+      }
     }, { once: true });
   }
+}
+
+/* Detail: paint thumb immediately, then upgrade to medium WebP only (never full PNG). */
+function bindDetailPortrait(img, container, imgPath) {
+  bindPortraitLoad(img, container);
+  var hi = new Image();
+  hi.decoding = 'async';
+  hi.onload = function() {
+    if (!img.isConnected) return;
+    img.src = hi.src;
+  };
+  hi.src = portraitSrc(imgPath);
 }
 
 var CHARACTERS = [
@@ -513,7 +537,7 @@ function selectCharacter(index) {
   detailInner.style.animation = '';
 
   var html =
-    '<div class="detail-portrait is-loading"><img src="' + fullSrc(c.img) + '" alt="' + c.name + '" loading="eager" decoding="async" fetchpriority="high"></div>' +
+    '<div class="detail-portrait is-loading"><img src="' + thumbSrc(c.img) + '" alt="' + c.name + '" width="220" height="220" loading="eager" decoding="async" fetchpriority="high"></div>' +
     '<div class="detail-name">' + c.name + '</div>' +
     '<div class="detail-role">' + c.role + '</div>' +
     '<div class="detail-divider"></div>' +
@@ -525,7 +549,7 @@ function selectCharacter(index) {
 
   var portraitWrap = detailInner.querySelector('.detail-portrait');
   var portraitImg = portraitWrap && portraitWrap.querySelector('img');
-  if (portraitImg) bindPortraitLoad(portraitImg, portraitWrap);
+  if (portraitImg) bindDetailPortrait(portraitImg, portraitWrap, c.img);
 
   // Scroll detail to top
   document.getElementById('detail').scrollTop = 0;
@@ -535,9 +559,12 @@ function selectCharacter(index) {
 function preloadNearbyPortraits(index) {
   [index + 1, index - 1].forEach(function(i) {
     if (!CHARACTERS[i] || CHARACTERS[i]._preloaded) return;
-    var img = new Image();
-    img.decoding = 'async';
-    img.src = fullSrc(CHARACTERS[i].img);
+    var thumb = new Image();
+    thumb.decoding = 'async';
+    thumb.src = thumbSrc(CHARACTERS[i].img);
+    var port = new Image();
+    port.decoding = 'async';
+    port.src = portraitSrc(CHARACTERS[i].img);
     CHARACTERS[i]._preloaded = true;
   });
 }

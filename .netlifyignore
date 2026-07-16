@@ -1,0 +1,6 @@
+# Dossier source masters (~47MB). Runtime uses thumbs/ + portraits/ WebP only.
+dossier/*.png
+dossier/_thumb_sizes.txt
+
+# Local scratch — never publish
+.tmp/
