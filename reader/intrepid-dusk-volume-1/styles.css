@@ -453,7 +453,8 @@ h1 {
   min-width: 0;
   min-height: 0;
   background: var(--ink);
-  filter: drop-shadow(0 28px 70px rgba(0, 0, 0, 0.62));
+  /* box-shadow avoids filter repaints on every StPageFlip transform frame */
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.62);
 }
 
 .book canvas {
@@ -466,6 +467,17 @@ h1 {
 .sft__wrapper,
 .stf__block {
   background: var(--ink);
+}
+
+.stf__item {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Promote flip layers only while curling — avoids permanent will-change cost */
+.book.is-flipping .stf__item,
+.book.is-flipping .stf__block {
+  will-change: transform;
 }
 
 .reader-page {
