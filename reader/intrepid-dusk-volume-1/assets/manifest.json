@@ -17,7 +17,7 @@
       "issue": "001",
       "issuePage": 1,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-001.webp",
       "fallback": "./pages/page-001.jpg"
     },
@@ -26,7 +26,7 @@
       "issue": "001",
       "issuePage": 2,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-002.webp",
       "fallback": "./pages/page-002.jpg"
     },
@@ -35,7 +35,7 @@
       "issue": "001",
       "issuePage": 3,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-003.webp",
       "fallback": "./pages/page-003.jpg"
     },
@@ -44,7 +44,7 @@
       "issue": "001",
       "issuePage": 4,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-004.webp",
       "fallback": "./pages/page-004.jpg"
     },
@@ -53,7 +53,7 @@
       "issue": "001",
       "issuePage": 5,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-005.webp",
       "fallback": "./pages/page-005.jpg"
     },
@@ -62,7 +62,7 @@
       "issue": "001",
       "issuePage": 6,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-006.webp",
       "fallback": "./pages/page-006.jpg"
     },
@@ -71,7 +71,7 @@
       "issue": "001",
       "issuePage": 7,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-007.webp",
       "fallback": "./pages/page-007.jpg"
     },
@@ -80,7 +80,7 @@
       "issue": "001",
       "issuePage": 8,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-008.webp",
       "fallback": "./pages/page-008.jpg"
     },
@@ -89,7 +89,7 @@
       "issue": "001",
       "issuePage": 9,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-009.webp",
       "fallback": "./pages/page-009.jpg"
     },
@@ -98,7 +98,7 @@
       "issue": "001",
       "issuePage": 10,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-010.webp",
       "fallback": "./pages/page-010.jpg"
     },
@@ -107,7 +107,7 @@
       "issue": "001",
       "issuePage": 11,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-011.webp",
       "fallback": "./pages/page-011.jpg"
     },
@@ -116,7 +116,7 @@
       "issue": "001",
       "issuePage": 12,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-012.webp",
       "fallback": "./pages/page-012.jpg"
     },
@@ -125,7 +125,7 @@
       "issue": "001",
       "issuePage": 13,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-013.webp",
       "fallback": "./pages/page-013.jpg"
     },
@@ -134,7 +134,7 @@
       "issue": "001",
       "issuePage": 14,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-014.webp",
       "fallback": "./pages/page-014.jpg"
     },
@@ -143,7 +143,7 @@
       "issue": "001",
       "issuePage": 15,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-015.webp",
       "fallback": "./pages/page-015.jpg"
     },
@@ -152,7 +152,7 @@
       "issue": "001",
       "issuePage": 16,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-016.webp",
       "fallback": "./pages/page-016.jpg"
     },
@@ -161,7 +161,7 @@
       "issue": "001",
       "issuePage": 17,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-017.webp",
       "fallback": "./pages/page-017.jpg"
     },
@@ -170,7 +170,7 @@
       "issue": "001",
       "issuePage": 18,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-018.webp",
       "fallback": "./pages/page-018.jpg"
     },
@@ -179,7 +179,7 @@
       "issue": "001",
       "issuePage": 19,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-019.webp",
       "fallback": "./pages/page-019.jpg"
     },
@@ -188,7 +188,7 @@
       "issue": "001",
       "issuePage": 20,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-020.webp",
       "fallback": "./pages/page-020.jpg"
     },
@@ -197,7 +197,7 @@
       "issue": "001",
       "issuePage": 21,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-021.webp",
       "fallback": "./pages/page-021.jpg"
     },
@@ -206,7 +206,7 @@
       "issue": "002",
       "issuePage": 1,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-022.webp",
       "fallback": "./pages/page-022.jpg"
     },
@@ -215,7 +215,7 @@
       "issue": "002",
       "issuePage": 2,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-023.webp",
       "fallback": "./pages/page-023.jpg"
     },
@@ -224,7 +224,7 @@
       "issue": "002",
       "issuePage": 3,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-024.webp",
       "fallback": "./pages/page-024.jpg"
     },
@@ -233,7 +233,7 @@
       "issue": "002",
       "issuePage": 4,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-025.webp",
       "fallback": "./pages/page-025.jpg"
     },
@@ -242,7 +242,7 @@
       "issue": "002",
       "issuePage": 5,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-026.webp",
       "fallback": "./pages/page-026.jpg"
     },
@@ -251,7 +251,7 @@
       "issue": "002",
       "issuePage": 6,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-027.webp",
       "fallback": "./pages/page-027.jpg"
     },
@@ -260,7 +260,7 @@
       "issue": "002",
       "issuePage": 7,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-028.webp",
       "fallback": "./pages/page-028.jpg"
     },
@@ -269,7 +269,7 @@
       "issue": "002",
       "issuePage": 8,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-029.webp",
       "fallback": "./pages/page-029.jpg"
     },
@@ -278,7 +278,7 @@
       "issue": "002",
       "issuePage": 9,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-030.webp",
       "fallback": "./pages/page-030.jpg"
     },
@@ -287,7 +287,7 @@
       "issue": "002",
       "issuePage": 10,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-031.webp",
       "fallback": "./pages/page-031.jpg"
     },
@@ -296,7 +296,7 @@
       "issue": "002",
       "issuePage": 11,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-032.webp",
       "fallback": "./pages/page-032.jpg"
     },
@@ -305,7 +305,7 @@
       "issue": "002",
       "issuePage": 12,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-033.webp",
       "fallback": "./pages/page-033.jpg"
     },
@@ -314,7 +314,7 @@
       "issue": "002",
       "issuePage": 13,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-034.webp",
       "fallback": "./pages/page-034.jpg"
     },
@@ -323,7 +323,7 @@
       "issue": "002",
       "issuePage": 14,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-035.webp",
       "fallback": "./pages/page-035.jpg"
     },
@@ -332,7 +332,7 @@
       "issue": "002",
       "issuePage": 15,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-036.webp",
       "fallback": "./pages/page-036.jpg"
     },
@@ -341,7 +341,7 @@
       "issue": "002",
       "issuePage": 16,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-037.webp",
       "fallback": "./pages/page-037.jpg"
     },
@@ -350,7 +350,7 @@
       "issue": "002",
       "issuePage": 17,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-038.webp",
       "fallback": "./pages/page-038.jpg"
     },
@@ -359,7 +359,7 @@
       "issue": "002",
       "issuePage": 18,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-039.webp",
       "fallback": "./pages/page-039.jpg"
     },
@@ -368,7 +368,7 @@
       "issue": "002",
       "issuePage": 19,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-040.webp",
       "fallback": "./pages/page-040.jpg"
     },
@@ -377,7 +377,7 @@
       "issue": "002",
       "issuePage": 20,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-041.webp",
       "fallback": "./pages/page-041.jpg"
     },
@@ -386,7 +386,7 @@
       "issue": "002",
       "issuePage": 21,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-042.webp",
       "fallback": "./pages/page-042.jpg"
     },
@@ -404,7 +404,7 @@
       "issue": "003",
       "issuePage": 1,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-043.webp",
       "fallback": "./pages/page-043.jpg"
     },
@@ -413,7 +413,7 @@
       "issue": "003",
       "issuePage": 2,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-044.webp",
       "fallback": "./pages/page-044.jpg"
     },
@@ -422,7 +422,7 @@
       "issue": "003",
       "issuePage": 3,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-045.webp",
       "fallback": "./pages/page-045.jpg"
     },
@@ -431,7 +431,7 @@
       "issue": "003",
       "issuePage": 4,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-046.webp",
       "fallback": "./pages/page-046.jpg"
     },
@@ -440,7 +440,7 @@
       "issue": "003",
       "issuePage": 5,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-047.webp",
       "fallback": "./pages/page-047.jpg"
     },
@@ -449,7 +449,7 @@
       "issue": "003",
       "issuePage": 6,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-048.webp",
       "fallback": "./pages/page-048.jpg"
     },
@@ -458,7 +458,7 @@
       "issue": "003",
       "issuePage": 7,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-049.webp",
       "fallback": "./pages/page-049.jpg"
     },
@@ -467,7 +467,7 @@
       "issue": "003",
       "issuePage": 8,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-050.webp",
       "fallback": "./pages/page-050.jpg"
     },
@@ -476,7 +476,7 @@
       "issue": "003",
       "issuePage": 9,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-051.webp",
       "fallback": "./pages/page-051.jpg"
     },
@@ -485,7 +485,7 @@
       "issue": "003",
       "issuePage": 10,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-052.webp",
       "fallback": "./pages/page-052.jpg"
     },
@@ -494,7 +494,7 @@
       "issue": "003",
       "issuePage": 11,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-053.webp",
       "fallback": "./pages/page-053.jpg"
     },
@@ -503,7 +503,7 @@
       "issue": "003",
       "issuePage": 12,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-054.webp",
       "fallback": "./pages/page-054.jpg"
     },
@@ -512,7 +512,7 @@
       "issue": "003",
       "issuePage": 13,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-055.webp",
       "fallback": "./pages/page-055.jpg"
     },
@@ -521,7 +521,7 @@
       "issue": "003",
       "issuePage": 14,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-056.webp",
       "fallback": "./pages/page-056.jpg"
     },
@@ -530,7 +530,7 @@
       "issue": "003",
       "issuePage": 15,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-057.webp",
       "fallback": "./pages/page-057.jpg"
     },
@@ -539,7 +539,7 @@
       "issue": "003",
       "issuePage": 16,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-058.webp",
       "fallback": "./pages/page-058.jpg"
     },
@@ -548,7 +548,7 @@
       "issue": "003",
       "issuePage": 17,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-059.webp",
       "fallback": "./pages/page-059.jpg"
     },
@@ -557,7 +557,7 @@
       "issue": "003",
       "issuePage": 18,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-060.webp",
       "fallback": "./pages/page-060.jpg"
     },
@@ -566,7 +566,7 @@
       "issue": "003",
       "issuePage": 19,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-061.webp",
       "fallback": "./pages/page-061.jpg"
     },
@@ -575,7 +575,7 @@
       "issue": "003",
       "issuePage": 20,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-062.webp",
       "fallback": "./pages/page-062.jpg"
     },
@@ -584,7 +584,7 @@
       "issue": "003",
       "issuePage": 21,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-063.webp",
       "fallback": "./pages/page-063.jpg"
     },
@@ -593,7 +593,7 @@
       "issue": "003",
       "issuePage": 22,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-064.webp",
       "fallback": "./pages/page-064.jpg"
     },
@@ -602,7 +602,7 @@
       "issue": "003",
       "issuePage": 23,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-065.webp",
       "fallback": "./pages/page-065.jpg"
     },
@@ -611,7 +611,7 @@
       "issue": "003",
       "issuePage": 24,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-066.webp",
       "fallback": "./pages/page-066.jpg"
     },
@@ -620,7 +620,7 @@
       "issue": "003",
       "issuePage": 25,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-067.webp",
       "fallback": "./pages/page-067.jpg"
     },
@@ -629,9 +629,11 @@
       "issue": "003",
       "issuePage": 26,
       "width": 2200,
-      "height": 3348,
+      "height": 3360,
       "webp": "./pages/page-068.webp",
       "fallback": "./pages/page-068.jpg"
     }
-  ]
+  ],
+  "updatedAt": "2026-07-16T22:24:43.737Z",
+  "sourceMapping": "print-001..068 from Intrepid-Dusk-Interior-press_72pg_v2_SPLICED.pdf; print-069..072 omitted"
 }
