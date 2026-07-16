@@ -91,7 +91,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Build 180: legacy no longer soft-opens empty/white. Deadline hard-fails like
 // lifecycle unless the critical opening spread is already paint-ready.
-const PAGE_ASSET_VERSION = 184;
+const PAGE_ASSET_VERSION = 186;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
@@ -118,8 +118,7 @@ let backgroundWarmRanges = [];
 let legacyInFlight = 0;
 const legacyInFlightPages = new Set();
 let visibleWatchdogTimer = null;
-let flipDeferRafId = null;
-let flipTurnDeferId = null;
+// Last known flip direction for mid-curl neighbor warm (build 186).
 let lastFlipForward = true;
 let pageLifecycle = null;
 let pageManifestById = {};
@@ -1079,7 +1078,8 @@ function enqueueBackgroundPage(pageIndex) {
 }
 
 // Assign src + warm decode for current page ± NEIGHBORHOOD_RADIUS before/during flip.
-// ±1 stays sync (blank safety); outer ring defers so click/flip stays off main-thread jank.
+// Must stay synchronous — rAF-deferred outer warm was cancelled under fast click
+// and left cream "Loading page..." hung (build 184 jank regress / build 186 fix).
 function ensureNeighborhoodPages(centerIndex) {
   var center =
     typeof centerIndex === "number" && !isNaN(centerIndex)
@@ -1089,14 +1089,11 @@ function ensureNeighborhoodPages(centerIndex) {
     pageLifecycle.setCenter(center, NEIGHBORHOOD_RADIUS, PRELOAD_AHEAD);
     return;
   }
-  for (var nearOffset = -1; nearOffset <= 1; nearOffset += 1) {
-    warmPageImage(center + nearOffset, LEGACY_PRIORITY_VISIBLE);
+  for (var offset = -NEIGHBORHOOD_RADIUS; offset <= NEIGHBORHOOD_RADIUS; offset += 1) {
+    var pri =
+      Math.abs(offset) <= 1 ? LEGACY_PRIORITY_VISIBLE : LEGACY_PRIORITY_NEIGHBOR;
+    warmPageImage(center + offset, pri);
   }
-  var outerCenter = center;
-  requestAnimationFrame(function () {
-    warmPageImage(outerCenter - 2, LEGACY_PRIORITY_NEIGHBOR);
-    warmPageImage(outerCenter + 2, LEGACY_PRIORITY_NEIGHBOR);
-  });
 }
 
 function armVisibleWatchdog(centerIndex) {
@@ -1388,14 +1385,10 @@ function handlePageTurn(pageIndex) {
   lastPageIndex = pageIndex;
   setPageLabel(pageIndex);
   ensureNeighborhoodPages(pageIndex);
-  if (flipTurnDeferId != null) {
-    cancelAnimationFrame(flipTurnDeferId);
-  }
-  flipTurnDeferId = requestAnimationFrame(function () {
-    flipTurnDeferId = null;
-    preloadAround(pageIndex);
-    armVisibleWatchdog(pageIndex);
-  });
+  // Sync — deferred rAF was cancelled by the next flip before watchdog armed,
+  // leaving permanent "Loading page..." under speed-click (build 186).
+  preloadAround(pageIndex);
+  armVisibleWatchdog(pageIndex);
   return true;
 }
 
@@ -1409,63 +1402,17 @@ function requestPageTurn(targetIndex) {
   return true;
 }
 
-function nudgeFlipTargetDecode(pageIndex) {
-  if (pageIndex < 0 || pageIndex >= pageEntries.length) {
-    return;
-  }
-  if (decodedPages.has(pageIndex)) {
-    return;
-  }
-  var image = pageImages[pageIndex];
-  if (!image || !pageImageHasBitmap(pageIndex)) {
-    return;
-  }
-  if (typeof image.decode !== "function") {
-    decodedPages.add(pageIndex);
-    return;
-  }
-  try {
-    var job = image.decode();
-    if (job && typeof job.then === "function") {
-      job
-        .then(function () {
-          if (pageImageHasBitmap(pageIndex)) {
-            decodedPages.add(pageIndex);
-          }
-        })
-        .catch(function () {});
-    }
-  } catch (errDecodeNudge) {
-    /* ignore */
-  }
-}
-
-function primeFlipTarget(forward) {
+function warmFlipTargetsFromDirection(forward) {
+  lastFlipForward = forward;
   var step = forward ? 1 : -1;
-  var target = lastPageIndex + step;
+  // Ahead-of-flip warm must be sync (build 178). Double-rAF deferral from the
+  // jank pass cancelled under fast click → cold destination pages.
+  ensureNeighborhoodPages(lastPageIndex + step);
   if (pageLifecycle) {
-    pageLifecycle.enqueue(target, pageLifecycle.PRIORITY_VISIBLE);
-    return;
-  }
-  warmPageImage(target, LEGACY_PRIORITY_VISIBLE);
-  nudgeFlipTargetDecode(target);
-}
-
-function scheduleDeferredFlipWarm(forward) {
-  if (flipDeferRafId != null) {
-    cancelAnimationFrame(flipDeferRafId);
-  }
-  flipDeferRafId = requestAnimationFrame(function () {
-    flipDeferRafId = requestAnimationFrame(function () {
-      flipDeferRafId = null;
-      deferredFlipNeighborWarm(forward);
-    });
-  });
-}
-
-function deferredFlipNeighborWarm(forward) {
-  var step = forward ? 1 : -1;
-  if (pageLifecycle) {
+    pageLifecycle.enqueue(
+      lastPageIndex + step,
+      pageLifecycle.PRIORITY_VISIBLE,
+    );
     pageLifecycle.enqueue(
       lastPageIndex + step * 2,
       pageLifecycle.PRIORITY_NEIGHBOR,
@@ -1476,15 +1423,10 @@ function deferredFlipNeighborWarm(forward) {
     );
     return;
   }
+  warmPageImage(lastPageIndex + step, LEGACY_PRIORITY_VISIBLE);
   warmPageImage(lastPageIndex + step * 2, LEGACY_PRIORITY_NEIGHBOR);
   warmPageImage(lastPageIndex + step * 3, LEGACY_PRIORITY_BACKGROUND);
   preloadAround(lastPageIndex + step);
-}
-
-function warmFlipTargetsFromDirection(forward) {
-  lastFlipForward = forward;
-  primeFlipTarget(forward);
-  scheduleDeferredFlipWarm(forward);
 }
 
 function setBookFlipping(isFlipping) {
@@ -1599,6 +1541,12 @@ function createPageFlip(pageElements) {
 
   pageFlipInstance.on("changeState", (event) => {
     setBookFlipping(event.data === "flipping");
+    // Mid-curl: keep destination neighborhood hot. Directional only (not both
+    // ways) so we don't re-flood the pool the way warmBothFlipDirections did.
+    if (event.data === "flipping") {
+      ensureNeighborhoodPages(lastPageIndex);
+      warmFlipTargetsFromDirection(lastFlipForward);
+    }
   });
 
   pageFlipInstance.loadFromHTML(pageElements);
