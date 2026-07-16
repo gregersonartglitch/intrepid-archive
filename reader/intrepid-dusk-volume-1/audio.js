@@ -5,7 +5,7 @@
   var FLIP_SRC = "./assets/page-flip.mp3";
   var AMBIENT_VOLUME = 0.2;
   var AMBIENT_FADE_MS = 2500;
-  var FLIP_VOLUME = 0.8;
+  var FLIP_VOLUME = 1.0;
 
   var ambientAudio = null;
   var flipAudio = null;

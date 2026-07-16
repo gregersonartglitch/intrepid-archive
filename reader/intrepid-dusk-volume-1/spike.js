@@ -91,7 +91,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Build 180: legacy no longer soft-opens empty/white. Deadline hard-fails like
 // lifecycle unless the critical opening spread is already paint-ready.
-const PAGE_ASSET_VERSION = 182;
+const PAGE_ASSET_VERSION = 183;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
