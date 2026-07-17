@@ -809,15 +809,19 @@ assert(fogSrc.indexOf('forceShowSabellaLetter(bestMiss)') === -1,
   'no wide fog hit-test force-shows parchment (letter recovery is marker/Guide Me only)');
 assert(fogSrc.indexOf('function enterLetterSearchMode') > -1 &&
   fogSrc.indexOf('letterRecovery: true') > -1,
-  'letter-recovery search mode places key on beacon');
-assert(/SABELLA_MESSAGES\[loc\.id\][\s\S]*?getInteractionLatLng|letterStop \|\| letterRecovery/.test(fogSrc),
-  'Sabella letter-stop keys align to interaction lat/lng (no random NE offset)');
+  'letter-recovery search mode exists');
+assert(fogSrc.indexOf('function placeSearchKeyOffset') > -1 &&
+  fogSrc.indexOf('KEY_OFFSET_MIN') > -1 &&
+  fogSrc.indexOf('placeSearchKeyOffset(loc)') > -1,
+  'chime key is offset from beacon for all search enters (shared helper)');
 assert(fogSrc.indexOf('function ensureSabellaLetterBeforeChart') > -1 &&
   fogSrc.indexOf('ensureSabellaLetterBeforeChart(searchMode.loc)') > -1,
   'KEY_CLICK grants Sabella letter before charting (cannot skip Hot)');
-assert(/maybeShowSabellaLetterOnChime\(1\)/.test(fogSrc) &&
-  /letterStop \|\| letterRecovery/.test(fogSrc),
-  'letter-stop enterSearchMode grants Hot parchment without waiting on spotlight draw');
+assert(fogSrc.indexOf('maybeShowSabellaLetterOnChime(proximity)') > -1 &&
+  fogSrc.indexOf('ensureSabellaLetterBeforeChart') > -1,
+  'Sabella letters fire on chime Hot band or KEY_CLICK (not auto at beacon center)');
+assert(/glowSearching[\s\S]*?phase === 'searching'/.test(fogSrc),
+  'golden glow suppressed while journey stop is in chime search');
 assert(fogSrc.indexOf('function isSabellaLetterUiBlocked') > -1 &&
   fogSrc.indexOf('maxWaitMs') > -1,
   'scheduleSabellaMessage uses visible-overlay gate + max wait (no soft-lock)');

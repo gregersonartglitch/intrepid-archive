@@ -13,6 +13,11 @@
   var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
   var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
+  // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
+  // orb so the player can move the lantern toward a distinct hot spot — never stack
+  // the diamond on the glow they just clicked.
+  var KEY_OFFSET_MIN = 70;
+  var KEY_OFFSET_MAX = 110;
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 5000;     // ms before key starts hinting
   var CHIME_ESCAPE_MS = 60000;    // after 60s in search mode, boost hints
@@ -148,6 +153,11 @@
   var journeyPath = [];
   var fogTexture = null;
   var textureReady = false;
+  // Soft-edged tile cache — feathers fog_texture.png edges so 512px repeats
+  // don't show hard rectangular seams (worse when MAP_PERF idle drops dual layer).
+  var softFogTile = null;
+  var SOFT_FOG_TILE_SIZE = 512;
+  var SOFT_FOG_FEATHER = 40; // edge fade px; tile step = size - feather
   var tutorialStep = 0;
   var tutorialHintLoc = null;
   var tutorialHint = null;
@@ -1918,11 +1928,15 @@
     var locs = window.LOCATIONS || [];
 
     // ── Golden glow on next journey step ──
+    // Skip while that stop is in chime search — otherwise the orb sits under the
+    // hot/cold diamond and the player cannot "approach" a distinct hot spot.
     if (nextId) {
       var glowLoc = locs.find(function(l) { return l.id === nextId; });
       var tutorialBlocked = (!isPostTutorial() && tutorialHintLoc &&
                              nextId !== tutorialHintLoc.id);
-      if (glowLoc && !tutorialBlocked) {
+      var glowSearching = glowLoc && discovered[glowLoc.id] &&
+                          discovered[glowLoc.id].phase === 'searching';
+      if (glowLoc && !tutorialBlocked && !glowSearching) {
         var gpt = map.latLngToContainerPoint(getInteractionLatLng(glowLoc));
         if (gpt.x > -100 && gpt.x < w + 100 && gpt.y > -100 && gpt.y < h + 100) {
           var pulse = 0.2 + Math.sin(time * 2) * 0.1;
@@ -2999,26 +3013,27 @@
     });
   }
 
-  // Enter search mode — place a hidden key in the fog ring.
-  // Sabella letter stops: key sits on the beacon/label (no random NE offset)
-  // so lantern-hot and clickable point match the monastery marker, not mist beside it.
+  // Place the hot/cold key away from the beacon / interaction point so the diamond
+  // never stacks on the golden/amber orb the player just clicked. Shared for all
+  // chime searches (journey letter stops, cartographer sites, letter recovery).
+  function placeSearchKeyOffset(loc) {
+    var ll = getInteractionLatLng(loc);
+    var angle = Math.random() * Math.PI * 2;
+    var dist = KEY_OFFSET_MIN + Math.random() * (KEY_OFFSET_MAX - KEY_OFFSET_MIN);
+    return {
+      keyLat: ll[0] + Math.sin(angle) * dist,
+      keyLng: ll[1] + Math.cos(angle) * dist
+    };
+  }
+
+  // Enter search mode — place a hidden key in the fog ring (offset from beacon).
   function enterSearchMode(loc, opts) {
     opts = opts || {};
-    var keyLat;
-    var keyLng;
     var letterStop = !!(SABELLA_MESSAGES[loc.id]);
     var letterRecovery = !!opts.letterRecovery;
-
-    if (letterStop || letterRecovery) {
-      var ll = getInteractionLatLng(loc);
-      keyLat = ll[0];
-      keyLng = ll[1];
-    } else {
-      var angle = Math.random() * Math.PI * 2;
-      var dist = 30 + Math.random() * 30; // world units from loc center
-      keyLat = loc.lat + Math.sin(angle) * dist;
-      keyLng = loc.lng + Math.cos(angle) * dist;
-    }
+    var keyPos = placeSearchKeyOffset(loc);
+    var keyLat = keyPos.keyLat;
+    var keyLng = keyPos.keyLng;
 
     searchMode = {
       locId: loc.id,
@@ -3033,8 +3048,10 @@
       letterRecovery: letterRecovery
     };
 
-    // Initialize spotlight at the pinhole / beacon so warmth works immediately
-    var pt = map.latLngToContainerPoint([keyLat, keyLng]);
+    // Start lantern at the beacon/pinhole (cool–warm), not on the key — player
+    // must move toward the offset diamond to hear chime intensity rise.
+    var beaconLl = getInteractionLatLng(loc);
+    var pt = map.latLngToContainerPoint(beaconLl);
     spotlightPos = { x: pt.x, y: pt.y };
 
     if (map) map.getContainer().classList.add('chime-search-active');
@@ -3042,19 +3059,11 @@
     showChimeSearchTeachTip(loc);
     ensureChimeWarmthHud();
 
-    // Letter-stop keys sit on the beacon — Hot is already true at the mark.
-    // Do not wait for draw()+spotlight: mousemove often detaches the lantern
-    // before the first Hot check, so the parchment never fires until Guide Me.
-    if ((letterStop || letterRecovery) && isSabellaMessagesEnabled() &&
-        hasUnseenSabellaMessage(loc.id)) {
-      setTimeout(function() {
-        if (!searchMode || searchMode.locId !== loc.id || searchMode.silenced) return;
-        maybeShowSabellaLetterOnChime(1);
-      }, 500);
-    }
-
+    // Letters fire when lantern crosses Hot near the offset sigil (or on KEY_CLICK
+    // via ensureSabellaLetterBeforeChart) — do not auto-grant Hot at beacon center.
     console.log('[FOG] Search mode: find the key for', loc.name,
-      letterRecovery ? '(letter recovery)' : '');
+      letterRecovery ? '(letter recovery)' : '',
+      letterStop ? '(letter stop)' : '');
   }
 
   // Re-enter chime search at a completed letter-stop so the parchment is found
@@ -3360,10 +3369,10 @@
   /* ════════════════════════════════════════════════
      SABELLA JOURNEY LETTERS (chime-hot Secret finds, 4 stops)
      Last letter at Sinn; Indras Na has no parchment (congrats on complete).
-     Primary: proximity crosses "hot" band during searchMode (letter-stop
-       keys sit on the beacon — enterSearchMode / KEY_CLICK also grant Hot)
+     Primary: proximity crosses "hot" band near the offset sigil during searchMode
+       (KEY_CLICK also grants letter via ensureSabellaLetterBeforeChart)
      Recovery: click the completed letter-stop marker, or Guide Me → lantern search
-     Never: random fog clicks away from the marker / search key
+     Never: random fog clicks away from the marker / search key; never stack sigil on beacon
      Flag: ENABLE_SABELLA_MESSAGES — intentionally ON for beta (do not flip false for prod)
      Per-player kill: localStorage intrepid_sabella_messages_disabled=1
   ════════════════════════════════════════════════ */
