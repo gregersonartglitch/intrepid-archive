@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070706" />
     <title>Intrepid Dusk Volume 1 Reader</title>
-    <link rel="stylesheet" href="./styles.css?v=182" />
+    <link rel="stylesheet" href="./styles.css?v=191" />
   </head>
   <body>
     <main class="reader is-preparing" aria-label="Intrepid Dusk Volume 1 reader">
@@ -13,6 +13,52 @@
         <div class="reader-header-start">
           <a class="home-link" href="/">&larr; Archive</a>
           <button type="button" id="reader-reset-access" class="home-link reader-reset-access">Reset access</button>
+          <div class="reader-download" data-reader-download>
+            <button
+              type="button"
+              class="home-link reader-download-toggle"
+              id="reader-download-toggle"
+              aria-expanded="false"
+              aria-controls="reader-download-menu"
+              aria-haspopup="menu"
+            >Download PDF</button>
+            <div
+              id="reader-download-menu"
+              class="reader-download-menu"
+              role="menu"
+              aria-label="Download digital PDFs"
+              hidden
+            >
+              <a
+                role="menuitem"
+                class="reader-download-item"
+                href="./downloads/intrepid-dusk-volume-1.pdf"
+                download="intrepid-dusk-volume-1.pdf"
+                data-pdf-gate="full"
+              >Volume 1 (full, 68p)</a>
+              <a
+                role="menuitem"
+                class="reader-download-item"
+                href="./downloads/intrepid-dusk-chapter-1.pdf"
+                download="intrepid-dusk-chapter-1.pdf"
+                data-pdf-gate="001"
+              >Chapter 1</a>
+              <a
+                role="menuitem"
+                class="reader-download-item"
+                href="./downloads/intrepid-dusk-chapter-2.pdf"
+                download="intrepid-dusk-chapter-2.pdf"
+                data-pdf-gate="002"
+              >Chapter 2</a>
+              <a
+                role="menuitem"
+                class="reader-download-item"
+                href="./downloads/intrepid-dusk-chapter-3.pdf"
+                download="intrepid-dusk-chapter-3.pdf"
+                data-pdf-gate="003"
+              >Chapter 3</a>
+            </div>
+          </div>
           <div class="audio-toggles" aria-label="Audio controls">
             <button
               type="button"
@@ -111,6 +157,85 @@
         window.IntrepidArchiveAccess.resetArchiveAccess();
         window.location.reload();
       });
+    })();
+    </script>
+    <script>
+    (function () {
+      var root = document.querySelector("[data-reader-download]");
+      if (!root) return;
+      var toggle = document.getElementById("reader-download-toggle");
+      var menu = document.getElementById("reader-download-menu");
+      if (!toggle || !menu) return;
+
+      function hasBackerAccess() {
+        if (window.ReaderAccess && window.ReaderAccess.isIssueUnlocked) {
+          return (
+            window.ReaderAccess.isIssueUnlocked("002") ||
+            window.ReaderAccess.isIssueUnlocked("003")
+          );
+        }
+        return false;
+      }
+
+      function canDownload(gate) {
+        if (!gate || gate === "001") return true;
+        return hasBackerAccess();
+      }
+
+      function syncLockedState() {
+        var items = menu.querySelectorAll("[data-pdf-gate]");
+        var i;
+        for (i = 0; i < items.length; i += 1) {
+          var gate = items[i].getAttribute("data-pdf-gate");
+          var locked = !canDownload(gate);
+          items[i].classList.toggle("is-locked", locked);
+          items[i].setAttribute("aria-disabled", locked ? "true" : "false");
+        }
+      }
+
+      function setOpen(open) {
+        menu.hidden = !open;
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        root.classList.toggle("is-open", open);
+        if (open) syncLockedState();
+      }
+
+      toggle.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen(menu.hidden);
+      });
+
+      menu.addEventListener("click", function (e) {
+        var link = e.target.closest("[data-pdf-gate]");
+        if (!link) return;
+        var gate = link.getAttribute("data-pdf-gate");
+        if (canDownload(gate)) {
+          setOpen(false);
+          return;
+        }
+        e.preventDefault();
+        setOpen(false);
+        if (window.ReaderGate && window.ReaderGate.show) {
+          window.ReaderGate.show(gate === "003" ? "003" : "002");
+        }
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!root.contains(e.target)) setOpen(false);
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") setOpen(false);
+      });
+
+      if (window.ReaderGate) {
+        var prev = window.ReaderGate.onUnlocked;
+        window.ReaderGate.onUnlocked = function (issueId) {
+          if (typeof prev === "function") prev(issueId);
+          syncLockedState();
+        };
+      }
+      syncLockedState();
     })();
     </script>
   </body>
