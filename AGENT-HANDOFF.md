@@ -6,6 +6,8 @@ Onboarding for any agent working on **intrepid-map** (deploy site) and its integ
 
 | Doc | Purpose |
 |-----|---------|
+| [`docs/SESSION-HANDOFF-2026-07-17.md`](docs/SESSION-HANDOFF-2026-07-17.md) | **Jul 17 clean-cut** — live 191/187 + PDF downloads shipped, stash warning, beta next |
+| [`docs/BUG-HUNT-2026-07-14.md`](docs/BUG-HUNT-2026-07-14.md) | **Jul 14 morning** — overnight bug catalog (no fixes); triage first |
 | [`docs/SESSION-HANDOFF-2026-07-13.md`](docs/SESSION-HANDOFF-2026-07-13.md) | **Jul 13 clean-cut** — live stamps, shipped arc, Mish fly P0, reader 180, beta next |
 
 ### Beta go-live (Jul 13–14, 2026)
