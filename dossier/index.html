@@ -6,7 +6,7 @@
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=4" fetchpriority="high">
+<link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=5" fetchpriority="high">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -167,12 +167,13 @@ body {
   flex-shrink: 0;
   transition: border-color 0.3s;
   position: relative;
-  background: rgba(198,141,85,0.06);
+  background: var(--stone-dark);
 }
 .roster-item.active .ri-avatar,
 .roster-item:hover .ri-avatar { border-color: var(--gold); }
 .ri-avatar img {
   width: 100%; height: 100%; object-fit: cover;
+  object-position: center;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -244,9 +245,11 @@ body {
   margin: 0 auto 28px;
   border: 2px solid rgba(198,141,85,0.35);
   box-shadow: 0 0 50px rgba(120,190,210,0.08), 0 8px 40px rgba(0,0,0,0.5);
+  background: var(--stone-dark);
 }
 .detail-portrait img {
   width: 100%; height: 100%; object-fit: cover;
+  object-position: center;
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -355,7 +358,7 @@ body {
 // CHARACTER DATA
 // ═══════════════════════════════════════════
 /* Bump when thumbs/portraits change. Source PNGs are not served (see .netlifyignore). */
-var CACHE_V = '4';
+var CACHE_V = '5';
 var DOSSIER_BASE = '/dossier/';
 
 function assetBaseName(imgPath) {

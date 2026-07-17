@@ -1,0 +1,21 @@
+Thumbnail: 96px, Portrait: 640px, WebP quality: 82 (RGBA crop+cover)
+
+Source                                           Full      Thumb   Portrait
+------------------------------------------------------------------------------
+character dossier_Asim.png                    5103468       4310      75252  (640, 640) RGBA
+character dossier_AtrusNul.png                3665293       3612      44418  (640, 640) RGBA
+character dossier_DrKusarek.png               3593123       3838      41588  (640, 640) RGBA
+character dossier_Elena.png                   4982251       3936      57508  (640, 640) RGBA
+character dossier_IsinAda.png                 3939304       4374      59550  (640, 640) RGBA
+character dossier_Melchior.png                3993759       3672      51782  (640, 640) RGBA
+character dossier_Namin.png                   4355571       3908      53554  (640, 640) RGBA
+character dossier_Nick.png                    3045479       3946      44350  (640, 640) RGBA
+character dossier_Orion.png                   3611036       3600      44180  (640, 640) RGBA
+character dossier_Sabella.png                 5926945       4364      60334  (640, 640) RGBA
+character dossier_Utu.png                     4829040       3856      58320  (640, 640) RGBA
+------------------------------------------------------------------------------
+TOTAL                                        47045269      43416     590836
+
+Sidebar load (all thumbs): 42.4 KB
+Detail load (all portraits): 577.0 KB
+Before (all full PNGs): 44.9 MB
