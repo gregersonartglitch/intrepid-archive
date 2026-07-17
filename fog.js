@@ -478,8 +478,16 @@
 
     // Load fog texture (solid #141820 fill still renders if missing)
     fogTexture = new Image();
-    fogTexture.onload = function() { textureReady = true; draw(); };
-    fogTexture.onerror = function() { textureReady = false; draw(); };
+    fogTexture.onload = function() {
+      softFogTile = null;
+      textureReady = true;
+      draw();
+    };
+    fogTexture.onerror = function() {
+      softFogTile = null;
+      textureReady = false;
+      draw();
+    };
     fogTexture.src = 'fog_texture.png';
 
     // Remove any stale fog canvas (e.g. from older builds that used fogPane or beacon split)
@@ -2189,6 +2197,78 @@
   }
 
   /* ════════════════════════════════════════════════
+     SOFT FOG TILE — feather texture edges for seamless-ish repeats
+     Built once when fog_texture.png is ready. Does not touch glow/click rules.
+     ════════════════════════════════════════════════ */
+  function ensureSoftFogTile() {
+    if (softFogTile) return softFogTile;
+    if (!textureReady || !fogTexture) return null;
+    var S = SOFT_FOG_TILE_SIZE;
+    var F = SOFT_FOG_FEATHER;
+    if (F < 1) F = 1;
+    if (F > (S / 2) - 1) F = (S / 2) - 1;
+
+    var tile = document.createElement('canvas');
+    tile.width = S;
+    tile.height = S;
+    var tctx = tile.getContext('2d');
+    if (!tctx) return null;
+
+    tctx.drawImage(fogTexture, 0, 0, S, S);
+
+    // Alpha mask: opaque center, linear fade on all four edges (corners = product).
+    var mask = document.createElement('canvas');
+    mask.width = S;
+    mask.height = S;
+    var mctx = mask.getContext('2d');
+    if (!mctx) return null;
+
+    mctx.fillStyle = '#ffffff';
+    mctx.fillRect(0, 0, S, S);
+
+    mctx.globalCompositeOperation = 'destination-in';
+    var gh = mctx.createLinearGradient(0, 0, S, 0);
+    gh.addColorStop(0, 'rgba(0,0,0,0)');
+    gh.addColorStop(F / S, 'rgba(0,0,0,1)');
+    gh.addColorStop(1 - F / S, 'rgba(0,0,0,1)');
+    gh.addColorStop(1, 'rgba(0,0,0,0)');
+    mctx.fillStyle = gh;
+    mctx.fillRect(0, 0, S, S);
+
+    var gv = mctx.createLinearGradient(0, 0, 0, S);
+    gv.addColorStop(0, 'rgba(0,0,0,0)');
+    gv.addColorStop(F / S, 'rgba(0,0,0,1)');
+    gv.addColorStop(1 - F / S, 'rgba(0,0,0,1)');
+    gv.addColorStop(1, 'rgba(0,0,0,0)');
+    mctx.fillStyle = gv;
+    mctx.fillRect(0, 0, S, S);
+
+    tctx.globalCompositeOperation = 'destination-in';
+    tctx.drawImage(mask, 0, 0);
+
+    softFogTile = tile;
+    return softFogTile;
+  }
+
+  // Stamp soft fog tiles with edge overlap so feathered borders blend.
+  function stampSoftFogTiles(ctx, tile, tSize, ox, oy, w, h) {
+    var feather = Math.round(tSize * (SOFT_FOG_FEATHER / SOFT_FOG_TILE_SIZE));
+    if (feather < 1) feather = 1;
+    var step = tSize - feather;
+    if (step < 1) step = 1;
+    var startX = -tSize + ox;
+    var startY = -tSize + oy;
+    // Align ox/oy into first step so drift still scrolls smoothly
+    while (startX > -step) startX -= step;
+    while (startY > -step) startY -= step;
+    for (var tx = startX; tx < w + tSize; tx += step) {
+      for (var ty = startY; ty < h + tSize; ty += step) {
+        ctx.drawImage(tile, tx, ty, tSize, tSize);
+      }
+    }
+  }
+
+  /* ════════════════════════════════════════════════
      DRAW FOG
      ════════════════════════════════════════════════ */
   function draw() {
@@ -2214,20 +2294,21 @@
     ctx.fillStyle = '#141820';
     ctx.fillRect(0, 0, w, h);
 
-    // ── 2. Fog texture overlay ──
+    // ── 2. Fog texture overlay (soft-edged tiles; dual only when full-rate) ──
     if (textureReady && fogTexture) {
+      var softTile = ensureSoftFogTile();
+      var tileSrc = softTile || fogTexture;
+      var originPt = map.latLngToContainerPoint([0, 0]);
+
       // Layer 1 — primary drift
       ctx.save();
       ctx.globalAlpha = useDualTexture ? 0.55 : 0.70;
       var tSize = 512;
-      var originPt = map.latLngToContainerPoint([0, 0]);
       var ox = (originPt.x + time * 8) % tSize;
       var oy = (originPt.y + time * 3) % tSize;
-      for (var tx = -tSize + ox; tx < w + tSize; tx += tSize) {
-        for (var ty = -tSize + oy; ty < h + tSize; ty += tSize) {
-          ctx.drawImage(fogTexture, tx, ty, tSize, tSize);
-        }
-      }
+      if (ox < 0) ox += tSize;
+      if (oy < 0) oy += tSize;
+      stampSoftFogTiles(ctx, tileSrc, tSize, ox, oy, w, h);
       ctx.restore();
 
       // Layer 2 — slower counter-drift (skipped when idle + MAP_PERF)
@@ -2237,11 +2318,9 @@
         var tSize2 = 768;
         var ox2 = (originPt.x + time * -5) % tSize2;
         var oy2 = (originPt.y + time * 6) % tSize2;
-        for (var tx2 = -tSize2 + ox2; tx2 < w + tSize2; tx2 += tSize2) {
-          for (var ty2 = -tSize2 + oy2; ty2 < h + tSize2; ty2 += tSize2) {
-            ctx.drawImage(fogTexture, tx2, ty2, tSize2, tSize2);
-          }
-        }
+        if (ox2 < 0) ox2 += tSize2;
+        if (oy2 < 0) oy2 += tSize2;
+        stampSoftFogTiles(ctx, tileSrc, tSize2, ox2, oy2, w, h);
         ctx.restore();
       }
     }
