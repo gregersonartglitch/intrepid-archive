@@ -71,6 +71,23 @@
       burning: { speaker: 'Scribe', text: 'You are almost upon it. Look for the amber sigil — then click.' }
     }
   };
+  // ── Map perf (playtest hardening) ──
+  // Caps idle drift FPS, fog canvas DPR, dual texture when idle; coalesces Leaflet redraws;
+  // pauses when document.hidden. Full rate kept for search / reveal / fog-wave / guide pulse.
+  // Kill switch: localStorage intrepid_map_perf_disabled=1 (or ENABLE_MAP_PERF = false)
+  // Docs: docs/MAP-PERF-AUDIT.md
+  var ENABLE_MAP_PERF = true;
+  var MAP_PERF_DISABLED_LS = 'intrepid_map_perf_disabled';
+  var DRIFT_FPS_IDLE = 20;
+  var FOG_DPR_CAP_DESKTOP = 1.5;
+  var FOG_DPR_CAP_MOBILE = 1;
+  // Expensive atmosphere (tower lightning + perimeter bolts + heavy shadowBlur there).
+  // Default OFF for playtest GPU safety. Enable: ?mapatmo or localStorage intrepid_map_atmo_enabled=1
+  // Kill switch: ENABLE_MAP_ATMOSPHERE = false (const already false); disable LS: intrepid_map_atmo_disabled=1
+  var ENABLE_MAP_ATMOSPHERE = false;
+  var MAP_ATMO_ENABLED_LS = 'intrepid_map_atmo_enabled';
+  var MAP_ATMO_DISABLED_LS = 'intrepid_map_atmo_disabled';
+
   // Sabella journey letters — intentionally ON (Jon 2026-07-10 / beta lock). Do NOT flip false for prod.
   // Per-player kill: localStorage intrepid_sabella_messages_disabled=1 (or ?nosabellamessages)
   // Docs: docs/SABELLA-CLUE-POPUPS.md
@@ -142,6 +159,78 @@
   var locationPanelFn = null;  // set by index.html — all location lore uses the right sidebar
   var postTutorialHintTimer = null;
   var postTutorialHintPending = false;
+
+  // Map perf runtime state (see ENABLE_MAP_PERF block above)
+  var driftRAF = null;
+  var lastDriftDrawMs = 0;
+  var fogDrawScheduled = false;
+  var mapPerfVisBound = false;
+  var fogWaveClearProgress = 0; // also set by finale wave; declared early for needsFullRateDraw
+  var guideTarget = null; // { lat, lng, endTime } — also assigned in GUIDE ME section
+
+  function isMapPerfEnabled() {
+    if (!ENABLE_MAP_PERF) return false;
+    try {
+      if (localStorage.getItem(MAP_PERF_DISABLED_LS) === '1') return false;
+    } catch (e) {}
+    return true;
+  }
+
+  function isMapAtmosphereEnabled() {
+    try {
+      if (localStorage.getItem(MAP_ATMO_DISABLED_LS) === '1') return false;
+      if (typeof location !== 'undefined') {
+        var params = new URLSearchParams(window.location.search);
+        if (params.has('mapatmo')) return true;
+      }
+      if (localStorage.getItem(MAP_ATMO_ENABLED_LS) === '1') return true;
+    } catch (e) {}
+    return !!ENABLE_MAP_ATMOSPHERE;
+  }
+
+  function getFogDprCap() {
+    var mobile = false;
+    try {
+      mobile = !!(window.matchMedia &&
+        window.matchMedia('(max-width: 768px), (pointer: coarse)').matches);
+    } catch (e) {}
+    return mobile ? FOG_DPR_CAP_MOBILE : FOG_DPR_CAP_DESKTOP;
+  }
+
+  // Full-rate paths: search lantern, reveal ceremony, fog-wave, guide pulse, constellation draw-in
+  function needsFullRateDraw() {
+    if (searchMode) return true;
+    if (animatingReveal) return true;
+    if (fogWaveClearProgress > 0 && fogWaveClearProgress < 1) return true;
+    if (guideTarget && Date.now() < guideTarget.endTime) return true;
+    var fs = window._finaleState;
+    if (fs && fs.constellationLines && fs.constellationLines.length &&
+        typeof fs.constellationDrawProgress === 'number' &&
+        fs.constellationDrawProgress < fs.constellationLines.length) {
+      return true;
+    }
+    return false;
+  }
+
+  // Coalesce Leaflet move/zoom/resize into one RAF draw (always on — no visual change)
+  function scheduleFogDraw() {
+    if (fogDrawScheduled) return;
+    fogDrawScheduled = true;
+    requestAnimationFrame(function() {
+      fogDrawScheduled = false;
+      draw();
+    });
+  }
+
+  function bindMapPerfVisibility() {
+    if (mapPerfVisBound) return;
+    mapPerfVisBound = true;
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) return;
+      lastDriftDrawMs = 0;
+      scheduleFogDraw();
+    });
+  }
 
   // When a journey site is found, its nearby companions become visible + glow.
   var SITE_CLUSTERS = {
@@ -400,8 +489,8 @@
 
     // Redraw on map events; detach lantern when pan moves search zone off-screen
     map.on('move', syncSpotlightAttachment);
-    map.on('move zoom viewreset resize zoomend', draw);
-    window.addEventListener('resize', draw);
+    map.on('move zoom viewreset resize zoomend', scheduleFogDraw);
+    window.addEventListener('resize', scheduleFogDraw);
     draw();
 
     // Prune stale god reveals before progress/gate logic (MEDALLION_DEFS set in index.html)
@@ -1803,7 +1892,8 @@
     var rect = container.getBoundingClientRect();
     var cssW = Math.max(1, Math.round(rect.width));
     var cssH = Math.max(1, Math.round(rect.height));
-    var dpr = window.devicePixelRatio || 1;
+    var dprRaw = window.devicePixelRatio || 1;
+    var dpr = isMapPerfEnabled() ? Math.min(dprRaw, getFogDprCap()) : dprRaw;
     var bufW = Math.round(cssW * dpr);
     var bufH = Math.round(cssH * dpr);
 
@@ -2098,6 +2188,9 @@
     var ctx = fogCtx;
     var zoom = map.getZoom();
     var time = Date.now() / 1000;
+    var fullRate = needsFullRateDraw();
+    // Idle: single texture layer. Search/reveal/wave: dual counter-drift (richer look).
+    var useDualTexture = !isMapPerfEnabled() || fullRate;
 
     // ── 1. Solid dark base (fully opaque) ──
     // Reset composite mode explicitly — Chrome persists context state across frames
@@ -2111,7 +2204,7 @@
     if (textureReady && fogTexture) {
       // Layer 1 — primary drift
       ctx.save();
-      ctx.globalAlpha = 0.55;
+      ctx.globalAlpha = useDualTexture ? 0.55 : 0.70;
       var tSize = 512;
       var originPt = map.latLngToContainerPoint([0, 0]);
       var ox = (originPt.x + time * 8) % tSize;
@@ -2123,18 +2216,20 @@
       }
       ctx.restore();
 
-      // Layer 2 — slower counter-drift
-      ctx.save();
-      ctx.globalAlpha = 0.25;
-      var tSize2 = 768;
-      var ox2 = (originPt.x + time * -5) % tSize2;
-      var oy2 = (originPt.y + time * 6) % tSize2;
-      for (var tx2 = -tSize2 + ox2; tx2 < w + tSize2; tx2 += tSize2) {
-        for (var ty2 = -tSize2 + oy2; ty2 < h + tSize2; ty2 += tSize2) {
-          ctx.drawImage(fogTexture, tx2, ty2, tSize2, tSize2);
+      // Layer 2 — slower counter-drift (skipped when idle + MAP_PERF)
+      if (useDualTexture) {
+        ctx.save();
+        ctx.globalAlpha = 0.25;
+        var tSize2 = 768;
+        var ox2 = (originPt.x + time * -5) % tSize2;
+        var oy2 = (originPt.y + time * 6) % tSize2;
+        for (var tx2 = -tSize2 + ox2; tx2 < w + tSize2; tx2 += tSize2) {
+          for (var ty2 = -tSize2 + oy2; ty2 < h + tSize2; ty2 += tSize2) {
+            ctx.drawImage(fogTexture, tx2, ty2, tSize2, tSize2);
+          }
         }
+        ctx.restore();
       }
-      ctx.restore();
     }
 
     var locs = window.LOCATIONS || [];
@@ -2364,7 +2459,8 @@
         ctx.fill();
       }
 
-      // ── Occasional lightning ──
+      // ── Occasional lightning (ENABLE_MAP_ATMOSPHERE / ?mapatmo) ──
+      if (isMapAtmosphereEnabled()) {
       // Use a deterministic pseudo-random: lightning every ~3-6 seconds
       var lightningCycle = Math.floor(time * 0.4);
       var lightningPhase = (time * 0.4) % 1;
@@ -2409,12 +2505,13 @@
           ctx.fill();
         }
       }
+      }
 
       ctx.restore();
     }
 
-    // ── 4d-ii. Perimeter lightning — west & east edges ──
-    (function() {
+    // ── 4d-ii. Perimeter lightning — west & east edges (atmo flag) ──
+    if (isMapAtmosphereEnabled()) (function() {
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
 
@@ -4086,7 +4183,7 @@
   }
 
   // Fog wave clear — gentle radial sweep from center
-  var fogWaveClearProgress = 0; // 0 = no clear, 1 = fully thinned
+  // fogWaveClearProgress declared early with map-perf state
   function triggerFogWaveClear() {
     var start = performance.now();
     var dur = 3500;
@@ -4479,7 +4576,7 @@
   /* ════════════════════════════════════════════════
      GUIDE ME — finds next target and pans there
      ════════════════════════════════════════════════ */
-  var guideTarget = null; // { lat, lng, endTime } for pulsing ring in draw()
+  // guideTarget declared early with map-perf state
 
   function addGuideButton() {
     var btn = document.createElement('button');
@@ -4699,13 +4796,40 @@
 
   /* ════════════════════════════════════════════════
      DRIFT (continuous fog animation)
+     Cap idle FPS when ENABLE_MAP_PERF; pause while document.hidden;
+     skip duplicate draws when reveal/wave/constellation already drive RAF;
+     full rate for search + guide pulse.
      ════════════════════════════════════════════════ */
-  var driftRAF = null;
   function startDrift() {
-    function tick() { draw(); driftRAF = requestAnimationFrame(tick); }
+    if (driftRAF) cancelAnimationFrame(driftRAF);
+    bindMapPerfVisibility();
+    function tick(now) {
+      driftRAF = requestAnimationFrame(tick);
+      if (document.hidden) return;
+      // Specialized animations call draw() themselves — avoid double paint
+      if (animatingReveal) return;
+      if (fogWaveClearProgress > 0 && fogWaveClearProgress < 1) return;
+      var fs = window._finaleState;
+      if (fs && fs.constellationLines && fs.constellationLines.length &&
+          typeof fs.constellationDrawProgress === 'number' &&
+          fs.constellationDrawProgress < fs.constellationLines.length) {
+        return;
+      }
+      if (isMapPerfEnabled() && !needsFullRateDraw()) {
+        var minInterval = 1000 / DRIFT_FPS_IDLE;
+        if (now - lastDriftDrawMs < minInterval) return;
+      }
+      lastDriftDrawMs = now;
+      draw();
+    }
     driftRAF = requestAnimationFrame(tick);
   }
-  function stopDrift() { if (driftRAF) cancelAnimationFrame(driftRAF); }
+  function stopDrift() {
+    if (driftRAF) {
+      cancelAnimationFrame(driftRAF);
+      driftRAF = null;
+    }
+  }
 
   /* ════════════════════════════════════════════════
      PUBLIC API
