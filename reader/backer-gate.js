@@ -1,9 +1,26 @@
 /**
  * Reader issue access — Kickstarter backer gates for Issues 2 & 3.
  * Issue 1 is always open. Future paid unlock: call ReaderAccess.grantIssue('002').
+ *
+ * ENABLE_READER_GATE — reversible kill switch (also unlocks gated PDFs via isIssueUnlocked).
+ * false = open window (backer invite / pre–early-August): no Issue 2–3 modal, all PDFs free.
+ * true  = after early August: Ch1 free; one unlock opens Issues 2+3 and Ch2/Ch3/full PDFs.
+ * localStorage opt-out: intrepid_reader_gate_disabled=1 forces off even when flag is true.
  */
 (function () {
   "use strict";
+
+  // Re-enable after early August for public Ch1-free / pay-after-Ch1.
+  var ENABLE_READER_GATE = false;
+
+  function isReaderGateEnabled() {
+    try {
+      if (localStorage.getItem("intrepid_reader_gate_disabled") === "1") {
+        return false;
+      }
+    } catch (e) {}
+    return ENABLE_READER_GATE;
+  }
 
   var BACKER_CODES = {
     scribe4: { issues: ["002", "003"], label: "Backer" },
@@ -13,7 +30,8 @@
   var LS_BACKER_KEY = "intrepid_reader_backer";
 
   // Must match reader spike.js pageEntries:
-  // coverSpread (2) + issue1 (21) + issue2 (21) + ch3 spacer (1) + issue3 (26)
+  // coverSpread (2) + issue1 (21) + issue2 (21) + ch3 spacer (1) + issue3 (26) + back cover (1)
+  // Gate uses page index only through ISSUE_003 endIndex 999 — trailing back cover stays Issue 3.
   var COVER_SPREAD_PAGES = 2;
   var ISSUE_PAGE_COUNTS = [21, 21, 26];
   var ISSUE_002_START = COVER_SPREAD_PAGES + ISSUE_PAGE_COUNTS[0];
@@ -65,6 +83,8 @@
 
   function isIssueUnlocked(issueId) {
     if (issueId === "001") return true;
+    // Open window: treat full volume (and gated PDFs) as unlocked.
+    if (!isReaderGateEnabled()) return true;
     if (localStorage.getItem(LS_BACKER_KEY) === "granted") return true;
     if (localStorage.getItem(LS_CARTOGRAPHER_KEY) === "granted") return true;
     if (
@@ -167,6 +187,7 @@
   }
 
   function showGate(issueId) {
+    if (!isReaderGateEnabled()) return;
     if (isIssueUnlocked(issueId)) return;
     var copy = ISSUE_COPY[issueId] || ISSUE_COPY["002"];
     var el = getGateEl();
@@ -235,6 +256,7 @@
 
   window.ReaderAccess = {
     isIssueUnlocked: isIssueUnlocked,
+    isGateEnabled: isReaderGateEnabled,
     grantIssue: grantIssue,
     grantAllBackerIssues: grantAllBackerIssues,
     submitBackerPassword: submitBackerPassword,

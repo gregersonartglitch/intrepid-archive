@@ -70,6 +70,11 @@ const pageEntries = [
 
     return [page];
   }),
+  {
+    backCover: true,
+    label: "Back cover",
+    src: "./assets/pages/back-cover-hardcover.webp",
+  },
 ];
 
 // Issue 1 = cover spread (2) + 21 pages → indices 0–22
@@ -91,7 +96,7 @@ const IMAGE_LOAD_MAX_ATTEMPTS = 2;
 const IMAGE_LOAD_TIMEOUT_MS = 4000;
 // Build 180: legacy no longer soft-opens empty/white. Deadline hard-fails like
 // lifecycle unless the critical opening spread is already paint-ready.
-const PAGE_ASSET_VERSION = 186;
+const PAGE_ASSET_VERSION = 193;
 const SOFT_TOAST_MS = 4200;
 // Legacy path only: cap concurrent src assigns so Issue 2–3 background warm
 // cannot starve the spread the reader is looking at (build 178 nail).
@@ -216,6 +221,9 @@ function manifestAssetIdForEntry(entry) {
   if (entry.cover) {
     return "cover-hardcover";
   }
+  if (entry.backCover) {
+    return "back-cover-hardcover";
+  }
   if (entry.spacer) {
     return "chapter-3-spacer";
   }
@@ -247,9 +255,9 @@ function lifecycleFallbackUrl(pageIndex) {
   if (!entry || entry.blank) {
     return "";
   }
-  // Only cover-hardcover.jpg ships today. Manifest lists .jpg for every page, but
-  // those 404 — a transient WebP error then became a hard fail. Cover keeps JPG.
-  if (!entry.cover) {
+  // Cover art keeps JPG fallback (front + back hardcover). Manifest lists .jpg
+  // for every content page, but those 404 — skip them so WebP errors stay soft.
+  if (!entry.cover && !entry.backCover) {
     return "";
   }
   var id = manifestAssetIdForEntry(entry);
@@ -553,6 +561,10 @@ function setPageLabel(pageIndex) {
   const nextPage = pageEntries[pageIndex + 1];
   if (currentPage?.cover || nextPage?.cover) {
     elements.page.textContent = "Cover";
+    return;
+  }
+  if (currentPage?.backCover || nextPage?.backCover) {
+    elements.page.textContent = "Back cover";
     return;
   }
   const contentNumber = currentPage?.contentNumber || nextPage?.contentNumber || contentPages.length;
@@ -1452,7 +1464,7 @@ function buildPageElements() {
     const page = document.createElement("div");
     page.className = entry.blank
       ? "reader-page reader-page--blank"
-      : entry.cover
+      : entry.cover || entry.backCover
         ? "reader-page reader-page--cover"
         : "reader-page";
     page.dataset.pageNumber = String(index + 1);
@@ -1466,9 +1478,11 @@ function buildPageElements() {
     const image = document.createElement("img");
     image.alt = entry.cover
       ? "Intrepid Dusk Volume 1 cover"
-      : entry.spacer
-        ? entry.label || "Intrepid Dusk Volume 1 chapter tip-in"
-        : `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
+      : entry.backCover
+        ? "Intrepid Dusk Volume 1 back cover"
+        : entry.spacer
+          ? entry.label || "Intrepid Dusk Volume 1 chapter tip-in"
+          : `Intrepid Dusk Volume 1 page ${entry.contentNumber}`;
     image.width = NATIVE_PAGE_WIDTH;
     image.height = NATIVE_PAGE_HEIGHT;
     image.decoding = "async";

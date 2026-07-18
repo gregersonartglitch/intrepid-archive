@@ -632,8 +632,16 @@
       "height": 3360,
       "webp": "./pages/page-068.webp",
       "fallback": "./pages/page-068.jpg"
+    },
+    {
+      "id": "back-cover-hardcover",
+      "role": "back-cover",
+      "width": 2200,
+      "height": 3409,
+      "webp": "./pages/back-cover-hardcover.webp",
+      "fallback": "./pages/back-cover-hardcover.jpg"
     }
   ],
-  "updatedAt": "2026-07-16T22:24:43.737Z",
-  "sourceMapping": "print-001..068 from Intrepid-Dusk-Interior-press_72pg_v2_SPLICED.pdf; print-069..072 omitted"
+  "updatedAt": "2026-07-17T19:15:00.000Z",
+  "sourceMapping": "print-001..068 from Intrepid-Dusk-Interior-press_72pg_v2_SPLICED.pdf; print-069..072 omitted; back-cover from Graphic-Novel-Hard-Cover.jpg"
 }
