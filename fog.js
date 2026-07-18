@@ -13,6 +13,10 @@
   var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
   var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
   var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
+  // Tower letter: crown sits in storm/cluster clutter — larger lantern + click forgiveness.
+  var TOWER_LETTER_FIND_MULT = 2.0;
+  var TOWER_LETTER_CLICK_MULT = 2.0;
+  var TOWER_LETTER_CROWN_PX = 96; // screen-px above tower peak (matches storm "above" bias)
   // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
   // orb so the player can move the lantern toward a distinct hot spot — never stack
   // the diamond on the glow they just clicked.
@@ -716,7 +720,7 @@
       if (searchMode) {
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
-        var clickRadius = searchMode.escapeBoost ? KEY_CLICK_RADIUS * 1.6 : KEY_CLICK_RADIUS;
+        var clickRadius = getKeyClickRadiusPx();
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
         if (keyDist < clickRadius) {
@@ -812,7 +816,7 @@
       if (searchMode) {
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
-        var touchClickRadius = searchMode.escapeBoost ? (KEY_CLICK_RADIUS + 18) : (KEY_CLICK_RADIUS + 10);
+        var touchClickRadius = getKeyClickRadiusPx() + 12;
         var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
         var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
         if (keyDist < touchClickRadius) { // slightly larger for touch
@@ -2477,10 +2481,11 @@
       var kDist = spotlightPos ?
         Math.sqrt(Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2)) : 9999;
       var elapsed = Date.now() - searchMode.startTime;
-      var findRadius = searchMode.escapeBoost ? KEY_FIND_RADIUS * 2.2 : KEY_FIND_RADIUS;
+      var findRadius = getKeyFindRadiusPx();
 
       // Always show a faint pulse so key is findable
       var basePulse = searchMode.escapeBoost ? 0.22 : 0.12;
+      if (isTowerLetterSearch()) basePulse = Math.max(basePulse, 0.2);
       basePulse += (searchMode.escapeBoost ? 0.14 : 0.08) * Math.sin(time * 2.5);
 
       // After HINT_DELAY, pulse gets much stronger (immediate when escape boost active)
@@ -2494,6 +2499,7 @@
       var keyNear = kDist < findRadius * 2;
       var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.4 : hintAlpha);
       var kSize = keyVisible ? 10 : (keyNear ? 7 : 5);
+      if (isTowerLetterSearch()) kSize += 3;
 
       ctx.save();
       ctx.shadowColor = 'rgba(212, 168, 67, 0.8)';
@@ -3097,12 +3103,38 @@
   // chime searches (journey letter stops, cartographer sites, letter recovery).
   function placeSearchKeyOffset(loc) {
     var ll = getInteractionLatLng(loc);
+    // Tower of the Nine letter: pin to the crown (above peak). Random 360° offsets
+    // often hide the diamond in storm bolts / Maxim cluster — last secret too easy to miss.
+    if (loc && loc.id === 'tower-nine' && map) {
+      var peakPt = map.latLngToContainerPoint(ll);
+      var crownPt = L.point(peakPt.x, peakPt.y - TOWER_LETTER_CROWN_PX);
+      var crownLl = map.containerPointToLatLng(crownPt);
+      return { keyLat: crownLl.lat, keyLng: crownLl.lng };
+    }
     var angle = Math.random() * Math.PI * 2;
     var dist = KEY_OFFSET_MIN + Math.random() * (KEY_OFFSET_MAX - KEY_OFFSET_MIN);
     return {
       keyLat: ll[0] + Math.sin(angle) * dist,
       keyLng: ll[1] + Math.cos(angle) * dist
     };
+  }
+
+  function isTowerLetterSearch() {
+    return !!(searchMode && searchMode.locId === 'tower-nine');
+  }
+
+  function getKeyFindRadiusPx() {
+    var r = KEY_FIND_RADIUS;
+    if (isTowerLetterSearch()) r *= TOWER_LETTER_FIND_MULT;
+    if (searchMode && searchMode.escapeBoost) r *= 2.2;
+    return r;
+  }
+
+  function getKeyClickRadiusPx() {
+    var r = KEY_CLICK_RADIUS;
+    if (isTowerLetterSearch()) r *= TOWER_LETTER_CLICK_MULT;
+    if (searchMode && searchMode.escapeBoost) r *= 1.6;
+    return r;
   }
 
   // Enter search mode — place a hidden key in the fog ring (offset from beacon).
@@ -3993,7 +4025,7 @@
       'color:#d4c4a0;opacity:0;transition:opacity 1s ease;line-height:1.6;';
     hint.innerHTML =
       '\u201cOne secret crowns this tower.\u201d<br>' +
-      '<span style="font-size:11px;color:#a09070;">The Maxim Stone still waits — follow the glowing star.</span>';
+      '<span style="font-size:11px;color:#a09070;">Sweep the lantern across the peak — the letter waits at the crown.</span>';
     document.body.appendChild(hint);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { hint.style.opacity = '1'; });

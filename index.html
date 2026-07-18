@@ -3075,7 +3075,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 193;
+window.INTREPID_BUILD = 194;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=14"></script>
@@ -3152,7 +3152,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=193"></script>
+<script src="fog.js?v=194"></script>
 <script>
 (function() {
   'use strict';
@@ -3967,9 +3967,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         artEl.style.display = 'block';
         artEl.removeAttribute('src');
         artEl.innerHTML = '';
-        artEl.style.backgroundSize = m.artZoom || '125%';
+        // Sealed uses shared question_mark.png — never reuse god sprite crop/zoom
+        // (those artPosition values were calibrated per medallion PNG and shift the ?).
+        if (isRevealed) {
+          artEl.style.backgroundSize = m.artZoom || '125%';
+          artEl.style.backgroundPosition = m.artPosition || 'center center';
+        } else {
+          artEl.style.backgroundSize = 'cover';
+          artEl.style.backgroundPosition = 'center center';
+        }
         artEl.style.backgroundRepeat = 'no-repeat';
-        artEl.style.backgroundPosition = m.artPosition || 'center center';
         artEl.style.filter = isRevealed ? 'none' : 'grayscale(0.6) brightness(0.7)';
         // Decode before paint — bare background-image swap flashes empty/white on cold loads
         var url = isRevealed ? m.spriteFile : 'assets/question_mark.png';
