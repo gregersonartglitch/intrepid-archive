@@ -9,7 +9,9 @@
   var ENABLE_GUEST_ENTRY = false;
   // UTC unlock target for guest-access countdown visuals (does not override ENABLE_GUEST_ENTRY).
   // WANDERER_UNLOCK_AT / getWandererUnlockWindow: legacy internal names (KS Wanderer tier collision).
-  var WANDERER_UNLOCK_AT = "2026-08-01T00:00:00Z";
+  // Empty = no countdown (Jon 2026-07-18: shelve timer until public window is scheduled).
+  // Example when re-enabling: "2026-08-16T00:00:00Z"
+  var WANDERER_UNLOCK_AT = "";
 
   var CODES = {
     hollowlands9: { cartographer: true, reader: true, label: "Patron" },

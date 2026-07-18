@@ -163,6 +163,101 @@ input { font-family: inherit; }
   text-shadow: 0 0 12px rgba(212, 168, 67, 0.18);
 }
 
+/* Follow / updates signup (Netlify Forms) — reversible via ENABLE_FOLLOW_SIGNUP */
+.entry-follow {
+  margin-top: 18px;
+  width: 100%;
+  text-align: center;
+}
+.entry-follow[hidden] { display: none !important; }
+.entry-follow-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+.entry-follow-fields .gate-input {
+  width: 100%;
+}
+.entry-follow-optin {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 2px 0 2px;
+  text-align: left;
+  cursor: pointer;
+}
+.entry-follow-optin input {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  width: 15px;
+  height: 15px;
+  accent-color: #c68d55;
+  cursor: pointer;
+}
+.entry-follow-optin-text {
+  color: rgba(191,178,153,0.62);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  line-height: 1.55;
+}
+.entry-follow-honeypot {
+  position: absolute;
+  left: -9999px;
+  height: 0;
+  overflow: hidden;
+}
+.entry-follow-submit {
+  margin-top: 4px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 1px solid rgba(198,141,85,0.35);
+  border-radius: 4px;
+  background: rgba(198,141,85,0.12);
+  color: rgba(232, 214, 176, 0.92);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.entry-follow-submit:hover:not(:disabled) {
+  background: rgba(198,141,85,0.22);
+  border-color: rgba(198,141,85,0.55);
+  color: #f0e6d0;
+}
+.entry-follow-submit:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.entry-follow-msg {
+  margin-top: 12px;
+  min-height: 1.2em;
+  color: rgba(191,178,153,0.55);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  line-height: 1.5;
+}
+.entry-follow-msg.is-ok {
+  color: rgba(168, 196, 140, 0.92);
+}
+.entry-follow-msg.is-err {
+  color: rgba(210, 120, 100, 0.92);
+}
+.entry-follow-note {
+  margin-top: 10px;
+  color: rgba(191,178,153,0.38);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  line-height: 1.55;
+}
+
 /* ═══════════════════════════════════════════
    ARCHIVE HOME
    ═══════════════════════════════════════════ */
@@ -2724,6 +2819,28 @@ body.edit-mode .mk-dot-wrap > * {
     <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or wait for guest access</span></div>
     <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button"><span class="entry-guest-btn-label">Continue as guest</span></button>
     <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
+    <!-- Follow for updates — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
+    <div id="entry-follow" class="entry-follow gate-fade" data-delay="1350" hidden>
+      <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
+        <input type="hidden" name="form-name" value="hollowlands-follow">
+        <input type="hidden" name="opt_in_at" value="">
+        <input type="hidden" name="opt_in_source" value="archive-entry-follow">
+        <p class="entry-follow-honeypot" aria-hidden="true">
+          <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
+        </p>
+        <div class="entry-follow-fields">
+          <input id="entry-follow-nickname" class="gate-input" type="text" name="nickname" placeholder="PREFERRED NICKNAME" autocomplete="nickname" maxlength="64" aria-label="Preferred nickname" required>
+          <input id="entry-follow-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for updates" required>
+          <label class="entry-follow-optin" for="entry-follow-optin">
+            <input id="entry-follow-optin" type="checkbox" name="marketing_opt_in" value="yes" required>
+            <span class="entry-follow-optin-text">I opt in to occasional Intrepid Dusk / Hollowlands email updates. Unsubscribe anytime.</span>
+          </label>
+          <button id="entry-follow-submit" class="entry-follow-submit" type="submit">Get updates</button>
+        </div>
+      </form>
+      <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
+      <p id="entry-follow-note" class="entry-follow-note">We only email if you check the box — so we can add you to MailerLite cleanly.</p>
+    </div>
   </div>
 </div>
 
@@ -3075,7 +3192,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 194;
+window.INTREPID_BUILD = 196;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=14"></script>
@@ -3151,8 +3268,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=159"></script>
-<script src="fog.js?v=194"></script>
+<script src="archive-access.js?v=196"></script>
+<script src="fog.js?v=196"></script>
 <script>
 (function() {
   'use strict';
@@ -3573,7 +3690,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      ═══════════════════════════════════════════ */
   const LOCK_ICON_SVG = '<svg class="entry-guest-lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 1 1 8 0v3"></path></svg>';
   const GUEST_BTN_LABEL_HTML = '<span class="entry-guest-btn-label">Continue as guest</span>';
-  const GUEST_BTN_LOCKED_HTML = '<span class="entry-guest-lock-overlay" aria-hidden="true">' + LOCK_ICON_SVG + '</span>' + GUEST_BTN_LABEL_HTML;
+  const GUEST_BTN_LOCKED_HTML = '<span class="entry-guest-lock-overlay" aria-hidden="true">' + LOCK_ICON_SVG + '</span><span class="entry-guest-btn-label">Guest access locked</span>';
   var guestUnlockCountdownTimer = null;
   const entryAccessPw = document.getElementById('entry-access-pw');
   const entryAccessBtn = document.getElementById('entry-access-btn');
@@ -3582,6 +3699,111 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const entryGuestDividerLabel = document.getElementById('entry-guest-divider-label');
   const entryGuestBtn = document.getElementById('entry-guest-btn');
   const entryGuestNote = document.getElementById('entry-guest-note');
+  const entryFollow = document.getElementById('entry-follow');
+  const entryFollowForm = document.getElementById('entry-follow-form');
+  const entryFollowMsg = document.getElementById('entry-follow-msg');
+  const entryFollowSubmit = document.getElementById('entry-follow-submit');
+  // Follow signup (Netlify Form hollowlands-follow). Kill: false, or LS intrepid_follow_signup_disabled=1
+  var ENABLE_FOLLOW_SIGNUP = true;
+
+  function isFollowSignupEnabled() {
+    if (!ENABLE_FOLLOW_SIGNUP) return false;
+    try {
+      if (localStorage.getItem('intrepid_follow_signup_disabled') === '1') return false;
+    } catch (e) { /* ignore */ }
+    return true;
+  }
+
+  function setFollowMsg(text, kind) {
+    if (!entryFollowMsg) return;
+    entryFollowMsg.textContent = text || '';
+    entryFollowMsg.classList.remove('is-ok', 'is-err');
+    if (kind === 'ok') entryFollowMsg.classList.add('is-ok');
+    if (kind === 'err') entryFollowMsg.classList.add('is-err');
+  }
+
+  function encodeFormBody(fields) {
+    var parts = [];
+    Object.keys(fields).forEach(function (key) {
+      parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(fields[key] == null ? '' : String(fields[key])));
+    });
+    return parts.join('&');
+  }
+
+  function wireFollowSignup() {
+    if (!entryFollowForm || !isFollowSignupEnabled()) return;
+    entryFollowForm.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var nicknameEl = document.getElementById('entry-follow-nickname');
+      var emailEl = document.getElementById('entry-follow-email');
+      var optinEl = document.getElementById('entry-follow-optin');
+      var botEl = entryFollowForm.querySelector('[name="bot-field"]');
+      var nickname = nicknameEl ? String(nicknameEl.value || '').trim() : '';
+      var email = emailEl ? String(emailEl.value || '').trim() : '';
+      var optedIn = !!(optinEl && optinEl.checked);
+      if (!nickname || !email) {
+        setFollowMsg('Nickname and email required.', 'err');
+        return;
+      }
+      if (!optedIn) {
+        setFollowMsg('Check the box to opt in to email updates.', 'err');
+        if (optinEl) optinEl.focus();
+        return;
+      }
+      if (entryFollowSubmit) entryFollowSubmit.disabled = true;
+      setFollowMsg('Sending…', null);
+      var body = encodeFormBody({
+        'form-name': 'hollowlands-follow',
+        'bot-field': botEl ? botEl.value : '',
+        nickname: nickname,
+        email: email,
+        marketing_opt_in: 'yes',
+        opt_in_at: new Date().toISOString(),
+        opt_in_source: 'archive-entry-follow'
+      });
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      }).then(function (res) {
+        if (!res.ok) throw new Error('submit-failed');
+        setFollowMsg('You’re on the list. We’ll be in touch.', 'ok');
+        entryFollowForm.reset();
+        try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e2) { /* ignore */ }
+      }).catch(function () {
+        setFollowMsg('Couldn’t send — try again in a moment.', 'err');
+      }).then(function () {
+        if (entryFollowSubmit) entryFollowSubmit.disabled = false;
+      });
+    });
+  }
+
+  function renderFollowSignupState(opts) {
+    opts = opts || {};
+    var followOn = isFollowSignupEnabled();
+    var guestOn = !!opts.guestEnabled;
+    if (!entryFollow) return followOn;
+    if (!followOn) {
+      entryFollow.hidden = true;
+      return false;
+    }
+    entryFollow.hidden = false;
+    // When guest is locked, follow replaces the locked-button clutter.
+    if (!guestOn && entryGuestBtn) {
+      entryGuestBtn.hidden = true;
+      entryGuestBtn.setAttribute('aria-hidden', 'true');
+    }
+    if (!guestOn && entryGuestNote) {
+      entryGuestNote.hidden = true;
+    }
+    if (!guestOn && entryGuestDividerLabel) {
+      entryGuestDividerLabel.textContent = 'Or follow for updates';
+    }
+    if (guestOn && entryGuestDividerLabel && entryFollow) {
+      // Guest path stays primary; follow sits under with its own note.
+    }
+    return true;
+  }
 
   function isGuestEntryEnabled() {
     if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.canEnterAsGuest) return false;
@@ -3638,6 +3860,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var isGuestEnabled = isGuestEntryEnabled();
     var hasValidUnlockTime = unlockWindow && unlockWindow.hasValidUnlockTime;
     var isCountdownActive = !isGuestEnabled && hasValidUnlockTime && !unlockWindow.isTimeReached;
+    var followOn = isFollowSignupEnabled();
     if (isGuestEnabled) {
       stopGuestUnlockCountdown();
       if (entryGuestDivider) {
@@ -3656,12 +3879,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         entryGuestBtn.innerHTML = GUEST_BTN_LABEL_HTML;
       }
       if (entryGuestNote) {
+        entryGuestNote.hidden = false;
         entryGuestNote.classList.remove('is-countdown');
         entryGuestNote.textContent = 'Guests can read Issue 1 and browse the dossier without a code.';
       }
       if (entrySubtitle) {
         entrySubtitle.innerHTML = 'Enter your backer access word to unlock the full archive.<br>Or continue as guest for Issue 1 and the dossier.';
       }
+      renderFollowSignupState({ guestEnabled: true });
       return;
     }
     startGuestUnlockCountdownIfNeeded();
@@ -3670,35 +3895,48 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       entryGuestDivider.setAttribute('aria-hidden', 'false');
     }
     if (entryGuestDividerLabel) {
-      entryGuestDividerLabel.textContent = isCountdownActive
-        ? 'Or wait for guest access'
-        : 'Guest access paused';
+      entryGuestDividerLabel.textContent = followOn
+        ? 'Or follow for updates'
+        : (isCountdownActive ? 'Or wait for guest access' : 'Guest access paused');
     }
     if (entryGuestBtn) {
-      entryGuestBtn.hidden = false;
-      entryGuestBtn.disabled = true;
-      entryGuestBtn.setAttribute('aria-hidden', 'false');
-      entryGuestBtn.setAttribute('aria-disabled', 'true');
-      entryGuestBtn.classList.add('is-locked');
-      entryGuestBtn.innerHTML = GUEST_BTN_LOCKED_HTML;
+      if (followOn) {
+        entryGuestBtn.hidden = true;
+        entryGuestBtn.setAttribute('aria-hidden', 'true');
+      } else {
+        entryGuestBtn.hidden = false;
+        entryGuestBtn.disabled = true;
+        entryGuestBtn.setAttribute('aria-hidden', 'false');
+        entryGuestBtn.setAttribute('aria-disabled', 'true');
+        entryGuestBtn.classList.add('is-locked');
+        entryGuestBtn.innerHTML = GUEST_BTN_LOCKED_HTML;
+      }
     }
     if (entryGuestNote) {
-      if (isCountdownActive) {
+      if (followOn) {
+        entryGuestNote.hidden = true;
+      } else if (isCountdownActive) {
+        entryGuestNote.hidden = false;
         entryGuestNote.classList.add('is-countdown');
         entryGuestNote.textContent = 'Guest access opens in ' + formatDurationCompact(unlockWindow.remainingMs) + '.';
       } else if (hasValidUnlockTime && unlockWindow.isTimeReached) {
+        entryGuestNote.hidden = false;
         entryGuestNote.classList.remove('is-countdown');
         entryGuestNote.textContent = 'Guest access window reached, but guest preview is still paused.';
       } else {
+        entryGuestNote.hidden = false;
         entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Guest preview is temporarily paused for a backer-first window.';
+        entryGuestNote.textContent = 'Guest preview is paused for a backer-first window. Enter your access word to continue.';
       }
     }
     if (entrySubtitle) {
-      entrySubtitle.innerHTML = isCountdownActive
-        ? 'Enter your backer access word to unlock the archive.<br>Guest preview is paused for a backer-first window.'
-        : 'Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.';
+      entrySubtitle.innerHTML = followOn
+        ? 'Enter your backer access word to unlock the archive.<br>Or leave a nickname and email for updates.'
+        : (isCountdownActive
+          ? 'Enter your backer access word to unlock the archive.<br>Guest preview is paused for a backer-first window.'
+          : 'Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.');
     }
+    renderFollowSignupState({ guestEnabled: false });
   }
 
   function renderHubPublicContentState() {
@@ -3889,7 +4127,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           lore: 'Two aspects of the God of Sunlight — counted among The Nine. One face sees what is. The other sees what should be. They have never agreed.' },
         { name: 'Elil',          cx: 0.7978, cy: 0.3436, r: 160, unlock: 5, spriteFile: 'assets/medallions/crab.png', artPosition: '59% 57%',
           role: 'The Shapeshifter',
-          lore: 'One of The Nine — lord of the underworld who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
+          lore: 'One of The Nine of Kur — a lord of twilight who moves through air as easily as earth. ELIL slides between realms unseen — what others call sneaking, he calls patience. He uncovers what was always buried, and buries what was never meant to be found.' },
         { name: 'Ningal',        cx: 0.8050, cy: 0.5820, r: 164, unlock: 11, spriteFile: 'assets/medallions/furrow.png', artPosition: '14% 25%',
           role: 'Queen of the Underworld',
           lore: "Ereshkigal's child — one of The Nine gods of the underworld known as Kur. She traces the line between what is planted and what rises. The furrow is the wound the earth agrees to." },
@@ -6044,6 +6282,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     showArchiveEntry();
     renderGuestEntryState();
   }
+  wireFollowSignup();
 
   // Legacy ?reader= links — Issue 1 is open, no gate required
   var initParams = new URLSearchParams(window.location.search);

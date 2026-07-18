@@ -1157,8 +1157,9 @@
     }
   }
 
-  function showPostTutorialHint() {
-    if (!shouldShowPostTutorialHint()) return;
+  // force=true → reopen legend even after first dismiss (Guide Me Marks helper).
+  function showPostTutorialHint(force) {
+    if (!force && !shouldShowPostTutorialHint()) return;
     if (document.getElementById('post-tutorial-hint')) return;
 
     if (!document.getElementById('tut-toast-style')) {
@@ -1190,6 +1191,8 @@
         '<span style="color:#e8c840;">\u25cf</span> Amber \u2014 cartographer sites: click once to search, again when closest</div>' +
       '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:12px;">' +
         'On amber stars the mark hides in the fog \u2014 your lantern grows warmer as you near it. Click a second time to chart it.</div>' +
+      '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:10px;">' +
+        'Sabella left letters along Elena\u2019s road (hut, monastery, tower, Sinn). When the lantern is hottest, the parchment appears \u2014 you will need them before Indras Na.</div>' +
       '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;' +
         'font-family:EB Garamond,serif;">tap to dismiss</div>';
     toast.addEventListener('click', function() { dismissPostTutorialHint(true); });
@@ -1197,6 +1200,7 @@
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });
+    if (postTutorialHintTimer) clearTimeout(postTutorialHintTimer);
     postTutorialHintTimer = setTimeout(function() {
       dismissPostTutorialHint(true);
     }, POST_TUTORIAL_HINT_TIMEOUT);
@@ -4717,6 +4721,27 @@
     });
     btn.addEventListener('click', function(e) { e.stopPropagation(); runGuideMe(); });
     document.body.appendChild(btn);
+
+    // Re-open glow / letter legend (Cartographer's Charge) anytime after tutorial.
+    var legendBtn = document.createElement('button');
+    legendBtn.id = 'fog-legend-btn';
+    legendBtn.type = 'button';
+    legendBtn.setAttribute('aria-label', 'Show cartographer marks legend');
+    legendBtn.textContent = 'Marks';
+    legendBtn.title = 'Glow colors and Sabella letters';
+    legendBtn.style.cssText =
+      'position:fixed;bottom:12px;left:calc(50% - 118px);transform:translateX(0);z-index:800;' +
+      'background:rgba(10,12,16,0.90);color:#9a8f7e;' +
+      'border:1px solid rgba(198,141,85,0.35);border-radius:6px;' +
+      'min-height:44px;padding:10px 12px;font-size:10px;cursor:pointer;' +
+      'letter-spacing:2px;text-transform:uppercase;font-family:Cinzel,serif;' +
+      'box-shadow:0 2px 12px rgba(0,0,0,0.5);';
+    legendBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      dismissPostTutorialHint(false);
+      showPostTutorialHint(true);
+    });
+    document.body.appendChild(legendBtn);
   }
 
   function runGuideMe() {
@@ -4987,6 +5012,10 @@
     maybeRecoverSabellaLetter: maybeRecoverSabellaLetter,
     forceShowSabellaLetter: forceShowSabellaLetter,
     sabellaLetterDisplayName: sabellaLetterDisplayName,
+    showGlowLegend: function() {
+      dismissPostTutorialHint(false);
+      showPostTutorialHint(true);
+    },
     getSinnLockedReason: getSinnLockedReason,
     isSinnTerritoryGated: isSinnTerritoryGated,
     isVol2JourneyGateBlocking: isVol2JourneyGateBlocking,
