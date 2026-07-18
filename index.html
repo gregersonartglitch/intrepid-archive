@@ -104,6 +104,11 @@ input { font-family: inherit; }
   text-transform: uppercase;
   transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
 }
+.entry-guest-btn[hidden],
+.entry-guest-note[hidden],
+.entry-guest-divider[hidden] {
+  display: none !important;
+}
 .entry-guest-btn-label {
   display: block;
 }
@@ -2801,7 +2806,7 @@ body.edit-mode .mk-dot-wrap > * {
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — leave your contact below for updates.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="entry-access-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Archive access word" aria-describedby="entry-access-msg">
       <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access code">
@@ -2816,9 +2821,9 @@ body.edit-mode .mk-dot-wrap > * {
       </button>
     </div>
     <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
-    <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or wait for guest access</span></div>
-    <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button"><span class="entry-guest-btn-label">Continue as guest</span></button>
-    <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300">Guests can read Issue 1 and browse the dossier without a code.</p>
+    <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or follow for updates</span></div>
+    <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button" hidden aria-hidden="true"><span class="entry-guest-btn-label">Continue as guest</span></button>
+    <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300" hidden>Guests can read Issue 1 and browse the dossier without a code.</p>
     <!-- Follow for updates — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
     <div id="entry-follow" class="entry-follow gate-fade" data-delay="1350" hidden>
       <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
@@ -2839,7 +2844,7 @@ body.edit-mode .mk-dot-wrap > * {
         </div>
       </form>
       <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
-      <p id="entry-follow-note" class="entry-follow-note">We only email if you check the box — so we can add you to MailerLite cleanly.</p>
+      <p id="entry-follow-note" class="entry-follow-note">Guest access opens mid to late August. Leave a nickname and email if you want word when it does.</p>
     </div>
   </div>
 </div>
@@ -3192,7 +3197,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 196;
+window.INTREPID_BUILD = 197;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=14"></script>
@@ -3268,8 +3273,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=196"></script>
-<script src="fog.js?v=196"></script>
+<script src="archive-access.js?v=197"></script>
+<script src="fog.js?v=197"></script>
 <script>
 (function() {
   'use strict';
@@ -3668,7 +3673,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (entryAccessMsg) {
         entryAccessMsg.textContent = isGuestEntryEnabled()
           ? 'Access cleared. Continue as guest or enter a new code.'
-          : 'Access cleared. Enter your backer code to continue.';
+          : 'Access cleared. Enter your backer code, or leave your contact below for updates.';
         entryAccessMsg.classList.add('show');
         entryAccessMsg.classList.remove('is-error');
       }
@@ -3931,10 +3936,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
     if (entrySubtitle) {
       entrySubtitle.innerHTML = followOn
-        ? 'Enter your backer access word to unlock the archive.<br>Or leave a nickname and email for updates.'
+        ? 'Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — leave your contact below for updates.'
         : (isCountdownActive
           ? 'Enter your backer access word to unlock the archive.<br>Guest preview is paused for a backer-first window.'
-          : 'Enter your backer access word to unlock the archive.<br>Guest preview is paused — backer codes only for now.');
+          : 'Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — backer codes only for now.');
     }
     renderFollowSignupState({ guestEnabled: false });
   }
