@@ -299,7 +299,7 @@ window.LOCATIONS = [
     type: 'sacred',
     lat: 3420,
     lng: 2900,
-    desc: 'Denegoth rises northeast of Mish like a clenched fist over the Plains of Yahor. Here Atrus Nul broke the last Mish warrior-kings: Lugal Esugar made his final stand, was brought before the Titan on his knees, begged for his life, and was dragged down anyway.',
+    desc: 'Denegoth rises northeast of Mish like a clenched fist over the Plains of Yahor. Mish was a great human kingdom that opposed the reign of the tyrannical Titan lords — though many of its own kings became tyrants and corrupt in turn. Here Atrus Nul broke the last Mish warrior-kings: Lugal Esugar made his final stand, was brought before the Titan on his knees, begged for his life, and was dragged down anyway.',
     lore: '"Denegoth remembers ten thousand warriors on its heights, one king on his knees, and the silence after. The mountain does not sleep. It waits."'
   },
   {
