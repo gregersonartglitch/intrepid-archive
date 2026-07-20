@@ -564,6 +564,7 @@
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
       '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #chime-search-teach, #chime-warmth-hud, #guide-hint-toast, ' +
+      '#tutorial-canvas-tip, #letter-gate-nudge, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -720,36 +721,16 @@
         }
       });
 
-      // During search mode: check for key click first
+      // During search mode: key (offset diamond) OR beacon (main location) can finish
       if (searchMode) {
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
-        var clickRadius = getKeyClickRadiusPx();
-        var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
-        var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
-        if (keyDist < clickRadius) {
-          e.stopPropagation();
-          e.preventDefault();
-          // Charting the mark must not skip an unseen Sabella letter.
-          // Soft path (gate off): KEY_CLICK grants parchment then charts.
-          // Hard gate (on): refuse chart until Hot→parchment is dismissed.
-          ensureSabellaLetterBeforeChart(searchMode.loc);
-          if (isLetterGateBlockingChart(searchMode.loc)) {
-            nudgeLetterGateFirst();
-            return;
-          }
-          if (searchMode.letterRecovery) {
-            finishLetterRecoverySearch(searchMode.loc);
-          } else {
-            completeDiscovery(searchMode.loc);
-          }
-          return;
-        }
+        if (tryFinishChimeSearchAt(x, y, e)) return;
         // If the click hit a non-story location (region, city, etc), allow it through
         if (closest && closest.type !== 'story') {
           discoverLocation(closest);
         }
-        return; // still block story location clicks during search
+        return; // still block other story location clicks during search
       }
 
       if (closest) {
@@ -821,27 +802,11 @@
         var d = Math.sqrt(Math.pow(x-pt.x,2)+Math.pow(y-pt.y,2));
         if (d < clickRadiusFor(loc) && d < closestDist) { closest = loc; closestDist = d; }
       });
-      // During search mode: check for key tap first
+      // During search mode: key (offset diamond) OR beacon (main location) can finish
       if (searchMode) {
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
-        var touchClickRadius = getKeyClickRadiusPx() + 12;
-        var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
-        var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
-        if (keyDist < touchClickRadius) { // slightly larger for touch
-          e.preventDefault();
-          ensureSabellaLetterBeforeChart(searchMode.loc);
-          if (isLetterGateBlockingChart(searchMode.loc)) {
-            nudgeLetterGateFirst();
-            return;
-          }
-          if (searchMode.letterRecovery) {
-            finishLetterRecoverySearch(searchMode.loc);
-          } else {
-            completeDiscovery(searchMode.loc);
-          }
-          return;
-        }
+        if (tryFinishChimeSearchAt(x, y, e)) return;
         // Allow non-story locations (regions, cities) to be tapped during search
         if (closest && closest.type !== 'story') {
           e.preventDefault();
@@ -1056,6 +1021,37 @@
   function removeTutorialHint() {
     tutorialHintLoc = null;
     removePersistentToast();
+    dismissTutorialCanvasTipDom();
+  }
+
+  // Canvas tutorial copy sits under #frame (z-index 500) and clips on medallions —
+  // keep the arrow on canvas, put the sentence in a DOM tip above the frame.
+  function ensureTutorialCanvasTipDom(msg) {
+    if (!msg) {
+      dismissTutorialCanvasTipDom();
+      return;
+    }
+    var tip = document.getElementById('tutorial-canvas-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'tutorial-canvas-tip';
+      tip.setAttribute('role', 'status');
+      tip.style.cssText =
+        'position:fixed;top:14%;left:50%;transform:translateX(-50%);z-index:600;' +
+        'pointer-events:none;max-width:min(420px,72vw);width:auto;' +
+        'padding:12px 18px;border-radius:10px;text-align:center;' +
+        'background:rgba(10,12,16,0.95);border:1.5px solid rgba(255,255,255,0.55);' +
+        'font-family:"Montserrat","Segoe UI",sans-serif;font-size:15px;font-weight:500;' +
+        'line-height:1.45;letter-spacing:0.2px;color:#efe7d2;' +
+        'box-shadow:0 8px 28px rgba(0,0,0,0.55);';
+      document.body.appendChild(tip);
+    }
+    if (tip.textContent !== msg) tip.textContent = msg;
+  }
+
+  function dismissTutorialCanvasTipDom() {
+    var tip = document.getElementById('tutorial-canvas-tip');
+    if (tip && tip.parentNode) tip.parentNode.removeChild(tip);
   }
 
   function advanceTutorial() {
@@ -2850,43 +2846,13 @@
       }
       ctx.restore();
 
-      // Text background pill — bigger and more prominent
-      ctx.save();
-      ctx.font = '500 17px "Montserrat", "Segoe UI", sans-serif';
-      var tw = ctx.measureText(msg).width + 40;
-      var th = 36;
-      var tx, ty;
-      if (arrowAbove) {
-        tx = hx - tw / 2;
-        ty = hy - 80 + bob;
+      // Tip text as DOM above #frame (z-index 500) — canvas tips clipped by medallions.
+      ensureTutorialCanvasTipDom(msg);
       } else {
-        // Position tooltip to the left of the close button
-        tx = hx - tw - 50;
-        ty = hy - th / 2;
-      }
-
-      // Clamp to viewport
-      if (tx < 10) tx = 10;
-      if (tx + tw > w - 10) tx = w - tw - 10;
-      if (ty < 10) ty = 10;
-
-      ctx.fillStyle = 'rgba(10, 12, 16, 0.95)';
-      ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, th, 8);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(tx, ty, tw, th, 8);
-      ctx.stroke();
-
-      ctx.fillStyle = '#efe7d2';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(msg, tx + tw / 2, ty + th / 2);
-      ctx.restore();
+        dismissTutorialCanvasTipDom();
       } // end displayType === 'canvas'
+    } else {
+      dismissTutorialCanvasTipDom();
     }
 
     // ── 6. Navigation beacon — arrow pointing to next journey step ──
@@ -3158,6 +3124,44 @@
     if (isTowerLetterSearch()) r *= TOWER_LETTER_CLICK_MULT;
     if (searchMode && searchMode.escapeBoost) r *= 1.6;
     return r;
+  }
+
+  // Finish chime search on key diamond OR main beacon (hut/monastery/etc).
+  // Letter gate: while parchment unread, nudge instead of charting.
+  function tryFinishChimeSearchAt(x, y, e) {
+    if (!searchMode || !map) return false;
+    var clickRadius = getKeyClickRadiusPx();
+    var touchPad = (e && e.type && e.type.indexOf('touch') === 0) ? 12 : 0;
+    clickRadius += touchPad;
+    var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+    var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
+    var hitKey = keyDist < clickRadius;
+
+    var beaconPt = map.latLngToContainerPoint(getInteractionLatLng(searchMode.loc));
+    var beaconR = Math.max(clickRadius + 10, clickRadiusFor(searchMode.loc) || 48);
+    var beaconDist = Math.sqrt(Math.pow(x - beaconPt.x, 2) + Math.pow(y - beaconPt.y, 2));
+    var hitBeacon = beaconDist < beaconR;
+
+    if (!hitKey && !hitBeacon) return false;
+
+    if (e) {
+      if (e.stopPropagation) e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+    }
+
+    // Soft path (gate off): KEY/beacon grants parchment then charts.
+    // Hard gate: refuse chart until Hot→parchment is dismissed.
+    ensureSabellaLetterBeforeChart(searchMode.loc);
+    if (isLetterGateBlockingChart(searchMode.loc)) {
+      nudgeLetterGateFirst();
+      return true;
+    }
+    if (searchMode.letterRecovery) {
+      finishLetterRecoverySearch(searchMode.loc);
+    } else {
+      completeDiscovery(searchMode.loc);
+    }
+    return true;
   }
 
   // Enter search mode — place a hidden key in the fog ring (offset from beacon).
@@ -3609,6 +3613,17 @@
       hud.textContent = 'Click to chart';
       hud.style.color = '#f0d878';
       hud.style.borderColor = 'rgba(240,216,120,0.7)';
+    }
+    // If lantern is still on the mark, chart now — no second hunt for the diamond.
+    if (searchMode.letterRecovery || searchMode.silenced) return;
+    if (!map || !spotlightPos) return;
+    var kpt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+    var distToKey = Math.sqrt(
+      Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2)
+    );
+    var proximity = Math.max(0, 1 - distToKey / 300);
+    if (proximity >= getSabellaLetterHotThreshold()) {
+      completeDiscovery(searchMode.loc);
     }
   }
 
