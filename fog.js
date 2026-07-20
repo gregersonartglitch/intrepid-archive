@@ -105,6 +105,10 @@
   var SABELLA_MESSAGES_SEEN_LS = 'intrepid_sabella_messages_seen';
   var sabellaMessagePending = false;
   var sabellaMessageOnDismiss = null;
+  // Two-beat letter gate (Jon 2026-07-19): at letter stops, Hot→parchment must clear before chart.
+  // Kill: ENABLE_SABELLA_LETTER_GATE=false, LS intrepid_sabella_letter_gate_disabled=1, or ?nolettergate
+  var ENABLE_SABELLA_LETTER_GATE = true;
+  var SABELLA_LETTER_GATE_DISABLED_LS = 'intrepid_sabella_letter_gate_disabled';
   // Object key order follows Elena's journey path (hut → monastery → tower → sinn).
   // Last letter is at Sinn (road before Indras Na) — no parchment on the finale stop.
   var SABELLA_MESSAGES = {
@@ -726,9 +730,14 @@
         if (keyDist < clickRadius) {
           e.stopPropagation();
           e.preventDefault();
-          // Charting the mark must not skip an unseen Sabella letter (KEY_CLICK
-          // does not require Hot — grant parchment first, then chart / recover).
+          // Charting the mark must not skip an unseen Sabella letter.
+          // Soft path (gate off): KEY_CLICK grants parchment then charts.
+          // Hard gate (on): refuse chart until Hot→parchment is dismissed.
           ensureSabellaLetterBeforeChart(searchMode.loc);
+          if (isLetterGateBlockingChart(searchMode.loc)) {
+            nudgeLetterGateFirst();
+            return;
+          }
           if (searchMode.letterRecovery) {
             finishLetterRecoverySearch(searchMode.loc);
           } else {
@@ -822,6 +831,10 @@
         if (keyDist < touchClickRadius) { // slightly larger for touch
           e.preventDefault();
           ensureSabellaLetterBeforeChart(searchMode.loc);
+          if (isLetterGateBlockingChart(searchMode.loc)) {
+            nudgeLetterGateFirst();
+            return;
+          }
           if (searchMode.letterRecovery) {
             finishLetterRecoverySearch(searchMode.loc);
           } else {
@@ -2472,9 +2485,15 @@
       ensureChimeWarmthHud();
       var idleHud = document.getElementById('chime-warmth-hud');
       if (idleHud) {
-        idleHud.textContent = 'Move lantern';
-        idleHud.style.color = '#9a8f7e';
-        idleHud.style.borderColor = 'rgba(154,143,126,0.35)';
+        if (searchMode.letterGateActive && !searchMode.letterGateCleared) {
+          idleHud.textContent = searchMode.sabellaLetterFired ? 'Read letter' : 'Find letter';
+          idleHud.style.color = '#c4a882';
+          idleHud.style.borderColor = 'rgba(212,168,67,0.4)';
+        } else {
+          idleHud.textContent = 'Move lantern';
+          idleHud.style.color = '#9a8f7e';
+          idleHud.style.borderColor = 'rgba(154,143,126,0.35)';
+        }
       }
     }
     ctx.globalCompositeOperation = 'source-over';
@@ -3160,7 +3179,11 @@
       escapeBoost: false,
       escapeHintShown: false,
       clueBandsFired: {},
-      letterRecovery: letterRecovery
+      letterRecovery: letterRecovery,
+      // Two-beat gate: Hot→parchment dismiss before chart (first visit only).
+      letterGateActive: !!(!letterRecovery && isSabellaLetterGateEnabled() &&
+        SABELLA_MESSAGES[loc.id] && hasUnseenSabellaMessage(loc.id)),
+      letterGateCleared: false
     };
 
     // Start lantern at the beacon/pinhole (cool–warm), not on the key — player
@@ -3232,9 +3255,14 @@
       'opacity:0;transition:opacity 0.45s ease;';
     var hasLetter = loc && SABELLA_MESSAGES[loc.id] && isSabellaMessagesEnabled();
     var letterRecovery = !!(searchMode && searchMode.letterRecovery);
+    var letterGate = !!(searchMode && searchMode.letterGateActive);
     var teachBody;
     if (letterRecovery) {
       teachBody = 'Search with the lantern for Sabella\u2019s letter \u2014 move until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then click the mark.';
+    } else if (letterGate) {
+      teachBody = firstTime
+        ? '<strong style="color:#d4a843;">First:</strong> lantern until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter. <strong style="color:#d4a843;">Then:</strong> click the mark to chart this place.'
+        : 'Letter first (lantern \u2192 <strong style="color:#d4a843;font-weight:600;">Hot</strong>), then click to chart.';
     } else if (hasLetter) {
       teachBody = firstTime
         ? 'Sabella left a letter at this mark \u2014 keep the lantern on the glow until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> (the parchment appears), then click again to chart the place.'
@@ -3247,11 +3275,11 @@
     tip.innerHTML =
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:8px;font-family:Cinzel,serif;">' +
-        (letterRecovery ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
+        (letterRecovery || letterGate ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
       '<div style="font-size:15px;line-height:1.55;color:#efe7d2;">' + teachBody + '</div>' +
       (loc && loc.name
         ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">' +
-          (letterRecovery ? 'At ' : 'Charting ') + loc.name + '</div>'
+          (letterRecovery ? 'At ' : (letterGate ? 'Letter then chart \u00b7 ' : 'Charting ')) + loc.name + '</div>'
         : '') +
       '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
     tip.addEventListener('click', function() {
@@ -3299,15 +3327,20 @@
     ensureChimeWarmthHud();
     var hud = document.getElementById('chime-warmth-hud');
     if (!hud) return;
+    var gateBlocks = !!(searchMode && searchMode.letterGateActive && !searchMode.letterGateCleared);
     var label = 'Searching';
     var color = '#9a8f7e';
     var border = 'rgba(154,143,126,0.35)';
-    if (proximity >= 0.85) {
-      label = 'Click to chart';
+    if (gateBlocks && searchMode.sabellaLetterFired) {
+      label = 'Read letter';
+      color = '#f0d878';
+      border = 'rgba(240,216,120,0.7)';
+    } else if (proximity >= 0.85) {
+      label = gateBlocks ? 'Hot — letter' : 'Click to chart';
       color = '#f0d878';
       border = 'rgba(240,216,120,0.7)';
     } else if (proximity >= 0.65) {
-      label = 'Hot';
+      label = gateBlocks ? 'Hot — letter' : 'Hot';
       color = '#e8c840';
       border = 'rgba(232,200,64,0.55)';
     } else if (proximity >= 0.35) {
@@ -3319,8 +3352,8 @@
       color = '#8ab4d4';
       border = 'rgba(138,180,212,0.4)';
     } else {
-      label = 'Cold';
-      color = '#7a8a9a';
+      label = gateBlocks ? 'Find letter' : 'Cold';
+      color = gateBlocks ? '#9a8f7e' : '#7a8a9a';
       border = 'rgba(122,138,154,0.35)';
     }
     if (hud.textContent !== label) hud.textContent = label;
@@ -3485,10 +3518,12 @@
      SABELLA JOURNEY LETTERS (chime-hot Secret finds, 4 stops)
      Last letter at Sinn; Indras Na has no parchment (congrats on complete).
      Primary: proximity crosses "hot" band near the offset sigil during searchMode
-       (KEY_CLICK also grants letter via ensureSabellaLetterBeforeChart)
+       (KEY_CLICK soft-grants letter only when ENABLE_SABELLA_LETTER_GATE is off)
+     Gate ON: Hot→parchment dismiss required before chart (GO/NO-GO)
      Recovery: click the completed letter-stop marker, or Guide Me → lantern search
      Never: random fog clicks away from the marker / search key; never stack sigil on beacon
      Flag: ENABLE_SABELLA_MESSAGES — intentionally ON for beta (do not flip false for prod)
+     Gate: ENABLE_SABELLA_LETTER_GATE (kill LS intrepid_sabella_letter_gate_disabled / ?nolettergate)
      Per-player kill: localStorage intrepid_sabella_messages_disabled=1
   ════════════════════════════════════════════════ */
   function isSabellaMessagesEnabled() {
@@ -3501,6 +3536,80 @@
       if (params.has('nosabellamessages')) return false;
     } catch (e2) {}
     return true;
+  }
+
+  function isSabellaLetterGateEnabled() {
+    if (!ENABLE_SABELLA_LETTER_GATE || !isSabellaMessagesEnabled()) return false;
+    try {
+      if (localStorage.getItem(SABELLA_LETTER_GATE_DISABLED_LS) === '1') return false;
+    } catch (e) {}
+    try {
+      var params = new URLSearchParams(window.location.search);
+      if (params.has('nolettergate')) return false;
+    } catch (e2) {}
+    return true;
+  }
+
+  // Hard GO/NO-GO: letter stops cannot chart until Hot parchment is dismissed.
+  function isLetterGateBlockingChart(loc) {
+    if (!isSabellaLetterGateEnabled()) return false;
+    if (!loc || !searchMode || searchMode.letterRecovery) return false;
+    if (!SABELLA_MESSAGES[loc.id]) return false;
+    if (searchMode.letterGateCleared) return false;
+    if (hasUnseenSabellaMessage(loc.id)) return true;
+    if (searchMode.sabellaLetterFired) return true;
+    return false;
+  }
+
+  function nudgeLetterGateFirst() {
+    if (!searchMode) return;
+    ensureChimeWarmthHud();
+    var hud = document.getElementById('chime-warmth-hud');
+    if (hud) {
+      hud.textContent = searchMode.sabellaLetterFired
+        ? 'Read the letter first'
+        : 'Find letter — Hot';
+      hud.style.color = '#f0d878';
+      hud.style.borderColor = 'rgba(240,216,120,0.75)';
+    }
+    var old = document.getElementById('letter-gate-nudge');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+    var tip = document.createElement('div');
+    tip.id = 'letter-gate-nudge';
+    tip.setAttribute('role', 'status');
+    tip.style.cssText =
+      'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:945;cursor:pointer;' +
+      'background:rgba(8,10,14,0.94);border:1px solid rgba(212,168,67,0.55);' +
+      'border-radius:10px;padding:12px 18px;max-width:400px;width:90%;text-align:center;' +
+      'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
+      'box-shadow:0 8px 28px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.3s ease;';
+    tip.innerHTML = searchMode.sabellaLetterFired
+      ? '<div style="font-size:14px;line-height:1.5;">Dismiss Sabella\u2019s letter, then click the mark to chart.</div>'
+      : '<div style="font-size:14px;line-height:1.5;">Sabella left a letter here first \u2014 move the lantern until it reads <strong style="color:#d4a843;">Hot</strong>.</div>';
+    tip.addEventListener('click', function() {
+      if (tip.parentNode) tip.parentNode.removeChild(tip);
+    });
+    document.body.appendChild(tip);
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() { tip.style.opacity = '1'; });
+    });
+    setTimeout(function() {
+      if (!tip.parentNode) return;
+      tip.style.opacity = '0';
+      setTimeout(function() { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 300);
+    }, 4200);
+  }
+
+  function clearLetterGateAfterParchment() {
+    if (!searchMode || !searchMode.letterGateActive) return;
+    searchMode.letterGateCleared = true;
+    ensureChimeWarmthHud();
+    var hud = document.getElementById('chime-warmth-hud');
+    if (hud) {
+      hud.textContent = 'Click to chart';
+      hud.style.color = '#f0d878';
+      hud.style.borderColor = 'rgba(240,216,120,0.7)';
+    }
   }
 
   function getSabellaLetterHotThreshold() {
@@ -3642,6 +3751,14 @@
     sabellaMessagePending = false;
 
     var wasRecovery = !!searchMode.letterRecovery;
+    var gateArmed = !!searchMode.letterGateActive && !wasRecovery;
+    if (gateArmed) {
+      var prevDismiss = sabellaMessageOnDismiss;
+      sabellaMessageOnDismiss = function() {
+        clearLetterGateAfterParchment();
+        if (prevDismiss) prevDismiss();
+      };
+    }
     showSabellaMessagePopup(locId, SABELLA_MESSAGES[locId]);
     // Letter-recovery hunt ends when parchment appears (location already charted).
     if (wasRecovery) {
@@ -3650,12 +3767,14 @@
     }
   }
 
-  // KEY_CLICK can chart without ever reading Hot in the HUD — still grant the letter.
+  // KEY_CLICK can chart without ever reading Hot in the HUD — soft path grants letter.
+  // With letter gate ON, KEY_CLICK must not skip the Hot hunt (nudge instead).
   function ensureSabellaLetterBeforeChart(loc) {
     if (!loc || !searchMode) return;
     if (!isSabellaMessagesEnabled()) return;
     if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return;
     if (searchMode.sabellaLetterFired) return;
+    if (isSabellaLetterGateEnabled() && !searchMode.letterRecovery) return;
     maybeShowSabellaLetterOnChime(1);
   }
 
