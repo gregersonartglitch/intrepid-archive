@@ -3198,7 +3198,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 208;
+window.INTREPID_BUILD = 209;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3274,8 +3274,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=208"></script>
-<script src="fog.js?v=208"></script>
+<script src="archive-access.js?v=209"></script>
+<script src="fog.js?v=209"></script>
 <script>
 (function() {
   'use strict';
@@ -5986,6 +5986,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   // Map opening in frame art — center and radius as fractions of image (2400×1792)
   var MAP_HOLE_CX = 0.488, MAP_HOLE_CY = 0.478;
   var MAP_HOLE_RX = 0.295, MAP_HOLE_RY = 0.330; // elliptical (wider vertically)
+  // Pull clip inside the opaque frame rim. Without this, fog breathes through the
+  // PNG’s soft alpha fringe (worst at bottom medallions like Mish) as a flashing
+  // black/map sliver.
+  var MAP_CLIP_INSET_PX = 8;
 
   function updateFrameRect() {
     var FW = 2400, FH = 1792;
@@ -6026,13 +6030,37 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     // Clip ALL map content to the elliptical opening — no fog/clouds/markers leak outside
     var clipCx = MAP_HOLE_CX * w + left;  // screen-space center
     var clipCy = MAP_HOLE_CY * h + top;
-    var clipRx = MAP_HOLE_RX * w;
-    var clipRy = MAP_HOLE_RY * h;
+    var clipRx = Math.max(0, MAP_HOLE_RX * w - MAP_CLIP_INSET_PX);
+    var clipRy = Math.max(0, MAP_HOLE_RY * h - MAP_CLIP_INSET_PX);
     var clipVal = 'ellipse(' + clipRx + 'px ' + clipRy + 'px at ' + clipCx + 'px ' + clipCy + 'px)';
     ['map', 'clouds'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el) el.style.clipPath = clipVal;
     });
+
+    // Dark rim seal under the frame (z 505): opaque outside the map hole, transparent
+    // inside. Covers soft PNG alpha at medallion lips so fog cannot flash through.
+    var seal = document.getElementById('frame-rim-seal');
+    if (!seal) {
+      seal = document.createElement('div');
+      seal.id = 'frame-rim-seal';
+      seal.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(seal);
+    }
+    var artRx = MAP_HOLE_RX * w;
+    var artRy = MAP_HOLE_RY * h;
+    // Gradient stops are % of the ellipse radii — punch a hole matching the inset clip,
+    // then solid dark through the frame’s soft edge and beyond.
+    var holePct = Math.min(99, (clipRx / Math.max(artRx, 1)) * 100);
+    var fringePct = Math.min(100, holePct + 4);
+    var maskGrad =
+      'radial-gradient(ellipse ' + artRx + 'px ' + artRy + 'px at ' + clipCx + 'px ' + clipCy + 'px,' +
+      'transparent 0%, transparent ' + holePct + '%, #000 ' + fringePct + '%, #000 100%)';
+    seal.style.cssText =
+      'position:fixed;z-index:505;pointer-events:none;left:0;top:0;width:100vw;height:100vh;' +
+      'background:#0d0d12;' +
+      '-webkit-mask-image:' + maskGrad + ';' +
+      'mask-image:' + maskGrad + ';';
 
     // Tell Leaflet the container changed size, then redraw fog to match
     if (window._leafletMap) {
