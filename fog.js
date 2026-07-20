@@ -3127,11 +3127,15 @@
   }
 
   // Finish chime search on key diamond OR main beacon (hut/monastery/etc).
-  // Letter gate: while parchment unread, nudge instead of charting.
+  // Letter gate: while parchment unread, open/dismiss letter — do not soft-lock the mark.
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
     var clickRadius = getKeyClickRadiusPx();
-    var touchPad = (e && e.type && e.type.indexOf('touch') === 0) ? 12 : 0;
+    // Letter stops need a friendlier hit — Hot band is wider than the old 50px key click.
+    if (searchMode.letterGateActive || SABELLA_MESSAGES[searchMode.locId]) {
+      clickRadius = Math.max(clickRadius, 72);
+    }
+    var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 12 : 0;
     clickRadius += touchPad;
     var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
     var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
@@ -3150,10 +3154,19 @@
     }
 
     // Soft path (gate off): KEY/beacon grants parchment then charts.
-    // Hard gate: refuse chart until Hot→parchment is dismissed.
     ensureSabellaLetterBeforeChart(searchMode.loc);
+
     if (isLetterGateBlockingChart(searchMode.loc)) {
-      nudgeLetterGateFirst();
+      // Mark click while letter is up → dismiss (dismiss = GO → charts).
+      if (document.getElementById('sabella-message-popup')) {
+        dismissSabellaMessagePopup();
+        return true;
+      }
+      // On the mark but parchment never opened — force Hot letter now.
+      maybeShowSabellaLetterOnChime(1);
+      if (isLetterGateBlockingChart(searchMode.loc)) {
+        nudgeLetterGateFirst();
+      }
       return true;
     }
     if (searchMode.letterRecovery) {
@@ -3265,8 +3278,8 @@
       teachBody = 'Search with the lantern for Sabella\u2019s letter \u2014 move until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then click the mark.';
     } else if (letterGate) {
       teachBody = firstTime
-        ? '<strong style="color:#d4a843;">First:</strong> lantern until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter. <strong style="color:#d4a843;">Then:</strong> click the mark to chart this place.'
-        : 'Letter first (lantern \u2192 <strong style="color:#d4a843;font-weight:600;">Hot</strong>), then click to chart.';
+        ? '<strong style="color:#d4a843;">First:</strong> lantern until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter. <strong style="color:#d4a843;">Then:</strong> tap the letter to close — that charts this place.'
+        : 'Letter at <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then tap the parchment to chart.';
     } else if (hasLetter) {
       teachBody = firstTime
         ? 'Sabella left a letter at this mark \u2014 keep the lantern on the glow until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> (the parchment appears), then click again to chart the place.'
@@ -3588,7 +3601,7 @@
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 8px 28px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.3s ease;';
     tip.innerHTML = searchMode.sabellaLetterFired
-      ? '<div style="font-size:14px;line-height:1.5;">Dismiss Sabella\u2019s letter, then click the mark to chart.</div>'
+      ? '<div style="font-size:14px;line-height:1.5;">Tap the letter to close — that charts this place.</div>'
       : '<div style="font-size:14px;line-height:1.5;">Sabella left a letter here first \u2014 move the lantern until it reads <strong style="color:#d4a843;">Hot</strong>.</div>';
     tip.addEventListener('click', function() {
       if (tip.parentNode) tip.parentNode.removeChild(tip);
@@ -3607,24 +3620,10 @@
   function clearLetterGateAfterParchment() {
     if (!searchMode || !searchMode.letterGateActive) return;
     searchMode.letterGateCleared = true;
-    ensureChimeWarmthHud();
-    var hud = document.getElementById('chime-warmth-hud');
-    if (hud) {
-      hud.textContent = 'Click to chart';
-      hud.style.color = '#f0d878';
-      hud.style.borderColor = 'rgba(240,216,120,0.7)';
-    }
-    // If lantern is still on the mark, chart now — no second hunt for the diamond.
     if (searchMode.letterRecovery || searchMode.silenced) return;
-    if (!map || !spotlightPos) return;
-    var kpt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
-    var distToKey = Math.sqrt(
-      Math.pow(spotlightPos.x - kpt.x, 2) + Math.pow(spotlightPos.y - kpt.y, 2)
-    );
-    var proximity = Math.max(0, 1 - distToKey / 300);
-    if (proximity >= getSabellaLetterHotThreshold()) {
-      completeDiscovery(searchMode.loc);
-    }
+    // Dismissing Sabella's letter is the GO — chart immediately (no second diamond hunt).
+    // Lantern often leaves Hot while the player taps the parchment to close it.
+    completeDiscovery(searchMode.loc);
   }
 
   function getSabellaLetterHotThreshold() {
