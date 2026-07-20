@@ -11,8 +11,8 @@
   var TUTORIAL_STEPS = 7;  // 7-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
   var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
-  var KEY_FIND_RADIUS = 80;  // px — how close to key to reveal it (was 50; too tight vs Hot band)
-  var KEY_CLICK_RADIUS = 80; // px — how close to key to click it (was 50; escape boost felt like a 30–60s wait)
+  var KEY_FIND_RADIUS = 100;  // px — how close to key to reveal it (was 80; monastery clicks still missed)
+  var KEY_CLICK_RADIUS = 120; // px — how close to key to click it (was 80; Ashal glow steals nearby taps)
   // Tower letter: crown sits in storm/cluster clutter — larger lantern + click forgiveness.
   var TOWER_LETTER_FIND_MULT = 2.0;
   var TOWER_LETTER_CLICK_MULT = 2.0;
@@ -611,10 +611,19 @@
       // can appear visually behind that art at some zoom levels.
       if (!clickedInsideMap && !searchMode) return;
 
-      // Skip drags
+      // Where did user click (container-relative)? Needed before drag filter so
+      // lantern-aim micro-moves still finish the chime diamond / beacon.
+      var rect = container.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var y = e.clientY - rect.top;
+
+      // Skip drags — looser during search (moving lantern toward diamond).
       var dx = e.clientX - mouseDownX;
       var dy = e.clientY - mouseDownY;
-      if (Math.sqrt(dx * dx + dy * dy) > 8) return;
+      var dragTol = searchMode ? 36 : 8;
+      if (Math.sqrt(dx * dx + dy * dy) > dragTol) {
+        if (!(searchMode && wouldFinishChimeSearchAt(x, y))) return;
+      }
 
       // Close location panel if open
       var panelEl = document.getElementById('panel');
@@ -632,11 +641,6 @@
       }
 
       primeAudioDeferred();
-
-      // Where did user click (container-relative)?
-      var rect = container.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var y = e.clientY - rect.top;
 
       // Check proximity to the next clickable location
       // ── Direct golden-glow click: if user clicks within the section 3 glow
@@ -726,8 +730,8 @@
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
         if (tryFinishChimeSearchAt(x, y, e)) return;
-        // If the click hit a non-story location (region, city, etc), allow it through
-        if (closest && closest.type !== 'story') {
+        // Do not steal the chime to a neighbor amber (Ashal next to Monastery).
+        if (closest && closest.type !== 'story' && !isNearActiveChimeSearch(x, y)) {
           discoverLocation(closest);
         }
         return; // still block other story location clicks during search
@@ -807,8 +811,8 @@
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
         if (tryFinishChimeSearchAt(x, y, e)) return;
-        // Allow non-story locations (regions, cities) to be tapped during search
-        if (closest && closest.type !== 'story') {
+        // Do not steal the chime to a neighbor amber (Ashal next to Monastery).
+        if (closest && closest.type !== 'story' && !isNearActiveChimeSearch(x, y)) {
           e.preventDefault();
           discoverLocation(closest);
         }
@@ -3103,12 +3107,55 @@
       var crownLl = map.containerPointToLatLng(crownPt);
       return { keyLat: crownLl.lat, keyLng: crownLl.lng };
     }
+    // Monastery: Ashal’s amber star sits up-left. Random offsets often put the
+    // diamond on that glow — players click the circle and “can’t chart” the Oracle.
+    if (loc && loc.id === 'monastery-wind' && map) {
+      var monPt = map.latLngToContainerPoint(ll);
+      var monPin = L.point(monPt.x + 58, monPt.y + 52); // down-right of beacon
+      var monLl = map.containerPointToLatLng(monPin);
+      return { keyLat: monLl.lat, keyLng: monLl.lng };
+    }
     var angle = Math.random() * Math.PI * 2;
     var dist = KEY_OFFSET_MIN + Math.random() * (KEY_OFFSET_MAX - KEY_OFFSET_MIN);
     return {
       keyLat: ll[0] + Math.sin(angle) * dist,
       keyLng: ll[1] + Math.cos(angle) * dist
     };
+  }
+
+  // Screen-space hit test shared by drag filter + finish (key, beacon, or between).
+  function getChimeSearchHit(x, y, extraPad) {
+    if (!searchMode || !map) return null;
+    extraPad = extraPad || 0;
+    var clickRadius = getKeyClickRadiusPx() + extraPad;
+    var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+    var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
+    var beaconPt = map.latLngToContainerPoint(getInteractionLatLng(searchMode.loc));
+    var beaconR = Math.max(clickRadius + 20, clickRadiusFor(searchMode.loc) || 48) + extraPad;
+    var beaconDist = Math.sqrt(Math.pow(x - beaconPt.x, 2) + Math.pow(y - beaconPt.y, 2));
+    var midX = (keyPt.x + beaconPt.x) / 2;
+    var midY = (keyPt.y + beaconPt.y) / 2;
+    var pairHalf = Math.sqrt(
+      Math.pow(keyPt.x - beaconPt.x, 2) + Math.pow(keyPt.y - beaconPt.y, 2)
+    ) / 2;
+    var zoneR = Math.max(clickRadius + 36, pairHalf + 70, 140) + extraPad;
+    var zoneDist = Math.sqrt(Math.pow(x - midX, 2) + Math.pow(y - midY, 2));
+    return {
+      hitKey: keyDist < clickRadius,
+      hitBeacon: beaconDist < beaconR,
+      hitZone: zoneDist < zoneR,
+      keyDist: keyDist,
+      beaconDist: beaconDist
+    };
+  }
+
+  function wouldFinishChimeSearchAt(x, y) {
+    var hit = getChimeSearchHit(x, y);
+    return !!(hit && (hit.hitKey || hit.hitBeacon || hit.hitZone));
+  }
+
+  function isNearActiveChimeSearch(x, y) {
+    return wouldFinishChimeSearchAt(x, y);
   }
 
   function isTowerLetterSearch() {
@@ -3129,23 +3176,13 @@
     return r;
   }
 
-  // Finish chime search on key diamond OR main beacon (hut/monastery/etc).
-  // Letter gate: one tap on the mark opens the letter (if needed) and charts immediately.
+  // Finish chime search on key diamond, beacon, or the zone between them.
+  // Letter gate: one tap opens the letter (if needed) and charts immediately.
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
-    var clickRadius = getKeyClickRadiusPx();
-    var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 12 : 0;
-    clickRadius += touchPad;
-    var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
-    var keyDist = Math.sqrt(Math.pow(x - keyPt.x, 2) + Math.pow(y - keyPt.y, 2));
-    var hitKey = keyDist < clickRadius;
-
-    var beaconPt = map.latLngToContainerPoint(getInteractionLatLng(searchMode.loc));
-    var beaconR = Math.max(clickRadius + 10, clickRadiusFor(searchMode.loc) || 48);
-    var beaconDist = Math.sqrt(Math.pow(x - beaconPt.x, 2) + Math.pow(y - beaconPt.y, 2));
-    var hitBeacon = beaconDist < beaconR;
-
-    if (!hitKey && !hitBeacon) return false;
+    var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 16 : 0;
+    var hit = getChimeSearchHit(x, y, touchPad);
+    if (!hit || (!hit.hitKey && !hit.hitBeacon && !hit.hitZone)) return false;
 
     if (e) {
       if (e.stopPropagation) e.stopPropagation();
