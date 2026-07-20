@@ -474,7 +474,7 @@ function updateReaderHelpTipCopy() {
   }
   if (isMagnifyTipAvailable()) {
     elements.helpTipMagnify.textContent =
-      " Magnify is available via the Lens control (or M key).";
+      " Magnify is available via the Magnify control (or M key).";
     return;
   }
   elements.helpTipMagnify.textContent =

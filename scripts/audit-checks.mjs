@@ -93,10 +93,11 @@ async function main() {
   }
 
   // ── Gate shell in HTML ──────────────────────────────────────────────
-  const gateIds = ['gate', 'gate-pw', 'gate-btn', 'gate-err', 'landing', 'landing-map'];
+  // Hub renamed landing → archive-home (BH-014); landing-map button id kept
+  const gateIds = ['gate', 'gate-pw', 'gate-btn', 'gate-err', 'archive-home', 'landing-map'];
   const missingGate = gateIds.filter((id) => !html.includes(`id="${id}"`));
   if (missingGate.length === 0) {
-    record('gate_elements', 'pass', `All gate/landing ids present (${gateIds.join(', ')})`);
+    record('gate_elements', 'pass', `All gate/hub ids present (${gateIds.join(', ')})`);
   } else {
     record('gate_elements', 'fail', `Missing ids: ${missingGate.join(', ')}`);
   }

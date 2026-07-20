@@ -67,11 +67,11 @@ Console on live: `[Intrepid Map] build 59`
 
 ## Auth Tiers
 
-**Entry screen** (`#archive-entry`) is the first visit gate: backers enter a code; guests choose **Continue as guest** for Issue 1 + dossier. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
+**Entry screen** (`#archive-entry`) is the first visit gate: backers enter an access word. **Guest entry is OFF** until mid–late August (`ENABLE_GUEST_ENTRY = false` in `archive-access.js`) — entry shows follow/updates signup instead of Continue as guest. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
 
 | Tier | Password | Access | localStorage keys |
 |------|----------|--------|-------------------|
-| **Public** | *(none — Continue as guest)* | Issue 1 reader, Character Dossier | `intrepid_archive_entered` (session) |
+| **Public / guest** | *(disabled until August — then Continue as guest)* | Issue 1 reader, Character Dossier | `intrepid_archive_entered` (session) |
 | **Reader backer** | `scribe4` | Issues 2 & 3 (reader only) | `intrepid_reader_backer`, `intrepid_reader_issue_002`, `intrepid_reader_issue_003` |
 | **Cartographer** | `hollowlands9` | Interactive map + reader Issues 2–3 | `intrepid_cartographer_unlocked`, plus reader keys above |
 

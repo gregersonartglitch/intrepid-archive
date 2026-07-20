@@ -2275,7 +2275,8 @@ body.edit-mode .mk-dot-wrap > * {
    FIRST-TIME HINT
    ═══════════════════════════════════════════ */
 .hint-toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(0);
+  /* Sit above Journey FAB (bottom ~20px, z 850) so hint is not clipped (BH-016) */
+  position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%) translateY(0);
   z-index: 840;
   display: none; align-items: center; gap: 8px;
   padding: 10px 20px;
@@ -3288,12 +3289,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const CUNEIFORM_BUTTONS_DISABLE_KEY = 'intrepid_cuneiform_buttons_disabled';
 
   function isCuneiformButtonsEnabled() {
-    if (!ENABLE_CUNEIFORM_BUTTONS) return false;
     try {
       if (localStorage.getItem(CUNEIFORM_BUTTONS_DISABLE_KEY) === '1') return false;
-      return true;
+    } catch (e) { /* ignore */ }
+    if (ENABLE_CUNEIFORM_BUTTONS) return true;
+    try {
+      return localStorage.getItem(CUNEIFORM_BUTTONS_ENABLED_KEY) === '1';
     } catch (e) {
-      return true;
+      return false;
     }
   }
 
