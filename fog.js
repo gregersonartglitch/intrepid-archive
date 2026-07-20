@@ -4794,7 +4794,8 @@
     'intrepid_cartographer_unlocked', 'intrepid_atlas_label',
     'intrepid_atlas_auth', 'intrepid_atlas_tier',
     VOL2_GATE_TOAST_LS, VOL2_GATE_LS_UNLOCK, VOL2_GATE_LS_LOCK,
-    SECRETS_COLLECTED_LS, SABELLA_MESSAGES_SEEN_LS
+    SECRETS_COLLECTED_LS, SABELLA_MESSAGES_SEEN_LS,
+    CHIME_TEACH_SEEN_LS
   ];
 
   function clearProgressStorage() {

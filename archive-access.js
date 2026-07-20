@@ -156,7 +156,8 @@
     }
   }
 
-  /** Clear archive access keys only — does not wipe map fog progress. */
+  /** Clear archive access keys only — does not wipe map fog progress.
+   *  Hub "Reset access" also calls FogSystem.clearProgress() for a full wipe. */
   function resetArchiveAccess() {
     var i;
     for (i = 0; i < ARCHIVE_ACCESS_LS_KEYS.length; i += 1) {

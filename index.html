@@ -3197,7 +3197,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 202;
+window.INTREPID_BUILD = 203;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3273,8 +3273,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=202"></script>
-<script src="fog.js?v=202"></script>
+<script src="archive-access.js?v=203"></script>
+<script src="fog.js?v=203"></script>
 <script>
 (function() {
   'use strict';
@@ -3664,29 +3664,30 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const archiveResetBtn = document.getElementById('archive-reset-access');
   if (archiveResetBtn) {
     archiveResetBtn.addEventListener('click', function() {
-      if (!window.confirm('Clear all archive access on this device? Map progress is kept; reader and cartographer codes are removed.')) return;
+      if (!window.confirm('Clear archive access and cartography map progress on this device? You will need your codes again.')) return;
       if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.resetArchiveAccess) {
         window.IntrepidArchiveAccess.resetArchiveAccess();
       }
-      currentTier = 'C';
-      if (entryAccessPw) entryAccessPw.value = '';
-      if (entryAccessMsg) {
-        entryAccessMsg.textContent = isGuestEntryEnabled()
-          ? 'Access cleared. Continue as guest or enter a new code.'
-          : 'Access cleared. Enter your backer code, or leave your contact below for updates.';
-        entryAccessMsg.classList.add('show');
-        entryAccessMsg.classList.remove('is-error');
+      // Wipe fog/journey progress too (same keys as in-map ↺ Reset). Reload so in-memory fog state dies.
+      if (window.FogSystem && window.FogSystem.clearProgress) {
+        window.FogSystem.clearProgress();
+      } else {
+        try {
+          [
+            'intrepid_atlas_discovered', 'intrepid_atlas_discovered_v', 'revealedGods',
+            'intrepid_atlas_welcomed', 'intrepid_atlas_hinted', 'intrepid_post_tutorial_hinted',
+            'intrepid_atlas_reveals', 'intrepid_coord_unlocks', 'intrepid_atlas_finales',
+            'intrepid_sabella_messages_seen', 'intrepid_chime_teach_seen'
+          ].forEach(function(k) { localStorage.removeItem(k); });
+        } catch (e) {}
       }
-      var app = document.getElementById('app');
-      var loader = document.getElementById('loader');
-      if (app) app.classList.remove('show');
-      document.body.classList.remove('map-session');
-      if (loader) loader.classList.add('hidden');
-      gate.style.display = 'none';
-      gate.classList.add('hidden');
-      if (window.FogSystem && window.FogSystem.stopDrift) window.FogSystem.stopDrift();
-      showArchiveEntry();
-      renderGuestEntryState();
+      try {
+        var u = new URL(window.location.href);
+        ['map', 'edit', 'scan', 'key', 'reset'].forEach(function(p) { u.searchParams.delete(p); });
+        window.location.replace(u.pathname + u.search + u.hash);
+      } catch (e2) {
+        window.location.reload();
+      }
     });
   }
 
