@@ -11,8 +11,12 @@
   var TUTORIAL_STEPS = 7;  // 7-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
   var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
-  var KEY_FIND_RADIUS = 100;  // px — how close to key to reveal it (was 80; monastery clicks still missed)
-  var KEY_CLICK_RADIUS = 120; // px — how close to key to click it (was 80; Ashal glow steals nearby taps)
+  var KEY_FIND_RADIUS = 120;  // px — lantern “see diamond” band
+  var KEY_CLICK_RADIUS = 140; // px — direct diamond/beacon tap
+  // Journey letter stops (hut / monastery / tower / sinn): finish zone must feel
+  // obvious on first try — no 20s “eventually works” escape wait.
+  var LETTER_STOP_FINISH_RADIUS = 220; // px from beacon OR key OR pinhole
+  var CHIME_NEIGHBOR_SUPPRESS_PX = 300; // hide competing amber/orange while searching
   // Tower letter: crown sits in storm/cluster clutter — larger lantern + click forgiveness.
   var TOWER_LETTER_FIND_MULT = 2.0;
   var TOWER_LETTER_CLICK_MULT = 2.0;
@@ -24,8 +28,8 @@
   var KEY_OFFSET_MAX = 110;
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
-  var CHIME_ESCAPE_MS = 20000;    // after 20s in search, boost hitbox (was 60s — felt like “stuck”)
-  var CHIME_ESCAPE_CLICKS = 8;    // or after N map clicks during search (was 20)
+  var CHIME_ESCAPE_MS = 8000;     // safety net only (letter stops start boosted)
+  var CHIME_ESCAPE_CLICKS = 4;
   var POST_TUTORIAL_HINT_LS = 'intrepid_post_tutorial_hinted';
   var POST_TUTORIAL_HINT_TIMEOUT = 15000;
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
@@ -730,7 +734,8 @@
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
         if (tryFinishChimeSearchAt(x, y, e)) return;
-        // Do not steal the chime to a neighbor amber (Ashal next to Monastery).
+        // Letter stops: never steal to neighbors. Other searches: only far mist taps.
+        if (isLetterStopSearch()) return;
         if (closest && closest.type !== 'story' && !isNearActiveChimeSearch(x, y)) {
           discoverLocation(closest);
         }
@@ -811,7 +816,7 @@
         searchMode.mapClicks = (searchMode.mapClicks || 0) + 1;
         maybeChimeEscapeHint();
         if (tryFinishChimeSearchAt(x, y, e)) return;
-        // Do not steal the chime to a neighbor amber (Ashal next to Monastery).
+        if (isLetterStopSearch()) return;
         if (closest && closest.type !== 'story' && !isNearActiveChimeSearch(x, y)) {
           e.preventDefault();
           discoverLocation(closest);
@@ -2087,6 +2092,13 @@
       if (loc.id === SINN_CITY_ID && isSinnTerritoryGated()) return;
       if (loc.id === FINAL_ELENA_STOP && getIndrasNaLockedReason()) return;
 
+      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
+      if (pt.x < -120 || pt.x > w + 120 || pt.y < -120 || pt.y > h + 120) return;
+
+      // During chime search, suppress neighbor glows (Ashal next to Monastery, etc.)
+      // so only the diamond reads as the tap target.
+      if (searchMode && isChimeNeighborSuppressed(pt.x, pt.y)) return;
+
       if (loc.type === 'story' && loc.id !== nextId) {
         var storyNearDisc = false;
         Object.keys(discovered).forEach(function(dId) {
@@ -2098,9 +2110,6 @@
         });
         if (!storyNearDisc) return;
       }
-
-      var pt = map.latLngToContainerPoint(getInteractionLatLng(loc));
-      if (pt.x < -120 || pt.x > w + 120 || pt.y < -120 || pt.y > h + 120) return;
 
       var isRegion = isTerritory(loc);
 
@@ -2486,9 +2495,13 @@
       var idleHud = document.getElementById('chime-warmth-hud');
       if (idleHud) {
         if (searchMode.letterGateActive && !searchMode.letterGateCleared) {
-          idleHud.textContent = searchMode.sabellaLetterFired ? 'Read letter' : 'Find letter';
-          idleHud.style.color = '#c4a882';
-          idleHud.style.borderColor = 'rgba(212,168,67,0.4)';
+          idleHud.textContent = searchMode.sabellaLetterFired ? 'Read letter' : 'Tap diamond';
+          idleHud.style.color = '#f0d878';
+          idleHud.style.borderColor = 'rgba(240,216,120,0.7)';
+        } else if (isLetterStopSearch()) {
+          idleHud.textContent = 'Tap diamond';
+          idleHud.style.color = '#f0d878';
+          idleHud.style.borderColor = 'rgba(240,216,120,0.7)';
         } else {
           idleHud.textContent = 'Move lantern';
           idleHud.style.color = '#9a8f7e';
@@ -2509,7 +2522,8 @@
       // Always show a readable pulse so the diamond is findable immediately
       var basePulse = searchMode.escapeBoost ? 0.28 : 0.18;
       if (isTowerLetterSearch()) basePulse = Math.max(basePulse, 0.24);
-      if (searchMode.letterGateActive || SABELLA_MESSAGES[searchMode.locId]) {
+      if (isLetterStopSearch()) basePulse = Math.max(basePulse, 0.42);
+      else if (searchMode.letterGateActive || SABELLA_MESSAGES[searchMode.locId]) {
         basePulse = Math.max(basePulse, 0.22);
       }
       basePulse += (searchMode.escapeBoost ? 0.14 : 0.1) * Math.sin(time * 2.5);
@@ -2523,9 +2537,15 @@
 
       var keyVisible = kDist < findRadius;
       var keyNear = kDist < findRadius * 2;
-      var kAlpha = keyVisible ? 0.9 : (keyNear ? 0.4 : hintAlpha);
-      var kSize = keyVisible ? 10 : (keyNear ? 7 : 5);
+      // Letter stops: diamond stays fully readable without lantern hunt.
+      if (isLetterStopSearch()) {
+        keyVisible = true;
+        keyNear = true;
+      }
+      var kAlpha = keyVisible ? 0.95 : (keyNear ? 0.4 : hintAlpha);
+      var kSize = keyVisible ? 12 : (keyNear ? 7 : 5);
       if (isTowerLetterSearch()) kSize += 3;
+      if (isLetterStopSearch()) kSize = Math.max(kSize, 14);
 
       ctx.save();
       ctx.shadowColor = 'rgba(212, 168, 67, 0.8)';
@@ -3099,21 +3119,24 @@
   // chime searches (journey letter stops, cartographer sites, letter recovery).
   function placeSearchKeyOffset(loc) {
     var ll = getInteractionLatLng(loc);
-    // Tower of the Nine letter: pin to the crown (above peak). Random 360° offsets
-    // often hide the diamond in storm bolts / Maxim cluster — last secret too easy to miss.
-    if (loc && loc.id === 'tower-nine' && map) {
+    // Fixed screen pins for letter stops — random 360° offsets land on neighbor
+    // amber stars (Ashal @ monastery, Maxim @ tower, hut cluster) and feel broken.
+    if (loc && map && SABELLA_MESSAGES[loc.id]) {
       var peakPt = map.latLngToContainerPoint(ll);
-      var crownPt = L.point(peakPt.x, peakPt.y - TOWER_LETTER_CROWN_PX);
-      var crownLl = map.containerPointToLatLng(crownPt);
-      return { keyLat: crownLl.lat, keyLng: crownLl.lng };
-    }
-    // Monastery: Ashal’s amber star sits up-left. Random offsets often put the
-    // diamond on that glow — players click the circle and “can’t chart” the Oracle.
-    if (loc && loc.id === 'monastery-wind' && map) {
-      var monPt = map.latLngToContainerPoint(ll);
-      var monPin = L.point(monPt.x + 58, monPt.y + 52); // down-right of beacon
-      var monLl = map.containerPointToLatLng(monPin);
-      return { keyLat: monLl.lat, keyLng: monLl.lng };
+      var pinPt;
+      if (loc.id === 'tower-nine') {
+        pinPt = L.point(peakPt.x, peakPt.y - TOWER_LETTER_CROWN_PX);
+      } else if (loc.id === 'monastery-wind') {
+        pinPt = L.point(peakPt.x + 58, peakPt.y + 52); // away from Ashal (up-left)
+      } else if (loc.id === 'sabellas-hut') {
+        pinPt = L.point(peakPt.x + 48, peakPt.y - 56);
+      } else if (loc.id === 'sinn') {
+        pinPt = L.point(peakPt.x - 52, peakPt.y + 48);
+      } else {
+        pinPt = L.point(peakPt.x + 50, peakPt.y + 50);
+      }
+      var pinLl = map.containerPointToLatLng(pinPt);
+      return { keyLat: pinLl.lat, keyLng: pinLl.lng };
     }
     var angle = Math.random() * Math.PI * 2;
     var dist = KEY_OFFSET_MIN + Math.random() * (KEY_OFFSET_MAX - KEY_OFFSET_MIN);
@@ -3123,7 +3146,29 @@
     };
   }
 
-  // Screen-space hit test shared by drag filter + finish (key, beacon, or between).
+  function isLetterStopSearch() {
+    return !!(searchMode && SABELLA_MESSAGES[searchMode.locId]);
+  }
+
+  // Hide competing amber/orange while the player is mid-chime (global clarity).
+  function isChimeNeighborSuppressed(sx, sy) {
+    if (!searchMode || !map) return false;
+    var beaconPt = map.latLngToContainerPoint(getInteractionLatLng(searchMode.loc));
+    var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
+    var dBeacon = Math.sqrt(Math.pow(sx - beaconPt.x, 2) + Math.pow(sy - beaconPt.y, 2));
+    var dKey = Math.sqrt(Math.pow(sx - keyPt.x, 2) + Math.pow(sy - keyPt.y, 2));
+    return dBeacon < CHIME_NEIGHBOR_SUPPRESS_PX || dKey < CHIME_NEIGHBOR_SUPPRESS_PX;
+  }
+
+  function getSearchPinholeRadiusPx() {
+    if (!searchMode || !map) return 80;
+    var zoom = map.getZoom();
+    var r = 180 * PINHOLE_SCALE * Math.pow(2, zoom);
+    if (r < 48) r = 48;
+    return r;
+  }
+
+  // Screen-space hit test shared by drag filter + finish (key, beacon, zone, pinhole).
   function getChimeSearchHit(x, y, extraPad) {
     if (!searchMode || !map) return null;
     extraPad = extraPad || 0;
@@ -3138,12 +3183,19 @@
     var pairHalf = Math.sqrt(
       Math.pow(keyPt.x - beaconPt.x, 2) + Math.pow(keyPt.y - beaconPt.y, 2)
     ) / 2;
-    var zoneR = Math.max(clickRadius + 36, pairHalf + 70, 140) + extraPad;
+    var zoneFloor = isLetterStopSearch() ? LETTER_STOP_FINISH_RADIUS : 140;
+    var zoneR = Math.max(clickRadius + 36, pairHalf + 70, zoneFloor) + extraPad;
     var zoneDist = Math.sqrt(Math.pow(x - midX, 2) + Math.pow(y - midY, 2));
+    var pinholeR = getSearchPinholeRadiusPx() + 24 + extraPad;
+    var hitPinhole = beaconDist < pinholeR;
+    // Letter stops: also accept a direct tap near either mark with the large floor radius.
+    var letterTap = isLetterStopSearch() &&
+      (keyDist < LETTER_STOP_FINISH_RADIUS + extraPad ||
+       beaconDist < LETTER_STOP_FINISH_RADIUS + extraPad);
     return {
       hitKey: keyDist < clickRadius,
       hitBeacon: beaconDist < beaconR,
-      hitZone: zoneDist < zoneR,
+      hitZone: zoneDist < zoneR || hitPinhole || letterTap,
       keyDist: keyDist,
       beaconDist: beaconDist
     };
@@ -3165,6 +3217,7 @@
   function getKeyFindRadiusPx() {
     var r = KEY_FIND_RADIUS;
     if (isTowerLetterSearch()) r *= TOWER_LETTER_FIND_MULT;
+    if (isLetterStopSearch()) r = Math.max(r, LETTER_STOP_FINISH_RADIUS);
     if (searchMode && searchMode.escapeBoost) r *= 2.2;
     return r;
   }
@@ -3172,6 +3225,7 @@
   function getKeyClickRadiusPx() {
     var r = KEY_CLICK_RADIUS;
     if (isTowerLetterSearch()) r *= TOWER_LETTER_CLICK_MULT;
+    if (isLetterStopSearch()) r = Math.max(r, 160);
     if (searchMode && searchMode.escapeBoost) r *= 1.6;
     return r;
   }
@@ -3233,8 +3287,9 @@
       keyLng: keyLng,
       startTime: Date.now(),
       mapClicks: 0,
-      escapeBoost: false,
-      escapeHintShown: false,
+      // Letter stops start boosted — diamond is the clear GO, not a 20s hunt.
+      escapeBoost: !!letterStop,
+      escapeHintShown: !!letterStop,
       clueBandsFired: {},
       letterRecovery: letterRecovery,
       // Two-beat gate: Hot→parchment dismiss before chart (first visit only).
@@ -3315,15 +3370,11 @@
     var letterGate = !!(searchMode && searchMode.letterGateActive);
     var teachBody;
     if (letterRecovery) {
-      teachBody = 'Search with the lantern for Sabella\u2019s letter \u2014 move until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong>, then click the mark.';
-    } else if (letterGate) {
+      teachBody = 'Tap the <strong style="color:#d4a843;font-weight:600;">glowing diamond</strong> for Sabella\u2019s letter.';
+    } else if (letterGate || hasLetter) {
       teachBody = firstTime
-        ? '<strong style="color:#d4a843;">First:</strong> lantern until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter (or click the glowing mark). That charts this place.'
-        : 'Lantern \u2192 <strong style="color:#d4a843;font-weight:600;">Hot</strong> / click the mark to chart.';
-    } else if (hasLetter) {
-      teachBody = firstTime
-        ? 'Sabella left a letter at this mark \u2014 keep the lantern on the glow until it reads <strong style="color:#d4a843;font-weight:600;">Hot</strong> (the parchment appears), then click again to chart the place.'
-        : 'Lantern on the mark until <strong style="color:#d4a843;font-weight:600;">Hot</strong> for Sabella\u2019s letter, then click to chart.';
+        ? 'Tap the <strong style="color:#d4a843;font-weight:600;">glowing diamond</strong> \u2014 Sabella\u2019s letter opens, then this place is charted.'
+        : 'Tap the <strong style="color:#d4a843;font-weight:600;">glowing diamond</strong> to chart.';
     } else {
       teachBody = firstTime
         ? 'The mark is hidden nearby \u2014 move your lantern until it glows warmer, then <strong style="color:#d4a843;font-weight:600;">click again</strong> to chart it.'
@@ -3332,11 +3383,11 @@
     tip.innerHTML =
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:8px;font-family:Cinzel,serif;">' +
-        (letterRecovery || letterGate ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
+        (letterRecovery || letterGate || hasLetter ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
       '<div style="font-size:15px;line-height:1.55;color:#efe7d2;">' + teachBody + '</div>' +
       (loc && loc.name
         ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">' +
-          (letterRecovery ? 'At ' : (letterGate ? 'Letter then chart \u00b7 ' : 'Charting ')) + loc.name + '</div>'
+          (letterRecovery ? 'At ' : ((letterGate || hasLetter) ? 'Tap diamond \u00b7 ' : 'Charting ')) + loc.name + '</div>'
         : '') +
       '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
     tip.addEventListener('click', function() {
@@ -3390,6 +3441,10 @@
     var border = 'rgba(154,143,126,0.35)';
     if (gateBlocks && searchMode.sabellaLetterFired) {
       label = 'Read letter';
+      color = '#f0d878';
+      border = 'rgba(240,216,120,0.7)';
+    } else if (isLetterStopSearch()) {
+      label = gateBlocks ? 'Tap diamond' : 'Tap diamond';
       color = '#f0d878';
       border = 'rgba(240,216,120,0.7)';
     } else if (proximity >= 0.85) {
