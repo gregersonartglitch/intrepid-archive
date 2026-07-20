@@ -11,8 +11,8 @@
   var TUTORIAL_STEPS = 7;  // 7-step guided walkthrough
   var SPOTLIGHT_RADIUS = 60; // px — size of the mouse lantern
   var SPOTLIGHT_ATTACH_RADIUS = 320; // px — lantern detaches beyond this from search center/key
-  var KEY_FIND_RADIUS = 50;  // px — how close to key to reveal it
-  var KEY_CLICK_RADIUS = 50; // px — how close to key to click it
+  var KEY_FIND_RADIUS = 80;  // px — how close to key to reveal it (was 50; too tight vs Hot band)
+  var KEY_CLICK_RADIUS = 80; // px — how close to key to click it (was 50; escape boost felt like a 30–60s wait)
   // Tower letter: crown sits in storm/cluster clutter — larger lantern + click forgiveness.
   var TOWER_LETTER_FIND_MULT = 2.0;
   var TOWER_LETTER_CLICK_MULT = 2.0;
@@ -23,9 +23,9 @@
   var KEY_OFFSET_MIN = 70;
   var KEY_OFFSET_MAX = 110;
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
-  var HINT_DELAY = 5000;     // ms before key starts hinting
-  var CHIME_ESCAPE_MS = 60000;    // after 60s in search mode, boost hints
-  var CHIME_ESCAPE_CLICKS = 20;   // or after N map clicks during search
+  var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
+  var CHIME_ESCAPE_MS = 20000;    // after 20s in search, boost hitbox (was 60s — felt like “stuck”)
+  var CHIME_ESCAPE_CLICKS = 8;    // or after N map clicks during search (was 20)
   var POST_TUTORIAL_HINT_LS = 'intrepid_post_tutorial_hinted';
   var POST_TUTORIAL_HINT_TIMEOUT = 15000;
   var BREATH_SPEED = 0.15;   // how fast the fog edges breathe (cycles/sec)
@@ -2455,7 +2455,7 @@
       ctx.fill();
 
       // Directional pull arrow (small triangle pointing toward key)
-      if (distToKey > KEY_FIND_RADIUS && distToKey < maxDist) {
+      if (distToKey > getKeyFindRadiusPx() && distToKey < maxDist) {
         var angle = Math.atan2(kpt2.y - spotlightPos.y, kpt2.x - spotlightPos.x);
         var arrowDist = sR * 0.4;
         var ax = spotlightPos.x + Math.cos(angle) * arrowDist;
@@ -2502,10 +2502,13 @@
       var elapsed = Date.now() - searchMode.startTime;
       var findRadius = getKeyFindRadiusPx();
 
-      // Always show a faint pulse so key is findable
-      var basePulse = searchMode.escapeBoost ? 0.22 : 0.12;
-      if (isTowerLetterSearch()) basePulse = Math.max(basePulse, 0.2);
-      basePulse += (searchMode.escapeBoost ? 0.14 : 0.08) * Math.sin(time * 2.5);
+      // Always show a readable pulse so the diamond is findable immediately
+      var basePulse = searchMode.escapeBoost ? 0.28 : 0.18;
+      if (isTowerLetterSearch()) basePulse = Math.max(basePulse, 0.24);
+      if (searchMode.letterGateActive || SABELLA_MESSAGES[searchMode.locId]) {
+        basePulse = Math.max(basePulse, 0.22);
+      }
+      basePulse += (searchMode.escapeBoost ? 0.14 : 0.1) * Math.sin(time * 2.5);
 
       // After HINT_DELAY, pulse gets much stronger (immediate when escape boost active)
       var hintAlpha = basePulse;
@@ -3131,10 +3134,6 @@
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
     var clickRadius = getKeyClickRadiusPx();
-    // Letter stops need a friendlier hit — Hot band is wider than the old 50px key click.
-    if (searchMode.letterGateActive || SABELLA_MESSAGES[searchMode.locId]) {
-      clickRadius = Math.max(clickRadius, 72);
-    }
     var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 12 : 0;
     clickRadius += touchPad;
     var keyPt = map.latLngToContainerPoint([searchMode.keyLat, searchMode.keyLng]);
