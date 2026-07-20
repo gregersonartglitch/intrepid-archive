@@ -2933,7 +2933,7 @@
     }
 
     // Most locations get mist (low fog) reveal. Journey path locations get the
-    // full chime/search mechanic regardless of their nominal type (mish, sinn,
+    // full chime/search mechanic regardless of their nominal type (sinn and
     // indras-na are type:'city' in data.js but behave as story stops).
     var isStory = (loc.type === 'story') || isOnPath(loc.id);
     if (!isStory) {

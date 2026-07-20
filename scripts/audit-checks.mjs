@@ -11,6 +11,8 @@
 
 const BASE = (process.env.AUDIT_BASE || 'http://localhost:8080').replace(/\/$/, '');
 const EXPECTED_BUILD_ENV = process.env.EXPECTED_BUILD;
+/** Resolved in main(); printReport reads this (BH-013). */
+let EXPECTED_BUILD = EXPECTED_BUILD_ENV ? parseInt(EXPECTED_BUILD_ENV, 10) : null;
 
 /** @type {{ name: string, status: 'pass'|'fail'|'warn', detail: string }[]} */
 const checks = [];
@@ -55,7 +57,7 @@ async function main() {
   // ── Build stamp ─────────────────────────────────────────────────────
   const buildMatch = html.match(/window\.INTREPID_BUILD\s*=\s*(\d+)/);
   const parsedBuild = buildMatch ? parseInt(buildMatch[1], 10) : null;
-  const EXPECTED_BUILD = EXPECTED_BUILD_ENV
+  EXPECTED_BUILD = EXPECTED_BUILD_ENV
     ? parseInt(EXPECTED_BUILD_ENV, 10)
     : (parsedBuild != null ? parsedBuild : 62);
   if (!buildMatch) {
