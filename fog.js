@@ -255,9 +255,28 @@
   }
 
   // When a journey site is found, its nearby companions become visible + glow.
+  // Tower → Maxim Stone: only after Sabella's tower letter (companions “wait in the fog”).
   var SITE_CLUSTERS = {
     'tower-nine': ['maxim-stone']
   };
+
+  function canPeekTowerCluster() {
+    // Sabella letters off → legacy: peek as soon as tower is charted
+    if (!isSabellaMessagesEnabled()) return true;
+    return !hasUnseenSabellaMessage('tower-nine');
+  }
+
+  function maybePeekTowerCluster(opts) {
+    opts = opts || {};
+    if (!discovered['tower-nine'] && !opts.forceAfterChart) return;
+    if (!canPeekTowerCluster()) return;
+    peekClusterSites('tower-nine');
+    if (opts.showHint) {
+      setTimeout(function() {
+        showTowerClusterHint();
+      }, opts.hintDelay != null ? opts.hintDelay : 600);
+    }
+  }
 
   // Audio — divining rod pings
   var audioCtx = null;
@@ -547,7 +566,7 @@
     }
 
     if (discovered['tower-nine']) {
-      peekClusterSites('tower-nine');
+      maybePeekTowerCluster();
     }
 
     // Sync marker visibility with saved discoveries (buildMarkers runs before init)
@@ -1717,7 +1736,11 @@
     }
 
     // CartographerSites (amber star): clickable when the same amber star is visible.
+    // Maxim Stone is a tower companion — letter-gated (not plain proximity).
     if (loc.cartographerSite) {
+      if (locId === 'maxim-stone' && isSabellaMessagesEnabled() && hasUnseenSabellaMessage('tower-nine')) {
+        return false;
+      }
       return nearCleared || nearestTerritoryIsDiscovered(loc) || !!clusterPeek[locId];
     }
 
@@ -2165,6 +2188,12 @@
       }
 
       if (!onPath && !loc.cartographerSite && !clusterPeek[loc.id]) return;
+
+      // Maxim Stone: do not auto-peek from proximity while Sabella's tower letter
+      // is still unseen (draw used to call peekMarker on every cartographer site).
+      if (loc.id === 'maxim-stone' && isSabellaMessagesEnabled() && hasUnseenSabellaMessage('tower-nine')) {
+        return;
+      }
 
       if (loc.cartographerSite) peekMarker(loc.id);
 
@@ -3125,7 +3154,8 @@
       var peakPt = map.latLngToContainerPoint(ll);
       var pinPt;
       if (loc.id === 'tower-nine') {
-        pinPt = L.point(peakPt.x, peakPt.y - TOWER_LETTER_CROWN_PX);
+        // Beside the peak — crown storm bolts made hunt-and-peck feel broken
+        pinPt = L.point(peakPt.x + 42, peakPt.y - 40);
       } else if (loc.id === 'monastery-wind') {
         pinPt = L.point(peakPt.x + 58, peakPt.y + 52); // away from Ashal (up-left)
       } else if (loc.id === 'sabellas-hut') {
@@ -3745,6 +3775,10 @@
       seen[locId] = Date.now();
       localStorage.setItem(SABELLA_MESSAGES_SEEN_LS, JSON.stringify(seen));
     } catch (e) {}
+    // Letter unlocks the companion glow (Maxim Stone after Cage of Nine).
+    if (locId === 'tower-nine') {
+      maybePeekTowerCluster({ forceAfterChart: true, showHint: true, hintDelay: 800 });
+    }
   }
 
   function hasUnseenSabellaMessage(locId) {
@@ -4087,13 +4121,10 @@
       scheduleSabellaMessage(loc);
     }
 
-    // Tower cluster: peek Maxim Stone immediately so amber glow ↔ clickable stay in sync.
-    // Hint toast stays delayed so it doesn't fight the tower celebration.
+    // Tower cluster: Maxim Stone waits in the fog until Sabella's tower letter
+    // (letter body: “companions who wait beside the tower”). Letters off → peek now.
     if (loc.id === 'tower-nine') {
-      peekClusterSites('tower-nine');
-      setTimeout(function() {
-        showTowerClusterHint();
-      }, 1800);
+      maybePeekTowerCluster({ forceAfterChart: true, showHint: canPeekTowerCluster(), hintDelay: 1800 });
     }
 
     // After a journey stop completes, fly toward next glow or sealed Indras Na if off-screen
@@ -4254,7 +4285,7 @@
       'color:#d4c4a0;opacity:0;transition:opacity 1s ease;line-height:1.6;';
     hint.innerHTML =
       '\u201cOne secret crowns this tower.\u201d<br>' +
-      '<span style="font-size:11px;color:#a09070;">Sweep the lantern across the peak — the letter waits at the crown.</span>';
+      '<span style="font-size:11px;color:#a09070;">The Maxim Stone waits beside it \u2014 tap the amber glow.</span>';
     document.body.appendChild(hint);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { hint.style.opacity = '1'; });
