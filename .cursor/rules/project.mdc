@@ -64,6 +64,14 @@ npx http-server . -p 8080 --cors -c-1
 # http://localhost:8080?edit  (drag-to-reposition locations)
 ```
 
+## Cursor orchestration agent — Vector
+
+**Vector** is the name for the Cursor parent/orchestration agent in this repo (multitask coordinator that routes work to subagents, tracks deploys, and synthesizes handoffs).
+
+- **Role:** coordinate subagents, keep build/deploy context, enforce project rules, report to Jon
+- **Not the same as:** Antigravity (Claude Code on Jon's machine) or Vance (KS campaign agent)
+- **In chat:** Vector may refer to itself by this name when coordinating; subagents stay unnamed workers unless Jon names them
+
 ## Agent handoff
 Full onboarding (repos, auth, deploy, reader integrate, don't-break rules): **`AGENT-HANDOFF.md`** at repo root.  
 Cursor skill: `.cursor/skills/intrepid-map/SKILL.md`

@@ -3198,7 +3198,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 209;
+window.INTREPID_BUILD = 210;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3275,7 +3275,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="fog.js?v=209"></script>
+<script src="fog.js?v=210"></script>
 <script>
 (function() {
   'use strict';
@@ -3985,10 +3985,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function formatEntryUnlockMessage(status) {
     if (status.cartographer && status.reader) {
-      return 'Cartographer archive unlocked — map and Issues 2–3 are ready.';
+      return 'Cartographer archive unlocked — map and Issues 2–3 are ready. To download the PDF, open Volume 1 and use Download PDF (top left).';
     }
     if (status.reader) {
-      return 'Reader unlocked — Issues 2 and 3 are ready when you read Volume 1.';
+      return 'Reader unlocked — Issues 2 and 3 are ready when you read Volume 1. To download the PDF, open Volume 1 and use Download PDF (top left).';
     }
     if (status.cartographer) {
       return 'Cartographer atlas unlocked.';

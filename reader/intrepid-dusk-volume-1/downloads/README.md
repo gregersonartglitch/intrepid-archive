@@ -2,30 +2,26 @@
 
 ## Choice
 
-Full Volume 1 digital PDF is assembled from the three revised chapter
-masters (Issue 1 + 2 + 3 = **68 pages**).
+Full Volume 1 digital PDF ships the complete `IntrepidDusk_Vol1_DIGITAL.pdf`
+(72 pages): story pages **1–68** plus sketch/process
+bonus pages **69–72**.
 
-We did **not** ship `Intrepid-Dusk-Interior-press_72pg_v2_SPLICED.pdf`
-as the download volume — that press file includes trailing sketch /
-extra pages beyond the reader content.
+Chapter downloads remain story content only (21 + 21 + 26 = 68 pages).
 
-## Sources
+## Source
 
-- `issue 1_revised_for_OnPrint.pdf` (21p)
-- `issue 2_fixed_revised_for_Onprint.pdf` (21p)
-- `issue 3_revised_onprint.pdf` (26p)
+- `IntrepidDusk_Vol1_DIGITAL.pdf` (72p digital master)
 
 ## Compression
 
-- Rasterized at **160 dpi**, JPEG quality **80**
-- Built for screen download (not print masters)
+- Source is already web-optimized (JPEG ~150 dpi); split only, no re-rasterize
 
 ## Files
 
 | File | Pages | Size |
 |------|------:|-----:|
-| `intrepid-dusk-chapter-1.pdf` | 21 | 8.8 MB |
-| `intrepid-dusk-chapter-2.pdf` | 21 | 9.0 MB |
-| `intrepid-dusk-chapter-3.pdf` | 26 | 10.7 MB |
-| `intrepid-dusk-volume-1.pdf` | 68 | 28.5 MB |
+| `intrepid-dusk-chapter-1.pdf` | 21 | 6.6 MB |
+| `intrepid-dusk-chapter-2.pdf` | 21 | 7.8 MB |
+| `intrepid-dusk-chapter-3.pdf` | 26 | 12.3 MB |
+| `intrepid-dusk-volume-1.pdf` | 72 | 27.6 MB |
 
