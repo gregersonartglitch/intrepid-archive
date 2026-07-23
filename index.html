@@ -3198,7 +3198,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 210;
+window.INTREPID_BUILD = 212;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3275,7 +3275,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="fog.js?v=210"></script>
+<script src="fog.js?v=212"></script>
 <script>
 (function() {
   'use strict';
@@ -5989,7 +5989,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   // Pull clip inside the opaque frame rim. Without this, fog breathes through the
   // PNG’s soft alpha fringe (worst at bottom medallions like Mish) as a flashing
   // black/map sliver.
-  var MAP_CLIP_INSET_PX = 8;
+  var MAP_CLIP_INSET_PX = 12;
+  var MAP_CLIP_INSET_BOTTOM_PX = 20; // extra on Ry — Mish / winged archer lip
 
   function updateFrameRect() {
     var FW = 2400, FH = 1792;
@@ -6031,7 +6032,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var clipCx = MAP_HOLE_CX * w + left;  // screen-space center
     var clipCy = MAP_HOLE_CY * h + top;
     var clipRx = Math.max(0, MAP_HOLE_RX * w - MAP_CLIP_INSET_PX);
-    var clipRy = Math.max(0, MAP_HOLE_RY * h - MAP_CLIP_INSET_PX);
+    var clipRy = Math.max(0, MAP_HOLE_RY * h - MAP_CLIP_INSET_BOTTOM_PX);
     var clipVal = 'ellipse(' + clipRx + 'px ' + clipRy + 'px at ' + clipCx + 'px ' + clipCy + 'px)';
     ['map', 'clouds'].forEach(function(id) {
       var el = document.getElementById(id);
@@ -6049,13 +6050,15 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
     var artRx = MAP_HOLE_RX * w;
     var artRy = MAP_HOLE_RY * h;
-    // Gradient stops are % of the ellipse radii — punch a hole matching the inset clip,
-    // then solid dark through the frame’s soft edge and beyond.
-    var holePct = Math.min(99, (clipRx / Math.max(artRx, 1)) * 100);
-    var fringePct = Math.min(100, holePct + 4);
+    // Hard step at map clip edge — soft gradient left a translucent band that let
+    // the #map blue background bleed through frame PNG soft alpha at medallion lips.
+    var holePct = Math.min(99, Math.min(
+      clipRx / Math.max(artRx, 1),
+      clipRy / Math.max(artRy, 1)
+    ) * 100);
     var maskGrad =
       'radial-gradient(ellipse ' + artRx + 'px ' + artRy + 'px at ' + clipCx + 'px ' + clipCy + 'px,' +
-      'transparent 0%, transparent ' + holePct + '%, #000 ' + fringePct + '%, #000 100%)';
+      'transparent 0%, transparent ' + holePct + '%, #000 ' + holePct + '%, #000 100%)';
     seal.style.cssText =
       'position:fixed;z-index:505;pointer-events:none;left:0;top:0;width:100vw;height:100vh;' +
       'background:#0d0d12;' +

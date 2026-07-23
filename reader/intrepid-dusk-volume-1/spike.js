@@ -125,6 +125,7 @@ const legacyInFlightPages = new Set();
 let visibleWatchdogTimer = null;
 // Last known flip direction for mid-curl neighbor warm (build 186).
 let lastFlipForward = true;
+let lastPageFlipAudioAt = 0;
 let pageLifecycle = null;
 let pageManifestById = {};
 let openingPrimeIndices = [];
@@ -572,8 +573,14 @@ function setPageLabel(pageIndex) {
 }
 
 function triggerPageFlipAudio() {
-  // Flip SFX only — ambient unlock stays on first document gesture (audio.js).
+  var now = Date.now();
+  if (now - lastPageFlipAudioAt < 120) {
+    return;
+  }
+  lastPageFlipAudioAt = now;
   if (window.ReaderAudio) {
+    // unlock() satisfies autoplay policy; onPageFlip plays the MP3.
+    window.ReaderAudio.unlock();
     window.ReaderAudio.onPageFlip();
   }
 }
@@ -1558,6 +1565,8 @@ function createPageFlip(pageElements) {
     // Mid-curl: keep destination neighborhood hot. Directional only (not both
     // ways) so we don't re-flood the pool the way warmBothFlipDirections did.
     if (event.data === "flipping") {
+      // StPageFlip flips on half-page taps; edge pointerdown alone misses most turns.
+      triggerPageFlipAudio();
       ensureNeighborhoodPages(lastPageIndex);
       warmFlipTargetsFromDirection(lastFlipForward);
     }
@@ -2049,6 +2058,22 @@ function isBookPageTurnZone(clientX, clientY) {
   return zoneFromBookRect(clientX, clientY) !== "center";
 }
 
+function isBookFlipAudioZone(clientX, clientY) {
+  if (isMagnifyCenterZone(clientX, clientY)) {
+    return false;
+  }
+  var bookRect = elements.book.getBoundingClientRect();
+  if (!bookRect.width || !bookRect.height) {
+    return false;
+  }
+  return (
+    clientX >= bookRect.left &&
+    clientX <= bookRect.right &&
+    clientY >= bookRect.top &&
+    clientY <= bookRect.bottom
+  );
+}
+
 function handleStageResize() {
   fitBookToStage();
   if (pageFlip) {
@@ -2066,6 +2091,9 @@ if (typeof ResizeObserver !== "undefined") {
 elements.book.addEventListener(
   "pointerdown",
   (event) => {
+    if (isBookFlipAudioZone(event.clientX, event.clientY)) {
+      triggerPageFlipAudio();
+    }
     if (!isBookPageTurnZone(event.clientX, event.clientY)) {
       return;
     }
@@ -2079,7 +2107,6 @@ elements.book.addEventListener(
       }
     }
     warmFlipTargetFromPointer(event);
-    triggerPageFlipAudio();
   },
   true,
 );

@@ -7,6 +7,7 @@ Onboarding for any agent working on **intrepid-map** (deploy site) and its integ
 | Doc | Purpose |
 |-----|---------|
 | [`docs/SESSION-HANDOFF-2026-07-17.md`](docs/SESSION-HANDOFF-2026-07-17.md) | **Jul 17 clean-cut** — live 191/187 + PDF downloads shipped, stash warning, beta next |
+| [`docs/BACKER-EMAIL-PLAYBOOK-2026-07-21.md`](docs/BACKER-EMAIL-PLAYBOOK-2026-07-21.md) | **Jul 21** — backer reward email strategy + 4-email sequence drafts (Reader / Cartographer), pre-send checklist, 3-day prep |
 | [`docs/BUG-HUNT-2026-07-14.md`](docs/BUG-HUNT-2026-07-14.md) | **Jul 14 morning** — overnight bug catalog (no fixes); triage first |
 | [`docs/SESSION-HANDOFF-2026-07-13.md`](docs/SESSION-HANDOFF-2026-07-13.md) | **Jul 13 clean-cut** — live stamps, shipped arc, Mish fly P0, reader 180, beta next |
 
@@ -42,6 +43,23 @@ node scripts/audit-checks.mjs               # terminal 2
 **Live site:** https://archive.intrepidgraphicnovel.com  
 **Netlify site:** `aesthetic-salmiakki-cf6713` — deploy from repo root: `netlify deploy --prod --dir .` (if Forbidden: `netlify deploy --dir .` then `netlify api restoreSiteDeploy` — see `.planning/debug/ship-triage-build95.md`)
 
+### Git remote (backup — Jon must auth push)
+
+| Item | Value |
+|------|--------|
+| **Remote** | `origin` → https://github.com/gregersonartglitch/intrepid-archive.git |
+| **Branch** | `feature/cuneiform-buttons` |
+| **Latest ship** | `9ce4541` — **build-210** (72p PDF downloads + download UX copy) |
+| **Status (Jul 21)** | Prod deployed via Netlify CLI; **GitHub push pending** — agents cannot auth; Jon runs push locally |
+
+```powershell
+cd C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map
+git push -u origin feature/cuneiform-buttons
+git push origin build-200 build-201 build-202 build-203 build-204 build-207 build-208 build-209 build-210
+```
+
+If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops repo: `gregersonartglitch/intrepid-dusk-ops` (not this codebase).
+
 ---
 
 ## Build Checkpoints
@@ -51,7 +69,8 @@ node scripts/audit-checks.mjs               # terminal 2
 | `build-50` | Stable beta baseline | Fog Pass 3 region reveal **reverted**. Return with `git checkout build-50`. |
 | `build-57` | Beta go-live | Reader preload, labels, Pass 3 still shelved |
 | `build-59` | Stable | Cartographer gate fix, Sharon reader page rebuilds, agent handoff |
-| `build-95` | Current target | Reader magnify plugin (opt-in via localStorage `intrepid_reader_magnify_enabled=1`), hardcover cover spread assets |
+| `build-95` | Stable | Reader magnify plugin (opt-in via localStorage `intrepid_reader_magnify_enabled=1`), hardcover cover spread assets |
+| `build-210` | **Current prod** | 72p digital PDF downloads (Claude master), download UX copy, Vector orchestrator rule |
 
 ### Version stamps (must stay in sync)
 
