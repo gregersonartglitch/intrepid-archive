@@ -49,8 +49,8 @@ node scripts/audit-checks.mjs               # terminal 2
 |------|--------|
 | **Remote** | `origin` → https://github.com/gregersonartglitch/intrepid-archive.git |
 | **Branch** | `feature/cuneiform-buttons` |
-| **Latest ship** | `9ce4541` — **build-210** (72p PDF downloads + download UX copy) |
-| **Status (Jul 21)** | Prod deployed via Netlify CLI; **GitHub push pending** — agents cannot auth; Jon runs push locally |
+| **Latest ship** | `build-215` — letter recovery, finale congrats sequence, west pan bounds |
+| **Status (Jul 23)** | Prod target build-215; push branch + tag after deploy |
 
 ```powershell
 cd C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map
@@ -70,7 +70,11 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-57` | Beta go-live | Reader preload, labels, Pass 3 still shelved |
 | `build-59` | Stable | Cartographer gate fix, Sharon reader page rebuilds, agent handoff |
 | `build-95` | Stable | Reader magnify plugin (opt-in via localStorage `intrepid_reader_magnify_enabled=1`), hardcover cover spread assets |
-| `build-210` | **Current prod** | 72p digital PDF downloads (Claude master), download UX copy, Vector orchestrator rule |
+| `build-210` | Stable | 72p digital PDF downloads (Claude master), download UX copy |
+| `build-212` | Stable | Rim fog flash seal, Dragon's Tail label, reader flip SFX |
+| `build-215` | **Current prod** | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
+
+**Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 
 ### Version stamps (must stay in sync)
 

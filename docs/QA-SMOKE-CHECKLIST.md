@@ -42,8 +42,18 @@ Dev server: `npx http-server . -p 8080 --cors -c-1` → `http://localhost:8080`
 ## When to run smoke script
 
 - Any edit to `fog.js` touching journey path, `getNextPathLocation`, god reveals, chime/search, or Vol2 gate
+- **Any player-facing bug fix** — add a regression assertion (see [`docs/REGRESSION-LOCKS.md`](REGRESSION-LOCKS.md))
 - Before bumping `INTREPID_BUILD` for deploy
 - After merging guardian/medallion threshold changes in `index.html` `MEDALLION_DEFS`
+
+## Build 214–215 manual checks (locked)
+
+| Step | Action | Expected |
+|------|--------|----------|
+| L1 | Chart a letter-stop but dismiss before reading; tap marker again | Parchment opens (no lantern hunt) |
+| L2 | Secrets row at 3/4 — click row | Missing letter opens or Guide Me fires |
+| L3 | Complete Indras Na with full map | Vol2 congrats first; archive overlay **after** Close |
+| L4 | Zoom out, pan west toward Sinn / Kur | No hard wall at western edge |
 
 ## Agent rule
 

@@ -754,15 +754,17 @@ assert(/meetsMishUnlockCriteria[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.te
   'Mish unlock requires Indras Na fully complete');
 assert(/isVol2LockedJourneyStep[\s\S]*?locId === FINAL_ELENA_STOP/.test(fogSrc),
   'indras-na excluded from Vol2 journey seal');
-assert(/maybeShowVol2GateToast[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.test(fogSrc),
+assert(/vol2GateToastWillFire[\s\S]*?isFullyDiscovered\(FINAL_ELENA_STOP\)/.test(fogSrc),
   'reward toast gated on Indras Na completion');
 assert(fogSrc.indexOf('function runAfterCeremonyClear') > -1 &&
   fogSrc.indexOf('function isBlockingCeremonyOpen') > -1,
   'ceremony queue helpers exist (defer congrats over guardian lore)');
-assert(/checkJourneyFinale[\s\S]*?runAfterCeremonyClear\(showJourneyToast/.test(fogSrc),
+assert(/checkJourneyFinale[\s\S]*?(queueJourneyFinaleToast|journeyFinaleToastQueued)/.test(fogSrc),
   'archive-complete overlay deferred until ceremony clear');
 assert(/maybeShowVol2GateToast[\s\S]*?runAfterCeremonyClear\(/.test(fogSrc),
   'Vol2 Indras congrats deferred until ceremony clear');
+assert(/flushJourneyFinaleToastAfterVol2/.test(fogSrc),
+  'archive-complete overlay chains after Vol2 Indras congrats dismiss');
 assert(fogSrc.indexOf('maybeShowVol2GateToast();') > -1 &&
   /completeDiscovery[\s\S]*?FINAL_ELENA_STOP[\s\S]*?maybeShowVol2GateToast/.test(fogSrc),
   'completeDiscovery triggers reward toast on Indras Na');
@@ -797,10 +799,16 @@ assert(/forceShowSabellaLetter[\s\S]*?locked[\s\S]*?removeChild|locked\.parentNo
   'forceShow clears locked-msg before showing letter');
 assert(fogSrc.indexOf('Sabella left one more letter at') > -1,
   'Guide Me toast copy for single missing letter');
-assert(fogSrc.indexOf('Search with the lantern for Sabella') > -1,
-  'Guide Me tip prompts lantern search for missing letter');
-assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?enterLetterSearchMode/.test(fogSrc),
-  'Guide Me steers to first missing letter and starts letter lantern search when charted');
+assert(/function recoverMissingSabellaLetter/.test(fogSrc),
+  'Secrets-row / API letter recovery helper exists');
+assert(/bindSecretsRecoveryRow/.test(fogSrc),
+  'Secrets progress row wired for letter recovery');
+assert(/Opening Sabella.*letter at this stop\./.test(fogSrc),
+  'Guide Me tip opens skipped letter directly when stop is charted');
+assert(/function runGuideMe[\s\S]*?getFirstMissingSabellaLetterId[\s\S]*?forceShowSabellaLetter/.test(fogSrc),
+  'Guide Me steers to first missing letter and force-shows parchment when charted');
+assert(/function maybeRecoverSabellaLetter[\s\S]*?forceShowSabellaLetter\(loc\)/.test(fogSrc),
+  'marker tap on charted letter-stop force-shows parchment (no lantern hunt)');
 assert(/else if \(isIndrasNaSealed\(\)\)[\s\S]*?FINAL_ELENA_STOP/.test(fogSrc),
   'drawBeaconGlows draws sealed Indras Na beacon');
 assert(fogSrc.indexOf('maybeRecoverSabellaLetter(discLoc)') > -1,

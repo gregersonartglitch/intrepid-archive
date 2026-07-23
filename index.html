@@ -3198,7 +3198,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 212;
+window.INTREPID_BUILD = 215;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3275,7 +3275,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="fog.js?v=212"></script>
+<script src="fog.js?v=215"></script>
 <script>
 (function() {
   'use strict';
@@ -4071,7 +4071,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         if (window.FogSystem.updateProgress) window.FogSystem.updateProgress();
         if (window.FogSystem.startDrift) window.FogSystem.startDrift();
       }
-      setTimeout(function() { map.invalidateSize(); }, 50);
+      setTimeout(function() {
+        map.invalidateSize();
+        updateMapMaxBounds();
+      }, 50);
       showWelcome();
       tryLoadFrameImage();
       updateFrameRect();
@@ -5103,8 +5106,23 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   /* ═══════════════════════════════════════════
      MAP INITIALIZATION
      ═══════════════════════════════════════════ */
+  function updateMapMaxBounds() {
+    if (!map || !window.MAP_CONFIG) return;
+    const cfg = window.MAP_CONFIG;
+    const vis = map.getBounds();
+    const visH = vis.getNorth() - vis.getSouth();
+    const visW = vis.getEast() - vis.getWest();
+    const padLat = Math.max(cfg.height * 0.05, visH * 0.52);
+    const padLng = Math.max(cfg.width * 0.25, visW * 0.52);
+    map.setMaxBounds(L.latLngBounds(
+      [-padLat, -padLng],
+      [cfg.height + padLat, cfg.width + padLng]
+    ));
+  }
+
   function initMap(onReady) {
     if (mapInitialized && map) {
+      updateMapMaxBounds();
       if (onReady) onReady();
       return;
     }
@@ -5126,14 +5144,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
     const dynamicMin = calcMinZoom();
 
-    // Pad bounds — more horizontal room for left/right panning
-    const padLat = cfg.height * 0.05;
-    const padLng = cfg.width * 0.25;
-    const paddedBounds = L.latLngBounds(
-      [-padLat, -padLng],
-      [cfg.height + padLat, cfg.width + padLng]
-    );
-
     map = L.map('map', {
       crs: L.CRS.Simple,
       minZoom: dynamicMin,
@@ -5143,7 +5153,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       wheelPxPerZoomLevel: 80,
       zoomControl: false,
       attributionControl: false,
-      maxBounds: paddedBounds,
       maxBoundsViscosity: 1.0,
       bounceAtZoomLimits: false,
       preferCanvas: true
@@ -5158,6 +5167,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (map.getZoom() < newMin) {
         map.setZoom(newMin);
       }
+      updateMapMaxBounds();
     });
 
     const img = L.imageOverlay(cfg.image, imageBounds);
@@ -5175,6 +5185,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
     // Start centered on the map at minimum zoom (fills viewport)
     map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
+    updateMapMaxBounds();
 
     // Create layer groups
     const defs = window.LAYER_DEFS || [];
@@ -5195,7 +5206,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     bindResetButton();
     updateZoomLevel();
     updateLabelScale();
-    map.on('zoomend', () => { updateZoomLevel(); updateLabelScale(); });
+    map.on('zoomend', () => {
+      updateMapMaxBounds();
+      updateZoomLevel();
+      updateLabelScale();
+    });
 
     // Initialize fog system (after markers are built)
     if (!EDIT_MODE) {

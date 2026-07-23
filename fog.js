@@ -552,6 +552,7 @@
     suppressAnimations = false; // from now on, new reveals get the full ceremony
     addResetButton();
     addGuideButton();
+    bindSecretsRecoveryRow();
 
     // Tutorial — never derive step from total discovery count (early sites inflate it).
     resolveTutorialStepOnInit();
@@ -1756,11 +1757,14 @@
       '\u2715 Close</button>';
   }
 
-  function wireLockedMsgDismiss(el, autoMs) {
+  function wireLockedMsgDismiss(el, autoMs, onDismiss) {
     function dismiss() {
       if (!el.parentNode) return;
       el.style.opacity = '0';
-      setTimeout(function() { if (el.parentNode) el.remove(); }, 600);
+      setTimeout(function() {
+        if (el.parentNode) el.remove();
+        if (onDismiss) onDismiss();
+      }, 600);
     }
     // Whole card remains tappable; Close button is the primary control
     el.addEventListener('click', dismiss);
@@ -1851,7 +1855,7 @@
   }
 
   // Brief modal when Elena cannot continue past Mish until Volume 2 Kickstarter
-  function showVol2LockedMessage(isWelcome) {
+  function showVol2LockedMessage(isWelcome, onDismiss) {
     var old = document.getElementById('locked-msg');
     if (old) old.remove();
 
@@ -1888,7 +1892,7 @@
       countdownLine +
       lockedMsgCloseHtml();
     document.body.appendChild(el);
-    wireLockedMsgDismiss(el, isWelcome ? 9000 : 7000);
+    wireLockedMsgDismiss(el, isWelcome ? 9000 : 7000, onDismiss);
   }
 
   // Ceremony queue — never auto-cover guardian medallion lore / Sabella parchment / locked-msg.
@@ -1898,7 +1902,31 @@
     if (card && card.classList.contains('visible')) return true;
     if (document.getElementById('sabella-message-popup')) return true;
     if (document.getElementById('locked-msg')) return true;
+    var finale = document.getElementById('finale-overlay');
+    if (finale && finale.classList.contains('visible')) return true;
     return false;
+  }
+
+  // Archive-complete overlay queued until Vol 2 Indras congrats dismisses (same progress tick).
+  var journeyFinaleToastQueued = false;
+
+  function vol2GateToastWillFire() {
+    if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return false;
+    if (!isFullyDiscovered(FINAL_ELENA_STOP)) return false;
+    try {
+      if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return false;
+    } catch (e) {}
+    return true;
+  }
+
+  function queueJourneyFinaleToast() {
+    runAfterCeremonyClear(showJourneyToast, { minDelay: 1100, graceForOpen: 1600 });
+  }
+
+  function flushJourneyFinaleToastAfterVol2() {
+    if (!journeyFinaleToastQueued) return;
+    journeyFinaleToastQueued = false;
+    runAfterCeremonyClear(showJourneyToast, { minDelay: 400, graceForOpen: 800 });
   }
 
   // Queue a congrats modal until open lore UI is dismissed. graceForOpen waits for a
@@ -1938,13 +1966,13 @@
   // No Sabella letter at Indras Na; congrats runs on discovery complete (letters end at Sinn).
   // Deferred if Mish guardian card (or other lore ceremony) is open / about to open.
   function maybeShowVol2GateToast() {
-    if (!ENABLE_VOL2_JOURNEY_GATE || isVol2JourneyUnlocked()) return;
-    if (!isFullyDiscovered(FINAL_ELENA_STOP)) return;
+    if (!vol2GateToastWillFire()) return;
     try {
-      if (localStorage.getItem(VOL2_GATE_TOAST_LS) === '1') return;
       localStorage.setItem(VOL2_GATE_TOAST_LS, '1');
     } catch (e) {}
-    runAfterCeremonyClear(function() { showVol2LockedMessage(true); }, {
+    runAfterCeremonyClear(function() {
+      showVol2LockedMessage(true, flushJourneyFinaleToastAfterVol2);
+    }, {
       minDelay: 1400,
       graceForOpen: 1600
     });
@@ -3865,14 +3893,26 @@
     return true;
   }
 
-  // Marker tap on a completed letter-stop: start lantern hunt (same as Guide Me).
-  // Falls back to force-show if search cannot start (e.g. already in searchMode edge cases).
+  // Marker tap on a completed letter-stop: show skipped parchment directly (no lantern hunt).
+  // First-visit letter gate still uses enterSearchMode + Hot diamond via normal discovery flow.
   function maybeRecoverSabellaLetter(loc) {
     if (!loc || !isSabellaMessagesEnabled()) return false;
     if (!SABELLA_MESSAGES[loc.id] || !hasUnseenSabellaMessage(loc.id)) return false;
     if (!isFullyDiscovered(loc.id)) return false;
-    if (enterLetterSearchMode(loc)) return true;
     return forceShowSabellaLetter(loc);
+  }
+
+  // Secrets row / API recovery — first missing letter at a charted stop opens parchment.
+  function recoverMissingSabellaLetter() {
+    if (!isSabellaMessagesEnabled()) return false;
+    var missId = getFirstMissingSabellaLetterId();
+    if (!missId) return false;
+    var locs = window.LOCATIONS || [];
+    var loc = locs.find(function(l) { return l.id === missId; });
+    if (!loc) return false;
+    if (isFullyDiscovered(missId)) return forceShowSabellaLetter(loc);
+    runGuideMe();
+    return true;
   }
 
   // Primary letter path: fire once when chime search crosses "hot" (Secret find).
@@ -4435,6 +4475,11 @@
     if (secretsEnabled) {
       if (fillS) fillS.style.width = (secretPct * 100) + '%';
       if (countS) countS.innerHTML = secretFound + ' <span>/ ' + secretTotal + '</span>';
+      if (rowS) {
+        var secretsIncomplete = secretFound < secretTotal;
+        rowS.style.cursor = secretsIncomplete ? 'pointer' : '';
+        rowS.title = secretsIncomplete ? 'Tap to recover a missing Sabella letter' : '';
+      }
     }
     if (label)  label.textContent  = '';
 
@@ -4503,7 +4548,12 @@
     // often reveals Mish (Indras Na + 17 territories) while journey finale also fires.
     buildConstellationLines();
     setTimeout(drawConstellationAnimation, 350);
-    runAfterCeremonyClear(showJourneyToast, { minDelay: 1100, graceForOpen: 1600 });
+    // Indras Na complete often fires Vol 2 congrats on the same tick — queue archive overlay after it.
+    if (vol2GateToastWillFire()) {
+      journeyFinaleToastQueued = true;
+      return;
+    }
+    queueJourneyFinaleToast();
   }
 
   function checkVol1Finale() {
@@ -4959,6 +5009,18 @@
      ════════════════════════════════════════════════ */
   // guideTarget declared early with map-perf state
 
+  function bindSecretsRecoveryRow() {
+    var row = document.getElementById('progress-row-secrets');
+    if (!row || row._secretsRecoveryBound) return;
+    row._secretsRecoveryBound = true;
+    row.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!isSabellaMessagesEnabled()) return;
+      if (sabellaPrereqLettersComplete()) return;
+      recoverMissingSabellaLetter();
+    });
+  }
+
   function addGuideButton() {
     var btn = document.createElement('button');
     btn.id = 'fog-guide-btn';
@@ -5037,8 +5099,8 @@
               missName + '.';
           }
           if (isFullyDiscovered(missId)) {
-            // Charted but parchment skipped — start lantern search; do NOT auto-open letter.
-            hintLine2 = 'Search with the lantern for Sabella\u2019s letter';
+            // Charted but parchment skipped — open letter directly (no lantern hunt).
+            hintLine2 = 'Opening Sabella\u2019s letter at this stop.';
             promptLetterSearch = true;
           } else {
             hintLine2 = 'Follow the glow and find the letter with the chime.';
@@ -5144,10 +5206,10 @@
       guideTarget = { lat: target.lat, lng: target.lng, endTime: Date.now() + 4500 };
     }, 900);
 
-    // Start lantern chime at the letter-stop — parchment fires on hot (or marker click).
+    // Charted letter-stop recovery — show skipped parchment after pan lands.
     if (promptLetterSearch) {
       setTimeout(function() {
-        enterLetterSearchMode(target);
+        forceShowSabellaLetter(target);
       }, 1100);
     }
 
@@ -5268,6 +5330,7 @@
     getFirstMissingSabellaLetterId: getFirstMissingSabellaLetterId,
     maybeRecoverSabellaLetter: maybeRecoverSabellaLetter,
     forceShowSabellaLetter: forceShowSabellaLetter,
+    recoverMissingSabellaLetter: recoverMissingSabellaLetter,
     sabellaLetterDisplayName: sabellaLetterDisplayName,
     showGlowLegend: function() {
       dismissPostTutorialHint(false);
