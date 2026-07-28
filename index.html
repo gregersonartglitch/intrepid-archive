@@ -2308,7 +2308,16 @@ body.edit-mode .mk-dot-wrap > * {
   letter-spacing: 1px; text-transform: uppercase; margin-top: 6px;
 }
 #edit-export:hover { background: var(--gold); }
+#edit-fit-map {
+  background: transparent; color: var(--gold); border: 1px solid var(--amber);
+  padding: 6px 16px; border-radius: 4px; cursor: pointer; font-weight: 600;
+  font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-top: 6px;
+  margin-left: 8px;
+}
+#edit-fit-map:hover { background: rgba(200,164,80,0.15); }
 #edit-count { color: rgba(255,255,255,0.5); font-size: 11px; margin-top: 4px; }
+body.edit-mode #frame { display: none !important; }
+body.edit-mode #frame-rim-seal { display: none !important; }
 
 /* ═══════════════════════════════════════════
    FOG SYSTEM
@@ -2928,6 +2937,7 @@ body.edit-mode .mk-dot-wrap > * {
     <h3>📍 Marker Editor</h3>
     <div id="edit-coords">Drag any marker to reposition</div>
     <button id="edit-export" onclick="exportCoords()">Export All Coordinates</button>
+    <button type="button" id="edit-fit-map" onclick="fitEditMap()">Fit Whole Map</button>
     <div id="edit-count"></div>
   </div>
 
@@ -3198,7 +3208,7 @@ body.edit-mode .mk-dot-wrap > * {
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 215;
+window.INTREPID_BUILD = 216;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3275,7 +3285,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="fog.js?v=215"></script>
+<script src="fog.js?v=216"></script>
 <script>
 (function() {
   'use strict';
@@ -5109,6 +5119,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   function updateMapMaxBounds() {
     if (!map || !window.MAP_CONFIG) return;
     const cfg = window.MAP_CONFIG;
+    if (window.EDIT_MODE) {
+      var editPad = Math.max(cfg.height, cfg.width) * 0.03;
+      map.setMaxBounds(L.latLngBounds(
+        [-editPad, -editPad],
+        [cfg.height + editPad, cfg.width + editPad]
+      ));
+      return;
+    }
     const vis = map.getBounds();
     const visH = vis.getNorth() - vis.getSouth();
     const visW = vis.getEast() - vis.getWest();
@@ -5120,6 +5138,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     ));
   }
 
+  function fitEditMapView(animate) {
+    if (!map || !imageBounds) return;
+    map.fitBounds(imageBounds, {
+      padding: [72, 32],
+      animate: animate !== false,
+      maxZoom: map.getMaxZoom()
+    });
+  }
+  window.fitEditMap = function() { fitEditMapView(true); };
+
   function initMap(onReady) {
     if (mapInitialized && map) {
       updateMapMaxBounds();
@@ -5130,19 +5158,23 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     const cfg = window.MAP_CONFIG;
     imageBounds = [[0, 0], [cfg.height, cfg.width]];
 
-    // Dynamically compute the minimum zoom that ensures the map image
-    // ALWAYS fills the entire viewport — no blue edges ever visible.
-    function calcMinZoom() {
+    // Play mode: min zoom fills viewport (cover). Edit mode: min zoom fits entire map (contain).
+    function calcMinZoom(forEdit) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       const needW = Math.log2(vw / cfg.width);
       const needH = Math.log2(vh / cfg.height);
-      // More buffer so the full frame + stone border is visible
+      if (forEdit) {
+        const topChrome = 110;
+        const needHEdit = Math.log2(Math.max(120, vh - topChrome) / cfg.height);
+        const raw = Math.min(needW, needHEdit) - 0.2;
+        return Math.floor(raw * 4) / 4;
+      }
       const raw = Math.max(needW, needH) - 0.5;
       return Math.floor(raw * 4) / 4;
     }
 
-    const dynamicMin = calcMinZoom();
+    const dynamicMin = calcMinZoom(EDIT_MODE);
 
     map = L.map('map', {
       crs: L.CRS.Simple,
@@ -5161,10 +5193,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
     // Recalculate minZoom when window is resized
     window.addEventListener('resize', function() {
-      const newMin = calcMinZoom();
+      const newMin = calcMinZoom(EDIT_MODE);
       map.setMinZoom(newMin);
-      // If current zoom is now below the new minimum, zoom in
-      if (map.getZoom() < newMin) {
+      if (EDIT_MODE) {
+        fitEditMapView(false);
+      } else if (map.getZoom() < newMin) {
         map.setZoom(newMin);
       }
       updateMapMaxBounds();
@@ -5183,9 +5216,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     };
     imgEl.src = cfg.image;  // cfg.image already includes cache-bust param
 
-    // Start centered on the map at minimum zoom (fills viewport)
-    map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
-    updateMapMaxBounds();
+    if (EDIT_MODE) {
+      updateMapMaxBounds();
+      fitEditMapView(false);
+    } else {
+      map.setView([cfg.height / 2, cfg.width / 2], dynamicMin);
+      updateMapMaxBounds();
+    }
 
     // Create layer groups
     const defs = window.LAYER_DEFS || [];
@@ -6008,6 +6045,20 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   var MAP_CLIP_INSET_BOTTOM_PX = 20; // extra on Ry — Mish / winged archer lip
 
   function updateFrameRect() {
+    if (window.EDIT_MODE) {
+      ['map', 'clouds'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.clipPath = 'none';
+      });
+      ['fgap-l', 'fgap-r', 'fgap-t', 'fgap-b'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      if (window._leafletMap) {
+        window._leafletMap.invalidateSize({ animate: false });
+      }
+      return;
+    }
     var FW = 2400, FH = 1792;
     var vw = window.innerWidth, vh = window.innerHeight;
     var containScale = Math.min(vw / FW, vh / FH);
