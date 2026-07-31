@@ -272,6 +272,54 @@ h1 {
   font-weight: 700;
 }
 
+.reader-display-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(239, 231, 210, 0.12);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.04);
+}
+
+.reader-display-size-heading {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reader-display-size output {
+  min-width: 3.1rem;
+  color: var(--bone);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.reader-display-size button {
+  min-width: 32px;
+  padding: 6px 8px;
+  border: 1px solid rgba(239, 231, 210, 0.16);
+  border-radius: 6px;
+  background: rgba(239, 231, 210, 0.08);
+  color: var(--bone);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.reader-display-size button:hover:not(:disabled) {
+  border-color: rgba(198, 141, 85, 0.5);
+  background: rgba(198, 141, 85, 0.16);
+}
+
+.reader-display-size button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .controls {
   display: flex;
   gap: 8px;
@@ -898,6 +946,12 @@ h1 {
     flex-wrap: wrap;
     justify-content: space-between;
     width: 100%;
+  }
+
+  .reader-display-size {
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
 
   .reader-help-tip {

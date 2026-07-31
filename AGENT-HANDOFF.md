@@ -49,8 +49,8 @@ node scripts/audit-checks.mjs               # terminal 2
 |------|--------|
 | **Remote** | `origin` → https://github.com/gregersonartglitch/intrepid-archive.git |
 | **Branch** | `feature/cuneiform-buttons` |
-| **Latest ship** | `build-215` — letter recovery, finale congrats sequence, west pan bounds |
-| **Status (Jul 23)** | Prod target build-215; push branch + tag after deploy |
+| **Latest ship** | `build-216` — reader display size control, ultrawide fit boost |
+| **Status (Jul 30)** | Prod target build-216; push branch + tag after deploy |
 
 ```powershell
 cd C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map
@@ -72,7 +72,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-95` | Stable | Reader magnify plugin (opt-in via localStorage `intrepid_reader_magnify_enabled=1`), hardcover cover spread assets |
 | `build-210` | Stable | 72p digital PDF downloads (Claude master), download UX copy |
 | `build-212` | Stable | Rim fog flash seal, Dragon's Tail label, reader flip SFX |
-| `build-215` | **Current prod** | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
+| `build-215` | Stable | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
+| `build-216` | **Current prod** | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 
@@ -273,6 +274,7 @@ Expected: `True` and the captured build number equals the intended deploy.
 | `fog.js` | Entire map game engine |
 | `data.js` | Location coordinates, lore, journey path |
 | `reader/README.md` | Reader integration workflow |
+| `docs/READER-CANONICAL-DECISION.md` | **Locked** — spike.js = Archive reader; Legendist backstage in Codex |
 | `integrate-reader.ps1` | Extract Codex zip → deploy reader |
 | `apply-reader-patches.ps1` | Apply overlay onto deployed reader |
 | `.cursor/rules/project.mdc` | Cursor always-on rules (summary + pointer here) |

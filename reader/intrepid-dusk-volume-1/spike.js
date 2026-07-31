@@ -24,6 +24,13 @@ const issuePageCounts = [
 const NATIVE_PAGE_WIDTH = 1100;
 const NATIVE_PAGE_HEIGHT = 1674;
 const PAGE_ASPECT = NATIVE_PAGE_WIDTH / NATIVE_PAGE_HEIGHT;
+const SOURCE_PAGE_WIDTH = 2200;
+const READER_DISPLAY_SIZE_KEY = "intrepid_reader_display_size";
+const DISPLAY_SIZE_MIN = 0.85;
+const DISPLAY_SIZE_MAX = 1.25;
+const DISPLAY_SIZE_STEP = 0.05;
+const ULTRAWIDE_VIEWPORT_RATIO = 2.2;
+const ULTRAWIDE_FIT_BOOST = 1.06;
 
 const contentPages = issuePageCounts.flatMap(({ issue, pages: pageCount }) =>
   Array.from(
@@ -143,6 +150,9 @@ const elements = {
   helpTipMagnify: document.querySelector("[data-reader-help-magnify]"),
   helpOpen: document.querySelector('[data-action="help-open"]'),
   helpDismiss: document.querySelector('[data-action="help-dismiss"]'),
+  displaySizeDown: document.querySelector('[data-action="size-down"]'),
+  displaySizeUp: document.querySelector('[data-action="size-up"]'),
+  displaySizeValue: document.querySelector("[data-display-size-value]"),
 };
 let hasReaderMagnifyPlugin = false;
 let bootOpened = false;
@@ -528,15 +538,91 @@ function getStagePadding() {
   };
 }
 
+function getDisplaySizeScale() {
+  try {
+    var raw = localStorage.getItem(READER_DISPLAY_SIZE_KEY);
+    if (raw == null || raw === "") {
+      return 1;
+    }
+    var parsed = parseFloat(raw);
+    if (!isFinite(parsed)) {
+      return 1;
+    }
+    return Math.max(DISPLAY_SIZE_MIN, Math.min(DISPLAY_SIZE_MAX, parsed));
+  } catch (err) {
+    return 1;
+  }
+}
+
+function setDisplaySizeScale(nextScale) {
+  var clamped = Math.max(
+    DISPLAY_SIZE_MIN,
+    Math.min(DISPLAY_SIZE_MAX, nextScale),
+  );
+  try {
+    localStorage.setItem(READER_DISPLAY_SIZE_KEY, String(clamped));
+  } catch (err) {
+    /* ignore */
+  }
+  updateDisplaySizeUi();
+  applyBookLayout();
+  return clamped;
+}
+
+function updateDisplaySizeUi() {
+  if (!elements.displaySizeValue) {
+    return;
+  }
+  var scale = getDisplaySizeScale();
+  elements.displaySizeValue.textContent = Math.round(scale * 100) + "%";
+  if (elements.displaySizeDown) {
+    elements.displaySizeDown.disabled = scale <= DISPLAY_SIZE_MIN + 0.001;
+  }
+  if (elements.displaySizeUp) {
+    elements.displaySizeUp.disabled = scale >= DISPLAY_SIZE_MAX - 0.001;
+  }
+}
+
+function clampBookDimensions(pageW, pageH, preferSpread, availW, availH) {
+  var nextW = pageW;
+  var nextH = pageH;
+
+  if (nextW > SOURCE_PAGE_WIDTH) {
+    nextW = SOURCE_PAGE_WIDTH;
+    nextH = nextW / PAGE_ASPECT;
+  }
+
+  var boxW = preferSpread ? nextW * 2 : nextW;
+  if (boxW > availW && boxW > 0) {
+    nextW = nextW * (availW / boxW);
+    nextH = nextW / PAGE_ASPECT;
+    boxW = preferSpread ? nextW * 2 : nextW;
+  }
+  if (nextH > availH && nextH > 0) {
+    nextH = availH;
+    nextW = nextH * PAGE_ASPECT;
+  }
+
+  return {
+    pageW: Math.max(1, Math.floor(nextW)),
+    pageH: Math.max(1, Math.floor(nextH)),
+  };
+}
+
 function fitBookToStage() {
   const padding = getStagePadding();
   const availW = Math.max(0, elements.stage.clientWidth - padding.x);
   const availH = Math.max(0, elements.stage.clientHeight - padding.y);
+  let fitAvailH = availH;
 
-  let pageW = Math.min(availW, availH * PAGE_ASPECT);
+  if (availW / Math.max(1, availH) >= ULTRAWIDE_VIEWPORT_RATIO) {
+    fitAvailH = Math.min(availH * ULTRAWIDE_FIT_BOOST, availH + 48);
+  }
+
+  let pageW = Math.min(availW, fitAvailH * PAGE_ASPECT);
   let pageH = pageW / PAGE_ASPECT;
 
-  let spreadPageW = Math.min(availW / 2, availH * PAGE_ASPECT);
+  let spreadPageW = Math.min(availW / 2, fitAvailH * PAGE_ASPECT);
   let spreadPageH = spreadPageW / PAGE_ASPECT;
 
   const preferSpread = availW >= pageW * 1.55;
@@ -545,8 +631,12 @@ function fitBookToStage() {
     pageH = spreadPageH;
   }
 
-  pageW = Math.max(1, Math.floor(pageW));
-  pageH = Math.max(1, Math.floor(pageH));
+  pageW = pageW * getDisplaySizeScale();
+  pageH = pageW / PAGE_ASPECT;
+
+  var clamped = clampBookDimensions(pageW, pageH, preferSpread, availW, availH);
+  pageW = clamped.pageW;
+  pageH = clamped.pageH;
 
   const boxW = preferSpread ? pageW * 2 : pageW;
   const boxH = pageH;
@@ -555,6 +645,16 @@ function fitBookToStage() {
   elements.book.style.height = `${boxH}px`;
 
   return { pageW, pageH, boxW, boxH };
+}
+
+function applyBookLayout() {
+  if (!elements.book) {
+    return;
+  }
+  fitBookToStage();
+  if (pageFlip) {
+    pageFlip.update();
+  }
 }
 
 function setPageLabel(pageIndex) {
@@ -2075,9 +2175,20 @@ function isBookFlipAudioZone(clientX, clientY) {
 }
 
 function handleStageResize() {
-  fitBookToStage();
-  if (pageFlip) {
-    pageFlip.update();
+  applyBookLayout();
+}
+
+function initReaderDisplaySize() {
+  updateDisplaySizeUi();
+  if (elements.displaySizeDown) {
+    elements.displaySizeDown.addEventListener("click", function () {
+      setDisplaySizeScale(getDisplaySizeScale() - DISPLAY_SIZE_STEP);
+    });
+  }
+  if (elements.displaySizeUp) {
+    elements.displaySizeUp.addEventListener("click", function () {
+      setDisplaySizeScale(getDisplaySizeScale() + DISPLAY_SIZE_STEP);
+    });
   }
 }
 
@@ -2312,6 +2423,8 @@ function handleReaderKeyboardNav(event) {
 }
 
 document.addEventListener("keydown", handleReaderKeyboardNav);
+
+initReaderDisplaySize();
 
 elements.controls.addEventListener("click", (event) => {
   const button = event.target.closest("button");
