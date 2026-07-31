@@ -583,9 +583,11 @@ function updateDisplaySizeUi() {
   }
 }
 
-function clampBookDimensions(pageW, pageH, preferSpread, availW, availH) {
+function clampBookDimensions(pageW, pageH, preferSpread, availW, availH, userScale) {
   var nextW = pageW;
   var nextH = pageH;
+  var scale = userScale || 1;
+  var maxPageH = Math.min(availH * scale, SOURCE_PAGE_WIDTH / PAGE_ASPECT);
 
   if (nextW > SOURCE_PAGE_WIDTH) {
     nextW = SOURCE_PAGE_WIDTH;
@@ -598,8 +600,8 @@ function clampBookDimensions(pageW, pageH, preferSpread, availW, availH) {
     nextH = nextW / PAGE_ASPECT;
     boxW = preferSpread ? nextW * 2 : nextW;
   }
-  if (nextH > availH && nextH > 0) {
-    nextH = availH;
+  if (nextH > maxPageH && nextH > 0) {
+    nextH = maxPageH;
     nextW = nextH * PAGE_ASPECT;
   }
 
@@ -607,6 +609,16 @@ function clampBookDimensions(pageW, pageH, preferSpread, availW, availH) {
     pageW: Math.max(1, Math.floor(nextW)),
     pageH: Math.max(1, Math.floor(nextH)),
   };
+}
+
+function syncStageOverflowForDisplaySize() {
+  if (!elements.stage) {
+    return;
+  }
+  elements.stage.classList.toggle(
+    "reader-stage--scaled",
+    getDisplaySizeScale() > 1.001,
+  );
 }
 
 function fitBookToStage() {
@@ -634,7 +646,15 @@ function fitBookToStage() {
   pageW = pageW * getDisplaySizeScale();
   pageH = pageW / PAGE_ASPECT;
 
-  var clamped = clampBookDimensions(pageW, pageH, preferSpread, availW, availH);
+  var userScale = getDisplaySizeScale();
+  var clamped = clampBookDimensions(
+    pageW,
+    pageH,
+    preferSpread,
+    availW,
+    availH,
+    userScale,
+  );
   pageW = clamped.pageW;
   pageH = clamped.pageH;
 
@@ -643,6 +663,8 @@ function fitBookToStage() {
 
   elements.book.style.width = `${boxW}px`;
   elements.book.style.height = `${boxH}px`;
+
+  syncStageOverflowForDisplaySize();
 
   return { pageW, pageH, boxW, boxH };
 }
@@ -2179,6 +2201,7 @@ function handleStageResize() {
 }
 
 function initReaderDisplaySize() {
+  syncStageOverflowForDisplaySize();
   updateDisplaySizeUi();
   if (elements.displaySizeDown) {
     elements.displaySizeDown.addEventListener("click", function () {

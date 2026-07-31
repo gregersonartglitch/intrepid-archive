@@ -351,6 +351,11 @@ h1 {
   padding: clamp(14px, 2.5svh, 28px) clamp(18px, 3vw, 36px);
 }
 
+.reader-stage.reader-stage--scaled {
+  align-items: flex-start;
+  overflow: auto;
+}
+
 /* Opening veil — hide empty StPageFlip until cover + first spread are decoded */
 .reader.is-preparing .book {
   visibility: hidden;
