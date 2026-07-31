@@ -150,8 +150,7 @@ const elements = {
   helpTipMagnify: document.querySelector("[data-reader-help-magnify]"),
   helpOpen: document.querySelector('[data-action="help-open"]'),
   helpDismiss: document.querySelector('[data-action="help-dismiss"]'),
-  displaySizeDown: document.querySelector('[data-action="size-down"]'),
-  displaySizeUp: document.querySelector('[data-action="size-up"]'),
+  displaySizeSlider: document.querySelector("[data-display-size-slider]"),
   displaySizeValue: document.querySelector("[data-display-size-value]"),
 };
 let hasReaderMagnifyPlugin = false;
@@ -432,7 +431,6 @@ function initReaderMagnify() {
       if (zone !== "left" && zone !== "right") {
         return;
       }
-      triggerPageFlipAudio();
       if (zone === "right") {
         if (!pageFlip || !readerReady) {
           return;
@@ -538,6 +536,139 @@ function getStagePadding() {
   };
 }
 
+function getStageMetrics() {
+  const padding = getStagePadding();
+  return {
+    availW: Math.max(0, elements.stage.clientWidth - padding.x),
+    availH: Math.max(0, elements.stage.clientHeight - padding.y),
+  };
+}
+
+function computeBaseFit(availW, availH) {
+  let fitAvailH = availH;
+
+  if (availW / Math.max(1, availH) >= ULTRAWIDE_VIEWPORT_RATIO) {
+    fitAvailH = Math.min(availH * ULTRAWIDE_FIT_BOOST, availH + 48);
+  }
+
+  let pageW = Math.min(availW, fitAvailH * PAGE_ASPECT);
+  let pageH = pageW / PAGE_ASPECT;
+
+  let spreadPageW = Math.min(availW / 2, fitAvailH * PAGE_ASPECT);
+  let spreadPageH = spreadPageW / PAGE_ASPECT;
+
+  const preferSpread = availW >= pageW * 1.55;
+  if (preferSpread) {
+    pageW = spreadPageW;
+    pageH = spreadPageH;
+  }
+
+  return { pageW, pageH, preferSpread, availW, availH };
+}
+
+function layoutBookForScale(base, userScale) {
+  var pageW = base.pageW * userScale;
+  var pageH = pageW / PAGE_ASPECT;
+  var clamped = clampBookDimensions(
+    pageW,
+    pageH,
+    base.preferSpread,
+    base.availW,
+    base.availH,
+    userScale,
+  );
+
+  return {
+    pageW: clamped.pageW,
+    pageH: clamped.pageH,
+    boxW: base.preferSpread ? clamped.pageW * 2 : clamped.pageW,
+    boxH: clamped.pageH,
+  };
+}
+
+function scaleToSliderPercent(scale) {
+  return Math.round(scale * 100);
+}
+
+function sliderPercentToScale(percent) {
+  return Math.round(percent) / 100;
+}
+
+function getLayoutForDisplayScale(scale) {
+  var metrics = getStageMetrics();
+  var base = computeBaseFit(metrics.availW, metrics.availH);
+  return layoutBookForScale(base, scale);
+}
+
+function layoutGrew(previousLayout, nextLayout) {
+  return (
+    nextLayout.pageH > previousLayout.pageH + 0.5 ||
+    nextLayout.pageW > previousLayout.pageW + 0.5
+  );
+}
+
+function computeMaxDisplayScaleForViewport() {
+  if (!elements.stage) {
+    return DISPLAY_SIZE_MAX;
+  }
+  var baseLayout = getLayoutForDisplayScale(1);
+  var maxScale = 1;
+  var previousLayout = baseLayout;
+
+  for (
+    var step = 1;
+    step <= Math.round((DISPLAY_SIZE_MAX - 1) / DISPLAY_SIZE_STEP);
+    step += 1
+  ) {
+    var scale = Math.round((1 + step * DISPLAY_SIZE_STEP) * 100) / 100;
+    if (scale > DISPLAY_SIZE_MAX) {
+      scale = DISPLAY_SIZE_MAX;
+    }
+    var layout = getLayoutForDisplayScale(scale);
+    if (layoutGrew(previousLayout, layout)) {
+      maxScale = scale;
+      previousLayout = layout;
+    } else {
+      break;
+    }
+  }
+
+  return Math.max(DISPLAY_SIZE_MIN, maxScale);
+}
+
+function computeEffectiveDisplayScale() {
+  if (!elements.stage) {
+    return getDisplaySizeScale();
+  }
+  var baseLayout = getLayoutForDisplayScale(1);
+  if (!baseLayout.pageH) {
+    return 1;
+  }
+  var layout = getLayoutForDisplayScale(getDisplaySizeScale());
+  return Math.max(
+    layout.pageH / baseLayout.pageH,
+    layout.pageW / baseLayout.pageW,
+  );
+}
+
+function reconcileDisplaySizeStorage() {
+  var requested = getDisplaySizeScale();
+  var maxForViewport = computeMaxDisplayScaleForViewport();
+  if (requested > maxForViewport + 0.001) {
+    persistDisplaySizeScale(maxForViewport);
+    return maxForViewport;
+  }
+  return requested;
+}
+
+function persistDisplaySizeScale(scale) {
+  try {
+    localStorage.setItem(READER_DISPLAY_SIZE_KEY, String(scale));
+  } catch (err) {
+    /* ignore */
+  }
+}
+
 function getDisplaySizeScale() {
   try {
     var raw = localStorage.getItem(READER_DISPLAY_SIZE_KEY);
@@ -555,31 +686,44 @@ function getDisplaySizeScale() {
 }
 
 function setDisplaySizeScale(nextScale) {
+  var maxForViewport = computeMaxDisplayScaleForViewport();
   var clamped = Math.max(
     DISPLAY_SIZE_MIN,
-    Math.min(DISPLAY_SIZE_MAX, nextScale),
+    Math.min(DISPLAY_SIZE_MAX, maxForViewport, nextScale),
   );
-  try {
-    localStorage.setItem(READER_DISPLAY_SIZE_KEY, String(clamped));
-  } catch (err) {
-    /* ignore */
-  }
+  persistDisplaySizeScale(clamped);
   updateDisplaySizeUi();
-  applyBookLayout();
+  applyBookLayout({ skipScaleClamp: true });
   return clamped;
 }
 
 function updateDisplaySizeUi() {
-  if (!elements.displaySizeValue) {
+  if (!elements.displaySizeValue && !elements.displaySizeSlider) {
     return;
   }
-  var scale = getDisplaySizeScale();
-  elements.displaySizeValue.textContent = Math.round(scale * 100) + "%";
-  if (elements.displaySizeDown) {
-    elements.displaySizeDown.disabled = scale <= DISPLAY_SIZE_MIN + 0.001;
+  reconcileDisplaySizeStorage();
+  var requested = getDisplaySizeScale();
+  var effective = computeEffectiveDisplayScale();
+  var maxForViewport = computeMaxDisplayScaleForViewport();
+  var minPct = scaleToSliderPercent(DISPLAY_SIZE_MIN);
+  var maxPct = scaleToSliderPercent(maxForViewport);
+  var valuePct = scaleToSliderPercent(requested);
+
+  if (elements.displaySizeValue) {
+    elements.displaySizeValue.textContent = Math.round(effective * 100) + "%";
   }
-  if (elements.displaySizeUp) {
-    elements.displaySizeUp.disabled = scale >= DISPLAY_SIZE_MAX - 0.001;
+  if (elements.displaySizeSlider) {
+    elements.displaySizeSlider.min = String(minPct);
+    elements.displaySizeSlider.max = String(maxPct);
+    elements.displaySizeSlider.value = String(valuePct);
+    elements.displaySizeSlider.disabled = maxPct <= minPct;
+    elements.displaySizeSlider.setAttribute("aria-valuemin", String(minPct));
+    elements.displaySizeSlider.setAttribute("aria-valuemax", String(maxPct));
+    elements.displaySizeSlider.setAttribute("aria-valuenow", String(valuePct));
+    elements.displaySizeSlider.setAttribute(
+      "aria-valuetext",
+      Math.round(effective * 100) + "%",
+    );
   }
 }
 
@@ -622,61 +766,62 @@ function syncStageOverflowForDisplaySize() {
 }
 
 function fitBookToStage() {
-  const padding = getStagePadding();
-  const availW = Math.max(0, elements.stage.clientWidth - padding.x);
-  const availH = Math.max(0, elements.stage.clientHeight - padding.y);
-  let fitAvailH = availH;
+  const metrics = getStageMetrics();
+  const base = computeBaseFit(metrics.availW, metrics.availH);
+  const userScale = getDisplaySizeScale();
+  const layout = layoutBookForScale(base, userScale);
 
-  if (availW / Math.max(1, availH) >= ULTRAWIDE_VIEWPORT_RATIO) {
-    fitAvailH = Math.min(availH * ULTRAWIDE_FIT_BOOST, availH + 48);
-  }
-
-  let pageW = Math.min(availW, fitAvailH * PAGE_ASPECT);
-  let pageH = pageW / PAGE_ASPECT;
-
-  let spreadPageW = Math.min(availW / 2, fitAvailH * PAGE_ASPECT);
-  let spreadPageH = spreadPageW / PAGE_ASPECT;
-
-  const preferSpread = availW >= pageW * 1.55;
-  if (preferSpread) {
-    pageW = spreadPageW;
-    pageH = spreadPageH;
-  }
-
-  pageW = pageW * getDisplaySizeScale();
-  pageH = pageW / PAGE_ASPECT;
-
-  var userScale = getDisplaySizeScale();
-  var clamped = clampBookDimensions(
-    pageW,
-    pageH,
-    preferSpread,
-    availW,
-    availH,
-    userScale,
-  );
-  pageW = clamped.pageW;
-  pageH = clamped.pageH;
-
-  const boxW = preferSpread ? pageW * 2 : pageW;
-  const boxH = pageH;
-
-  elements.book.style.width = `${boxW}px`;
-  elements.book.style.height = `${boxH}px`;
+  elements.book.style.width = `${layout.boxW}px`;
+  elements.book.style.height = `${layout.boxH}px`;
 
   syncStageOverflowForDisplaySize();
 
-  return { pageW, pageH, boxW, boxH };
+  return {
+    pageW: layout.pageW,
+    pageH: layout.pageH,
+    boxW: layout.boxW,
+    boxH: layout.boxH,
+  };
 }
 
-function applyBookLayout() {
+function syncPageFlipDimensions(pageW, pageH) {
+  if (!pageFlip) {
+    return;
+  }
+  var settings = pageFlip.getSettings();
+  if (!settings) {
+    return;
+  }
+  settings.width = pageW;
+  settings.height = pageH;
+  settings.minWidth = Math.min(360, pageW);
+  settings.maxWidth = pageW;
+  settings.minHeight = Math.min(548, pageH);
+  settings.maxHeight = pageH;
+  var ui = pageFlip.getUI();
+  if (ui && typeof ui.update === "function") {
+    ui.update();
+  } else {
+    pageFlip.update();
+  }
+}
+
+function applyBookLayout(options) {
   if (!elements.book) {
     return;
   }
-  fitBookToStage();
-  if (pageFlip) {
-    pageFlip.update();
+  if (!options || !options.skipScaleClamp) {
+    var maxForViewport = computeMaxDisplayScaleForViewport();
+    var stored = getDisplaySizeScale();
+    if (stored > maxForViewport + 0.001) {
+      persistDisplaySizeScale(maxForViewport);
+    }
   }
+  var layout = fitBookToStage();
+  if (pageFlip) {
+    syncPageFlipDimensions(layout.pageW, layout.pageH);
+  }
+  updateDisplaySizeUi();
 }
 
 function setPageLabel(pageIndex) {
@@ -696,7 +841,7 @@ function setPageLabel(pageIndex) {
 
 function triggerPageFlipAudio() {
   var now = Date.now();
-  if (now - lastPageFlipAudioAt < 120) {
+  if (now - lastPageFlipAudioAt < 250) {
     return;
   }
   lastPageFlipAudioAt = now;
@@ -2180,38 +2325,26 @@ function isBookPageTurnZone(clientX, clientY) {
   return zoneFromBookRect(clientX, clientY) !== "center";
 }
 
-function isBookFlipAudioZone(clientX, clientY) {
-  if (isMagnifyCenterZone(clientX, clientY)) {
-    return false;
-  }
-  var bookRect = elements.book.getBoundingClientRect();
-  if (!bookRect.width || !bookRect.height) {
-    return false;
-  }
-  return (
-    clientX >= bookRect.left &&
-    clientX <= bookRect.right &&
-    clientY >= bookRect.top &&
-    clientY <= bookRect.bottom
-  );
-}
-
 function handleStageResize() {
   applyBookLayout();
+}
+
+function onDisplaySizeSliderInput() {
+  if (!elements.displaySizeSlider) {
+    return;
+  }
+  var pct = parseInt(elements.displaySizeSlider.value, 10);
+  if (!isFinite(pct)) {
+    return;
+  }
+  setDisplaySizeScale(sliderPercentToScale(pct));
 }
 
 function initReaderDisplaySize() {
   syncStageOverflowForDisplaySize();
   updateDisplaySizeUi();
-  if (elements.displaySizeDown) {
-    elements.displaySizeDown.addEventListener("click", function () {
-      setDisplaySizeScale(getDisplaySizeScale() - DISPLAY_SIZE_STEP);
-    });
-  }
-  if (elements.displaySizeUp) {
-    elements.displaySizeUp.addEventListener("click", function () {
-      setDisplaySizeScale(getDisplaySizeScale() + DISPLAY_SIZE_STEP);
-    });
+  if (elements.displaySizeSlider) {
+    elements.displaySizeSlider.addEventListener("input", onDisplaySizeSliderInput);
   }
 }
 
@@ -2225,9 +2358,6 @@ if (typeof ResizeObserver !== "undefined") {
 elements.book.addEventListener(
   "pointerdown",
   (event) => {
-    if (isBookFlipAudioZone(event.clientX, event.clientY)) {
-      triggerPageFlipAudio();
-    }
     if (!isBookPageTurnZone(event.clientX, event.clientY)) {
       return;
     }
@@ -2358,7 +2488,6 @@ function turnReaderPagePrev() {
     return;
   }
   unlockReaderAudio();
-  triggerPageFlipAudio();
   if (window.IntrepidReaderMagnify) {
     window.IntrepidReaderMagnify.unmount();
   }
@@ -2374,7 +2503,6 @@ function turnReaderPageNext() {
   if (!requestPageTurn(lastPageIndex + 1)) {
     return;
   }
-  triggerPageFlipAudio();
   if (window.IntrepidReaderMagnify) {
     window.IntrepidReaderMagnify.unmount();
   }

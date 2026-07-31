@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070706" />
     <title>Intrepid Dusk Volume 1 Reader</title>
-    <link rel="stylesheet" href="./styles.css?v=197" />
+    <link rel="stylesheet" href="./styles.css?v=202" />
   </head>
   <body>
     <main class="reader is-preparing" aria-label="Intrepid Dusk Volume 1 reader">
@@ -88,17 +88,21 @@
           </p>
           <div class="reader-display-size" aria-label="Display size">
             <span class="reader-display-size-heading">Size</span>
-            <button
-              type="button"
-              data-action="size-down"
-              aria-label="Decrease display size"
-            >&minus;</button>
+            <input
+              type="range"
+              class="reader-display-size-slider"
+              data-display-size-slider
+              min="85"
+              max="125"
+              step="5"
+              value="100"
+              aria-label="Display size"
+              aria-valuemin="85"
+              aria-valuemax="125"
+              aria-valuenow="100"
+              aria-valuetext="100%"
+            />
             <output data-display-size-value aria-live="polite">100%</output>
-            <button
-              type="button"
-              data-action="size-up"
-              aria-label="Increase display size"
-            >+</button>
           </div>
           <div class="controls" aria-label="Page controls">
             <button type="button" data-action="prev">Previous</button>
@@ -142,7 +146,7 @@
         <p class="reader-help-tip-body">
           Keyboard: <kbd>ArrowLeft</kbd>/<kbd>ArrowRight</kbd> for prev/next,
           <kbd>Home</kbd>/<kbd>End</kbd> for first/last.
-          Use <strong>Size +/−</strong> to make the whole spread larger or smaller (your choice is remembered).
+          Use the <strong>Size</strong> slider to make the whole spread larger or smaller (your choice is remembered).
           Download PDF is top left — Chapter 1 is free; full Volume 1 and Chapters 2–3
           unlock with your backer code.
           <span data-reader-help-magnify></span>
@@ -164,7 +168,7 @@
     <script src="../backer-gate.js?v=193"></script>
     <script src="./vendor/page-flip.browser.js"></script>
     <script src="./audio.js?v=5"></script>
-    <script src="./spike.js?v=197"></script>
+    <script src="./spike.js?v=202"></script>
     <script>
     (function () {
       var btn = document.getElementById("reader-reset-access");

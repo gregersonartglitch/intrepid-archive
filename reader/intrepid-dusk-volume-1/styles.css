@@ -275,8 +275,8 @@ h1 {
 .reader-display-size {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 8px;
+  padding: 6px 10px;
   border: 1px solid rgba(239, 231, 210, 0.12);
   border-radius: 6px;
   background: rgba(239, 231, 210, 0.04);
@@ -288,6 +288,7 @@ h1 {
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  flex: 0 0 auto;
 }
 
 .reader-display-size output {
@@ -295,29 +296,61 @@ h1 {
   color: var(--bone);
   font-size: 13px;
   font-weight: 700;
-  text-align: center;
+  text-align: right;
+  flex: 0 0 auto;
 }
 
-.reader-display-size button {
-  min-width: 32px;
-  padding: 6px 8px;
-  border: 1px solid rgba(239, 231, 210, 0.16);
-  border-radius: 6px;
-  background: rgba(239, 231, 210, 0.08);
-  color: var(--bone);
-  font-size: 16px;
-  line-height: 1;
+.reader-display-size-slider {
+  width: min(148px, 30vw);
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
   cursor: pointer;
+  flex: 1 1 auto;
+  accent-color: #c68d55;
 }
 
-.reader-display-size button:hover:not(:disabled) {
-  border-color: rgba(198, 141, 85, 0.5);
-  background: rgba(198, 141, 85, 0.16);
+.reader-display-size-slider:focus-visible {
+  outline: 2px solid rgba(198, 141, 85, 0.65);
+  outline-offset: 2px;
 }
 
-.reader-display-size button:disabled {
-  opacity: 0.35;
+.reader-display-size-slider:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
+}
+
+.reader-display-size-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(239, 231, 210, 0.18);
+}
+
+.reader-display-size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 1px solid rgba(198, 141, 85, 0.85);
+  border-radius: 50%;
+  background: #efe7d2;
+  box-shadow: 0 0 0 2px rgba(198, 141, 85, 0.18);
+}
+
+.reader-display-size-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(239, 231, 210, 0.18);
+}
+
+.reader-display-size-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgba(198, 141, 85, 0.85);
+  border-radius: 50%;
+  background: #efe7d2;
+  box-shadow: 0 0 0 2px rgba(198, 141, 85, 0.18);
 }
 
 .controls {
@@ -348,7 +381,11 @@ h1 {
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
-  padding: clamp(14px, 2.5svh, 28px) clamp(18px, 3vw, 36px);
+  padding:
+    clamp(4px, 0.75svh, 8px)
+    max(clamp(6px, 1vw, 12px), env(safe-area-inset-right))
+    max(clamp(4px, 0.75svh, 8px), env(safe-area-inset-bottom))
+    max(clamp(6px, 1vw, 12px), env(safe-area-inset-left));
 }
 
 .reader-stage.reader-stage--scaled {
@@ -957,6 +994,12 @@ h1 {
     order: 3;
     width: 100%;
     justify-content: center;
+    gap: 10px;
+  }
+
+  .reader-display-size-slider {
+    width: min(220px, 52vw);
+    max-width: none;
   }
 
   .reader-help-tip {
