@@ -170,11 +170,38 @@ input { font-family: inherit; }
 
 /* Follow / updates signup (Netlify Forms) — reversible via ENABLE_FOLLOW_SIGNUP */
 .entry-follow {
-  margin-top: 18px;
+  margin-top: 20px;
   width: 100%;
   text-align: center;
 }
 .entry-follow[hidden] { display: none !important; }
+.entry-follow-toggle {
+  display: inline-block;
+  margin: 0;
+  padding: 6px 4px;
+  border: none;
+  background: transparent;
+  color: rgba(191,178,153,0.48);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.4px;
+  line-height: 1.45;
+  text-transform: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.entry-follow-toggle:hover,
+.entry-follow-toggle:focus-visible {
+  color: rgba(198,141,85,0.78);
+  outline: none;
+}
+.entry-follow-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(198,141,85,0.12);
+}
+.entry-follow-panel[hidden] { display: none !important; }
 .entry-follow-fields {
   display: flex;
   flex-direction: column;
@@ -217,23 +244,23 @@ input { font-family: inherit; }
 .entry-follow-submit {
   margin-top: 4px;
   width: 100%;
-  padding: 12px 18px;
-  border: 1px solid rgba(198,141,85,0.35);
+  padding: 10px 16px;
+  border: 1px solid rgba(198,141,85,0.22);
   border-radius: 4px;
-  background: rgba(198,141,85,0.12);
-  color: rgba(232, 214, 176, 0.92);
+  background: transparent;
+  color: rgba(191,178,153,0.72);
   font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 2.2px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.6px;
   text-transform: uppercase;
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 .entry-follow-submit:hover:not(:disabled) {
-  background: rgba(198,141,85,0.22);
-  border-color: rgba(198,141,85,0.55);
-  color: #f0e6d0;
+  background: rgba(198,141,85,0.08);
+  border-color: rgba(198,141,85,0.38);
+  color: rgba(232, 214, 176, 0.88);
 }
 .entry-follow-submit:disabled {
   opacity: 0.55;
@@ -253,14 +280,6 @@ input { font-family: inherit; }
 }
 .entry-follow-msg.is-err {
   color: rgba(210, 120, 100, 0.92);
-}
-.entry-follow-note {
-  margin-top: 10px;
-  color: rgba(191,178,153,0.38);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  letter-spacing: 1.2px;
-  line-height: 1.55;
 }
 
 /* ═══════════════════════════════════════════
@@ -2816,10 +2835,10 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
-    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — leave your contact below for updates.</div>
+    <div class="gate-subtitle gate-fade" data-delay="600" id="entry-subtitle">Enter your backer access word.</div>
     <div class="gate-input-wrap gate-fade" data-delay="800">
       <input id="entry-access-pw" class="gate-input" type="password" placeholder="ENTER ACCESS WORD" autocomplete="off" spellcheck="false" aria-label="Archive access word" aria-describedby="entry-access-msg">
-      <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access code">
+      <button type="button" id="entry-access-eye" class="gate-toggle" aria-label="Show access password">
         <svg class="pw-toggle-icon pw-toggle-icon--show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg class="pw-toggle-icon pw-toggle-icon--hide" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
       </button>
@@ -2831,30 +2850,32 @@ body.edit-mode #frame-rim-seal { display: none !important; }
       </button>
     </div>
     <p id="entry-access-msg" class="gate-error" data-delay="1100" aria-live="polite"></p>
-    <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or follow for updates</span></div>
+    <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" hidden aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or continue without a code</span></div>
     <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button" hidden aria-hidden="true"><span class="entry-guest-btn-label">Continue as guest</span></button>
-    <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300" hidden>Guests can read Issue 1 and browse the dossier without a code.</p>
-    <!-- Follow for updates — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
+    <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300" hidden>Issue 1 and the dossier — no code needed.</p>
+    <!-- Follow signup — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
     <div id="entry-follow" class="entry-follow gate-fade" data-delay="1350" hidden>
-      <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
-        <input type="hidden" name="form-name" value="hollowlands-follow">
-        <input type="hidden" name="opt_in_at" value="">
-        <input type="hidden" name="opt_in_source" value="archive-entry-follow">
-        <p class="entry-follow-honeypot" aria-hidden="true">
-          <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
-        </p>
-        <div class="entry-follow-fields">
-          <input id="entry-follow-nickname" class="gate-input" type="text" name="nickname" placeholder="PREFERRED NICKNAME" autocomplete="nickname" maxlength="64" aria-label="Preferred nickname" required>
-          <input id="entry-follow-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for updates" required>
-          <label class="entry-follow-optin" for="entry-follow-optin">
-            <input id="entry-follow-optin" type="checkbox" name="marketing_opt_in" value="yes" required>
-            <span class="entry-follow-optin-text">I opt in to occasional Intrepid Dusk / Hollowlands email updates. Unsubscribe anytime.</span>
-          </label>
-          <button id="entry-follow-submit" class="entry-follow-submit" type="submit">Get updates</button>
-        </div>
-      </form>
-      <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
-      <p id="entry-follow-note" class="entry-follow-note">Guest access opens mid to late August. Leave a nickname and email if you want word when it does.</p>
+      <button type="button" id="entry-follow-toggle" class="entry-follow-toggle" aria-expanded="false" aria-controls="entry-follow-panel">No code? Get notified when guest access opens</button>
+      <div id="entry-follow-panel" class="entry-follow-panel" hidden>
+        <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
+          <input type="hidden" name="form-name" value="hollowlands-follow">
+          <input type="hidden" name="opt_in_at" value="">
+          <input type="hidden" name="opt_in_source" value="archive-entry-follow">
+          <p class="entry-follow-honeypot" aria-hidden="true">
+            <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
+          </p>
+          <div class="entry-follow-fields">
+            <input id="entry-follow-nickname" class="gate-input" type="text" name="nickname" placeholder="NICKNAME" autocomplete="nickname" maxlength="64" aria-label="Preferred nickname" required>
+            <input id="entry-follow-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for updates" required>
+            <label class="entry-follow-optin" for="entry-follow-optin">
+              <input id="entry-follow-optin" type="checkbox" name="marketing_opt_in" value="yes" required>
+              <span class="entry-follow-optin-text">Email me occasional Hollowlands updates. Unsubscribe anytime.</span>
+            </label>
+            <button id="entry-follow-submit" class="entry-follow-submit" type="submit">Notify me</button>
+          </div>
+        </form>
+        <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
+      </div>
     </div>
   </div>
 </div>
@@ -3112,7 +3133,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
   </div>
 
   <!-- Ambient Audio Toggle -->
-  <button id="ambient-toggle" type="button" aria-pressed="true" title="Toggle ambient music" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">Ambient</button>
+  <button id="ambient-toggle" type="button" aria-pressed="true" title="Turn off ambient music and map sounds" onclick="if(window.FogSystem)window.FogSystem.toggleAmbient()">Ambient: On</button>
   <button type="button" id="fog-reset-btn" title="Reset all discoveries">↺ Reset</button>
   <!-- VIP Welcome Cinematic (plays once after gate) -->
   <div id="welcome" class="welcome-overlay">
@@ -3208,10 +3229,10 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 217;
+window.INTREPID_BUILD = 227;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
-<script src="data.js?v=15"></script>
+<script src="data.js?v=16"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
@@ -3285,7 +3306,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="fog.js?v=217"></script>
+<script src="fog.js?v=226"></script>
 <script>
 (function() {
   'use strict';
@@ -3719,6 +3740,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const entryGuestBtn = document.getElementById('entry-guest-btn');
   const entryGuestNote = document.getElementById('entry-guest-note');
   const entryFollow = document.getElementById('entry-follow');
+  const entryFollowToggle = document.getElementById('entry-follow-toggle');
+  const entryFollowPanel = document.getElementById('entry-follow-panel');
   const entryFollowForm = document.getElementById('entry-follow-form');
   const entryFollowMsg = document.getElementById('entry-follow-msg');
   const entryFollowSubmit = document.getElementById('entry-follow-submit');
@@ -3747,6 +3770,33 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(fields[key] == null ? '' : String(fields[key])));
     });
     return parts.join('&');
+  }
+
+  function setFollowPanelOpen(isOpen) {
+    if (!entryFollowPanel) return;
+    entryFollowPanel.hidden = !isOpen;
+    if (entryFollowToggle) {
+      entryFollowToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      entryFollowToggle.textContent = isOpen ? 'Hide notification signup' : getFollowToggleLabel();
+    }
+  }
+
+  function getFollowToggleLabel() {
+    var guestOn = isGuestEntryEnabled();
+    if (guestOn) return 'Get email updates';
+    return 'No code? Get notified when guest access opens';
+  }
+
+  function wireFollowToggle() {
+    if (!entryFollowToggle) return;
+    entryFollowToggle.addEventListener('click', function () {
+      var willOpen = entryFollowPanel && entryFollowPanel.hidden;
+      setFollowPanelOpen(willOpen);
+      if (willOpen) {
+        var nicknameEl = document.getElementById('entry-follow-nickname');
+        if (nicknameEl) nicknameEl.focus();
+      }
+    });
   }
 
   function wireFollowSignup() {
@@ -3789,6 +3839,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         setFollowMsg('You’re on the list. We’ll be in touch.', 'ok');
         entryFollowForm.reset();
         try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e2) { /* ignore */ }
+        if (entryFollowToggle) {
+          entryFollowToggle.hidden = true;
+          entryFollowToggle.setAttribute('aria-hidden', 'true');
+        }
+        setFollowPanelOpen(true);
       }).catch(function () {
         setFollowMsg('Couldn’t send — try again in a moment.', 'err');
       }).then(function () {
@@ -3807,6 +3862,15 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       return false;
     }
     entryFollow.hidden = false;
+    var alreadySignedUp = false;
+    try { alreadySignedUp = localStorage.getItem('intrepid_follow_signed_up') === '1'; } catch (e) { /* ignore */ }
+    if (entryFollowToggle) {
+      entryFollowToggle.hidden = alreadySignedUp;
+      entryFollowToggle.setAttribute('aria-hidden', alreadySignedUp ? 'true' : 'false');
+      if (!alreadySignedUp && entryFollowPanel && entryFollowPanel.hidden) {
+        entryFollowToggle.textContent = getFollowToggleLabel();
+      }
+    }
     // When guest is locked, follow replaces the locked-button clutter.
     if (!guestOn && entryGuestBtn) {
       entryGuestBtn.hidden = true;
@@ -3815,11 +3879,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (!guestOn && entryGuestNote) {
       entryGuestNote.hidden = true;
     }
-    if (!guestOn && entryGuestDividerLabel) {
-      entryGuestDividerLabel.textContent = 'Or follow for updates';
-    }
-    if (guestOn && entryGuestDividerLabel && entryFollow) {
-      // Guest path stays primary; follow sits under with its own note.
+    if (!guestOn && entryGuestDivider) {
+      entryGuestDivider.hidden = true;
+      entryGuestDivider.setAttribute('aria-hidden', 'true');
     }
     return true;
   }
@@ -3900,23 +3962,21 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (entryGuestNote) {
         entryGuestNote.hidden = false;
         entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Guests can read Issue 1 and browse the dossier without a code.';
+        entryGuestNote.textContent = 'Issue 1 and the dossier — no code needed.';
       }
       if (entrySubtitle) {
-        entrySubtitle.innerHTML = 'Enter your backer access word to unlock the full archive.<br>Or continue as guest for Issue 1 and the dossier.';
+        entrySubtitle.textContent = 'Enter your access word — or continue as guest below.';
       }
       renderFollowSignupState({ guestEnabled: true });
       return;
     }
     startGuestUnlockCountdownIfNeeded();
     if (entryGuestDivider) {
-      entryGuestDivider.hidden = false;
-      entryGuestDivider.setAttribute('aria-hidden', 'false');
+      entryGuestDivider.hidden = !!followOn;
+      entryGuestDivider.setAttribute('aria-hidden', followOn ? 'true' : 'false');
     }
-    if (entryGuestDividerLabel) {
-      entryGuestDividerLabel.textContent = followOn
-        ? 'Or follow for updates'
-        : (isCountdownActive ? 'Or wait for guest access' : 'Guest access paused');
+    if (entryGuestDividerLabel && !followOn) {
+      entryGuestDividerLabel.textContent = isCountdownActive ? 'Or wait for guest access' : 'Guest access paused';
     }
     if (entryGuestBtn) {
       if (followOn) {
@@ -3945,15 +4005,11 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       } else {
         entryGuestNote.hidden = false;
         entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Guest preview is paused for a backer-first window. Enter your access word to continue.';
+        entryGuestNote.textContent = 'Guest preview is paused. Enter your access word to continue.';
       }
     }
     if (entrySubtitle) {
-      entrySubtitle.innerHTML = followOn
-        ? 'Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — leave your contact below for updates.'
-        : (isCountdownActive
-          ? 'Enter your backer access word to unlock the archive.<br>Guest preview is paused for a backer-first window.'
-          : 'Enter your backer access word to unlock the archive.<br>Guest access opens mid to late August — backer codes only for now.');
+      entrySubtitle.textContent = 'Enter your backer access word.';
     }
     renderFollowSignupState({ guestEnabled: false });
   }
@@ -4046,7 +4102,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       const isPassword = entryAccessPw.type === 'password';
       entryAccessPw.type = isPassword ? 'text' : 'password';
       entryAccessEye.classList.toggle('showing', isPassword);
-      entryAccessEye.setAttribute('aria-label', isPassword ? 'Hide access code' : 'Show access code');
+      entryAccessEye.setAttribute('aria-label', isPassword ? 'Hide access password' : 'Show access password');
       entryAccessPw.focus();
     });
   }
@@ -6389,6 +6445,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     showArchiveEntry();
     renderGuestEntryState();
   }
+  wireFollowToggle();
   wireFollowSignup();
 
   // Legacy ?reader= links — Issue 1 is open, no gate required
