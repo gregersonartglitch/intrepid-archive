@@ -49,8 +49,8 @@ node scripts/audit-checks.mjs               # terminal 2
 |------|--------|
 | **Remote** | `origin` → https://github.com/gregersonartglitch/intrepid-archive.git |
 | **Branch** | `feature/cuneiform-buttons` |
-| **Latest ship** | `build-216` — reader display size control, ultrawide fit boost |
-| **Status (Jul 30)** | Prod target build-216; push branch + tag after deploy |
+| **Latest ship** | `build-226` — reader padding trim, ultrawide spread resize on Size slider |
+| **Status (Jul 31)** | **Prod:** `build-226` at https://archive.intrepidgraphicnovel.com — branch + tag pushed |
 
 ```powershell
 cd C:\Users\tanja\.gemini\antigravity\scratch\intrepid-map
@@ -73,7 +73,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-210` | Stable | 72p digital PDF downloads (Claude master), download UX copy |
 | `build-212` | Stable | Rim fog flash seal, Dragon's Tail label, reader flip SFX |
 | `build-215` | Stable | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
-| `build-216` | **Current prod** | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
+| `build-216` | Stable | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
+| `build-226` | **Current prod** | Tighter stage padding; Size slider resizes StPageFlip on ultrawide (`syncPageFlipDimensions`) |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 

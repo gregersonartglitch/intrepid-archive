@@ -83,6 +83,7 @@ Cursor skill: `.cursor/skills/intrepid-map/SKILL.md`
 | **build-57** | Beta go-live |
 | **build-210** | Stable | 72p digital PDF downloads, download UX copy |
 | **build-212** | Stable | Rim fog flash seal, Dragon's Tail label, reader flip SFX |
-| **build-215** | **Current prod** | Sabella letter recovery, sequenced finale congrats, zoom-aware west pan |
+| **build-215** | Stable | Sabella letter recovery, sequenced finale congrats, zoom-aware west pan |
+| **build-226** | **Current prod** | Reader padding trim, ultrawide spread resize via Size slider (syncPageFlipDimensions) |
 
 Bump `INTREPID_BUILD` in `index.html` and sync `fog.js?v=` on every deploy-worthy change. **Every bug fix:** add a row to [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) + smoke assertion before ship.

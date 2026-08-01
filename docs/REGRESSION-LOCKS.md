@@ -23,11 +23,12 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **214** | Sabella letter soft-lock | Secrets 3/4; charted stop (e.g. Monastery) letter never opens | Smoke: `maybeRecoverSabellaLetter` → `forceShowSabellaLetter`; Guide Me force-show; `recoverMissingSabellaLetter` | `?reset` → play to 3/4 letters, skip one on first chart, tap marker → parchment opens |
 | **215** | Double congratulations | Two modals at Indras Na (Vol2 + archive complete) | Smoke: `journeyFinaleToastQueued`, `flushJourneyFinaleToastAfterVol2` | Complete Indras Na with full map — one modal, dismiss, then archive overlay |
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
+| **226** | Reader size on ultrawide | Size slider did not grow spread; heavy stage padding on wide monitors | *(manual)* `syncPageFlipDimensions` + layout refresh in `reader/overlay/spike.js` | Ultrawide (>=2.2 aspect) -> Size +/- -> spread visibly scales; padding tighter |
 
 ## Rollback
 
 ```powershell
-git checkout build-215   # last known good (after this ship)
+git checkout build-226   # last known good (after this ship)
 git checkout build-212   # prior prod baseline
 ```
 
