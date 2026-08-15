@@ -68,7 +68,7 @@ Same URL for everyone. Different **access word** and **second-room content**.
 
 Cartographer is a superset — they get one code (`hollowlands9`), not two. Do not send Cartographers `scribe4` unless troubleshooting.
 
-**List segmentation:** Export KS backer report by reward tier. Two sends on Day 3 and Day 7. Day 0 can be one email with clearly labeled tier blocks (acceptable) or two sends (cleaner).
+**List segmentation:** Use Kickstarter Backer Report **saved views** filtered by reward/SKU (not a hand-built email list). Day 0 = two KS bulk sends (Reader view → `scribe4`; Cartographer view → `hollowlands9`). Day 3/7 follow-ups may use KS messaging or a private mail tool for copy only — fulfillment status stays in Kickstarter.
 
 ---
 
@@ -103,15 +103,17 @@ Preview text (MailerLite): *Your access word is inside. Guest preview stays clos
 - [ ] Dossier portraits load (spot-check Elena, Atrus, Namin)
 - [ ] Mobile pass on one phone: entry → reader → one PDF download
 
-**Email ops**
+**Fulfillment ops (Kickstarter is primary — see `docs/WAVE1-KS-FULFILLMENT.md`)**
 
-- [ ] Backer list exported from KS; segmented Reader vs Cartographer
-- [ ] Apple ID / Hide My Email backers flagged — may need manual follow-up
-- [ ] Send from domain with SPF/DKIM configured (reduces spam)
-- [ ] Test send to yourself + one non-Gmail address
-- [ ] Plain-text version pasted (below) — many backers read on phone mail clients
-- [ ] Reply-to goes to an inbox Jon actually checks
+- [ ] Saved Backer Report views: **Wave 1 — Reader/PDF** (Digital / Early Bird / Explorer) and **Wave 1 — Cartographer Atlas** (Cartographer+)
+- [ ] Filter by reward/item/SKU — not a typed email list
+- [ ] Full Backer Report exported as a **dated CSV** and stored privately (PII — not in general project folders)
+- [ ] Wave 1 sent via **Kickstarter bulk actions** per saved view (not Gmail/MailerLite as primary)
+- [ ] Correct access word per view only: `scribe4` vs `hollowlands9`
+- [ ] Digital reward marked sent in Kickstarter; Apple/private-relay backers covered by KS delivery
+- [ ] Plain-text copy ready (below) for paste into KS digital-reward message
 - [ ] Support macro ready: "Send browser, device, build number from console, screenshot"
+- [ ] **No public marketing** until Wave 1 is sent and tracked in KS (drafts alone do not open the gate)
 
 **Copy & promises**
 
@@ -451,7 +453,9 @@ Assume **send day = Day 0** (adjust dates to your actual send).
 | PDF | Self-serve: Volume 1 → Download PDF (top left); 72p full or by chapter |
 | Guest preview | OFF until mid–late August |
 | Physical rewards | Separate fulfillment — not this email |
-| Prod build (verify) | 210 |
+| **Primary delivery** | **Kickstarter Backer Report bulk actions** (see `docs/WAVE1-KS-FULFILLMENT.md`) |
+| Gmail / MailerLite | Copy staging / support only — not the fulfillment system of record |
+| Prod build (verify) | Current prod tag (check `index.html` `INTREPID_BUILD`) |
 
 ---
 
