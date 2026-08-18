@@ -43,6 +43,15 @@ Guest entry is **OFF**. In-reader Issue 2 overlay is currently **OFF** (`ENABLE_
 
 Page images and PDFs are statically fetchable if someone knows the path. Shared backer words are honor-system among backers. Public checkout is **not** this send. See Vol1 gate audit.
 
+**Prod vs local:** Live site was **build 217** at test time; this repo is **build 227**. Codes and guest-off match. Wave 1 mail hits prod 217, which passed the browser matrix.
+
+## Results (2026-08-18)
+
+Automated: `node scripts/smoke-backer-login.js` — PASS (matrix ×2, local HTTP + prod HTTP).
+
+Browser (prod incognito-style, two passes): B1–B9 PASS. `SCRIBE4` accepted. `scribe4` rejected on map gate with reader-only copy. `hollowlands9` opens atlas without a second word. Deep links `/reader/…` and `/dossier/` bounce home without a code. PDF Download menu works after `scribe4`. Bare URL does not open the map.
+
+
 ## After send
 
 Track in Kickstarter: digital reward sent. Do not start public marketing because copy exists.
