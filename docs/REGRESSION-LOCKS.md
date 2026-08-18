@@ -24,6 +24,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **215** | Double congratulations | Two modals at Indras Na (Vol2 + archive complete) | Smoke: `journeyFinaleToastQueued`, `flushJourneyFinaleToastAfterVol2` | Complete Indras Na with full map — one modal, dismiss, then archive overlay |
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
 | **226** | Reader size on ultrawide | Size slider did not grow spread; heavy stage padding on wide monitors | *(manual)* `syncPageFlipDimensions` + layout refresh in `reader/overlay/spike.js` | Ultrawide (>=2.2 aspect) -> Size +/- -> spread visibly scales; padding tighter |
+| **227** | Wave 1 backer login mix-up | Reader code opening map, or guest/deep-link skipping entry | `scripts/smoke-backer-login.js` (matrix ×2): `scribe4` reader-only; `hollowlands9` both; guest OFF; CART- format | Incognito: B1–B10 in `docs/WAVE1-LOGIN-TEST.md` |
 
 ## Rollback
 

@@ -87,3 +87,5 @@ Use Backer Report / Pledge Manager — not a parallel hand-maintained name list:
 - Sales & Marketing Plan (public-sales gates)
 - [Vol1 Gate Audit Verification](https://docs.google.com/document/d/1dsFtK30aKUY93HITnA3TuYyQFhXW1DnUes062I46EKk/edit) — assets are currently public static; real pay gate needs rehost before public checkout
 - `docs/BACKER-EMAIL-PLAYBOOK-2026-07-21.md` — copy templates; delivery method corrected below
+- `docs/WAVE1-KS-EMAIL-COPY.md` — Kickstarter paste-ready Message A / Message B
+- `docs/WAVE1-LOGIN-TEST.md` — login matrix; run `node scripts/smoke-backer-login.js` before send
