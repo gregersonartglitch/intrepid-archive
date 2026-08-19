@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+(function () {
+  "use strict";
+  function goHome() {
+    window.location.replace("/");
+  }
+  try {
+    var carto = localStorage.getItem("intrepid_cartographer_unlocked") === "granted";
+    var backer = localStorage.getItem("intrepid_reader_backer") === "granted";
+    var i2 = localStorage.getItem("intrepid_reader_issue_002") === "granted";
+    var i3 = localStorage.getItem("intrepid_reader_issue_003") === "granted";
+    if (carto || backer || (i2 && i3)) {
+      document.documentElement.classList.add("archive-access-granted");
+      return;
+    }
+  } catch (e) {}
+  goHome();
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Character Dossier — Intrepid Dusk</title>

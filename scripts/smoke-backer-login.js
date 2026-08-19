@@ -186,6 +186,7 @@ function runMatrix(label) {
   var readerHtml = fs.readFileSync(path.join(ROOT, 'reader/intrepid-dusk-volume-1/index.html'), 'utf8');
   assert(readerHtml.indexOf('bootstrapPublicContentRoute') !== -1, 'reader deep-link uses fail-closed bootstrap guard');
   assert(readerHtml.indexOf('window.location.replace("/")') !== -1, 'reader guard redirects home when archive-access missing');
+  assert(readerHtml.indexOf('intrepid_cartographer_unlocked') !== -1, 'reader inline head guard checks localStorage keys');
   assert(readerHtml.indexOf('archive-access-granted') !== -1, 'reader body hidden until access granted');
   assert(readerHtml.indexOf('Download PDF') !== -1, 'reader Download PDF control present');
 
