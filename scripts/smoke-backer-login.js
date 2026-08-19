@@ -91,58 +91,21 @@ function extractCartValidator() {
 }
 
 function runMatrix(label) {
-  console.log('\n[' + label + '] archive-access codes + isolation');
+  console.log('\n[' + label + '] server-side access architecture (static)');
+
+  var accessJs = fs.readFileSync(path.join(ROOT, 'archive-access.js'), 'utf8');
+  assert(accessJs.indexOf('scribe4') === -1, 'scribe4 not in archive-access.js');
+  assert(accessJs.indexOf('hollowlands9') === -1, 'hollowlands9 not in archive-access.js');
+  assert(accessJs.indexOf('/api/access/login') !== -1, 'archive-access uses POST /api/access/login');
+  assert(accessJs.indexOf('/api/access/session') !== -1, 'archive-access uses GET /api/access/session');
+  assert(accessJs.indexOf('/api/access/logout') !== -1, 'archive-access uses POST /api/access/logout');
+  assert(accessJs.indexOf('refreshSession') !== -1, 'archive-access exposes refreshSession');
+
   var env = loadArchiveAccess();
   var A = env.access;
-
   assert(!!A, 'IntrepidArchiveAccess exported');
-  assert(A.ENABLE_GUEST_ENTRY === false, 'guest entry OFF (ENABLE_GUEST_ENTRY === false)');
-  assert(A.canEnterAsGuest() === false, 'canEnterAsGuest() is false');
-  assert(A.hasPublicContentAccess() === false, 'fresh session has no public content access');
-  assert(A.hasCartographerAccess() === false, 'fresh session has no cartographer access');
-  assert(A.hasReaderBackerAccess() === false, 'fresh session has no reader backer access');
-  assert(A.shouldSkipArchiveEntry() === false, 'fresh session must see archive entry');
-
-  var bad = A.submitArchiveCode('nope');
-  assert(bad && bad.ok === false && bad.reason === 'invalid', 'wrong word rejected');
-  assert(A.submitArchiveCode('').ok === false, 'empty word rejected');
-  assert(A.submitArchiveCode('   ').ok === false, 'whitespace-only rejected');
-  assert(A.submitArchiveCode('hollowlands').ok === false, 'legacy hollowlands (no 9) rejected');
-  assert(A.submitArchiveCode('hollowlands8').ok === false, 'hollowlands8 rejected');
-  assert(A.submitArchiveCode('scribe').ok === false, 'scribe (no 4) rejected');
-  assert(A.submitArchiveCode('scribe5').ok === false, 'scribe5 rejected');
-  assert(A.hasPublicContentAccess() === false, 'failed attempts do not grant access');
-
-  var reader = A.submitArchiveCode('  SCRIBE4  ');
-  assert(reader.ok === true, 'scribe4 accepted (trim + case-insensitive)');
-  assert(reader.reader === true && reader.cartographer === false, 'scribe4 → reader only');
-  assert(A.hasReaderBackerAccess() === true, 'scribe4 sets reader backer keys');
-  assert(A.hasCartographerAccess() === false, 'scribe4 does NOT unlock cartographer map');
-  assert(env.localStorage.getItem('intrepid_reader_backer') === 'granted', 'intrepid_reader_backer=granted');
-  assert(env.localStorage.getItem('intrepid_reader_issue_002') === 'granted', 'issue 002 granted');
-  assert(env.localStorage.getItem('intrepid_reader_issue_003') === 'granted', 'issue 003 granted');
-  assert(env.localStorage.getItem('intrepid_cartographer_unlocked') !== 'granted', 'cartographer key not set by scribe4');
-  assert(A.hasPublicContentAccess() === true, 'scribe4 unlocks hub reader/dossier');
-  assert(A.shouldSkipArchiveEntry() === true, 'scribe4 skips archive entry on return visit');
-
-  A.resetArchiveAccess();
-  assert(A.hasReaderBackerAccess() === false, 'reset clears reader keys');
-  assert(A.hasPublicContentAccess() === false, 'reset restores entry gate');
-
-  var cart = A.submitArchiveCode('Hollowlands9');
-  assert(cart.ok === true, 'hollowlands9 accepted (mixed case)');
-  assert(cart.reader === true && cart.cartographer === true, 'hollowlands9 → reader + cartographer');
-  assert(A.hasCartographerAccess() === true, 'hollowlands9 sets cartographer key');
-  assert(A.hasReaderBackerAccess() === true, 'hollowlands9 also unlocks Issues 2–3 / PDF');
-  assert(env.localStorage.getItem('intrepid_cartographer_unlocked') === 'granted', 'intrepid_cartographer_unlocked=granted');
-  assert(env.localStorage.getItem('intrepid_atlas_label') === 'Patron', 'cartographer label stored');
-  assert(A.hasPublicContentAccess() === true, 'hollowlands9 unlocks hub');
-
-  A.resetArchiveAccess();
-  A.grantReaderBackerAccess();
-  assert(A.hasCartographerAccess() === false, 'grantReaderBackerAccess does not grant map');
-  A.grantCartographerAccess('Cartographer');
-  assert(A.hasCartographerAccess() === true, 'grantCartographerAccess sets map key (console-export path)');
+  assert(A.ENABLE_GUEST_ENTRY === false, 'guest entry OFF');
+  assert(A.hasPublicContentAccess() === false, 'fresh unloaded session has no public content access');
 
   console.log('\n[' + label + '] CART- URL format (index.html)');
   var isValidCart = extractCartValidator();
@@ -170,29 +133,30 @@ function runMatrix(label) {
   assert(/aria-label="Show access password"/.test(html), 'eye toggle aria-label present');
   assert(html.indexOf('id="entry-access-btn"') !== -1, 'Unlock Archive button present');
   assert(html.indexOf("That code unlocks the reader only") !== -1, 'scribe4-on-map-gate error copy present');
-  assert(/grantCartographerAccess\('Cartographer'\)/.test(html), 'valid CART- URL still grants in index.html');
+  assert(html.indexOf('Enter your Cartographer access word at the archive entry') !== -1, 'CART- URL directs to archive entry (no client grant)');
 
   var visible = html.replace(/<script[\s\S]*?<\/script>/gi, '');
   assert(visible.toLowerCase().indexOf('hollowlands9') === -1, 'hollowlands9 not in visible HTML');
   assert(visible.toLowerCase().indexOf('scribe4') === -1, 'scribe4 not in visible HTML');
 
   var gateJs = fs.readFileSync(path.join(ROOT, 'reader/backer-gate.js'), 'utf8');
-  assert(/ENABLE_READER_GATE\s*=\s*true/.test(gateJs), 'in-reader Issue 2 overlay ON (backup deep-link gate)');
-  assert(gateJs.indexOf('scribe4') !== -1, 'reader backer-gate still knows scribe4');
+  assert(/ENABLE_READER_GATE\s*=\s*true/.test(gateJs), 'in-reader Issue 2 overlay ON');
+  assert(gateJs.indexOf('scribe4') === -1, 'scribe4 not in backer-gate.js');
+  assert(gateJs.indexOf('intrepid_reader_gate_disabled') === -1, 'reader gate_disabled bypass removed');
   assert(/id="reader-gate-pw"/.test(gateJs), 'reader gate password input markup exists');
   assert(/id="reader-gate-eye"/.test(gateJs), 'reader gate password eye toggle present');
-  assert(/Show access password/.test(gateJs), 'reader gate eye toggle aria-label present');
 
   var readerHtml = fs.readFileSync(path.join(ROOT, 'reader/intrepid-dusk-volume-1/index.html'), 'utf8');
-  assert(readerHtml.indexOf('bootstrapPublicContentRoute') !== -1, 'reader deep-link uses fail-closed bootstrap guard');
-  assert(readerHtml.indexOf('window.location.replace("/")') !== -1, 'reader guard redirects home when archive-access missing');
-  assert(readerHtml.indexOf('intrepid_cartographer_unlocked') !== -1, 'reader inline head guard checks localStorage keys');
-  assert(readerHtml.indexOf('archive-access-granted') !== -1, 'reader body hidden until access granted');
-  assert(readerHtml.indexOf('Download PDF') !== -1, 'reader Download PDF control present');
+  assert(readerHtml.indexOf('/api/protected-media/') !== -1, 'reader uses protected media URLs');
+  assert(readerHtml.indexOf('refreshSession') !== -1, 'reader boot refreshes server session');
+  assert(readerHtml.indexOf('intrepid_cartographer_unlocked') === -1, 'reader no localStorage tier guard');
 
   var dossierHtml = fs.readFileSync(path.join(ROOT, 'dossier/index.html'), 'utf8');
-  assert(dossierHtml.indexOf('bootstrapPublicContentRoute') !== -1, 'dossier deep-link uses fail-closed bootstrap guard');
-  assert(dossierHtml.indexOf('window.location.replace("/")') !== -1, 'dossier guard redirects home when archive-access missing');
+  assert(dossierHtml.indexOf('/api/protected-media/dossier-') !== -1, 'dossier uses protected media URLs');
+
+  assert(fs.existsSync(path.join(ROOT, 'netlify/functions/access-login.js')), 'access-login function present');
+  assert(fs.existsSync(path.join(ROOT, 'netlify/functions/reader-shell.js')), 'reader-shell function present');
+  assert(fs.existsSync(path.join(ROOT, 'netlify/lib/asset-allowlist.json')), 'asset allowlist generated');
 }
 
 function runMatrixTwice() {
@@ -220,7 +184,21 @@ async function runLiveHttp(base, label) {
     var access = await fetchJson(base + '/archive-access.js');
     assert(access.ok, label + ' archive-access.js loads');
     assert(/ENABLE_GUEST_ENTRY\s*=\s*false/.test(access.text), label + ' live guest entry is OFF');
-    assert(/scribe4/.test(access.text) && /hollowlands9/.test(access.text), label + ' both access words present in archive-access.js (client gate)');
+    var buildInfo = await fetchJson(base + '/api/build-info');
+    var liveBuild = null;
+    if (buildInfo.ok && buildInfo.text) {
+      try {
+        liveBuild = JSON.parse(buildInfo.text).build;
+      } catch (e) {}
+    }
+    if (liveBuild != null && liveBuild >= 230) {
+      assert(access.text.indexOf('scribe4') === -1, label + ' live archive-access.js has no scribe4');
+      assert(access.text.indexOf('hollowlands9') === -1, label + ' live archive-access.js has no hollowlands9');
+      assert(buildInfo.ok, label + ' build-info endpoint');
+      pass(label + ' build-info build ' + liveBuild + ' (Option B+ live)');
+    } else {
+      pass(label + ' note: prod build ' + (liveBuild || 'unknown') + ' — Option B+ not deployed; skipping server gate live checks');
+    }
     var reader = await fetchJson(base + '/reader/intrepid-dusk-volume-1/');
     assert(reader.status === 200, label + ' reader HTML ships (JS redirect is post-load)');
     var dossier = await fetchJson(base + '/dossier/');

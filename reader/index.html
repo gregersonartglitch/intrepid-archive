@@ -5,24 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Volume 1 Reader — Intrepid Dusk</title>
 <meta name="robots" content="noindex,nofollow">
-<script>
-(function () {
-  "use strict";
-  function goHome() {
-    window.location.replace("/");
-  }
-  try {
-    var carto = localStorage.getItem("intrepid_cartographer_unlocked") === "granted";
-    var backer = localStorage.getItem("intrepid_reader_backer") === "granted";
-    var i2 = localStorage.getItem("intrepid_reader_issue_002") === "granted";
-    var i3 = localStorage.getItem("intrepid_reader_issue_003") === "granted";
-    if (carto || backer || (i2 && i3)) {
-      return;
-    }
-  } catch (e) {}
-  goHome();
-})();
-</script>
 <style>
   body {
     margin: 0;
@@ -54,7 +36,7 @@
   <p>Place <code>intrepid-dusk-volume-1-reader-upload.zip</code> in the project root and run <code>integrate-reader.ps1</code>.</p>
   <p><a href="/">Return to archive home</a></p>
 </div>
-<script src="/archive-access.js?v=166"></script>
+<script src="/archive-access.js?v=230"></script>
 <script>
 (function() {
   'use strict';
@@ -65,33 +47,33 @@
   }
 
   function openReader() {
-    fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
-      .then(function(res) {
-        if (res.ok) {
-          window.location.replace(READER_PATH);
-          return;
-        }
-        showDeployError();
-      })
-      .catch(showDeployError);
+    window.location.replace(READER_PATH);
   }
 
-  if (
-    window.IntrepidArchiveAccess &&
-    window.IntrepidArchiveAccess.bootstrapPublicContentRoute
-  ) {
-    if (window.IntrepidArchiveAccess.bootstrapPublicContentRoute('/')) {
-      openReader();
-    }
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+    window.IntrepidArchiveAccess.refreshSession().then(function() {
+      if (!window.IntrepidArchiveAccess.hasReaderBackerAccess()) {
+        window.location.replace('/?entry=required');
+        return;
+      }
+      fetch(READER_PATH, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' })
+        .then(function(res) {
+          if (res.ok) {
+            openReader();
+            return;
+          }
+          showDeployError();
+        })
+        .catch(showDeployError);
+    });
     return;
   }
-  window.location.replace('/');
+  window.location.replace('/?entry=required');
 })();
 </script>
 <noscript>
   <div class="panel">
     <p>JavaScript is required to open the Volume 1 reader.</p>
-    <p><a href="/reader/intrepid-dusk-volume-1/">Open reader directly</a></p>
     <p><a href="/">Return to archive home</a></p>
   </div>
 </noscript>

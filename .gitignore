@@ -1,5 +1,7 @@
+node_modules/
+protected-assets/reader/
+protected-assets/dossier/
+protected-assets/map/
+
 # Local Netlify folder
 .netlify
-
-# npm (Stripe SDK for Netlify functions)
-node_modules/

@@ -1,0 +1,473 @@
+{
+  "generatedAt": "2026-08-19T21:32:30.663Z",
+  "assets": {
+    "reader-page/page-022": {
+      "blobKey": "reader/pages/page-022.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-022.webp"
+    },
+    "reader-page/page-023": {
+      "blobKey": "reader/pages/page-023.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-023.webp"
+    },
+    "reader-page/page-024": {
+      "blobKey": "reader/pages/page-024.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-024.webp"
+    },
+    "reader-page/page-025": {
+      "blobKey": "reader/pages/page-025.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-025.webp"
+    },
+    "reader-page/page-026": {
+      "blobKey": "reader/pages/page-026.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-026.webp"
+    },
+    "reader-page/page-027": {
+      "blobKey": "reader/pages/page-027.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-027.webp"
+    },
+    "reader-page/page-028": {
+      "blobKey": "reader/pages/page-028.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-028.webp"
+    },
+    "reader-page/page-029": {
+      "blobKey": "reader/pages/page-029.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-029.webp"
+    },
+    "reader-page/page-030": {
+      "blobKey": "reader/pages/page-030.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-030.webp"
+    },
+    "reader-page/page-031": {
+      "blobKey": "reader/pages/page-031.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-031.webp"
+    },
+    "reader-page/page-032": {
+      "blobKey": "reader/pages/page-032.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-032.webp"
+    },
+    "reader-page/page-033": {
+      "blobKey": "reader/pages/page-033.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-033.webp"
+    },
+    "reader-page/page-034": {
+      "blobKey": "reader/pages/page-034.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-034.webp"
+    },
+    "reader-page/page-035": {
+      "blobKey": "reader/pages/page-035.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-035.webp"
+    },
+    "reader-page/page-036": {
+      "blobKey": "reader/pages/page-036.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-036.webp"
+    },
+    "reader-page/page-037": {
+      "blobKey": "reader/pages/page-037.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-037.webp"
+    },
+    "reader-page/page-038": {
+      "blobKey": "reader/pages/page-038.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-038.webp"
+    },
+    "reader-page/page-039": {
+      "blobKey": "reader/pages/page-039.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-039.webp"
+    },
+    "reader-page/page-040": {
+      "blobKey": "reader/pages/page-040.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-040.webp"
+    },
+    "reader-page/page-041": {
+      "blobKey": "reader/pages/page-041.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-041.webp"
+    },
+    "reader-page/page-042": {
+      "blobKey": "reader/pages/page-042.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-042.webp"
+    },
+    "reader-page/chapter-3-spacer": {
+      "blobKey": "reader/pages/chapter-3-spacer.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/chapter-3-spacer.webp"
+    },
+    "reader-page/page-043": {
+      "blobKey": "reader/pages/page-043.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-043.webp"
+    },
+    "reader-page/page-044": {
+      "blobKey": "reader/pages/page-044.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-044.webp"
+    },
+    "reader-page/page-045": {
+      "blobKey": "reader/pages/page-045.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-045.webp"
+    },
+    "reader-page/page-046": {
+      "blobKey": "reader/pages/page-046.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-046.webp"
+    },
+    "reader-page/page-047": {
+      "blobKey": "reader/pages/page-047.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-047.webp"
+    },
+    "reader-page/page-048": {
+      "blobKey": "reader/pages/page-048.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-048.webp"
+    },
+    "reader-page/page-049": {
+      "blobKey": "reader/pages/page-049.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-049.webp"
+    },
+    "reader-page/page-050": {
+      "blobKey": "reader/pages/page-050.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-050.webp"
+    },
+    "reader-page/page-051": {
+      "blobKey": "reader/pages/page-051.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-051.webp"
+    },
+    "reader-page/page-052": {
+      "blobKey": "reader/pages/page-052.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-052.webp"
+    },
+    "reader-page/page-053": {
+      "blobKey": "reader/pages/page-053.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-053.webp"
+    },
+    "reader-page/page-054": {
+      "blobKey": "reader/pages/page-054.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-054.webp"
+    },
+    "reader-page/page-055": {
+      "blobKey": "reader/pages/page-055.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-055.webp"
+    },
+    "reader-page/page-056": {
+      "blobKey": "reader/pages/page-056.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-056.webp"
+    },
+    "reader-page/page-057": {
+      "blobKey": "reader/pages/page-057.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-057.webp"
+    },
+    "reader-page/page-058": {
+      "blobKey": "reader/pages/page-058.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-058.webp"
+    },
+    "reader-page/page-059": {
+      "blobKey": "reader/pages/page-059.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-059.webp"
+    },
+    "reader-page/page-060": {
+      "blobKey": "reader/pages/page-060.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-060.webp"
+    },
+    "reader-page/page-061": {
+      "blobKey": "reader/pages/page-061.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-061.webp"
+    },
+    "reader-page/page-062": {
+      "blobKey": "reader/pages/page-062.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-062.webp"
+    },
+    "reader-page/page-063": {
+      "blobKey": "reader/pages/page-063.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-063.webp"
+    },
+    "reader-page/page-064": {
+      "blobKey": "reader/pages/page-064.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-064.webp"
+    },
+    "reader-page/page-065": {
+      "blobKey": "reader/pages/page-065.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-065.webp"
+    },
+    "reader-page/page-066": {
+      "blobKey": "reader/pages/page-066.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-066.webp"
+    },
+    "reader-page/page-067": {
+      "blobKey": "reader/pages/page-067.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-067.webp"
+    },
+    "reader-page/page-068": {
+      "blobKey": "reader/pages/page-068.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/page-068.webp"
+    },
+    "reader-page/back-cover-hardcover": {
+      "blobKey": "reader/pages/back-cover-hardcover.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/assets/pages/back-cover-hardcover.webp"
+    },
+    "reader-pdf/intrepid-dusk-volume-1": {
+      "blobKey": "reader/downloads/intrepid-dusk-volume-1.pdf",
+      "requiredTier": "reader",
+      "contentType": "application/pdf",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/downloads/intrepid-dusk-volume-1.pdf"
+    },
+    "reader-pdf/intrepid-dusk-chapter-2": {
+      "blobKey": "reader/downloads/intrepid-dusk-chapter-2.pdf",
+      "requiredTier": "reader",
+      "contentType": "application/pdf",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/downloads/intrepid-dusk-chapter-2.pdf"
+    },
+    "reader-pdf/intrepid-dusk-chapter-3": {
+      "blobKey": "reader/downloads/intrepid-dusk-chapter-3.pdf",
+      "requiredTier": "reader",
+      "contentType": "application/pdf",
+      "legacyPublicPath": "/reader/intrepid-dusk-volume-1/downloads/intrepid-dusk-chapter-3.pdf"
+    },
+    "map/data.js": {
+      "blobKey": "map/data.js",
+      "requiredTier": "cartographer",
+      "contentType": "application/javascript",
+      "legacyPublicPath": "/data.js"
+    },
+    "map/map5.jpg": {
+      "blobKey": "map/map5.jpg",
+      "requiredTier": "cartographer",
+      "contentType": "image/jpeg",
+      "legacyPublicPath": "/map5.jpg"
+    },
+    "map/regions.json": {
+      "blobKey": "map/regions.json",
+      "requiredTier": "cartographer",
+      "contentType": "application/json",
+      "legacyPublicPath": "/regions.json"
+    },
+    "map/reveals.json": {
+      "blobKey": "map/reveals.json",
+      "requiredTier": "cartographer",
+      "contentType": "application/json",
+      "legacyPublicPath": "/reveals.json"
+    },
+    "dossier-thumbs/character_dossier_Asim": {
+      "blobKey": "dossier/thumbs/character_dossier_Asim.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Asim.webp"
+    },
+    "dossier-thumbs/character_dossier_AtrusNul": {
+      "blobKey": "dossier/thumbs/character_dossier_AtrusNul.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_AtrusNul.webp"
+    },
+    "dossier-thumbs/character_dossier_DrKusarek": {
+      "blobKey": "dossier/thumbs/character_dossier_DrKusarek.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_DrKusarek.webp"
+    },
+    "dossier-thumbs/character_dossier_Elena": {
+      "blobKey": "dossier/thumbs/character_dossier_Elena.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Elena.webp"
+    },
+    "dossier-thumbs/character_dossier_IsinAda": {
+      "blobKey": "dossier/thumbs/character_dossier_IsinAda.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_IsinAda.webp"
+    },
+    "dossier-thumbs/character_dossier_Melchior": {
+      "blobKey": "dossier/thumbs/character_dossier_Melchior.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Melchior.webp"
+    },
+    "dossier-thumbs/character_dossier_Namin": {
+      "blobKey": "dossier/thumbs/character_dossier_Namin.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Namin.webp"
+    },
+    "dossier-thumbs/character_dossier_Nick": {
+      "blobKey": "dossier/thumbs/character_dossier_Nick.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Nick.webp"
+    },
+    "dossier-thumbs/character_dossier_Orion": {
+      "blobKey": "dossier/thumbs/character_dossier_Orion.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Orion.webp"
+    },
+    "dossier-thumbs/character_dossier_Sabella": {
+      "blobKey": "dossier/thumbs/character_dossier_Sabella.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Sabella.webp"
+    },
+    "dossier-thumbs/character_dossier_Utu": {
+      "blobKey": "dossier/thumbs/character_dossier_Utu.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/thumbs/character_dossier_Utu.webp"
+    },
+    "dossier-portraits/character_dossier_Asim": {
+      "blobKey": "dossier/portraits/character_dossier_Asim.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Asim.webp"
+    },
+    "dossier-portraits/character_dossier_AtrusNul": {
+      "blobKey": "dossier/portraits/character_dossier_AtrusNul.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_AtrusNul.webp"
+    },
+    "dossier-portraits/character_dossier_DrKusarek": {
+      "blobKey": "dossier/portraits/character_dossier_DrKusarek.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_DrKusarek.webp"
+    },
+    "dossier-portraits/character_dossier_Elena": {
+      "blobKey": "dossier/portraits/character_dossier_Elena.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Elena.webp"
+    },
+    "dossier-portraits/character_dossier_IsinAda": {
+      "blobKey": "dossier/portraits/character_dossier_IsinAda.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_IsinAda.webp"
+    },
+    "dossier-portraits/character_dossier_Melchior": {
+      "blobKey": "dossier/portraits/character_dossier_Melchior.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Melchior.webp"
+    },
+    "dossier-portraits/character_dossier_Namin": {
+      "blobKey": "dossier/portraits/character_dossier_Namin.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Namin.webp"
+    },
+    "dossier-portraits/character_dossier_Nick": {
+      "blobKey": "dossier/portraits/character_dossier_Nick.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Nick.webp"
+    },
+    "dossier-portraits/character_dossier_Orion": {
+      "blobKey": "dossier/portraits/character_dossier_Orion.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Orion.webp"
+    },
+    "dossier-portraits/character_dossier_Sabella": {
+      "blobKey": "dossier/portraits/character_dossier_Sabella.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Sabella.webp"
+    },
+    "dossier-portraits/character_dossier_Utu": {
+      "blobKey": "dossier/portraits/character_dossier_Utu.webp",
+      "requiredTier": "reader",
+      "contentType": "image/webp",
+      "legacyPublicPath": "/dossier/portraits/character_dossier_Utu.webp"
+    }
+  }
+}

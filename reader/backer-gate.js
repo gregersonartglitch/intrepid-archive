@@ -1,42 +1,20 @@
 /**
- * Reader issue access — Kickstarter backer gates for Issues 2 & 3.
- * Issue 1 is always open. Future paid unlock: call ReaderAccess.grantIssue('002').
- *
- * ENABLE_READER_GATE — reversible kill switch (also unlocks gated PDFs via isIssueUnlocked).
- * false = open window (backer invite / pre–early-August): no Issue 2–3 modal, all PDFs free.
- * true  = after early August: Ch1 free; one unlock opens Issues 2+3 and Ch2/Ch3/full PDFs.
- * localStorage opt-out: intrepid_reader_gate_disabled=1 forces off even when flag is true.
+ * Reader issue access — server session is authoritative (Wave 1 Option B+).
+ * Issue 1 is always open. Issues 2–3 require HttpOnly cookie from /api/access/login.
  */
 (function () {
   "use strict";
 
-  // Wave 1: ON — backup gate at Issue 2 if archive-access fails or deep-link race.
   var ENABLE_READER_GATE = true;
 
   function isReaderGateEnabled() {
-    try {
-      if (localStorage.getItem("intrepid_reader_gate_disabled") === "1") {
-        return false;
-      }
-    } catch (e) {}
     return ENABLE_READER_GATE;
   }
 
-  var BACKER_CODES = {
-    scribe4: { issues: ["002", "003"], label: "Backer" },
-  };
-
-  var LS_ISSUE_PREFIX = "intrepid_reader_issue_";
-  var LS_BACKER_KEY = "intrepid_reader_backer";
-
-  // Must match reader spike.js pageEntries:
-  // coverSpread (2) + issue1 (21) + issue2 (21) + ch3 spacer (1) + issue3 (26) + back cover (1)
-  // Gate uses page index only through ISSUE_003 endIndex 999 — trailing back cover stays Issue 3.
   var COVER_SPREAD_PAGES = 2;
   var ISSUE_PAGE_COUNTS = [21, 21, 26];
   var ISSUE_002_START = COVER_SPREAD_PAGES + ISSUE_PAGE_COUNTS[0];
-  var ISSUE_003_START =
-    ISSUE_002_START + ISSUE_PAGE_COUNTS[1] + 1;
+  var ISSUE_003_START = ISSUE_002_START + ISSUE_PAGE_COUNTS[1] + 1;
 
   var ISSUE_BOUNDARIES = [
     { issue: "001", startIndex: 0, endIndex: ISSUE_002_START - 1 },
@@ -51,7 +29,7 @@
       body:
         "Issues 2 and 3 are reserved for our Kickstarter backers. Enter the access word from your backer update to continue reading.",
       cta: "Unlock Issue 2",
-      previewPage: "./assets/pages/page-022.webp",
+      previewPage: "/api/protected-media/reader-page/page-022",
     },
     "003": {
       eyebrow: "Issue 3 — Backer Preview",
@@ -62,39 +40,20 @@
     },
   };
 
-  function grantIssue(issueId) {
-    localStorage.setItem(LS_ISSUE_PREFIX + issueId, "granted");
-  }
-
-  var LS_CARTOGRAPHER_KEY = "intrepid_cartographer_unlocked";
-
-  function grantAllBackerIssues() {
+  function hasServerReaderAccess() {
     if (
       window.IntrepidArchiveAccess &&
-      window.IntrepidArchiveAccess.grantReaderBackerAccess
+      window.IntrepidArchiveAccess.hasReaderBackerAccess
     ) {
-      window.IntrepidArchiveAccess.grantReaderBackerAccess();
-      return;
+      return window.IntrepidArchiveAccess.hasReaderBackerAccess();
     }
-    localStorage.setItem(LS_BACKER_KEY, "granted");
-    grantIssue("002");
-    grantIssue("003");
+    return false;
   }
 
   function isIssueUnlocked(issueId) {
     if (issueId === "001") return true;
-    // Open window: treat full volume (and gated PDFs) as unlocked.
-    if (!isReaderGateEnabled()) return true;
-    if (localStorage.getItem(LS_BACKER_KEY) === "granted") return true;
-    if (localStorage.getItem(LS_CARTOGRAPHER_KEY) === "granted") return true;
-    if (
-      window.IntrepidArchiveAccess &&
-      window.IntrepidArchiveAccess.hasReaderBackerAccess &&
-      window.IntrepidArchiveAccess.hasReaderBackerAccess()
-    ) {
-      return true;
-    }
-    return localStorage.getItem(LS_ISSUE_PREFIX + issueId) === "granted";
+    if (!isReaderGateEnabled()) return false;
+    return hasServerReaderAccess();
   }
 
   function normalizePageIndex(pageIndex) {
@@ -118,30 +77,14 @@
 
   function submitBackerPassword(pw) {
     if (
-      window.IntrepidArchiveAccess &&
-      window.IntrepidArchiveAccess.submitArchiveCode
+      !window.IntrepidArchiveAccess ||
+      !window.IntrepidArchiveAccess.submitArchiveCode
     ) {
-      var result = window.IntrepidArchiveAccess.submitArchiveCode(pw);
-      if (result.ok && result.reader) return true;
-      return false;
+      return Promise.resolve(false);
     }
-    var code = BACKER_CODES[String(pw || "").trim().toLowerCase()];
-    if (!code) return false;
-    grantAllBackerIssues();
-    return true;
-  }
-
-  function purgeMigratedLegacyAuth() {
-    if (localStorage.getItem("intrepid_reader_legacy_purged") === "yes") return;
-    if (
-      localStorage.getItem(LS_BACKER_KEY) === "granted" &&
-      localStorage.getItem("intrepid_atlas_auth") === "granted" &&
-      localStorage.getItem("intrepid_atlas_tier") === "B" &&
-      localStorage.getItem(LS_ISSUE_PREFIX + "002") !== "granted"
-    ) {
-      localStorage.removeItem(LS_BACKER_KEY);
-    }
-    localStorage.setItem("intrepid_reader_legacy_purged", "yes");
+    return window.IntrepidArchiveAccess.submitArchiveCode(pw).then(function (result) {
+      return !!(result && result.ok && result.reader);
+    });
   }
 
   function buildGateOverlay() {
@@ -245,18 +188,20 @@
     }
 
     function trySubmit() {
-      if (submitBackerPassword(pwInput.value)) {
-        hideGate();
-        if (window.ReaderGate && window.ReaderGate.onUnlocked) {
-          window.ReaderGate.onUnlocked(pendingIssue);
+      submitBackerPassword(pwInput.value).then(function (ok) {
+        if (ok) {
+          hideGate();
+          if (window.ReaderGate && window.ReaderGate.onUnlocked) {
+            window.ReaderGate.onUnlocked(pendingIssue);
+          }
+          return;
         }
-        return;
-      }
-      err.textContent =
-        "That word doesn't match our backer records. Check your Kickstarter update.";
-      el.querySelector(".reader-backer-gate-card").classList.remove("shake");
-      void el.querySelector(".reader-backer-gate-card").offsetWidth;
-      el.querySelector(".reader-backer-gate-card").classList.add("shake");
+        err.textContent =
+          "That word doesn't match our backer records. Check your Kickstarter update.";
+        el.querySelector(".reader-backer-gate-card").classList.remove("shake");
+        void el.querySelector(".reader-backer-gate-card").offsetWidth;
+        el.querySelector(".reader-backer-gate-card").classList.add("shake");
+      });
     }
 
     submitBtn.addEventListener("click", trySubmit);
@@ -269,17 +214,15 @@
     });
   }
 
-  purgeMigratedLegacyAuth();
   bindGateEvents();
 
   window.ReaderAccess = {
     isIssueUnlocked: isIssueUnlocked,
     isGateEnabled: isReaderGateEnabled,
-    grantIssue: grantIssue,
-    grantAllBackerIssues: grantAllBackerIssues,
-    submitBackerPassword: submitBackerPassword,
     getIssueForPageIndex: getIssueForPageIndex,
     ISSUE_BOUNDARIES: ISSUE_BOUNDARIES,
+    ISSUE_002_START: ISSUE_002_START,
+    ISSUE_003_START: ISSUE_003_START,
   };
 
   window.ReaderGate = {

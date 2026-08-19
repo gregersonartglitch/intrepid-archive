@@ -1,86 +1,113 @@
 /**
- * Unified archive access — single password entry on home unlocks eligible tiers.
- * Issue 1 + dossier stay public. Map reset clears cartographer only (not reader keys).
+ * Unified archive access — server-validated HttpOnly session (Wave 1 Option B+).
+ * No access codes or tier authority in client JavaScript.
  */
 (function (global) {
   "use strict";
 
-  // Reversible switch: set true to restore guest entry.
   var ENABLE_GUEST_ENTRY = false;
-  // UTC unlock target for guest-access countdown visuals (does not override ENABLE_GUEST_ENTRY).
-  // WANDERER_UNLOCK_AT / getWandererUnlockWindow: legacy internal names (KS Wanderer tier collision).
-  // Empty = no countdown (Jon 2026-07-18: shelve timer until public window is scheduled).
-  // Example when re-enabling: "2026-08-16T00:00:00Z"
   var WANDERER_UNLOCK_AT = "";
 
-  var CODES = {
-    hollowlands9: { cartographer: true, reader: true, label: "Patron" },
-    scribe4: { cartographer: false, reader: true, label: "Backer" },
-  };
-
-  var LS_CARTOGRAPHER_KEY = "intrepid_cartographer_unlocked";
   var LS_ATLAS_LABEL = "intrepid_atlas_label";
-  var LS_BACKER_KEY = "intrepid_reader_backer";
-  var LS_ISSUE_PREFIX = "intrepid_reader_issue_";
   var LS_LEGACY_AUTH = "intrepid_atlas_auth";
   var LS_LEGACY_TIER = "intrepid_atlas_tier";
   var LS_READER_LEGACY_PURGED = "intrepid_reader_legacy_purged";
   var LS_LEGACY_AUTH_PURGED = "intrepid_legacy_auth_purged";
   var SS_ARCHIVE_ENTERED = "intrepid_archive_entered";
 
-  /** All keys that grant or track archive/reader access — cleared by resetArchiveAccess(). */
+  /** Legacy keys cleared on reset — no longer grant server access. */
   var ARCHIVE_ACCESS_LS_KEYS = [
-    LS_CARTOGRAPHER_KEY,
+    "intrepid_cartographer_unlocked",
     LS_ATLAS_LABEL,
-    LS_BACKER_KEY,
-    LS_ISSUE_PREFIX + "002",
-    LS_ISSUE_PREFIX + "003",
+    "intrepid_reader_backer",
+    "intrepid_reader_issue_002",
+    "intrepid_reader_issue_003",
     LS_LEGACY_AUTH,
     LS_LEGACY_TIER,
     LS_READER_LEGACY_PURGED,
     LS_LEGACY_AUTH_PURGED,
   ];
 
-  function grantCartographerAccess(label) {
-    localStorage.setItem(LS_CARTOGRAPHER_KEY, "granted");
-    if (label) localStorage.setItem(LS_ATLAS_LABEL, label);
+  var sessionState = {
+    loaded: false,
+    authenticated: false,
+    tier: null,
+    reader: false,
+    cartographer: false,
+    expiresAt: null,
+  };
+
+  function applySession(data) {
+    sessionState.loaded = true;
+    sessionState.authenticated = !!(data && data.authenticated);
+    sessionState.tier = data && data.tier ? data.tier : null;
+    sessionState.reader = !!(data && data.reader);
+    sessionState.cartographer = !!(data && data.cartographer);
+    sessionState.expiresAt = data && data.expiresAt ? data.expiresAt : null;
   }
 
-  function grantReaderBackerAccess() {
-    localStorage.setItem(LS_BACKER_KEY, "granted");
-    localStorage.setItem(LS_ISSUE_PREFIX + "002", "granted");
-    localStorage.setItem(LS_ISSUE_PREFIX + "003", "granted");
-  }
-
-  function hasCartographerAccess() {
-    return localStorage.getItem(LS_CARTOGRAPHER_KEY) === "granted";
-  }
-
-  function hasReaderBackerAccess() {
-    if (localStorage.getItem(LS_BACKER_KEY) === "granted") return true;
-    return (
-      localStorage.getItem(LS_ISSUE_PREFIX + "002") === "granted" &&
-      localStorage.getItem(LS_ISSUE_PREFIX + "003") === "granted"
-    );
+  function refreshSession() {
+    return fetch("/api/access/session", {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return res.json().catch(function () {
+          return { ok: false, authenticated: false };
+        });
+      })
+      .then(function (data) {
+        applySession(data);
+        return data;
+      })
+      .catch(function () {
+        applySession({ authenticated: false });
+        return { ok: false, authenticated: false };
+      });
   }
 
   function submitArchiveCode(rawPassword) {
-    var normalized = String(rawPassword || "")
-      .trim()
-      .toLowerCase();
-    var tier = CODES[normalized];
-    if (!tier) {
-      return { ok: false, reason: "invalid" };
-    }
-    if (tier.cartographer) grantCartographerAccess(tier.label);
-    if (tier.reader) grantReaderBackerAccess();
-    return {
-      ok: true,
-      code: normalized,
-      cartographer: !!tier.cartographer,
-      reader: !!tier.reader,
-      label: tier.label,
-    };
+    return fetch("/api/access/login", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: rawPassword }),
+    })
+      .then(function (res) {
+        return res.json().then(function (body) {
+          return { status: res.status, body: body };
+        });
+      })
+      .then(function (result) {
+        if (result.status === 200 && result.body && result.body.ok) {
+          applySession({
+            authenticated: true,
+            tier: result.body.tier,
+            reader: result.body.reader,
+            cartographer: result.body.cartographer,
+            expiresAt: result.body.expiresAt,
+          });
+          return {
+            ok: true,
+            cartographer: !!result.body.cartographer,
+            reader: !!result.body.reader,
+            tier: result.body.tier,
+          };
+        }
+        return { ok: false, reason: "invalid" };
+      })
+      .catch(function () {
+        return { ok: false, reason: "network" };
+      });
+  }
+
+  function hasCartographerAccess() {
+    return sessionState.loaded && sessionState.cartographer === true;
+  }
+
+  function hasReaderBackerAccess() {
+    return sessionState.loaded && sessionState.reader === true;
   }
 
   function getUnlockStatus() {
@@ -99,6 +126,7 @@
   }
 
   function shouldSkipArchiveEntry() {
+    if (!sessionState.loaded) return false;
     if (hasCartographerAccess()) return true;
     if (hasReaderBackerAccess()) return true;
     if (isGuestEntryEnabled() && hasArchiveEntered()) return true;
@@ -122,7 +150,6 @@
       remainingMs: remainingMs,
       isTimeReached: isTimeReached,
       isGuestEnabled: isGuestEntryEnabled(),
-      // Safety: timestamp never auto-enables guest path on its own.
       isGuestAllowed: isGuestEntryEnabled(),
     };
   }
@@ -131,23 +158,18 @@
     return isGuestEntryEnabled();
   }
 
-  /** Reader + dossier without a code — only when guest entry is enabled or tier keys exist. */
   function hasPublicContentAccess() {
     if (isGuestEntryEnabled()) return true;
-    if (hasCartographerAccess()) return true;
-    if (hasReaderBackerAccess()) return true;
-    return false;
+    if (!sessionState.loaded) return false;
+    return hasCartographerAccess() || hasReaderBackerAccess();
   }
 
-  /** Redirect anonymous visitors away from public-content deep links when guest entry is off. */
   function guardPublicContentRoute(redirectPath) {
     if (hasPublicContentAccess()) return true;
-    var dest = redirectPath || "/";
-    window.location.replace(dest);
+    global.location.replace(redirectPath || "/");
     return false;
   }
 
-  /** Fail-closed bootstrap for reader/dossier pages — marks html when access OK. */
   function bootstrapPublicContentRoute(redirectPath) {
     if (hasPublicContentAccess()) {
       if (typeof document !== "undefined" && document.documentElement) {
@@ -155,11 +177,10 @@
       }
       return true;
     }
-    window.location.replace(redirectPath || "/");
+    global.location.replace(redirectPath || "/");
     return false;
   }
 
-  /** Drop guest-only session flag when guest entry is disabled and no tier keys exist. */
   function purgeStaleGuestSession() {
     if (isGuestEntryEnabled()) return;
     if (hasCartographerAccess() || hasReaderBackerAccess()) return;
@@ -168,19 +189,36 @@
     }
   }
 
-  /** Clear archive access keys only — does not wipe map fog progress.
-   *  Hub "Reset access" also calls FogSystem.clearProgress() for a full wipe. */
   function resetArchiveAccess() {
     var i;
     for (i = 0; i < ARCHIVE_ACCESS_LS_KEYS.length; i += 1) {
       localStorage.removeItem(ARCHIVE_ACCESS_LS_KEYS[i]);
     }
     sessionStorage.removeItem(SS_ARCHIVE_ENTERED);
+    return fetch("/api/access/logout", {
+      method: "POST",
+      credentials: "same-origin",
+    })
+      .then(function () {
+        applySession({ authenticated: false });
+      })
+      .catch(function () {
+        applySession({ authenticated: false });
+      });
   }
+
+  /** @deprecated No client-side tier grants — server cookie only. */
+  function grantCartographerAccess(label) {
+    if (label) localStorage.setItem(LS_ATLAS_LABEL, label);
+  }
+
+  /** @deprecated No client-side tier grants — server cookie only. */
+  function grantReaderBackerAccess() {}
 
   global.IntrepidArchiveAccess = {
     ENABLE_GUEST_ENTRY: ENABLE_GUEST_ENTRY,
     WANDERER_UNLOCK_AT: WANDERER_UNLOCK_AT,
+    refreshSession: refreshSession,
     submitArchiveCode: submitArchiveCode,
     grantCartographerAccess: grantCartographerAccess,
     grantReaderBackerAccess: grantReaderBackerAccess,
@@ -199,8 +237,8 @@
     purgeStaleGuestSession: purgeStaleGuestSession,
     resetArchiveAccess: resetArchiveAccess,
     ARCHIVE_ACCESS_LS_KEYS: ARCHIVE_ACCESS_LS_KEYS,
-    LS_CARTOGRAPHER_KEY: LS_CARTOGRAPHER_KEY,
-    LS_BACKER_KEY: LS_BACKER_KEY,
+    LS_CARTOGRAPHER_KEY: "intrepid_cartographer_unlocked",
+    LS_BACKER_KEY: "intrepid_reader_backer",
     SS_ARCHIVE_ENTERED: SS_ARCHIVE_ENTERED,
   };
 })(typeof window !== "undefined" ? window : this);

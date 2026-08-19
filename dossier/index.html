@@ -1,32 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<script>
-(function () {
-  "use strict";
-  function goHome() {
-    window.location.replace("/");
-  }
-  try {
-    var carto = localStorage.getItem("intrepid_cartographer_unlocked") === "granted";
-    var backer = localStorage.getItem("intrepid_reader_backer") === "granted";
-    var i2 = localStorage.getItem("intrepid_reader_issue_002") === "granted";
-    var i3 = localStorage.getItem("intrepid_reader_issue_003") === "granted";
-    if (carto || backer || (i2 && i3)) {
-      document.documentElement.classList.add("archive-access-granted");
-      return;
-    }
-  } catch (e) {}
-  goHome();
-})();
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
 <style>html:not(.archive-access-granted) body { visibility: hidden; }</style>
-<link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=5" fetchpriority="high">
+<script>document.documentElement.classList.add("archive-access-granted");</script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -341,17 +322,18 @@ body {
 </style>
 </head>
 <body>
-<script src="/archive-access.js?v=166"></script>
+<script src="/archive-access.js?v=230"></script>
 <script>
 (function () {
-  if (
-    window.IntrepidArchiveAccess &&
-    window.IntrepidArchiveAccess.bootstrapPublicContentRoute
-  ) {
-    window.IntrepidArchiveAccess.bootstrapPublicContentRoute("/");
-    return;
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+    window.IntrepidArchiveAccess.refreshSession().then(function () {
+      if (!window.IntrepidArchiveAccess.hasReaderBackerAccess()) {
+        window.location.replace("/?entry=required");
+      }
+    });
+  } else {
+    window.location.replace("/?entry=required");
   }
-  window.location.replace("/");
 })();
 </script>
 
@@ -392,12 +374,13 @@ function assetBaseName(imgPath) {
 }
 
 function thumbSrc(imgPath) {
-  return DOSSIER_BASE + 'thumbs/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
+  var base = assetBaseName(imgPath);
+  return "/api/protected-media/dossier-thumbs/" + base;
 }
 
-/* Medium WebP for detail (~640px). Absolute path avoids /dossier vs /dossier/ breakage. */
 function portraitSrc(imgPath) {
-  return DOSSIER_BASE + 'portraits/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
+  var base = assetBaseName(imgPath);
+  return "/api/protected-media/dossier-portraits/" + base;
 }
 
 function bindPortraitLoad(img, container) {

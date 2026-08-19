@@ -1,31 +1,12 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script>
-    (function () {
-      "use strict";
-      // Inline fail-closed deep-link guard (Wave 1 guest OFF). No dependency on archive-access.js.
-      function goHome() {
-        window.location.replace("/");
-      }
-      try {
-        var carto = localStorage.getItem("intrepid_cartographer_unlocked") === "granted";
-        var backer = localStorage.getItem("intrepid_reader_backer") === "granted";
-        var i2 = localStorage.getItem("intrepid_reader_issue_002") === "granted";
-        var i3 = localStorage.getItem("intrepid_reader_issue_003") === "granted";
-        if (carto || backer || (i2 && i3)) {
-          document.documentElement.classList.add("archive-access-granted");
-          return;
-        }
-      } catch (e) {}
-      goHome();
-    })();
-    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#070706" />
     <title>Intrepid Dusk Volume 1 Reader</title>
     <style>html:not(.archive-access-granted) body { visibility: hidden; }</style>
+    <script>document.documentElement.classList.add("archive-access-granted");</script>
     <link rel="stylesheet" href="./styles.css?v=202" />
   </head>
   <body>
@@ -53,7 +34,7 @@
               <a
                 role="menuitem"
                 class="reader-download-item"
-                href="./downloads/intrepid-dusk-volume-1.pdf"
+                href="/api/protected-media/reader-pdf/intrepid-dusk-volume-1"
                 download="intrepid-dusk-volume-1.pdf"
                 data-pdf-gate="full"
               >Volume 1 (full, 72p)</a>
@@ -67,14 +48,14 @@
               <a
                 role="menuitem"
                 class="reader-download-item"
-                href="./downloads/intrepid-dusk-chapter-2.pdf"
+                href="/api/protected-media/reader-pdf/intrepid-dusk-chapter-2"
                 download="intrepid-dusk-chapter-2.pdf"
                 data-pdf-gate="002"
               >Chapter 2</a>
               <a
                 role="menuitem"
                 class="reader-download-item"
-                href="./downloads/intrepid-dusk-chapter-3.pdf"
+                href="/api/protected-media/reader-pdf/intrepid-dusk-chapter-3"
                 download="intrepid-dusk-chapter-3.pdf"
                 data-pdf-gate="003"
               >Chapter 3</a>
@@ -175,30 +156,30 @@
       </aside>
     </main>
 
-    <script src="/archive-access.js?v=166"></script>
+    <script src="/archive-access.js?v=230"></script>
     <script>
       window.ENABLE_STRIPE_CHECKOUT = true;
       window.INTREPID_GUEST_PRICE = 15;
     </script>
     <script>
     (function () {
-      var granted = false;
-      if (
-        window.IntrepidArchiveAccess &&
-        window.IntrepidArchiveAccess.bootstrapPublicContentRoute
-      ) {
-        granted = window.IntrepidArchiveAccess.bootstrapPublicContentRoute("/");
-      } else {
-        window.location.replace("/");
-        return;
+      function startReader() {
+        if (
+          !window.IntrepidArchiveAccess ||
+          !window.IntrepidArchiveAccess.hasReaderBackerAccess()
+        ) {
+          window.location.replace("/?entry=required");
+          return;
+        }
+        document.documentElement.classList.add("archive-access-granted");
+        loadScripts();
       }
-      if (!granted) return;
 
       var scripts = [
-        "../backer-gate.js?v=194",
+        "../backer-gate.js?v=230",
         "./vendor/page-flip.browser.js",
         "./audio.js?v=5",
-        "./spike.js?v=203",
+        "./spike.js?v=230",
       ];
       var index = 0;
 
@@ -311,7 +292,11 @@
         syncLockedState();
       }
 
-      loadScripts();
+      if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+        window.IntrepidArchiveAccess.refreshSession().then(startReader);
+      } else {
+        window.location.replace("/?entry=required");
+      }
     })();
     </script>
   </body>

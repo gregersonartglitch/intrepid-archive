@@ -3229,10 +3229,9 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 229;
+window.INTREPID_BUILD = 230;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
-<script src="data.js?v=16"></script>
 <script>
 // Auto-clear old fog state (inline — not affected by fog.js caching)
 (function() {
@@ -3305,7 +3304,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   requestAnimationFrame(tick);
 })();
 </script>
-<script src="archive-access.js?v=166"></script>
+<script src="archive-access.js?v=230"></script>
 <script src="fog.js?v=226"></script>
 <script>
 (function() {
@@ -3430,17 +3429,35 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.hasCartographerAccess) {
       return window.IntrepidArchiveAccess.hasCartographerAccess();
     }
-    return localStorage.getItem(LS_CARTOGRAPHER_KEY) === 'granted';
+    return false;
   }
 
   function grantCartographerAccess(label) {
-    if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.grantCartographerAccess) {
-      window.IntrepidArchiveAccess.grantCartographerAccess(label);
-    } else {
-      localStorage.setItem(LS_CARTOGRAPHER_KEY, 'granted');
-      if (label) localStorage.setItem('intrepid_atlas_label', label);
-    }
+    if (label) localStorage.setItem('intrepid_atlas_label', label);
     currentTier = 'A';
+  }
+
+  function loadCartographerScript(url) {
+    return new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = url;
+      s.crossOrigin = 'anonymous';
+      s.onload = function() { resolve(); };
+      s.onerror = function() { reject(new Error('map script failed: ' + url)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function ensureCartographerMapData() {
+    if (window.LOCATIONS && window.MAP_CONFIG) {
+      window.MAP_CONFIG.image = '/api/protected-media/map/map5.jpg';
+      return Promise.resolve();
+    }
+    return loadCartographerScript('/api/protected-media/map/data.js').then(function() {
+      if (window.MAP_CONFIG) {
+        window.MAP_CONFIG.image = '/api/protected-media/map/map5.jpg';
+      }
+    });
   }
 
   let map, imageBounds, layerGroups = {}, activeMarkerEl = null;
@@ -3632,9 +3649,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     const scanCode = params.get('scan');
 
     if (urlKey && isValidCartographerLinkKey(urlKey)) {
-      grantCartographerAccess('Cartographer');
-      gate.style.display = 'none';
-      launch(scanCode);
+      gateErr.textContent = 'Enter your Cartographer access word at the archive entry screen to unlock the atlas.';
+      gateErr.classList.add('show');
+      animateGateIn();
       return;
     }
 
@@ -3657,36 +3674,35 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function submitPassword() {
     const val = gatePw.value.trim();
-    const access = window.IntrepidArchiveAccess
-      ? window.IntrepidArchiveAccess.submitArchiveCode(val)
-      : null;
+    if (!window.IntrepidArchiveAccess) return;
+    window.IntrepidArchiveAccess.submitArchiveCode(val).then(function(access) {
+      if (access && access.ok && access.cartographer) {
+        currentTier = 'A';
+        gate.classList.add('hidden');
+        const scanCode = new URLSearchParams(window.location.search).get('scan');
+        completeAuth(scanCode);
+        return;
+      }
 
-    if (access && access.ok && access.cartographer) {
-      currentTier = 'A';
-      gate.classList.add('hidden');
-      const scanCode = new URLSearchParams(window.location.search).get('scan');
-      completeAuth(scanCode);
-      return;
-    }
+      if (access && access.ok && access.reader && !access.cartographer) {
+        gateErr.textContent = 'That code unlocks the reader only. Cartographer tier access is required for the atlas.';
+        gateErr.classList.add('show');
+        const card = gate.querySelector('.gate-card');
+        card.classList.remove('shake');
+        void card.offsetWidth;
+        card.classList.add('shake');
+        setTimeout(() => gateErr.classList.remove('show'), 4000);
+        return;
+      }
 
-    if (access && access.ok && access.reader && !access.cartographer) {
-      gateErr.textContent = 'That code unlocks the reader only. Cartographer tier access is required for the atlas.';
+      gateErr.textContent = 'That word is not on the Cartographer roster. Check your Hollowlands pledge confirmation.';
       gateErr.classList.add('show');
       const card = gate.querySelector('.gate-card');
       card.classList.remove('shake');
       void card.offsetWidth;
       card.classList.add('shake');
-      setTimeout(() => gateErr.classList.remove('show'), 4000);
-      return;
-    }
-
-    gateErr.textContent = 'That word is not on the Cartographer roster. Check your Hollowlands pledge confirmation.';
-    gateErr.classList.add('show');
-    const card = gate.querySelector('.gate-card');
-    card.classList.remove('shake');
-    void card.offsetWidth;
-    card.classList.add('shake');
-    setTimeout(() => gateErr.classList.remove('show'), 3000);
+      setTimeout(() => gateErr.classList.remove('show'), 3000);
+    });
   }
 
   gateBtn.addEventListener('click', submitPassword);
@@ -4064,29 +4080,31 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function submitEntryAccess() {
     if (!entryAccessPw || !window.IntrepidArchiveAccess) return;
-    const result = window.IntrepidArchiveAccess.submitArchiveCode(entryAccessPw.value);
-    if (result.ok) {
-      entryAccessPw.value = '';
-      if (result.cartographer) grantCartographerAccess(result.label);
+    window.IntrepidArchiveAccess.submitArchiveCode(entryAccessPw.value).then(function(result) {
+      if (result.ok) {
+        entryAccessPw.value = '';
+        if (result.cartographer) grantCartographerAccess(result.label || 'Patron');
+        if (entryAccessMsg) {
+          const status = window.IntrepidArchiveAccess.getUnlockStatus();
+          entryAccessMsg.textContent = formatEntryUnlockMessage(status);
+          entryAccessMsg.classList.remove('show');
+          entryAccessMsg.classList.remove('is-error');
+        }
+        enterArchiveHome();
+        return;
+      }
       if (entryAccessMsg) {
-        const status = window.IntrepidArchiveAccess.getUnlockStatus();
-        entryAccessMsg.textContent = formatEntryUnlockMessage(status);
-        entryAccessMsg.classList.remove('show');
+        entryAccessMsg.textContent = 'That access word was not recognized. Check your Kickstarter update.';
+        entryAccessMsg.classList.add('show');
         entryAccessMsg.classList.remove('is-error');
+        const card = archiveEntry && archiveEntry.querySelector('.gate-card');
+        if (card) {
+          card.classList.remove('shake');
+          void card.offsetWidth;
+          card.classList.add('shake');
+        }
       }
-      enterArchiveHome();
-      return;
-    }
-    if (entryAccessMsg) {
-      entryAccessMsg.textContent = 'That access word was not recognized. Check your Kickstarter update.';
-      entryAccessMsg.classList.add('show');
-      const card = archiveEntry && archiveEntry.querySelector('.gate-card');
-      if (card) {
-        card.classList.remove('shake');
-        void card.offsetWidth;
-        card.classList.add('shake');
-      }
-    }
+    });
   }
 
   if (entryAccessBtn) entryAccessBtn.addEventListener('click', submitEntryAccess);
@@ -4149,11 +4167,13 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
     if (loader) loader.classList.remove('hidden');
 
-    // Load region + reveal data, then init map
-    Promise.all([
-      fetch('regions.json').then(r => r.json()).catch(() => null),
-      fetch('reveals.json').then(r => r.json()).catch(() => null)
-    ]).then(([regions, reveals]) => {
+    // Load region + reveal data, then init map (cartographer-protected assets)
+    ensureCartographerMapData().then(function() {
+      return Promise.all([
+        fetch('/api/protected-media/map/regions.json', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null),
+        fetch('/api/protected-media/map/reveals.json', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : null)
+      ]);
+    }).then(([regions, reveals]) => {
       regionsData = regions;
       revealsData = reveals;
 
@@ -6434,24 +6454,31 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.purgeStaleGuestSession) {
     window.IntrepidArchiveAccess.purgeStaleGuestSession();
   }
-  if (hasDirectArchiveIntent()) {
-    if (archiveEntry) archiveEntry.style.display = 'none';
-    if (archiveHome) archiveHome.style.display = 'none';
-    checkGate();
-  } else if (shouldSkipArchiveEntry()) {
-    showArchiveHome();
-    renderHubPublicContentState();
-  } else {
-    showArchiveEntry();
-    renderGuestEntryState();
-  }
-  wireFollowToggle();
-  wireFollowSignup();
+  function bootArchiveUi() {
+    if (hasDirectArchiveIntent()) {
+      if (archiveEntry) archiveEntry.style.display = 'none';
+      if (archiveHome) archiveHome.style.display = 'none';
+      checkGate();
+    } else if (shouldSkipArchiveEntry()) {
+      showArchiveHome();
+      renderHubPublicContentState();
+    } else {
+      showArchiveEntry();
+      renderGuestEntryState();
+    }
+    wireFollowToggle();
+    wireFollowSignup();
 
-  // Legacy ?reader= links — Issue 1 is open, no gate required
-  var initParams = new URLSearchParams(window.location.search);
-  if (initParams.has('reader')) {
-    window.location.replace('/reader/');
+    var initParams = new URLSearchParams(window.location.search);
+    if (initParams.has('reader')) {
+      window.location.replace('/reader/');
+    }
+  }
+
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+    window.IntrepidArchiveAccess.refreshSession().then(bootArchiveUi);
+  } else {
+    bootArchiveUi();
   }
 })();
 </script>

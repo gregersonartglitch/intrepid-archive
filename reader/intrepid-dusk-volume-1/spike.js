@@ -32,6 +32,18 @@ const DISPLAY_SIZE_STEP = 0.05;
 const ULTRAWIDE_VIEWPORT_RATIO = 2.2;
 const ULTRAWIDE_FIT_BOOST = 1.06;
 
+function protectedMediaUrl(assetId) {
+  return "/api/protected-media/" + assetId;
+}
+
+function readerPageSrc(contentNumber) {
+  var stem = "page-" + String(contentNumber).padStart(3, "0");
+  if (contentNumber <= 21) {
+    return "./assets/pages/" + stem + ".webp";
+  }
+  return protectedMediaUrl("reader-page/" + stem);
+}
+
 const contentPages = issuePageCounts.flatMap(({ issue, pages: pageCount }) =>
   Array.from(
     { length: pageCount },
@@ -45,7 +57,7 @@ const contentPages = issuePageCounts.flatMap(({ issue, pages: pageCount }) =>
 
       return {
         contentNumber,
-        src: `./assets/pages/page-${String(contentNumber).padStart(3, "0")}.webp`,
+        src: readerPageSrc(contentNumber),
       };
     },
   ),
@@ -69,7 +81,7 @@ const pageEntries = [
         {
           spacer: true,
           label: "Chapter 3 spacer",
-          src: "./assets/pages/chapter-3-spacer.webp",
+          src: protectedMediaUrl("reader-page/chapter-3-spacer"),
         },
         page,
       ];
@@ -80,7 +92,7 @@ const pageEntries = [
   {
     backCover: true,
     label: "Back cover",
-    src: "./assets/pages/back-cover-hardcover.webp",
+    src: protectedMediaUrl("reader-page/back-cover-hardcover"),
   },
 ];
 
