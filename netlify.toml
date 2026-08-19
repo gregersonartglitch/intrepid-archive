@@ -67,11 +67,7 @@
   to = "/.netlify/functions/build-info"
   status = 200
 
-[[redirects]]
-  from = "/api/protected-media/*"
-  to = "/.netlify/functions/protected-media/:splat"
-  status = 200
-  force = true
+# /api/protected-media/* served by netlify/edge-functions/protected-media.js (streams large PDFs)
 
 [[redirects]]
   from = "/reader/intrepid-dusk-volume-1"

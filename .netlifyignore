@@ -4,3 +4,6 @@ dossier/_thumb_sizes.txt
 
 # Local scratch — never publish
 .tmp/
+
+# Gated assets — served via /api/protected-media/ after login (see generate script)
+.netlifyignore-protected.generated

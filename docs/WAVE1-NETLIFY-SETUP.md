@@ -31,18 +31,27 @@ Use the generated manifest:
 
 Each row maps `removeFromPublicDeploy` → upload file to blob key `blobKey`.
 
-**Local dev fallback:** copy files into `protected-assets/` mirroring blob keys (e.g. `protected-assets/reader/pages/page-022.webp`).
+**Helper scripts:**
+
+```bash
+node scripts/generate-protected-asset-manifest.js
+node scripts/prepare-protected-assets-local.js          # mirror into protected-assets/ (local dev)
+BLOB_READ_WRITE_TOKEN=... node scripts/upload-protected-assets-to-blobs.js
+```
+
+**Local dev fallback:** `prepare-protected-assets-local.js` copies files into `protected-assets/` mirroring blob keys (edge function reads these when Blobs empty).
+
+**Large PDFs:** served via edge function `netlify/edge-functions/protected-media.js` (streams from Blobs; avoids 6MB function cap).
 
 ## 3. Remove migrated files from public deploy
 
-After blobs are uploaded, ensure these are **not** in the static deploy:
+After blobs are uploaded, generated `.netlifyignore-protected.generated` excludes gated files from static deploy automatically. Regenerate after manifest changes:
 
-- Issue 2–3 reader WebPs (page-022 … page-068, chapter-3-spacer, back-cover)
-- Reader PDFs (full, ch2, ch3)
-- Dossier thumbs + portraits
-- Root `data.js`, `map5.jpg`, `regions.json`, `reveals.json`
+```bash
+node scripts/generate-protected-asset-manifest.js
+```
 
-`_redirects-protected.generated` (merged into `_redirects`) returns **404** for old URLs.
+Also ensure `_redirects` includes `_redirects-protected.generated` entries (404 on legacy URLs).
 
 ## 4. Deploy (preview first)
 
@@ -62,7 +71,7 @@ npx netlify deploy --prod --dir .
 
 ## 5. Production verification (incognito)
 
-1. `GET /api/build-info` → `build: 230`
+1. `GET /api/build-info` → `build: 231`
 2. Paste reader URL → entry screen (not reader)
 3. Login `scribe4` → reader + dossier + Issue 2
 4. `curl -I .../page-022.webp` → 404
@@ -80,7 +89,7 @@ npx netlify deploy --prod --dir .
 
 ```bash
 node scripts/test-access-auth-unit.js
-EXPECTED_INTREPID_BUILD=230 node scripts/smoke-server-gate.js http://localhost:8888
+EXPECTED_INTREPID_BUILD=231 node scripts/smoke-server-gate.js http://localhost:8888
 ```
 
 Prod smoke (after deploy):

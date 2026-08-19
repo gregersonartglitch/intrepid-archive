@@ -1,6 +1,6 @@
 # Wave 1 Option B+ — AWAITING REVIEW
 
-**Build:** 230  
+**Build:** 231  
 **Branch:** `cursor/ks-fulfillment-sop-1ced`  
 **Production today:** build 217 (unchanged — **do not send Wave 1 emails**)
 

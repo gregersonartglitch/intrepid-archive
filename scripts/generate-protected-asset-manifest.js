@@ -144,6 +144,18 @@ function main() {
     redirectLines.join("\n") + "\n"
   );
 
+  var ignoreHeader = [
+    "# AUTO-GENERATED — exclude gated assets from static deploy",
+    "# Regenerate: node scripts/generate-protected-asset-manifest.js",
+  ];
+  var ignorePaths = migration.map(function (row) {
+    return row.removeFromPublicDeploy.replace(/^\//, "");
+  });
+  fs.writeFileSync(
+    path.join(ROOT, ".netlifyignore-protected.generated"),
+    ignoreHeader.concat(ignorePaths).join("\n") + "\n"
+  );
+
   console.log(
     "Wrote " +
       Object.keys(assets).length +

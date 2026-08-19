@@ -92,13 +92,46 @@ async function main() {
     pass("hub path — blocked or redirected (" + state.url + ")");
   });
 
-  // scribe4 positive control
+  // scribe4 positive control — server gate uses HttpOnly cookie login
+  var buildRes = await fetch(BASE.replace(/\/$/, "") + "/api/build-info").catch(function () {
+    return null;
+  });
+  var serverGate = false;
+  if (buildRes && buildRes.ok) {
+    var buildJson = await buildRes.json();
+    serverGate = buildJson && buildJson.build >= 230;
+  }
+
   var ctx = await browser.newContext();
   var page = await ctx.newPage();
-  await page.goto(BASE.replace(/\/$/, "") + "/");
-  await page.evaluate(function () {
-    window.IntrepidArchiveAccess.submitArchiveCode("scribe4");
-  });
+
+  if (serverGate) {
+    var loginRes = await fetch(BASE.replace(/\/$/, "") + "/api/access/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: process.env.READER_ACCESS_CODE || "scribe4" }),
+    });
+    var setCookie = loginRes.headers.get("set-cookie") || "";
+    var match = setCookie.match(/intrepid_access=([^;]+)/);
+    if (!loginRes.ok || !match) {
+      fail("scribe4 positive control — server login failed");
+    }
+    await ctx.addCookies([
+      {
+        name: "intrepid_access",
+        value: decodeURIComponent(match[1]),
+        url: BASE.replace(/\/$/, ""),
+        httpOnly: true,
+        sameSite: "Lax",
+      },
+    ]);
+  } else {
+    await page.goto(BASE.replace(/\/$/, "") + "/");
+    await page.evaluate(function () {
+      window.IntrepidArchiveAccess.submitArchiveCode("scribe4");
+    });
+  }
+
   await page.goto(readerUrl, { waitUntil: "networkidle", timeout: 60000 });
   await page.waitForTimeout(3000);
   var ok = await page.evaluate(function () {

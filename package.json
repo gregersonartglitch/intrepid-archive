@@ -5,6 +5,8 @@
   "scripts": {
     "check:access-auth": "node scripts/test-access-auth-unit.js",
     "generate:asset-manifest": "node scripts/generate-protected-asset-manifest.js",
+    "prepare:protected-assets": "node scripts/prepare-protected-assets-local.js",
+    "upload:protected-assets": "node scripts/upload-protected-assets-to-blobs.js",
     "smoke:backer-login": "node scripts/smoke-backer-login.js",
     "smoke:reader-deeplink": "node scripts/smoke-reader-deeplink.js",
     "smoke:server-gate": "node scripts/smoke-server-gate.js",

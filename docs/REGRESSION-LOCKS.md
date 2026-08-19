@@ -27,6 +27,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **227** | Wave 1 backer login mix-up | Reader code opening map, or guest/deep-link skipping entry | `scripts/smoke-backer-login.js` (matrix ×2): `scribe4` reader-only; `hollowlands9` both; guest OFF; CART- format | Incognito: B1–B10 in `docs/WAVE1-LOGIN-TEST.md` |
 | **228** | Reader deep-link bypass | Incognito paste of `/reader/intrepid-dusk-volume-1/` loads full volume without code (fail-open guard + `ENABLE_READER_GATE=false`) | `smoke-backer-login.js`: fail-closed `bootstrapPublicContentRoute`, reader gate ON, eye toggle; Playwright blocked `archive-access.js` → redirect home | Fresh incognito: paste reader URL → home entry screen; with `scribe4` → Issue 2+ readable |
 | **230** | Wave 1 Option B+ server gate | Client-only bypass; public Issue 2–3 assets | `scripts/smoke-server-gate.js`, `scripts/test-access-auth-unit.js`, `smoke-backer-login.js` | Preview/prod: incognito reader URL blocked; scribe4 cookie opens shell; page-022 404 + protected 401 |
+| **231** | Protected asset edge streaming + deploy exclude | Direct page-022.webp / map data.js public; PDF >6MB function cap | `smoke-server-gate.js` (build 231); edge `protected-media.js`; `.netlifyignore-protected.generated` | Incognito: legacy asset 404; logged-in protected media 200; PDF download after scribe4 |
 
 ## Rollback
 
