@@ -177,19 +177,21 @@ function runMatrix(label) {
   assert(visible.toLowerCase().indexOf('scribe4') === -1, 'scribe4 not in visible HTML');
 
   var gateJs = fs.readFileSync(path.join(ROOT, 'reader/backer-gate.js'), 'utf8');
-  assert(/ENABLE_READER_GATE\s*=\s*false/.test(gateJs), 'in-reader Issue 2 overlay currently OFF (Wave 1: archive entry is the gate)');
+  assert(/ENABLE_READER_GATE\s*=\s*true/.test(gateJs), 'in-reader Issue 2 overlay ON (backup deep-link gate)');
   assert(gateJs.indexOf('scribe4') !== -1, 'reader backer-gate still knows scribe4');
   assert(/id="reader-gate-pw"/.test(gateJs), 'reader gate password input markup exists');
-  if (!/Show access password/.test(gateJs)) {
-    pass('in-reader overlay OFF; #reader-gate-pw eye toggle N/A until ENABLE_READER_GATE=true');
-  }
+  assert(/id="reader-gate-eye"/.test(gateJs), 'reader gate password eye toggle present');
+  assert(/Show access password/.test(gateJs), 'reader gate eye toggle aria-label present');
 
   var readerHtml = fs.readFileSync(path.join(ROOT, 'reader/intrepid-dusk-volume-1/index.html'), 'utf8');
-  assert(readerHtml.indexOf('guardPublicContentRoute') !== -1, 'reader deep-link bounces anonymous visitors home');
+  assert(readerHtml.indexOf('bootstrapPublicContentRoute') !== -1, 'reader deep-link uses fail-closed bootstrap guard');
+  assert(readerHtml.indexOf('window.location.replace("/")') !== -1, 'reader guard redirects home when archive-access missing');
+  assert(readerHtml.indexOf('archive-access-granted') !== -1, 'reader body hidden until access granted');
   assert(readerHtml.indexOf('Download PDF') !== -1, 'reader Download PDF control present');
 
   var dossierHtml = fs.readFileSync(path.join(ROOT, 'dossier/index.html'), 'utf8');
-  assert(dossierHtml.indexOf('guardPublicContentRoute') !== -1, 'dossier deep-link bounces anonymous visitors home');
+  assert(dossierHtml.indexOf('bootstrapPublicContentRoute') !== -1, 'dossier deep-link uses fail-closed bootstrap guard');
+  assert(dossierHtml.indexOf('window.location.replace("/")') !== -1, 'dossier guard redirects home when archive-access missing');
 }
 
 function runMatrixTwice() {

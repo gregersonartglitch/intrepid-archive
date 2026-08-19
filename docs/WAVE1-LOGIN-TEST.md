@@ -22,7 +22,7 @@ The smoke script executes the full code matrix **twice**, then hits live prod HT
 | Cartographer+ | `hollowlands9` | Yes | Yes | Yes (no second code) |
 | No word / guest | — | Entry screen | Deep links bounce home | Gate |
 
-Guest entry is **OFF**. In-reader Issue 2 overlay is currently **OFF** (`ENABLE_READER_GATE = false`) — archive entry is the Wave 1 gate. Once a valid word is entered, Volume 1 reads through.
+Guest entry is **OFF**. In-reader Issue 2 overlay is **ON** (`ENABLE_READER_GATE = true`) as backup if archive-access fails to load. Archive entry remains the primary gate; Issue 2 modal also appears if someone reaches the reader without backer keys.
 
 ## Browser matrix (incognito each row; use `?reset` when returning to home)
 

@@ -36,6 +36,7 @@
   <p>Place <code>intrepid-dusk-volume-1-reader-upload.zip</code> in the project root and run <code>integrate-reader.ps1</code>.</p>
   <p><a href="/">Return to archive home</a></p>
 </div>
+<script src="/archive-access.js?v=166"></script>
 <script>
 (function() {
   'use strict';
@@ -45,15 +46,28 @@
     document.getElementById('deploy-msg').hidden = false;
   }
 
-  fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
-    .then(function(res) {
-      if (res.ok) {
-        window.location.replace(READER_PATH);
-        return;
-      }
-      showDeployError();
-    })
-    .catch(showDeployError);
+  function openReader() {
+    fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
+      .then(function(res) {
+        if (res.ok) {
+          window.location.replace(READER_PATH);
+          return;
+        }
+        showDeployError();
+      })
+      .catch(showDeployError);
+  }
+
+  if (
+    window.IntrepidArchiveAccess &&
+    window.IntrepidArchiveAccess.bootstrapPublicContentRoute
+  ) {
+    if (window.IntrepidArchiveAccess.bootstrapPublicContentRoute('/')) {
+      openReader();
+    }
+    return;
+  }
+  window.location.replace('/');
 })();
 </script>
 <noscript>

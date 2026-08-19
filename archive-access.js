@@ -147,6 +147,18 @@
     return false;
   }
 
+  /** Fail-closed bootstrap for reader/dossier pages — marks html when access OK. */
+  function bootstrapPublicContentRoute(redirectPath) {
+    if (hasPublicContentAccess()) {
+      if (typeof document !== "undefined" && document.documentElement) {
+        document.documentElement.classList.add("archive-access-granted");
+      }
+      return true;
+    }
+    window.location.replace(redirectPath || "/");
+    return false;
+  }
+
   /** Drop guest-only session flag when guest entry is disabled and no tier keys exist. */
   function purgeStaleGuestSession() {
     if (isGuestEntryEnabled()) return;
@@ -183,6 +195,7 @@
     canEnterAsGuest: canEnterAsGuest,
     hasPublicContentAccess: hasPublicContentAccess,
     guardPublicContentRoute: guardPublicContentRoute,
+    bootstrapPublicContentRoute: bootstrapPublicContentRoute,
     purgeStaleGuestSession: purgeStaleGuestSession,
     resetArchiveAccess: resetArchiveAccess,
     ARCHIVE_ACCESS_LS_KEYS: ARCHIVE_ACCESS_LS_KEYS,

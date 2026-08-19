@@ -25,6 +25,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
 | **226** | Reader size on ultrawide | Size slider did not grow spread; heavy stage padding on wide monitors | *(manual)* `syncPageFlipDimensions` + layout refresh in `reader/overlay/spike.js` | Ultrawide (>=2.2 aspect) -> Size +/- -> spread visibly scales; padding tighter |
 | **227** | Wave 1 backer login mix-up | Reader code opening map, or guest/deep-link skipping entry | `scripts/smoke-backer-login.js` (matrix ×2): `scribe4` reader-only; `hollowlands9` both; guest OFF; CART- format | Incognito: B1–B10 in `docs/WAVE1-LOGIN-TEST.md` |
+| **228** | Reader deep-link bypass | Incognito paste of `/reader/intrepid-dusk-volume-1/` loads full volume without code (fail-open guard + `ENABLE_READER_GATE=false`) | `smoke-backer-login.js`: fail-closed `bootstrapPublicContentRoute`, reader gate ON, eye toggle; Playwright blocked `archive-access.js` → redirect home | Fresh incognito: paste reader URL → home entry screen; with `scribe4` → Issue 2+ readable |
 
 ## Rollback
 

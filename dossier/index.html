@@ -6,6 +6,7 @@
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
+<style>html:not(.archive-access-granted) body { visibility: hidden; }</style>
 <link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=5" fetchpriority="high">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
@@ -321,11 +322,17 @@ body {
 </style>
 </head>
 <body>
-<script src="/archive-access.js?v=115"></script>
+<script src="/archive-access.js?v=166"></script>
 <script>
 (function () {
-  if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.guardPublicContentRoute) return;
-  window.IntrepidArchiveAccess.guardPublicContentRoute("/");
+  if (
+    window.IntrepidArchiveAccess &&
+    window.IntrepidArchiveAccess.bootstrapPublicContentRoute
+  ) {
+    window.IntrepidArchiveAccess.bootstrapPublicContentRoute("/");
+    return;
+  }
+  window.location.replace("/");
 })();
 </script>
 
