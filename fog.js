@@ -24,8 +24,11 @@
   // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
   // orb so the player can move the lantern toward a distinct hot spot — never stack
   // the diamond on the glow they just clicked.
-  var KEY_OFFSET_MIN = 70;
-  var KEY_OFFSET_MAX = 110;
+  // Letter-stop screen pins (below) must keep starting proximity at the beacon
+  // BELOW the Hot band (0.65 @ maxDist 300 → need ≥ ~120px; target ~180px).
+  var KEY_OFFSET_MIN = 120;
+  var KEY_OFFSET_MAX = 170;
+  var CHIME_LANTERN_MOVE_PX = 28; // px — Hot letter requires lantern moved from enter pos
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
   var CHIME_ESCAPE_MS = 8000;     // safety net only (letter stops start boosted)
@@ -3178,20 +3181,22 @@
     var ll = getInteractionLatLng(loc);
     // Fixed screen pins for letter stops — random 360° offsets land on neighbor
     // amber stars (Ashal @ monastery, Maxim @ tower, hut cluster) and feel broken.
+    // Distances ~180px so lantern at beacon starts Cool/Warm (not Hot) — otherwise
+    // maybeShowSabellaLetterOnChime fires on the first draw frame and skips the hunt.
     if (loc && map && SABELLA_MESSAGES[loc.id]) {
       var peakPt = map.latLngToContainerPoint(ll);
       var pinPt;
       if (loc.id === 'tower-nine') {
         // Beside the peak — crown storm bolts made hunt-and-peck feel broken
-        pinPt = L.point(peakPt.x + 42, peakPt.y - 40);
+        pinPt = L.point(peakPt.x + 110, peakPt.y - 145);
       } else if (loc.id === 'monastery-wind') {
-        pinPt = L.point(peakPt.x + 58, peakPt.y + 52); // away from Ashal (up-left)
+        pinPt = L.point(peakPt.x + 140, peakPt.y + 115); // away from Ashal (up-left)
       } else if (loc.id === 'sabellas-hut') {
-        pinPt = L.point(peakPt.x + 48, peakPt.y - 56);
+        pinPt = L.point(peakPt.x + 120, peakPt.y - 140);
       } else if (loc.id === 'sinn') {
-        pinPt = L.point(peakPt.x - 52, peakPt.y + 48);
+        pinPt = L.point(peakPt.x - 130, peakPt.y + 125);
       } else {
-        pinPt = L.point(peakPt.x + 50, peakPt.y + 50);
+        pinPt = L.point(peakPt.x + 130, peakPt.y + 130);
       }
       var pinLl = map.containerPointToLatLng(pinPt);
       return { keyLat: pinLl.lat, keyLng: pinLl.lng };
@@ -3289,7 +3294,8 @@
   }
 
   // Finish chime search on key diamond, beacon, or the zone between them.
-  // Letter gate: one tap opens the letter (if needed) and charts immediately.
+  // Letter gate: Hot (lantern) or diamond tap opens parchment; chart on dismiss.
+  // Beacon taps before Hot only nudge — do not skip the hunt (build 232).
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
     var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 16 : 0;
@@ -3303,24 +3309,34 @@
 
     // Pin lantern to this tap so Hot/letter logic matches where they clicked.
     spotlightPos = { x: x, y: y };
+    if (searchMode.startSpotlight) {
+      var moveDx = x - searchMode.startSpotlight.x;
+      var moveDy = y - searchMode.startSpotlight.y;
+      if (Math.sqrt(moveDx * moveDx + moveDy * moveDy) >= CHIME_LANTERN_MOVE_PX) {
+        searchMode.lanternMoved = true;
+      }
+    }
+
+    // Letter gate: require Hot hunt (or diamond) before charting.
+    if (isLetterGateBlockingChart(searchMode.loc)) {
+      if (!searchMode.sabellaLetterFired) {
+        if (hit.hitKey) {
+          // Diamond found — grant parchment; chart waits for dismiss.
+          maybeShowSabellaLetterOnChime(1);
+          return true;
+        }
+        nudgeLetterGateFirst();
+        return true;
+      }
+      if (!searchMode.letterGateCleared) {
+        nudgeLetterGateFirst();
+        return true;
+      }
+    }
 
     // Soft path (gate off): KEY/beacon grants parchment then charts.
     ensureSabellaLetterBeforeChart(searchMode.loc);
 
-    if (isLetterGateBlockingChart(searchMode.loc)) {
-      // Force parchment if Hot never fired, then chart on this same tap (no 2nd click / fade wait).
-      if (!searchMode.sabellaLetterFired) {
-        maybeShowSabellaLetterOnChime(1);
-      }
-      sabellaMessageOnDismiss = null;
-      searchMode.letterGateCleared = true;
-      if (searchMode.letterRecovery) {
-        finishLetterRecoverySearch(searchMode.loc);
-      } else {
-        completeDiscovery(searchMode.loc);
-      }
-      return true;
-    }
     if (searchMode.letterRecovery) {
       finishLetterRecoverySearch(searchMode.loc);
     } else {
@@ -3361,6 +3377,8 @@
     var beaconLl = getInteractionLatLng(loc);
     var pt = map.latLngToContainerPoint(beaconLl);
     spotlightPos = { x: pt.x, y: pt.y };
+    searchMode.startSpotlight = { x: pt.x, y: pt.y };
+    searchMode.lanternMoved = false;
 
     if (map) map.getContainer().classList.add('chime-search-active');
     setChimeSearchLabelFocus(loc.id);
@@ -3926,6 +3944,9 @@
     var locId = searchMode.locId;
     if (!SABELLA_MESSAGES[locId] || !hasUnseenSabellaMessage(locId)) return;
     if (searchMode.sabellaLetterFired) return;
+    // First-visit hunt: require lantern moved off enter position so a Cool start
+    // cannot auto-fire Hot on the first draw frame (build 232).
+    if (!searchMode.letterRecovery && !searchMode.lanternMoved && proximity < 0.999) return;
     if (proximity < getSabellaLetterHotThreshold()) return;
 
     searchMode.sabellaLetterFired = true;
@@ -4214,6 +4235,13 @@
       return;
     }
     spotlightPos = { x: x, y: y };
+    if (searchMode.startSpotlight && !searchMode.lanternMoved) {
+      var mdx = x - searchMode.startSpotlight.x;
+      var mdy = y - searchMode.startSpotlight.y;
+      if (Math.sqrt(mdx * mdx + mdy * mdy) >= CHIME_LANTERN_MOVE_PX) {
+        searchMode.lanternMoved = true;
+      }
+    }
   }
 
   // Mouse/touch tracking for spotlight (search mode only)

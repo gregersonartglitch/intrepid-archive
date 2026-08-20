@@ -828,6 +828,15 @@ assert(fogSrc.indexOf('function ensureSabellaLetterBeforeChart') > -1 &&
 assert(fogSrc.indexOf('maybeShowSabellaLetterOnChime(proximity)') > -1 &&
   fogSrc.indexOf('ensureSabellaLetterBeforeChart') > -1,
   'Sabella letters fire on chime Hot band or KEY_CLICK (not auto at beacon center)');
+assert(fogSrc.indexOf('CHIME_LANTERN_MOVE_PX') > -1 &&
+  fogSrc.indexOf('lanternMoved') > -1 &&
+  /maybeShowSabellaLetterOnChime[\s\S]*?lanternMoved/.test(fogSrc),
+  'Hot letter requires lantern moved off enter position (no first-frame auto-Hot)');
+assert(fogSrc.indexOf('peakPt.x + 120') > -1 && fogSrc.indexOf('peakPt.y - 140') > -1,
+  'Sabella hut key pin ~180px from beacon (start Cool/Warm, not Hot)');
+assert(/isLetterGateBlockingChart[\s\S]*?nudgeLetterGateFirst\(\)/.test(fogSrc) &&
+  /hit\.hitKey[\s\S]*?maybeShowSabellaLetterOnChime\(1\)/.test(fogSrc),
+  'letter-gate finish: diamond grants letter; beacon before Hot only nudges');
 assert(/glowSearching[\s\S]*?phase === 'searching'/.test(fogSrc),
   'golden glow suppressed while journey stop is in chime search');
 assert(fogSrc.indexOf('function isSabellaLetterUiBlocked') > -1 &&
