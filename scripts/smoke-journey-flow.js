@@ -822,6 +822,14 @@ assert(fogSrc.indexOf('function placeSearchKeyOffset') > -1 &&
   fogSrc.indexOf('KEY_OFFSET_MIN') > -1 &&
   fogSrc.indexOf('placeSearchKeyOffset(loc)') > -1,
   'chime key is offset from beacon for all search enters (shared helper)');
+assert(fogSrc.indexOf('TUTORIAL_INSTANT_STEPS') > -1,
+  'tutorial instant-step list still documented');
+assert(/TUTORIAL_INSTANT_IDS[\s\S]*?crossing-pool[\s\S]*?dawn-spear/.test(fogSrc) &&
+  /useInstant = isTutorial && !!TUTORIAL_INSTANT_IDS\[loc\.id\]/.test(fogSrc),
+  'tutorial instant discover is by location id (hut never instant via step race)');
+assert(fogSrc.indexOf("TUTORIAL_INSTANT_IDS[loc.id]") > -1 &&
+  fogSrc.indexOf("TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep)") === -1,
+  'discoverLocation no longer gates instant reveal on tutorialStep index');
 assert(fogSrc.indexOf('function ensureSabellaLetterBeforeChart') > -1 &&
   fogSrc.indexOf('ensureSabellaLetterBeforeChart(searchMode.loc)') > -1,
   'KEY_CLICK grants Sabella letter before charting (cannot skip Hot)');

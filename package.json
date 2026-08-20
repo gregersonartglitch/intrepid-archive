@@ -10,6 +10,7 @@
     "smoke:backer-login": "node scripts/smoke-backer-login.js",
     "smoke:reader-deeplink": "node scripts/smoke-reader-deeplink.js",
     "smoke:server-gate": "node scripts/smoke-server-gate.js",
+    "smoke:chime-hut": "node scripts/smoke-chime-hut-search.js",
     "test:gate": "npm run check:access-auth && npm run smoke:backer-login && npm run smoke:server-gate"
   },
   "dependencies": {

@@ -887,7 +887,16 @@
     { msg: 'The archive is yours, Cartographer. Explore freely.', action: 'auto', display: 'toast' }
   ];
 
-  // Which tutorial steps use instant reveal (no spotlight search)
+  // Which tutorial discoveries skip spotlight search (Crossing Pool + Dawn Spear only).
+  // MUST be by location id — not tutorialStep index. Golden-glow clicks call
+  // discoverLocation without the tutorialHintLoc gate; if step is still 2 when
+  // Sabella's Hut is the next path stop, a step-based check wrongly instant-reveals
+  // the hut and skips the entire chime hunt (build 233).
+  var TUTORIAL_INSTANT_IDS = {
+    'crossing-pool': true,
+    'dawn-spear': true
+  };
+  // Legacy step list kept for smoke/docs; discoverLocation uses TUTORIAL_INSTANT_IDS.
   var TUTORIAL_INSTANT_STEPS = [0, 1, 2];
   // Step that waits for card close (doesn't advance on discover)
   var TUTORIAL_CARD_STEP = 1;
@@ -3007,9 +3016,10 @@
       return;
     }
 
-    // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
+    // Tutorial: instant reveal only for Crossing Pool + Dawn Spear (by id).
+    // Sabella's Hut and later journey stops always use chime search.
     var isTutorial = tutorialStep < TUTORIAL_STEPS;
-    var useInstant = isTutorial && TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep) > -1;
+    var useInstant = isTutorial && !!TUTORIAL_INSTANT_IDS[loc.id];
 
     if (useInstant) {
       instantDiscover(loc);
