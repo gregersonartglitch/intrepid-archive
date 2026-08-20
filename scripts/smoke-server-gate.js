@@ -11,7 +11,7 @@
  */
 
 var BASE = (process.argv[2] || "http://localhost:8888").replace(/\/$/, "");
-var EXPECTED_BUILD = parseInt(process.env.EXPECTED_INTREPID_BUILD || "233", 10);
+var EXPECTED_BUILD = parseInt(process.env.EXPECTED_INTREPID_BUILD || "234", 10);
 var READER_CODE = process.env.READER_ACCESS_CODE || "scribe4";
 var CARTO_CODE = process.env.CARTOGRAPHER_ACCESS_CODE || "hollowlands9";
 

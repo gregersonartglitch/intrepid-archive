@@ -30,6 +30,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **231** | Protected asset edge streaming + deploy exclude | Direct page-022.webp / map data.js public; PDF >6MB function cap | `smoke-server-gate.js` (build 231); edge `protected-media.js`; `.netlifyignore-protected.generated` | Incognito: legacy asset 404; logged-in protected media 200; PDF download after scribe4 |
 | **232** | Letter-stop chime Hot auto-fire | Sabella hut search completed on first frame; no hot/cold audio; beacon retap skipped hunt | Smoke: `lanternMoved` guard, hut pin ~180px, letter-gate nudge before Hot | Fresh map: hut → search stays active; move lantern toward diamond → pings + Hot letter; beacon alone does not chart |
 | **233** | Tutorial step race instant-skips hut chime | Golden-glow click on hut while tutorialStep still 2 → `instantDiscover` (no search/audio) | Smoke: `TUTORIAL_INSTANT_IDS` by loc id; discoverLocation not step-index gated | Fresh map: dawn-spear card still open → click hut glow → must enter search (console Search mode), not instant card |
+| **234** | Chime diamond too far / not clickable | Sigil ~180px in deep fog; letter-gate only exact hitKey → nudge, pings never stop | Smoke: hut pin ~130px, `onSigil` + LETTER_SIGIL_CLICK_PAD | Hut search: diamond near pinhole; tap diamond → letter; dismiss → charts; pings stop |
 
 ## Rollback
 

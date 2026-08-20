@@ -24,11 +24,14 @@
   // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
   // orb so the player can move the lantern toward a distinct hot spot — never stack
   // the diamond on the glow they just clicked.
-  // Letter-stop screen pins (below) must keep starting proximity at the beacon
-  // BELOW the Hot band (0.65 @ maxDist 300 → need ≥ ~120px; target ~180px).
-  var KEY_OFFSET_MIN = 120;
-  var KEY_OFFSET_MAX = 170;
+  // Letter-stop screen pins must keep starting proximity at the beacon
+  // BELOW the Hot band (0.65 @ maxDist 300 → need ≥ ~120px). Target ~130px —
+  // close enough to the pinhole that the diamond feels tied to the stop, not lost
+  // in deep fog (build 234; 232's ~180px felt outside the unlocked radius).
+  var KEY_OFFSET_MIN = 100;
+  var KEY_OFFSET_MAX = 140;
   var CHIME_LANTERN_MOVE_PX = 28; // px — Hot letter requires lantern moved from enter pos
+  var LETTER_SIGIL_CLICK_PAD = 36; // px — forgiveness around the hot diamond
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
   var CHIME_ESCAPE_MS = 8000;     // safety net only (letter stops start boosted)
@@ -338,7 +341,8 @@
     var freq = 300 + proximity * 600;
 
     if (now - lastPingTime > interval) {
-      playPing(freq, 0.08 + proximity * 0.1, 0.04 + proximity * 0.08);
+      // Audible over ambient bed — quiet enough not to startle, loud enough to hunt by.
+      playPing(freq, 0.1 + proximity * 0.12, 0.07 + proximity * 0.12);
       lastPingTime = now;
     }
   }
@@ -3191,22 +3195,22 @@
     var ll = getInteractionLatLng(loc);
     // Fixed screen pins for letter stops — random 360° offsets land on neighbor
     // amber stars (Ashal @ monastery, Maxim @ tower, hut cluster) and feel broken.
-    // Distances ~180px so lantern at beacon starts Cool/Warm (not Hot) — otherwise
-    // maybeShowSabellaLetterOnChime fires on the first draw frame and skips the hunt.
+    // Distances ~130px so lantern at beacon starts Cool/Warm (not Hot), while the
+    // diamond stays near the pinhole edge (not deep fog outside the unlocked radius).
     if (loc && map && SABELLA_MESSAGES[loc.id]) {
       var peakPt = map.latLngToContainerPoint(ll);
       var pinPt;
       if (loc.id === 'tower-nine') {
         // Beside the peak — crown storm bolts made hunt-and-peck feel broken
-        pinPt = L.point(peakPt.x + 110, peakPt.y - 145);
+        pinPt = L.point(peakPt.x + 85, peakPt.y - 100);
       } else if (loc.id === 'monastery-wind') {
-        pinPt = L.point(peakPt.x + 140, peakPt.y + 115); // away from Ashal (up-left)
+        pinPt = L.point(peakPt.x + 100, peakPt.y + 85); // away from Ashal (up-left)
       } else if (loc.id === 'sabellas-hut') {
-        pinPt = L.point(peakPt.x + 120, peakPt.y - 140);
+        pinPt = L.point(peakPt.x + 90, peakPt.y - 95);
       } else if (loc.id === 'sinn') {
-        pinPt = L.point(peakPt.x - 130, peakPt.y + 125);
+        pinPt = L.point(peakPt.x - 95, peakPt.y + 90);
       } else {
-        pinPt = L.point(peakPt.x + 130, peakPt.y + 130);
+        pinPt = L.point(peakPt.x + 95, peakPt.y + 95);
       }
       var pinLl = map.containerPointToLatLng(pinPt);
       return { keyLat: pinLl.lat, keyLng: pinLl.lng };
@@ -3327,11 +3331,16 @@
       }
     }
 
-    // Letter gate: require Hot hunt (or diamond) before charting.
+    // Letter gate: require Hot hunt (or sigil-side tap) before charting.
     if (isLetterGateBlockingChart(searchMode.loc)) {
       if (!searchMode.sabellaLetterFired) {
-        if (hit.hitKey) {
-          // Diamond found — grant parchment; chart waits for dismiss.
+        // Accept the glowing diamond and a pad around it — not only an exact
+        // hitKey pixel. Clicks nearer the beacon than the sigil still nudge.
+        var onSigil = hit.hitKey ||
+          (hit.keyDist < hit.beaconDist &&
+            hit.keyDist < getKeyClickRadiusPx() + LETTER_SIGIL_CLICK_PAD);
+        if (onSigil) {
+          searchMode.lanternMoved = true;
           maybeShowSabellaLetterOnChime(1);
           return true;
         }
@@ -3339,6 +3348,7 @@
         return true;
       }
       if (!searchMode.letterGateCleared) {
+        // Letter is open — dismiss is the GO; map taps only remind.
         nudgeLetterGateFirst();
         return true;
       }
@@ -3394,6 +3404,8 @@
     setChimeSearchLabelFocus(loc.id);
     showChimeSearchTeachTip(loc);
     ensureChimeWarmthHud();
+    ensureAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     // Letters fire when lantern crosses Hot near the offset sigil (or on KEY_CLICK
     // via ensureSabellaLetterBeforeChart) — do not auto-grant Hot at beacon center.
