@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Intrepid Dusk Archive</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <!-- Local static hosts: send backers to the archive UI with an entrance flag.
+       Netlify force-rewrites /backer/ to /index.html so the URL can stay /backer/. -->
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || '');
+      params.set('entrance', 'backer');
+      var qs = params.toString();
+      window.location.replace('/' + (qs ? '?' + qs : '?entrance=backer') + (window.location.hash || ''));
+    })();
+  </script>
+</head>
+<body>
+  <p><a href="/?entrance=backer">Enter the Archive</a></p>
+</body>
+</html>

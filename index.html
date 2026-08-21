@@ -50,7 +50,8 @@ input { font-family: inherit; }
 /* ═══════════════════════════════════════════
    ARCHIVE ENTRY (first screen)
    ═══════════════════════════════════════════ */
-#archive-entry {
+#archive-entry,
+#archive-public {
   position: fixed; inset: 0; z-index: 9600;
   display: flex; align-items: center; justify-content: center;
   background:
@@ -60,7 +61,8 @@ input { font-family: inherit; }
     linear-gradient(175deg, #0a090e 0%, #0d0d12 40%, #12100e 100%);
   transition: opacity 0.55s ease, visibility 0.55s ease;
 }
-#archive-entry.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+#archive-entry.hidden,
+#archive-public.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 .entry-guest-divider {
   display: flex;
   align-items: center;
@@ -282,10 +284,40 @@ input { font-family: inherit; }
   color: rgba(210, 120, 100, 0.92);
 }
 
-/* Post-unlock MailerLite permission card — reversible via ENABLE_ARCHIVE_POST_UNLOCK_OPTIN */
+/* Backer choice / mail steps + public waitlist */
 .entry-login-step[hidden],
-.entry-optin-step[hidden] {
+.entry-choice-step[hidden],
+.entry-mail-step[hidden] {
   display: none !important;
+}
+.entry-choice-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.entry-choice-actions .gate-btn {
+  width: 100%;
+  max-width: 280px;
+}
+.entry-already-backer {
+  display: inline-block;
+  margin-top: 22px;
+  color: rgba(191,178,153,0.62);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+}
+.entry-already-backer:hover,
+.entry-already-backer:focus-visible {
+  color: rgba(198,141,85,0.88);
+  text-decoration: underline;
+  outline: none;
+}
+.entry-mail-form {
+  width: 100%;
 }
 .gate-card.is-optin {
   padding-top: 56px;
@@ -875,7 +907,7 @@ html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneifo
   /* SantakkuM wedges sit low in em box — slight lift on entry gate only */
   transform: translateY(-1px);
 }
-/* Entry Unlock Archive: Latin at rest, cuneiform on hover only */
+/* Entry Enter the Archive: Latin at rest, cuneiform on hover only */
 html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn .cuneiform-btn__layer--latin {
   display: flex;
   opacity: 1;
@@ -3011,13 +3043,59 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <h1 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);">The Hollowlands — Intrepid Dusk Cartographer Archive</h1>
 
-<!-- ═══════════ ARCHIVE ENTRY (first screen) ═══════════ -->
-<div id="archive-entry" class="hidden">
-  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="entry-title">
+<!-- ═══════════ PUBLIC WAITLIST (bare URL) ═══════════ -->
+<div id="archive-public" class="hidden">
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="public-title">
     <span class="gate-corner-tr">◆</span>
     <span class="gate-corner-bl">◆</span>
     <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
-    <div id="entry-login-step" class="entry-login-step">
+    <div class="gate-eyebrow">Intrepid Dusk Archive</div>
+    <div class="gate-title" id="public-title">The Hollowlands</div>
+    <div class="gate-rule"></div>
+    <p class="entry-optin-body" id="public-waitlist-body">The Archive will open to new readers later. Leave your email if you’d like to know when it does.</p>
+    <form id="public-waitlist-form" class="entry-mail-form" action="#" method="POST" novalidate>
+      <div class="entry-optin-fields">
+        <input id="public-waitlist-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for the Archive waitlist" required>
+        <button id="public-waitlist-join" class="gate-btn" type="submit">Join the waitlist</button>
+      </div>
+    </form>
+    <p id="public-waitlist-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
+    <a id="public-already-backer" class="entry-already-backer" href="/backer/">Already a backer? Enter the Archive</a>
+  </div>
+</div>
+
+<!-- ═══════════ BACKER ENTRANCE ═══════════ -->
+<div id="archive-entry" class="hidden">
+  <div class="gate-card" role="dialog" aria-modal="true" aria-labelledby="entry-choice-title">
+    <span class="gate-corner-tr">◆</span>
+    <span class="gate-corner-bl">◆</span>
+    <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
+    <div id="entry-choice-step" class="entry-choice-step">
+      <div class="gate-eyebrow">Intrepid Dusk Archive</div>
+      <div class="gate-title" id="entry-choice-title">The Hollowlands</div>
+      <div class="gate-rule"></div>
+      <p class="entry-optin-body" id="entry-choice-question">Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?</p>
+      <p class="entry-optin-note">Your choice does not affect access to your rewards.</p>
+      <div class="entry-choice-actions">
+        <button type="button" id="entry-choice-yes" class="gate-btn">Yes, keep me updated</button>
+        <button type="button" id="entry-choice-no" class="entry-optin-skip">No thanks</button>
+      </div>
+    </div>
+    <div id="entry-mail-step" class="entry-mail-step" hidden>
+      <div class="gate-eyebrow">Intrepid Dusk Archive</div>
+      <div class="gate-title" id="entry-mail-title">Stay connected</div>
+      <div class="gate-rule"></div>
+      <p class="entry-optin-body">Joining the list is how we get permission to email you. You can continue without joining.</p>
+      <form id="entry-mail-form" class="entry-mail-form" action="#" method="POST" novalidate>
+        <div class="entry-optin-fields">
+          <input id="entry-mail-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for Intrepid Dusk updates" required>
+          <button id="entry-mail-join" class="gate-btn" type="submit">Join the email list</button>
+        </div>
+      </form>
+      <button type="button" id="entry-mail-skip" class="entry-optin-skip">Continue without joining</button>
+      <p id="entry-mail-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
+    </div>
+    <div id="entry-login-step" class="entry-login-step" hidden>
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
@@ -3030,8 +3108,8 @@ body.edit-mode #frame-rim-seal { display: none !important; }
       </button>
     </div>
     <div class="gate-btn-cuneiform-zone">
-      <button id="entry-access-btn" class="gate-btn gate-fade cuneiform-btn" data-delay="1000" type="button" aria-label="Unlock Archive">
-        <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Unlock Archive</span>
+      <button id="entry-access-btn" class="gate-btn gate-fade cuneiform-btn" data-delay="1000" type="button" aria-label="Enter the Archive">
+        <span class="cuneiform-btn__layer cuneiform-btn__layer--latin">Enter the Archive</span>
         <span class="cuneiform-btn__layer cuneiform-btn__layer--cuneiform" aria-hidden="true">&#x1222D;&#x12297;</span>
       </button>
     </div>
@@ -3039,57 +3117,6 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <div id="entry-guest-divider" class="entry-guest-divider gate-fade" data-delay="1150" hidden aria-hidden="true"><span class="entry-guest-divider-label" id="entry-guest-divider-label">Or continue without a code</span></div>
     <button id="entry-guest-btn" class="entry-guest-btn gate-fade" data-delay="1200" type="button" hidden aria-hidden="true"><span class="entry-guest-btn-label">Continue as guest</span></button>
     <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300" hidden>Issue 1 and the dossier — no code needed.</p>
-    <!-- Follow signup — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
-    <div id="entry-follow" class="entry-follow gate-fade" data-delay="1350" hidden>
-      <button type="button" id="entry-follow-toggle" class="entry-follow-toggle" aria-expanded="false" aria-controls="entry-follow-panel">No access word? Get notified when guest access opens</button>
-      <div id="entry-follow-panel" class="entry-follow-panel" hidden>
-        <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
-          <input type="hidden" name="form-name" value="hollowlands-follow">
-          <input type="hidden" name="opt_in_at" value="">
-          <input type="hidden" name="opt_in_source" value="archive-entry-follow">
-          <p class="entry-follow-honeypot" aria-hidden="true">
-            <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
-          </p>
-          <div class="entry-follow-fields">
-            <input id="entry-follow-nickname" class="gate-input" type="text" name="nickname" placeholder="NICKNAME" autocomplete="nickname" maxlength="64" aria-label="Preferred nickname" required>
-            <input id="entry-follow-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for updates" required>
-            <label class="entry-follow-optin" for="entry-follow-optin">
-              <input id="entry-follow-optin" type="checkbox" name="marketing_opt_in" value="yes" required>
-              <span class="entry-follow-optin-text">Email me occasional Hollowlands updates. Unsubscribe anytime.</span>
-            </label>
-            <button id="entry-follow-submit" class="entry-follow-submit" type="submit">Notify me</button>
-          </div>
-        </form>
-        <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
-      </div>
-    </div>
-    </div>
-    <!-- Post-unlock MailerLite permission. Kill: ENABLE_ARCHIVE_POST_UNLOCK_OPTIN=false, LS intrepid_follow_signup_disabled=1, or ?optin=0 -->
-    <div id="entry-optin-step" class="entry-optin-step" hidden>
-      <button type="button" id="entry-optin-close" class="entry-optin-close" aria-label="Close">
-        <span aria-hidden="true">✕</span> Close
-      </button>
-      <div class="gate-eyebrow">Intrepid Dusk Archive</div>
-      <div class="gate-title" id="entry-optin-title">Stay connected with Intrepid Dusk</div>
-      <div class="gate-rule"></div>
-      <p class="entry-optin-body" id="entry-optin-body">Occasional notes — archive openings, print updates, and the next chapter of the Hollowlands. We write infrequently, and this never blocks your reward.</p>
-      <form id="entry-optin-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
-        <input type="hidden" name="form-name" value="hollowlands-follow">
-        <input type="hidden" name="opt_in_at" value="">
-        <input type="hidden" name="opt_in_source" value="archive-post-unlock">
-        <input type="hidden" name="marketing_opt_in" value="yes">
-        <p class="entry-follow-honeypot" aria-hidden="true">
-          <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
-        </p>
-        <div class="entry-optin-fields">
-          <input id="entry-optin-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for Intrepid Dusk updates" required>
-          <p class="entry-optin-consent">Joining gives Intrepid Dusk permission to contact you by email. Unsubscribe anytime.</p>
-          <button id="entry-optin-join" class="gate-btn" type="submit">Join the email list</button>
-        </div>
-      </form>
-      <button type="button" id="entry-optin-skip" class="entry-optin-skip">Continue without joining</button>
-      <p class="entry-optin-note">Your Archive is already unlocked. This step is optional.</p>
-      <p id="entry-optin-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
     </div>
   </div>
 </div>
@@ -3130,7 +3157,6 @@ body.edit-mode #frame-rim-seal { display: none !important; }
         </span>
       </a>
     </div>
-    <button type="button" id="archive-hub-optin" class="landing-optin-link" hidden>Get email updates</button>
     <button type="button" id="archive-reset-access" class="landing-reset-access">Reset access</button>
   </div>
 </div>
@@ -3444,7 +3470,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 238;
+window.INTREPID_BUILD = 239;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3520,7 +3546,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="fog.js?v=238"></script>
+<script src="mailerlite-config.js?v=239"></script>
+<script src="fog.js?v=239"></script>
 <script>
 (function() {
   'use strict';
@@ -3686,6 +3713,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
      ARCHIVE ENTRY + HOME + MAP GATE
      ═══════════════════════════════════════════ */
   const archiveEntry = document.getElementById('archive-entry');
+  const archivePublic = document.getElementById('archive-public');
   const archiveHome  = document.getElementById('archive-home');
   const landingMapBtn = document.getElementById('landing-map');
   const landingReaderBtn = document.getElementById('landing-reader');
@@ -3711,8 +3739,16 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
   }
 
+  function hidePublicEntrance() {
+    if (archivePublic) {
+      archivePublic.style.display = 'none';
+      archivePublic.classList.add('hidden');
+    }
+  }
+
   function showArchiveEntry(opts) {
     opts = opts || {};
+    hidePublicEntrance();
     if (archiveHome) {
       archiveHome.style.display = 'none';
       archiveHome.classList.add('hidden');
@@ -3720,21 +3756,45 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (archiveEntry) {
       archiveEntry.classList.remove('hidden');
       archiveEntry.style.display = 'flex';
-      if (opts.optin) {
-        showArchiveOptinStep();
+      if (opts.step === 'choice') {
+        showBackerChoiceStep();
+      } else if (opts.step === 'mail') {
+        showBackerMailStep();
       } else {
         showArchiveLoginStep();
-        const els = archiveEntry.querySelectorAll('#entry-login-step .gate-fade');
+        var instant = !!opts.instant;
+        var els = archiveEntry.querySelectorAll('#entry-login-step .gate-fade');
         els.forEach(function(el) {
+          if (instant) {
+            el.classList.add('vis');
+            return;
+          }
           el.classList.remove('vis');
-          const delay = parseInt(el.dataset.delay, 10) || 0;
+          var delay = parseInt(el.dataset.delay, 10) || 0;
           setTimeout(function() { el.classList.add('vis'); }, 100 + delay);
         });
       }
     }
   }
 
+  function showPublicWaitlist() {
+    if (archiveHome) {
+      archiveHome.style.display = 'none';
+      archiveHome.classList.add('hidden');
+    }
+    if (archiveEntry) {
+      archiveEntry.style.display = 'none';
+      archiveEntry.classList.add('hidden');
+    }
+    if (archivePublic) {
+      archivePublic.classList.remove('hidden');
+      archivePublic.style.display = 'flex';
+    }
+    renderPublicWaitlistState();
+  }
+
   function showArchiveHome() {
+    hidePublicEntrance();
     if (archiveEntry) {
       archiveEntry.style.display = 'none';
       archiveEntry.classList.add('hidden');
@@ -3760,6 +3820,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function hideArchiveScreens() {
+    hidePublicEntrance();
     if (archiveHome) {
       archiveHome.style.display = 'none';
       archiveHome.classList.add('hidden');
@@ -3809,8 +3870,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         entryAccessMsg.classList.add('show');
         entryAccessMsg.classList.remove('is-error');
       }
-      showArchiveEntry();
-      renderGuestEntryState();
+      startBackerEntrance();
       return;
     }
     window.location.href = '/reader/';
@@ -3850,9 +3910,10 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (shouldSkipArchiveEntry()) {
       showArchiveHome();
       renderHubPublicContentState();
+    } else if (isBackerEntrance()) {
+      startBackerEntrance();
     } else {
-      showArchiveEntry();
-      renderGuestEntryState();
+      showPublicWaitlist();
     }
   }
 
@@ -3976,39 +4037,40 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const entryGuestDividerLabel = document.getElementById('entry-guest-divider-label');
   const entryGuestBtn = document.getElementById('entry-guest-btn');
   const entryGuestNote = document.getElementById('entry-guest-note');
-  const entryFollow = document.getElementById('entry-follow');
-  const entryFollowToggle = document.getElementById('entry-follow-toggle');
-  const entryFollowPanel = document.getElementById('entry-follow-panel');
-  const entryFollowForm = document.getElementById('entry-follow-form');
-  const entryFollowMsg = document.getElementById('entry-follow-msg');
-  const entryFollowSubmit = document.getElementById('entry-follow-submit');
+  const entryChoiceStep = document.getElementById('entry-choice-step');
+  const entryMailStep = document.getElementById('entry-mail-step');
   const entryLoginStep = document.getElementById('entry-login-step');
-  const entryOptinStep = document.getElementById('entry-optin-step');
-  const entryOptinForm = document.getElementById('entry-optin-form');
-  const entryOptinEmail = document.getElementById('entry-optin-email');
-  const entryOptinJoin = document.getElementById('entry-optin-join');
-  const entryOptinSkip = document.getElementById('entry-optin-skip');
-  const entryOptinClose = document.getElementById('entry-optin-close');
-  const entryOptinMsg = document.getElementById('entry-optin-msg');
-  const archiveHubOptin = document.getElementById('archive-hub-optin');
+  const entryChoiceYes = document.getElementById('entry-choice-yes');
+  const entryChoiceNo = document.getElementById('entry-choice-no');
+  const entryMailForm = document.getElementById('entry-mail-form');
+  const entryMailEmail = document.getElementById('entry-mail-email');
+  const entryMailJoin = document.getElementById('entry-mail-join');
+  const entryMailSkip = document.getElementById('entry-mail-skip');
+  const entryMailMsg = document.getElementById('entry-mail-msg');
+  const publicWaitlistForm = document.getElementById('public-waitlist-form');
+  const publicWaitlistEmail = document.getElementById('public-waitlist-email');
+  const publicWaitlistJoin = document.getElementById('public-waitlist-join');
+  const publicWaitlistMsg = document.getElementById('public-waitlist-msg');
+  const publicWaitlistBody = document.getElementById('public-waitlist-body');
   const entryGateCard = archiveEntry && archiveEntry.querySelector('.gate-card');
-  // Follow signup (Netlify Form hollowlands-follow). Kill: false, or LS intrepid_follow_signup_disabled=1
-  var ENABLE_FOLLOW_SIGNUP = true;
-  // Post-unlock MailerLite permission card. Kill: false, LS intrepid_follow_signup_disabled=1, or ?optin=0
-  var ENABLE_ARCHIVE_POST_UNLOCK_OPTIN = true;
-  var LS_ARCHIVE_OPTIN_PROMPTED = 'intrepid_archive_optin_prompted_v1';
-  var LS_ARCHIVE_OPTIN_SUBMITTED = 'intrepid_archive_optin_submitted_v1';
-  var archiveOptinJoinTimer = null;
+  // Official MailerLite generated forms. Kill: false, or LS intrepid_archive_mailing_disabled=1
+  var ENABLE_ARCHIVE_MAILING = true;
+  var LS_ML_CHOICE = 'intrepid_archive_ml_choice_v1';
+  var ML_FAIL_COPY = 'We couldn’t add you right now. You can try again or continue to the Archive.';
 
-  function isFollowSignupEnabled() {
-    if (!ENABLE_FOLLOW_SIGNUP) return false;
+  function mailerliteConfig() {
+    return window.INTREPID_MAILERLITE || {};
+  }
+
+  function isArchiveMailingEnabled() {
+    if (!ENABLE_ARCHIVE_MAILING) return false;
     try {
-      if (localStorage.getItem('intrepid_follow_signup_disabled') === '1') return false;
+      if (localStorage.getItem('intrepid_archive_mailing_disabled') === '1') return false;
     } catch (e) { /* ignore */ }
     return true;
   }
 
-  function archiveOptinStoreGet(key) {
+  function archiveChoiceStoreGet(key) {
     try {
       var lsVal = localStorage.getItem(key);
       if (lsVal != null) return lsVal;
@@ -4019,320 +4081,239 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     return null;
   }
 
-  function archiveOptinStoreSet(key, val) {
+  function archiveChoiceStoreSet(key, val) {
     try { localStorage.setItem(key, val); } catch (e) { /* ignore */ }
     try { sessionStorage.setItem(key, val); } catch (e2) { /* ignore */ }
   }
 
-  function isArchivePostUnlockOptinEnabled() {
-    if (!ENABLE_ARCHIVE_POST_UNLOCK_OPTIN) return false;
-    if (!isFollowSignupEnabled()) return false;
-    try {
-      if (new URLSearchParams(window.location.search).get('optin') === '0') return false;
-    } catch (e) { /* ignore */ }
-    return true;
+  function getMailingChoice() {
+    var v = archiveChoiceStoreGet(LS_ML_CHOICE);
+    if (v === 'joined' || v === 'declined') return v;
+    return 'not_asked';
   }
 
-  function hasArchiveOptinSubmitted() {
-    if (archiveOptinStoreGet(LS_ARCHIVE_OPTIN_SUBMITTED) === '1') return true;
+  function setMailingChoice(v) {
+    if (v !== 'joined' && v !== 'declined') return;
+    archiveChoiceStoreSet(LS_ML_CHOICE, v);
+  }
+
+  function isBackerEntrance() {
+    var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
+    if (path === '/backer') return true;
     try {
-      if (localStorage.getItem('intrepid_follow_signed_up') === '1') return true;
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('entrance') === 'backer') return true;
+      if (params.has('entry')) return true;
     } catch (e) { /* ignore */ }
     return false;
   }
 
-  function hasArchiveOptinPrompted() {
-    return archiveOptinStoreGet(LS_ARCHIVE_OPTIN_PROMPTED) === '1';
+  function mailerliteActionUrl(kind) {
+    var cfg = mailerliteConfig();
+    var url = kind === 'public' ? cfg.publicActionUrl : cfg.backerActionUrl;
+    return url ? String(url).trim() : '';
   }
 
-  function markArchiveOptinPrompted() {
-    archiveOptinStoreSet(LS_ARCHIVE_OPTIN_PROMPTED, '1');
+  function mailerliteSource(kind) {
+    var cfg = mailerliteConfig();
+    return kind === 'public' ? (cfg.publicSource || 'archive_public_waitlist') : (cfg.backerSource || 'archive_backer_optin');
   }
 
-  function markArchiveOptinSubmitted() {
-    archiveOptinStoreSet(LS_ARCHIVE_OPTIN_SUBMITTED, '1');
-    try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e) { /* ignore */ }
+  function isMailerLiteSuccessPayload(res) {
+    if (!res || typeof res !== 'object') return false;
+    if (res.success === true || res.success === 'true' || res.success === 1) return true;
+    if (res.data && (res.data.success === true || res.data.success === 'true')) return true;
+    return false;
   }
 
-  function isArchiveOptinStepVisible() {
-    return !!(entryOptinStep && !entryOptinStep.hidden);
+  function subscribeMailerLiteForm(kind, email) {
+    var actionUrl = mailerliteActionUrl(kind);
+    var source = mailerliteSource(kind);
+    return new Promise(function (resolve, reject) {
+      if (!actionUrl) {
+        reject(new Error('not-configured'));
+        return;
+      }
+      var cbName = 'intrepidMlCb' + String(Date.now()) + String(Math.floor(Math.random() * 10000));
+      var script = document.createElement('script');
+      var timer = setTimeout(function () {
+        cleanup();
+        reject(new Error('timeout'));
+      }, 12000);
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+      window[cbName] = function (res) {
+        cleanup();
+        if (isMailerLiteSuccessPayload(res)) resolve(res);
+        else reject(res || new Error('ml-fail'));
+      };
+      var joiner = actionUrl.indexOf('?') >= 0 ? '&' : '?';
+      script.src = actionUrl + joiner +
+        'email=' + encodeURIComponent(email) +
+        '&fields[email]=' + encodeURIComponent(email) +
+        '&fields[source]=' + encodeURIComponent(source) +
+        '&ml-submit=1&ajax=1&callback=' + encodeURIComponent(cbName);
+      script.onerror = function () {
+        cleanup();
+        reject(new Error('network'));
+      };
+      document.body.appendChild(script);
+    });
   }
 
-  function setOptinMsg(text, kind) {
-    if (!entryOptinMsg) return;
-    entryOptinMsg.textContent = text || '';
-    entryOptinMsg.classList.remove('is-ok', 'is-err');
-    if (kind === 'ok') entryOptinMsg.classList.add('is-ok');
-    if (kind === 'err') entryOptinMsg.classList.add('is-err');
+  function setStepMsg(el, text, kind) {
+    if (!el) return;
+    el.textContent = text || '';
+    el.classList.remove('is-ok', 'is-err');
+    if (kind === 'ok') el.classList.add('is-ok');
+    if (kind === 'err') el.classList.add('is-err');
   }
 
-  function shouldOfferArchiveOptin() {
-    if (!isArchivePostUnlockOptinEnabled()) return false;
-    if (hasArchiveOptinSubmitted()) return false;
-    return true;
-  }
-
-  function shouldOfferArchiveOptinOnBoot() {
-    if (!shouldOfferArchiveOptin()) return false;
-    if (hasArchiveOptinPrompted()) return false;
-    if (hasDirectArchiveIntent()) return false;
-    return true;
-  }
-
-  function showArchiveLoginStep() {
-    if (archiveOptinJoinTimer) {
-      clearTimeout(archiveOptinJoinTimer);
-      archiveOptinJoinTimer = null;
-    }
-    if (entryLoginStep) entryLoginStep.hidden = false;
-    if (entryOptinStep) entryOptinStep.hidden = true;
-    if (entryGateCard) {
-      entryGateCard.classList.remove('is-optin');
-      entryGateCard.setAttribute('aria-labelledby', 'entry-title');
-    }
-  }
-
-  function showArchiveOptinStep() {
-    markArchiveOptinPrompted();
+  function hideBackerSteps() {
+    if (entryChoiceStep) entryChoiceStep.hidden = true;
+    if (entryMailStep) entryMailStep.hidden = true;
     if (entryLoginStep) entryLoginStep.hidden = true;
-    if (entryOptinStep) entryOptinStep.hidden = false;
-    if (entryGateCard) {
-      entryGateCard.classList.add('is-optin');
-      entryGateCard.setAttribute('aria-labelledby', 'entry-optin-title');
-    }
-    setOptinMsg('', null);
-    if (entryOptinEmail) {
-      entryOptinEmail.value = '';
-      setTimeout(function() {
-        if (entryOptinEmail) entryOptinEmail.focus();
+  }
+
+  function showBackerChoiceStep() {
+    hideBackerSteps();
+    if (entryChoiceStep) entryChoiceStep.hidden = false;
+    if (entryGateCard) entryGateCard.setAttribute('aria-labelledby', 'entry-choice-title');
+  }
+
+  function showBackerMailStep() {
+    hideBackerSteps();
+    if (entryMailStep) entryMailStep.hidden = false;
+    if (entryGateCard) entryGateCard.setAttribute('aria-labelledby', 'entry-mail-title');
+    setStepMsg(entryMailMsg, '', null);
+    if (entryMailEmail) {
+      entryMailEmail.value = '';
+      setTimeout(function () {
+        if (entryMailEmail) entryMailEmail.focus();
       }, 50);
     }
   }
 
-  function skipArchiveOptin() {
-    enterArchiveHome();
+  function showArchiveLoginStep() {
+    hideBackerSteps();
+    if (entryLoginStep) entryLoginStep.hidden = false;
+    if (entryGateCard) entryGateCard.setAttribute('aria-labelledby', 'entry-title');
+    if (entryAccessPw) {
+      setTimeout(function () {
+        if (entryAccessPw) entryAccessPw.focus();
+      }, 50);
+    }
   }
 
-  function openArchiveOptinFromHub() {
-    showArchiveEntry({ optin: true });
+  function declineBackerMailing() {
+    setMailingChoice('declined');
+    showArchiveEntry({ step: 'login', instant: true });
   }
 
-  function buildArchiveOptinPayload(email, botValue) {
-    return {
-      'form-name': 'hollowlands-follow',
-      'bot-field': botValue || '',
-      email: email,
-      marketing_opt_in: 'yes',
-      opt_in_at: new Date().toISOString(),
-      opt_in_source: 'archive-post-unlock'
-    };
+  function continueBackerWithoutJoining() {
+    setMailingChoice('declined');
+    showArchiveEntry({ step: 'login', instant: true });
   }
 
-  function submitArchiveOptin(ev) {
+  function submitBackerMailing(ev) {
     if (ev) ev.preventDefault();
-    if (!entryOptinForm || !shouldOfferArchiveOptin()) {
-      skipArchiveOptin();
-      return;
-    }
-    var email = entryOptinEmail ? String(entryOptinEmail.value || '').trim() : '';
-    var botEl = entryOptinForm.querySelector('[name="bot-field"]');
+    var email = entryMailEmail ? String(entryMailEmail.value || '').trim() : '';
     if (!email) {
-      setOptinMsg('Enter an email to join, or continue without joining.', 'err');
-      if (entryOptinEmail) entryOptinEmail.focus();
+      setStepMsg(entryMailMsg, 'Enter an email to join, or continue without joining.', 'err');
+      if (entryMailEmail) entryMailEmail.focus();
       return;
     }
-    if (entryOptinJoin) entryOptinJoin.disabled = true;
-    setOptinMsg('Sending…', null);
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: encodeFormBody(buildArchiveOptinPayload(email, botEl ? botEl.value : ''))
-    }).then(function (res) {
-      if (!res.ok) throw new Error('submit-failed');
-      markArchiveOptinSubmitted();
-      setOptinMsg('Thanks — your signup was recorded. Your Archive is already open.', 'ok');
-      archiveOptinJoinTimer = setTimeout(function () {
-        archiveOptinJoinTimer = null;
-        enterArchiveHome();
-      }, 1400);
+    if (entryMailJoin) entryMailJoin.disabled = true;
+    setStepMsg(entryMailMsg, 'Sending…', null);
+    subscribeMailerLiteForm('backer', email).then(function () {
+      setMailingChoice('joined');
+      setStepMsg(entryMailMsg, 'You’re on the list.', 'ok');
+      setTimeout(function () {
+        showArchiveEntry({ step: 'login', instant: true });
+      }, 700);
     }).catch(function () {
-      setOptinMsg('Couldn’t send — try again, or continue without joining. Your Archive stays open.', 'err');
+      setStepMsg(entryMailMsg, ML_FAIL_COPY, 'err');
     }).then(function () {
-      if (entryOptinJoin) entryOptinJoin.disabled = false;
+      if (entryMailJoin) entryMailJoin.disabled = false;
     });
   }
 
-  function maybeContinueAfterUnlock() {
-    if (shouldOfferArchiveOptin()) {
-      showArchiveOptinStep();
+  function renderPublicWaitlistState() {
+    var choice = getMailingChoice();
+    var form = publicWaitlistForm;
+    if (choice === 'joined') {
+      if (publicWaitlistBody) {
+        publicWaitlistBody.textContent = 'You’re on the list. We’ll write when the Archive opens to new readers.';
+      }
+      if (form) form.hidden = true;
+      setStepMsg(publicWaitlistMsg, '', null);
       return;
     }
-    enterArchiveHome();
+    if (choice === 'declined') {
+      if (form) form.hidden = true;
+      setStepMsg(publicWaitlistMsg, '', null);
+      return;
+    }
+    if (form) form.hidden = false;
   }
 
-  function renderHubOptinLink() {
-    if (!archiveHubOptin) return;
-    var showLink = isArchivePostUnlockOptinEnabled() && !hasArchiveOptinSubmitted();
-    archiveHubOptin.hidden = !showLink;
-    archiveHubOptin.setAttribute('aria-hidden', showLink ? 'false' : 'true');
-  }
-
-  function wireArchiveOptin() {
-    if (entryOptinForm) {
-      entryOptinForm.addEventListener('submit', submitArchiveOptin);
+  function submitPublicWaitlist(ev) {
+    if (ev) ev.preventDefault();
+    var email = publicWaitlistEmail ? String(publicWaitlistEmail.value || '').trim() : '';
+    if (!email) {
+      setStepMsg(publicWaitlistMsg, 'Enter an email to join the waitlist.', 'err');
+      if (publicWaitlistEmail) publicWaitlistEmail.focus();
+      return;
     }
-    if (entryOptinSkip) {
-      entryOptinSkip.addEventListener('click', function () {
-        skipArchiveOptin();
-      });
-    }
-    if (entryOptinClose) {
-      entryOptinClose.addEventListener('click', function () {
-        skipArchiveOptin();
-      });
-    }
-    if (archiveHubOptin) {
-      archiveHubOptin.addEventListener('click', function () {
-        openArchiveOptinFromHub();
-      });
-    }
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
-      if (!isArchiveOptinStepVisible()) return;
-      e.preventDefault();
-      skipArchiveOptin();
+    if (publicWaitlistJoin) publicWaitlistJoin.disabled = true;
+    setStepMsg(publicWaitlistMsg, 'Sending…', null);
+    subscribeMailerLiteForm('public', email).then(function () {
+      setMailingChoice('joined');
+      setStepMsg(publicWaitlistMsg, 'You’re on the list.', 'ok');
+      renderPublicWaitlistState();
+    }).catch(function () {
+      setStepMsg(publicWaitlistMsg, ML_FAIL_COPY, 'err');
+    }).then(function () {
+      if (publicWaitlistJoin) publicWaitlistJoin.disabled = false;
     });
   }
 
-  function setFollowMsg(text, kind) {
-    if (!entryFollowMsg) return;
-    entryFollowMsg.textContent = text || '';
-    entryFollowMsg.classList.remove('is-ok', 'is-err');
-    if (kind === 'ok') entryFollowMsg.classList.add('is-ok');
-    if (kind === 'err') entryFollowMsg.classList.add('is-err');
-  }
-
-  function encodeFormBody(fields) {
-    var parts = [];
-    Object.keys(fields).forEach(function (key) {
-      parts.push(encodeURIComponent(key) + '=' + encodeURIComponent(fields[key] == null ? '' : String(fields[key])));
-    });
-    return parts.join('&');
-  }
-
-  function setFollowPanelOpen(isOpen) {
-    if (!entryFollowPanel) return;
-    entryFollowPanel.hidden = !isOpen;
-    if (entryFollowToggle) {
-      entryFollowToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-      entryFollowToggle.textContent = isOpen ? 'Hide notification signup' : getFollowToggleLabel();
+  function startBackerEntrance() {
+    hidePublicEntrance();
+    if (!isArchiveMailingEnabled() || getMailingChoice() !== 'not_asked') {
+      showArchiveEntry({ step: 'login', instant: true });
+      renderGuestEntryState();
+      return;
     }
+    showArchiveEntry({ step: 'choice' });
+    renderGuestEntryState();
   }
 
-  function getFollowToggleLabel() {
-    var guestOn = isGuestEntryEnabled();
-    if (guestOn) return 'Get email updates';
-    return 'No access word? Get notified when guest access opens';
-  }
-
-  function wireFollowToggle() {
-    if (!entryFollowToggle) return;
-    entryFollowToggle.addEventListener('click', function () {
-      var willOpen = entryFollowPanel && entryFollowPanel.hidden;
-      setFollowPanelOpen(willOpen);
-      if (willOpen) {
-        var nicknameEl = document.getElementById('entry-follow-nickname');
-        if (nicknameEl) nicknameEl.focus();
-      }
-    });
-  }
-
-  function wireFollowSignup() {
-    if (!entryFollowForm || !isFollowSignupEnabled()) return;
-    entryFollowForm.addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      var nicknameEl = document.getElementById('entry-follow-nickname');
-      var emailEl = document.getElementById('entry-follow-email');
-      var optinEl = document.getElementById('entry-follow-optin');
-      var botEl = entryFollowForm.querySelector('[name="bot-field"]');
-      var nickname = nicknameEl ? String(nicknameEl.value || '').trim() : '';
-      var email = emailEl ? String(emailEl.value || '').trim() : '';
-      var optedIn = !!(optinEl && optinEl.checked);
-      if (!nickname || !email) {
-        setFollowMsg('Nickname and email required.', 'err');
-        return;
-      }
-      if (!optedIn) {
-        setFollowMsg('Check the box to opt in to email updates.', 'err');
-        if (optinEl) optinEl.focus();
-        return;
-      }
-      if (entryFollowSubmit) entryFollowSubmit.disabled = true;
-      setFollowMsg('Sending…', null);
-      var body = encodeFormBody({
-        'form-name': 'hollowlands-follow',
-        'bot-field': botEl ? botEl.value : '',
-        nickname: nickname,
-        email: email,
-        marketing_opt_in: 'yes',
-        opt_in_at: new Date().toISOString(),
-        opt_in_source: 'archive-entry-follow'
+  function wireArchiveEntrances() {
+    if (entryChoiceYes) {
+      entryChoiceYes.addEventListener('click', function () {
+        showBackerMailStep();
       });
-      fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body
-      }).then(function (res) {
-        if (!res.ok) throw new Error('submit-failed');
-        setFollowMsg('You’re on the list. We’ll be in touch.', 'ok');
-        entryFollowForm.reset();
-        try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e2) { /* ignore */ }
-        markArchiveOptinSubmitted();
-        if (entryFollowToggle) {
-          entryFollowToggle.hidden = true;
-          entryFollowToggle.setAttribute('aria-hidden', 'true');
-        }
-        setFollowPanelOpen(true);
-      }).catch(function () {
-        setFollowMsg('Couldn’t send — try again in a moment.', 'err');
-      }).then(function () {
-        if (entryFollowSubmit) entryFollowSubmit.disabled = false;
+    }
+    if (entryChoiceNo) {
+      entryChoiceNo.addEventListener('click', function () {
+        declineBackerMailing();
       });
-    });
-  }
-
-  function renderFollowSignupState(opts) {
-    opts = opts || {};
-    var followOn = isFollowSignupEnabled();
-    var guestOn = !!opts.guestEnabled;
-    if (!entryFollow) return followOn;
-    if (!followOn) {
-      entryFollow.hidden = true;
-      return false;
     }
-    entryFollow.hidden = false;
-    var alreadySignedUp = false;
-    try { alreadySignedUp = localStorage.getItem('intrepid_follow_signed_up') === '1'; } catch (e) { /* ignore */ }
-    if (entryFollowToggle) {
-      entryFollowToggle.hidden = alreadySignedUp;
-      entryFollowToggle.setAttribute('aria-hidden', alreadySignedUp ? 'true' : 'false');
-      if (!alreadySignedUp && entryFollowPanel && entryFollowPanel.hidden) {
-        entryFollowToggle.textContent = getFollowToggleLabel();
-      }
+    if (entryMailForm) {
+      entryMailForm.addEventListener('submit', submitBackerMailing);
     }
-    // When guest is locked, follow replaces the locked-button clutter.
-    if (!guestOn && entryGuestBtn) {
-      entryGuestBtn.hidden = true;
-      entryGuestBtn.setAttribute('aria-hidden', 'true');
+    if (entryMailSkip) {
+      entryMailSkip.addEventListener('click', function () {
+        continueBackerWithoutJoining();
+      });
     }
-    if (!guestOn && entryGuestNote) {
-      entryGuestNote.hidden = true;
+    if (publicWaitlistForm) {
+      publicWaitlistForm.addEventListener('submit', submitPublicWaitlist);
     }
-    if (!guestOn && entryGuestDivider) {
-      entryGuestDivider.hidden = true;
-      entryGuestDivider.setAttribute('aria-hidden', 'true');
-    }
-    return true;
   }
 
   function isGuestEntryEnabled() {
@@ -4384,13 +4365,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function renderGuestEntryState() {
-    if (!entryGuestBtn && !entryGuestNote) return;
     var entrySubtitle = document.getElementById('entry-subtitle');
-    var unlockWindow = getWandererUnlockWindow();
     var isGuestEnabled = isGuestEntryEnabled();
-    var hasValidUnlockTime = unlockWindow && unlockWindow.hasValidUnlockTime;
-    var isCountdownActive = !isGuestEnabled && hasValidUnlockTime && !unlockWindow.isTimeReached;
-    var followOn = isFollowSignupEnabled();
     if (isGuestEnabled) {
       stopGuestUnlockCountdown();
       if (entryGuestDivider) {
@@ -4416,51 +4392,23 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (entrySubtitle) {
         entrySubtitle.textContent = 'Enter your access word — or continue as guest below.';
       }
-      renderFollowSignupState({ guestEnabled: true });
       return;
     }
-    startGuestUnlockCountdownIfNeeded();
+    stopGuestUnlockCountdown();
     if (entryGuestDivider) {
-      entryGuestDivider.hidden = !!followOn;
-      entryGuestDivider.setAttribute('aria-hidden', followOn ? 'true' : 'false');
-    }
-    if (entryGuestDividerLabel && !followOn) {
-      entryGuestDividerLabel.textContent = isCountdownActive ? 'Or wait for guest access' : 'Guest access paused';
+      entryGuestDivider.hidden = true;
+      entryGuestDivider.setAttribute('aria-hidden', 'true');
     }
     if (entryGuestBtn) {
-      if (followOn) {
-        entryGuestBtn.hidden = true;
-        entryGuestBtn.setAttribute('aria-hidden', 'true');
-      } else {
-        entryGuestBtn.hidden = false;
-        entryGuestBtn.disabled = true;
-        entryGuestBtn.setAttribute('aria-hidden', 'false');
-        entryGuestBtn.setAttribute('aria-disabled', 'true');
-        entryGuestBtn.classList.add('is-locked');
-        entryGuestBtn.innerHTML = GUEST_BTN_LOCKED_HTML;
-      }
+      entryGuestBtn.hidden = true;
+      entryGuestBtn.setAttribute('aria-hidden', 'true');
     }
     if (entryGuestNote) {
-      if (followOn) {
-        entryGuestNote.hidden = true;
-      } else if (isCountdownActive) {
-        entryGuestNote.hidden = false;
-        entryGuestNote.classList.add('is-countdown');
-        entryGuestNote.textContent = 'Guest access opens in ' + formatDurationCompact(unlockWindow.remainingMs) + '.';
-      } else if (hasValidUnlockTime && unlockWindow.isTimeReached) {
-        entryGuestNote.hidden = false;
-        entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Guest access window reached, but guest preview is still paused.';
-      } else {
-        entryGuestNote.hidden = false;
-        entryGuestNote.classList.remove('is-countdown');
-        entryGuestNote.textContent = 'Guest preview is paused. Enter your access word to continue.';
-      }
+      entryGuestNote.hidden = true;
     }
     if (entrySubtitle) {
       entrySubtitle.textContent = 'Enter your backer access word.';
     }
-    renderFollowSignupState({ guestEnabled: false });
   }
 
   function renderHubPublicContentState() {
@@ -4496,7 +4444,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         ? "Paths into the Hollowlands — each crafted for a different part of the journey. Your access word opens Volume 1 and the dossier. The Cartographer's Atlas is reserved for Cartographer tier and above."
         : "Backer-first window — enter your access password to open the reader and dossier. The Cartographer's Atlas remains reserved for Cartographer tier and above.";
     }
-    renderHubOptinLink();
   }
 
   function formatEntryUnlockMessage(status) {
@@ -4524,7 +4471,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           entryAccessMsg.classList.remove('show');
           entryAccessMsg.classList.remove('is-error');
         }
-        maybeContinueAfterUnlock();
+        enterArchiveHome();
         return;
       }
       if (entryAccessMsg) {
@@ -6894,23 +6841,19 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
   function bootArchiveUi() {
     if (hasDirectArchiveIntent()) {
+      hidePublicEntrance();
       if (archiveEntry) archiveEntry.style.display = 'none';
       if (archiveHome) archiveHome.style.display = 'none';
       checkGate();
     } else if (shouldSkipArchiveEntry()) {
-      if (shouldOfferArchiveOptinOnBoot()) {
-        showArchiveEntry({ optin: true });
-      } else {
-        showArchiveHome();
-        renderHubPublicContentState();
-      }
+      showArchiveHome();
+      renderHubPublicContentState();
+    } else if (isBackerEntrance()) {
+      startBackerEntrance();
     } else {
-      showArchiveEntry();
-      renderGuestEntryState();
+      showPublicWaitlist();
     }
-    wireFollowToggle();
-    wireFollowSignup();
-    wireArchiveOptin();
+    wireArchiveEntrances();
 
     var initParams = new URLSearchParams(window.location.search);
     if (initParams.has('reader')) {

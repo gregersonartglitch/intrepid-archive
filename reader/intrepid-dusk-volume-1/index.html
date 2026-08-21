@@ -168,7 +168,7 @@
           !window.IntrepidArchiveAccess ||
           !window.IntrepidArchiveAccess.hasReaderBackerAccess()
         ) {
-          window.location.replace("/?entry=required");
+          window.location.replace("/backer/?entry=required");
           return;
         }
         document.documentElement.classList.add("archive-access-granted");
@@ -295,7 +295,7 @@
       if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
         window.IntrepidArchiveAccess.refreshSession().then(startReader);
       } else {
-        window.location.replace("/?entry=required");
+        window.location.replace("/backer/?entry=required");
       }
     })();
     </script>

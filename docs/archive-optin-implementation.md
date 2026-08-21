@@ -1,46 +1,70 @@
-# Archive post-unlock opt-in (MailerLite permission)
+# Archive entrances + MailerLite opt-in
 
-**Build:** 238  
-**Status:** AWAITING REVIEW — do not deploy until Jon + reviewer approve  
-**Kill:** `ENABLE_ARCHIVE_POST_UNLOCK_OPTIN = false` in `index.html`, `localStorage.setItem('intrepid_follow_signup_disabled','1')`, or `?optin=0`
+**Build:** 239  
+**Status:** AWAITING REVIEW — do not deploy  
+**PR:** continue #2 on `cursor/archive-optin-1ced`
 
-This is **not a second login**. After a valid access word the archive is already unlocked. The same card then asks whether they want occasional Intrepid Dusk email. Join is affirmative consent. Skip / Close / Escape go to the hub with **no** form POST.
+Two separate doors. Kickstarter messages should link to **`/backer/`**. The bare Archive URL is the public waitlist.
 
-## What we capture
+## A. Backer — `/backer/`
 
-Permission to contact by email, later imported into MailerLite.
+1. Required choice: “Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?”
+2. Supporting line: “Your choice does not affect access to your rewards.”
+3. **No thanks** → access-word screen immediately. No network request. Records `declined`.
+4. **Yes, keep me updated** → email field only (no nickname, no checkbox). **Join the email list** or **Continue without joining**.
+5. Join is consent. Continue without joining → password, records `declined`, posts nothing.
+6. Password screen primary button: **Enter the Archive** (Latin at rest). Eye toggle unchanged.
 
-| Path | `opt_in_source` | Extra fields |
-|------|-----------------|--------------|
-| Post-unlock newsletter card | `archive-post-unlock` | email + `marketing_opt_in=yes` + `opt_in_at` |
-| Guest “get notified” on the login card | `archive-entry-follow` | nickname + checkbox + email |
+## B. Public — `/`
 
-Filter Netlify form `hollowlands-follow` on `opt_in_source` when exporting.
+“The Archive will open to new readers later. Leave your email if you’d like to know when it does.”
 
-## UX
+- Email + **Join the waitlist**
+- **Already a backer? Enter the Archive** → `/backer/`
+- No password field on this screen
 
-1. Login card stays: eyebrow Intrepid Dusk Archive, title The Hollowlands, password + eye, gold **Unlock Archive** (Latin at rest, cuneiform on hover). Guest link: **No access word? Get notified when guest access opens**.
-2. Valid `scribe4` / `hollowlands9` grants access immediately, then swaps to the newsletter card in the same frame. Invalid code never opens the card and writes no opt-in state.
-3. Newsletter copy: heading **Stay connected with Intrepid Dusk**; email; consent line (no checkbox); **Join the email list**; **Continue without joining**; **Your Archive is already unlocked. This step is optional.** Close ✕ + Escape.
-4. Success: **Thanks — your signup was recorded. Your Archive is already open.** Failure: access stays; retry; Continue still available; submitted flag is **not** set.
-5. Returning backers who already have a session and have never been prompted see the card **once** on the next visit (so existing Kickstarter unlocks are not invisible to this list). After skip, a quiet **Get email updates** link stays on the hub until a successful join. `?map` / `?edit` / `?scan` / `?key` skip the card.
-6. Reset access does **not** clear opt-in flags (device already recorded consent or skip).
+Deep links without a session (`/reader/…`, `/dossier/`) bounce to `/backer/?entry=required`.
 
-## MailerLite (later, not in the browser)
+## MailerLite (source of truth)
 
-1. Netlify → Forms → `hollowlands-follow` → CSV export.
-2. Keep rows with `marketing_opt_in=yes`.
-3. Filter `opt_in_source=archive-post-unlock` into group **Intrepid Dusk — Archive Opt-ins**.
-4. Keep `archive-entry-follow` as the guest-notify list.
-5. **No MailerLite API keys in the page.**
+Official generated-form action URLs in `mailerlite-config.js`. **Not** Netlify Forms. **Not** an API key.
+
+| Entrance | Group | `fields[source]` |
+|----------|-------|------------------|
+| Backer Join | Intrepid Dusk Archive Opt-ins | `archive_backer_optin` |
+| Public waitlist | Intrepid Dusk Public Waitlist | `archive_public_waitlist` |
+
+Success copy **You’re on the list** only after MailerLite JSONP payload `success`. Empty action URLs fail closed:
+
+> We couldn’t add you right now. You can try again or continue to the Archive.
+
+Reward access is never blocked.
+
+### Blocker — Jon must create these before Join can succeed
+
+This agent must not change MailerLite account settings. Create:
+
+1. Subscriber groups (single opt-in for this version):
+   - **Intrepid Dusk Archive Opt-ins**
+   - **Intrepid Dusk Public Waitlist**
+2. One **Embedded form** assigned to each group.
+3. Optional subscriber field **source** (text).
+4. Forms → Embedded → Overview → HTML → copy each `action="https://assets.mailerlite.com/jsonp/{account}/forms/{id}/subscribe"` into `mailerlite-config.js` (`backerActionUrl` / `publicActionUrl`).
+
+Until those URLs are pasted, Join always shows the failure copy. No unverified local/Netlify fallback.
+
+## Local choice state
+
+Key `intrepid_archive_ml_choice_v1` = `joined` | `declined`. Absent = not asked.  
+Session fallback if localStorage is blocked. **Email is never stored.** Reset access does not clear this key.
+
+## Kill
+
+`ENABLE_ARCHIVE_MAILING = false` in `index.html`, or `localStorage.setItem('intrepid_archive_mailing_disabled','1')` — skips the choice and goes to the password on `/backer/`.
 
 ## Restore
 
-```bash
-cp index.html.bak-preoptin-2026-08-21 index.html
-```
-
-Backup is git-tracked and listed in `.netlifyignore` so it never publishes.
+`cp index.html.bak-preoptin-2026-08-21 index.html` still restores pre-238 entry HTML (Netlify-ignored). Prefer git revert of this branch for 239.
 
 ## QA
 
@@ -48,5 +72,3 @@ Backup is git-tracked and listed in `.netlifyignore` so it never publishes.
 node scripts/smoke-archive-optin.js
 node scripts/smoke-backer-login.js
 ```
-
-Manual: `docs/QA-SMOKE-CHECKLIST.md` → Archive opt-in (build 238).

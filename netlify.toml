@@ -48,6 +48,18 @@
     Vary = "Cookie"
 
 [[redirects]]
+  from = "/backer"
+  to = "/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/backer/"
+  to = "/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/access/login"
   to = "/.netlify/functions/access-login"
   status = 200

@@ -24,7 +24,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 302,
       headers: {
-        Location: "/?entry=required",
+        Location: "/backer/?entry=required",
         "Cache-Control": "no-store",
         "X-Intrepid-Build": String(buildMeta.INTREPID_BUILD),
       },

@@ -18,7 +18,7 @@ Stripe Checkout is the only path that already captures email (paid unlock). Mail
 
 ## Notify list (name + email when public)
 
-**Shipped (build 196):** Netlify Form `hollowlands-follow` on the archive entry screen.
+**Shipped (build 196, replaced 239):** Netlify Form `hollowlands-follow` was the first notify path. **Build 239** splits `/backer/` vs public waitlist and submits to **official MailerLite generated forms** (fail closed until Jon pastes action URLs). See [`docs/archive-optin-implementation.md`](archive-optin-implementation.md).
 
 - Fields: **preferred nickname** + **email** + **explicit marketing opt-in** (unchecked by default, required to submit)
 - Stored with submission: `marketing_opt_in=yes`, `opt_in_at` (ISO), `opt_in_source` (`archive-entry-follow` on guest notify; `archive-post-unlock` on the backer newsletter card)

@@ -328,11 +328,11 @@ body {
   if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
     window.IntrepidArchiveAccess.refreshSession().then(function () {
       if (!window.IntrepidArchiveAccess.hasReaderBackerAccess()) {
-        window.location.replace("/?entry=required");
+        window.location.replace("/backer/?entry=required");
       }
     });
   } else {
-    window.location.replace("/?entry=required");
+    window.location.replace("/backer/?entry=required");
   }
 })();
 </script>

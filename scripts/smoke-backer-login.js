@@ -131,10 +131,11 @@ function runMatrix(label) {
   assert(html.indexOf('id="gate-pw"') !== -1, 'cartographer gate password input present');
   assert(html.indexOf('id="gate-eye"') !== -1, 'cartographer gate eye toggle present');
   assert(/aria-label="Show access password"/.test(html), 'eye toggle aria-label present');
-  assert(html.indexOf('id="entry-access-btn"') !== -1, 'Unlock Archive button present');
-  assert(html.indexOf('id="entry-optin-step"') !== -1, 'post-unlock opt-in step present');
-  assert(html.indexOf('id="entry-optin-form"') !== -1, 'post-unlock opt-in form present');
-  assert(html.indexOf('opt_in_source" value="archive-post-unlock"') !== -1, 'post-unlock source archive-post-unlock');
+  assert(html.indexOf('id="entry-access-btn"') !== -1, 'Enter the Archive button present');
+  assert(html.indexOf('Enter the Archive') !== -1, 'Enter the Archive latin label present');
+  assert(html.indexOf('id="archive-public"') !== -1, 'public waitlist entrance present');
+  assert(html.indexOf('id="entry-choice-step"') !== -1, 'backer mailing choice step present');
+  assert(html.indexOf('href="/backer/"') !== -1, 'Already a backer links to /backer/');
   assert(html.indexOf("That code unlocks the reader only") !== -1, 'scribe4-on-map-gate error copy present');
   assert(html.indexOf('Enter your Cartographer access word at the archive entry') !== -1, 'CART- URL directs to archive entry (no client grant)');
 
