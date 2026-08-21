@@ -33,6 +33,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **234** | Chime diamond too far / not clickable | Sigil ~180px in deep fog; letter-gate only exact hitKey → nudge, pings never stop | Smoke: hut pin ~130px, `onSigil` + LETTER_SIGIL_CLICK_PAD | Hut search: diamond near pinhole; tap diamond → letter; dismiss → charts; pings stop |
 | **235** | Restore build-226 chime distances + finish | 232–234 made diamonds too far; diamond unclickable while letter open | Smoke: hut/tower pins match build-226; force-chart on tap | Hut/Tower: diamond beside stop; tap diamond or letter area finishes hunt |
 | **236** | Overlay stack + tiny dismiss | Letter sat on Cartographer’s Charge; tap-to-dismiss unreadable | Smoke: overlayCloseHtml + dismissTransientMapOverlays on letter | Letter/Charge: one window; ✕ Close top-right |
+| **237** | Map drag snap / jank | Pan felt like it hitch-snapped in the oval | Smoke: fog pane-follow on movestart; maxBoundsViscosity 0.35; setMaxBounds not panInside on zoomend | Drag map: fog stays glued; no post-drag jump |
 
 ## Rollback
 

@@ -864,6 +864,15 @@ assert(fogSrc.indexOf('function overlayCloseHtml') > -1 &&
 assert(fogSrc.indexOf('dismissTransientMapOverlays()') > -1 &&
   /showSabellaMessagePopup[\s\S]*?dismissTransientMapOverlays/.test(fogSrc),
   'Sabella letter clears Charge / teach / clue overlays before showing');
+assert(fogSrc.indexOf('function followFogCanvasToPane') > -1 &&
+  fogSrc.indexOf('fogFollowPan') > -1,
+  'fog canvas CSS-follows map pane during pan (no one-frame snap)');
+var indexSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+assert(indexSrc.indexOf('maxBoundsViscosity: 0.35') > -1,
+  'map edge viscosity is soft (not 1.0 hard snap)');
+assert(indexSrc.indexOf('map.options.maxBounds = bounds') > -1 &&
+  indexSrc.indexOf('map.setMaxBounds(') === -1,
+  'updateMapMaxBounds does not call setMaxBounds (avoids panInside snap)');
 assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
   /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
   'Indras Na + Vol2 locked modals both use Close button');

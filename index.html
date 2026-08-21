@@ -3260,7 +3260,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 236;
+window.INTREPID_BUILD = 237;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3336,7 +3336,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="fog.js?v=236"></script>
+<script src="fog.js?v=237"></script>
 <script>
 (function() {
   'use strict';
@@ -5226,23 +5226,27 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   function updateMapMaxBounds() {
     if (!map || !window.MAP_CONFIG) return;
     const cfg = window.MAP_CONFIG;
+    var bounds;
     if (window.EDIT_MODE) {
       var editPad = Math.max(cfg.height, cfg.width) * 0.03;
-      map.setMaxBounds(L.latLngBounds(
+      bounds = L.latLngBounds(
         [-editPad, -editPad],
         [cfg.height + editPad, cfg.width + editPad]
-      ));
-      return;
+      );
+    } else {
+      const vis = map.getBounds();
+      const visH = vis.getNorth() - vis.getSouth();
+      const visW = vis.getEast() - vis.getWest();
+      const padLat = Math.max(cfg.height * 0.05, visH * 0.52);
+      const padLng = Math.max(cfg.width * 0.25, visW * 0.52);
+      bounds = L.latLngBounds(
+        [-padLat, -padLng],
+        [cfg.height + padLat, cfg.width + padLng]
+      );
     }
-    const vis = map.getBounds();
-    const visH = vis.getNorth() - vis.getSouth();
-    const visW = vis.getEast() - vis.getWest();
-    const padLat = Math.max(cfg.height * 0.05, visH * 0.52);
-    const padLng = Math.max(cfg.width * 0.25, visW * 0.52);
-    map.setMaxBounds(L.latLngBounds(
-      [-padLat, -padLng],
-      [cfg.height + padLat, cfg.width + padLng]
-    ));
+    // Assign limits without Leaflet setMaxBounds() — that calls panInsideBounds
+    // and snaps the view after zoom/drag (build 237).
+    map.options.maxBounds = bounds;
   }
 
   function fitEditMapView(animate) {
@@ -5292,7 +5296,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       wheelPxPerZoomLevel: 80,
       zoomControl: false,
       attributionControl: false,
-      maxBoundsViscosity: 1.0,
+      maxBoundsViscosity: 0.35,
       bounceAtZoomLimits: false,
       preferCanvas: true
     });

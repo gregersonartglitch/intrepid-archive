@@ -187,7 +187,27 @@
   // Map perf runtime state (see ENABLE_MAP_PERF block above)
   var driftRAF = null;
   var lastDriftDrawMs = 0;
-  var fogDrawScheduled = false;
+  var fogFollowPan = false;
+  var fogFollowOrigin = null;
+
+  function getMapPanePos() {
+    if (!map || typeof L === 'undefined' || !L.DomUtil) return { x: 0, y: 0 };
+    var panes = map.getPanes && map.getPanes();
+    if (!panes || !panes.mapPane) return { x: 0, y: 0 };
+    return L.DomUtil.getPosition(panes.mapPane) || { x: 0, y: 0 };
+  }
+
+  function resetFogCanvasTransform() {
+    if (fogCanvas) fogCanvas.style.transform = '';
+    fogFollowOrigin = getMapPanePos();
+  }
+
+  function followFogCanvasToPane() {
+    if (!fogCanvas || !fogFollowOrigin) return;
+    var pos = getMapPanePos();
+    fogCanvas.style.transform =
+      'translate(' + (pos.x - fogFollowOrigin.x) + 'px,' + (pos.y - fogFollowOrigin.y) + 'px)';
+  }
   var mapPerfVisBound = false;
   var fogWaveClearProgress = 0; // also set by finale wave; declared early for needsFullRateDraw
   var guideTarget = null; // { lat, lng, endTime } — also assigned in GUIDE ME section
@@ -531,7 +551,7 @@
     // Create fog canvas on the map container (must not live in a 0×0 Leaflet pane)
     fogCanvas = document.createElement('canvas');
     fogCanvas.className = 'fog-canvas';
-    fogCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:450;pointer-events:none;';
+    fogCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:450;pointer-events:none;will-change:transform;';
     map.getContainer().appendChild(fogCanvas);
     fogCtx = fogCanvas.getContext('2d');
 
@@ -539,9 +559,30 @@
     setupClickHandler();
     setupSpotlightTracking();
 
-    // Redraw on map events; detach lantern when pan moves search zone off-screen
-    map.on('move', syncSpotlightAttachment);
-    map.on('move zoom viewreset resize zoomend', scheduleFogDraw);
+    // Redraw on map events; during pan, CSS-follow the map pane so fog does not
+    // lag a frame behind the image overlay (that lag reads as snapping).
+    map.on('movestart', function() {
+      if (map._animatingZoom) return;
+      fogFollowPan = true;
+      fogFollowOrigin = getMapPanePos();
+    });
+    map.on('move', function() {
+      syncSpotlightAttachment();
+      if (needsFullRateDraw() || map._animatingZoom) {
+        scheduleFogDraw();
+        return;
+      }
+      if (fogFollowPan) {
+        followFogCanvasToPane();
+        return;
+      }
+      scheduleFogDraw();
+    });
+    map.on('moveend zoomend viewreset resize', function() {
+      fogFollowPan = false;
+      resetFogCanvasTransform();
+      scheduleFogDraw();
+    });
     window.addEventListener('resize', scheduleFogDraw);
     draw();
 
@@ -2402,6 +2443,7 @@
      ════════════════════════════════════════════════ */
   function draw() {
     if (!map || !fogCtx) return;
+    resetFogCanvasTransform();
 
     var size = syncFogCanvasSize();
     var w = size.w;
