@@ -55,6 +55,25 @@ Dev server: `npx http-server . -p 8080 --cors -c-1` → `http://localhost:8080`
 | L3 | Complete Indras Na with full map | Vol2 congrats first; archive overlay **after** Close |
 | L4 | Zoom out, pan west toward Sinn / Kur | No hard wall at western edge |
 
+## Archive opt-in (build 238)
+
+```bash
+node scripts/smoke-archive-optin.js
+```
+
+| Step | Action | Expected |
+|------|--------|----------|
+| O1 | Incognito, enter `scribe4` | Archive unlocks; same card becomes newsletter; hub is not showing yet |
+| O2 | Incognito, enter `hollowlands9` | Same as O1 (atlas also granted) |
+| O3 | Wrong word | Error on login card; no newsletter; no opt-in flags |
+| O4 | Join with email (Netlify 200) | “Thanks — your signup was recorded…”; hub; no quiet link |
+| O5 | Join with network fail | Error; Archive stays; Continue still works; not marked submitted |
+| O6 | Continue / ✕ Close / Escape | Hub with **no** form POST; quiet **Get email updates** on hub |
+| O7 | Guest “get notified” | Still nickname + checkbox; source `archive-entry-follow` |
+| O8 | Phone-width (~375) and desktop | Card readable; Close tappable; Unlock Archive readable at rest |
+
+Kill: `ENABLE_ARCHIVE_POST_UNLOCK_OPTIN = false`, `intrepid_follow_signup_disabled=1`, or `?optin=0`.
+
 ## Agent rule
 
 After fog.js journey/gate/chime changes: run **both** commands above; browser-verify the manual table before claiming done.

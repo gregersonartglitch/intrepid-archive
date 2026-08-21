@@ -5,5 +5,8 @@ dossier/_thumb_sizes.txt
 # Local scratch — never publish
 .tmp/
 
+# Pre-opt-in backup of index.html (restore locally; never deploy)
+index.html.bak-preoptin-2026-08-21
+
 # Gated assets — served via /api/protected-media/ after login (see generate script)
 .netlifyignore-protected.generated

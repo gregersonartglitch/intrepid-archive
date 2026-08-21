@@ -75,6 +75,7 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-215` | Stable | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
 | `build-216` | Stable | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
 | `build-226` | **Current prod** | Tighter stage padding; Size slider resizes StPageFlip on ultrawide (`syncPageFlipDimensions`) |
+| `build-238` | Branch only — **AWAITING REVIEW** | Post-unlock MailerLite opt-in card. Do not deploy until approved. See [`docs/archive-optin-implementation.md`](docs/archive-optin-implementation.md). |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 
@@ -92,7 +93,7 @@ Console on live: `[Intrepid Map] build 59`
 
 ## Auth Tiers
 
-**Entry screen** (`#archive-entry`) is the first visit gate: backers enter an access word. **Guest entry is OFF** until mid–late August (`ENABLE_GUEST_ENTRY = false` in `archive-access.js`) — entry shows follow/updates signup instead of Continue as guest. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
+**Entry screen** (`#archive-entry`) is the first visit gate: backers enter an access word. After a valid word, the same card offers an optional MailerLite permission step (`archive-post-unlock`) — skip/Close/Escape never blocks the reward. **Guest entry is OFF** until mid–late August (`ENABLE_GUEST_ENTRY = false` in `archive-access.js`) — login still shows follow/updates signup (`archive-entry-follow`) instead of Continue as guest. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
 
 | Tier | Password | Access | localStorage keys |
 |------|----------|--------|-------------------|

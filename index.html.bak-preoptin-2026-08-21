@@ -282,127 +282,6 @@ input { font-family: inherit; }
   color: rgba(210, 120, 100, 0.92);
 }
 
-/* Post-unlock MailerLite permission card — reversible via ENABLE_ARCHIVE_POST_UNLOCK_OPTIN */
-.entry-login-step[hidden],
-.entry-optin-step[hidden] {
-  display: none !important;
-}
-.gate-card.is-optin {
-  padding-top: 56px;
-}
-.gate-card.is-optin .gate-corner-tr {
-  display: none;
-}
-.entry-optin-step {
-  width: 100%;
-  text-align: center;
-}
-.entry-optin-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 12;
-  min-width: 84px;
-  height: 34px;
-  padding: 0 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid rgba(198,141,85,0.55);
-  border-radius: 6px;
-  background: rgba(10,12,16,0.85);
-  color: rgba(212,168,67,0.9);
-  font-family: var(--font-heading);
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-.entry-optin-close:hover,
-.entry-optin-close:focus-visible {
-  background: rgba(198,141,85,0.22);
-  border-color: var(--amber);
-  color: #fff;
-  outline: none;
-}
-.entry-optin-body {
-  margin: 0 auto 18px;
-  max-width: 320px;
-  color: var(--bone-dim);
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-style: italic;
-  line-height: 1.55;
-}
-.entry-optin-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-}
-.entry-optin-fields .gate-input {
-  width: 100%;
-}
-.entry-optin-consent {
-  margin: 0;
-  color: rgba(191,178,153,0.62);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  letter-spacing: 0.8px;
-  line-height: 1.55;
-}
-.entry-optin-skip {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 8px 10px;
-  border: none;
-  background: transparent;
-  color: rgba(191,178,153,0.55);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 1.4px;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.entry-optin-skip:hover,
-.entry-optin-skip:focus-visible {
-  color: rgba(232, 214, 176, 0.88);
-  text-decoration: underline;
-  outline: none;
-}
-.entry-optin-note {
-  margin: 10px 0 0;
-  color: rgba(191,178,153,0.42);
-  font-family: var(--font-ui);
-  font-size: 10px;
-  letter-spacing: 1.1px;
-  line-height: 1.5;
-}
-.landing-optin-link {
-  display: inline-block;
-  margin-top: 18px;
-  padding: 6px 10px;
-  border: none;
-  background: transparent;
-  color: rgba(191,178,153,0.48);
-  font-family: var(--font-ui);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.4px;
-  cursor: pointer;
-}
-.landing-optin-link[hidden] {
-  display: none !important;
-}
-.landing-optin-link:hover,
-.landing-optin-link:focus-visible {
-  color: rgba(198,141,85,0.82);
-  outline: none;
-}
-
 /* ═══════════════════════════════════════════
    ARCHIVE HOME
    ═══════════════════════════════════════════ */
@@ -874,36 +753,6 @@ html.cuneiform-buttons-on .gate-btn.cuneiform-btn .cuneiform-btn__layer--cuneifo
   letter-spacing: 0.08em;
   /* SantakkuM wedges sit low in em box — slight lift on entry gate only */
   transform: translateY(-1px);
-}
-/* Entry Unlock Archive: Latin at rest, cuneiform on hover only */
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn .cuneiform-btn__layer--latin {
-  display: flex;
-  opacity: 1;
-  visibility: visible;
-  color: inherit;
-  -webkit-text-fill-color: currentColor;
-  z-index: 2;
-}
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn .cuneiform-btn__layer--cuneiform {
-  opacity: 0;
-  visibility: hidden;
-  z-index: 1;
-}
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn:hover .cuneiform-btn__layer--latin,
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn.cuneiform-btn--near .cuneiform-btn__layer--latin,
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn.is-revealed .cuneiform-btn__layer--latin {
-  display: none;
-  opacity: 0;
-  visibility: hidden;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn:hover .cuneiform-btn__layer--cuneiform,
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn.cuneiform-btn--near .cuneiform-btn__layer--cuneiform,
-html.cuneiform-buttons-on #entry-access-btn.cuneiform-btn.is-revealed .cuneiform-btn__layer--cuneiform {
-  opacity: 1;
-  visibility: visible;
-  z-index: 2;
 }
 html.cuneiform-buttons-on .landing-action.cuneiform-btn .cuneiform-btn__layer--cuneiform {
   font-size: clamp(20px, 3.2vw, 26px);
@@ -2299,9 +2148,6 @@ body.edit-mode .mk-dot-wrap > * {
   .gate-title { font-size: 26px; }
   .gate-subtitle { font-size: 14px; }
   .gate-card { padding: 36px 28px 32px; }
-  .gate-card.is-optin { padding: 48px 22px 28px; }
-  .entry-optin-close { top: 8px; right: 8px; min-width: 78px; height: 32px; }
-  .entry-optin-body { font-size: 13px; }
   .landing-card { padding: 42px 26px 34px; }
   .landing-actions { grid-template-columns: 1fr; }
   .landing-subtitle { font-size: 16px; }
@@ -3017,7 +2863,6 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <span class="gate-corner-tr">◆</span>
     <span class="gate-corner-bl">◆</span>
     <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
-    <div id="entry-login-step" class="entry-login-step">
     <div class="gate-eyebrow gate-fade" data-delay="0">Intrepid Dusk Archive</div>
     <div class="gate-title gate-fade" data-delay="200" id="entry-title">The Hollowlands</div>
     <div class="gate-rule gate-fade" data-delay="400"></div>
@@ -3041,7 +2886,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <p id="entry-guest-note" class="entry-guest-note gate-fade" data-delay="1300" hidden>Issue 1 and the dossier — no code needed.</p>
     <!-- Follow signup — Netlify Form "hollowlands-follow"; kill: ENABLE_FOLLOW_SIGNUP or LS intrepid_follow_signup_disabled -->
     <div id="entry-follow" class="entry-follow gate-fade" data-delay="1350" hidden>
-      <button type="button" id="entry-follow-toggle" class="entry-follow-toggle" aria-expanded="false" aria-controls="entry-follow-panel">No access word? Get notified when guest access opens</button>
+      <button type="button" id="entry-follow-toggle" class="entry-follow-toggle" aria-expanded="false" aria-controls="entry-follow-panel">No code? Get notified when guest access opens</button>
       <div id="entry-follow-panel" class="entry-follow-panel" hidden>
         <form id="entry-follow-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
           <input type="hidden" name="form-name" value="hollowlands-follow">
@@ -3062,34 +2907,6 @@ body.edit-mode #frame-rim-seal { display: none !important; }
         </form>
         <p id="entry-follow-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
       </div>
-    </div>
-    </div>
-    <!-- Post-unlock MailerLite permission. Kill: ENABLE_ARCHIVE_POST_UNLOCK_OPTIN=false, LS intrepid_follow_signup_disabled=1, or ?optin=0 -->
-    <div id="entry-optin-step" class="entry-optin-step" hidden>
-      <button type="button" id="entry-optin-close" class="entry-optin-close" aria-label="Close">
-        <span aria-hidden="true">✕</span> Close
-      </button>
-      <div class="gate-eyebrow">Intrepid Dusk Archive</div>
-      <div class="gate-title" id="entry-optin-title">Stay connected with Intrepid Dusk</div>
-      <div class="gate-rule"></div>
-      <p class="entry-optin-body" id="entry-optin-body">Occasional notes — archive openings, print updates, and the next chapter of the Hollowlands. We write infrequently, and this never blocks your reward.</p>
-      <form id="entry-optin-form" name="hollowlands-follow" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/" novalidate>
-        <input type="hidden" name="form-name" value="hollowlands-follow">
-        <input type="hidden" name="opt_in_at" value="">
-        <input type="hidden" name="opt_in_source" value="archive-post-unlock">
-        <input type="hidden" name="marketing_opt_in" value="yes">
-        <p class="entry-follow-honeypot" aria-hidden="true">
-          <label>Don’t fill this out: <input name="bot-field" tabindex="-1" autocomplete="off"></label>
-        </p>
-        <div class="entry-optin-fields">
-          <input id="entry-optin-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for Intrepid Dusk updates" required>
-          <p class="entry-optin-consent">Joining gives Intrepid Dusk permission to contact you by email. Unsubscribe anytime.</p>
-          <button id="entry-optin-join" class="gate-btn" type="submit">Join the email list</button>
-        </div>
-      </form>
-      <button type="button" id="entry-optin-skip" class="entry-optin-skip">Continue without joining</button>
-      <p class="entry-optin-note">Your Archive is already unlocked. This step is optional.</p>
-      <p id="entry-optin-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
     </div>
   </div>
 </div>
@@ -3130,7 +2947,6 @@ body.edit-mode #frame-rim-seal { display: none !important; }
         </span>
       </a>
     </div>
-    <button type="button" id="archive-hub-optin" class="landing-optin-link" hidden>Get email updates</button>
     <button type="button" id="archive-reset-access" class="landing-reset-access">Reset access</button>
   </div>
 </div>
@@ -3444,7 +3260,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 238;
+window.INTREPID_BUILD = 237;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3520,7 +3336,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="fog.js?v=238"></script>
+<script src="fog.js?v=237"></script>
 <script>
 (function() {
   'use strict';
@@ -3711,8 +3527,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
   }
 
-  function showArchiveEntry(opts) {
-    opts = opts || {};
+  function showArchiveEntry() {
     if (archiveHome) {
       archiveHome.style.display = 'none';
       archiveHome.classList.add('hidden');
@@ -3720,17 +3535,12 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (archiveEntry) {
       archiveEntry.classList.remove('hidden');
       archiveEntry.style.display = 'flex';
-      if (opts.optin) {
-        showArchiveOptinStep();
-      } else {
-        showArchiveLoginStep();
-        const els = archiveEntry.querySelectorAll('#entry-login-step .gate-fade');
-        els.forEach(function(el) {
-          el.classList.remove('vis');
-          const delay = parseInt(el.dataset.delay, 10) || 0;
-          setTimeout(function() { el.classList.add('vis'); }, 100 + delay);
-        });
-      }
+      const els = archiveEntry.querySelectorAll('.gate-fade');
+      els.forEach(function(el) {
+        el.classList.remove('vis');
+        const delay = parseInt(el.dataset.delay, 10) || 0;
+        setTimeout(function() { el.classList.add('vis'); }, 100 + delay);
+      });
     }
   }
 
@@ -3982,23 +3792,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const entryFollowForm = document.getElementById('entry-follow-form');
   const entryFollowMsg = document.getElementById('entry-follow-msg');
   const entryFollowSubmit = document.getElementById('entry-follow-submit');
-  const entryLoginStep = document.getElementById('entry-login-step');
-  const entryOptinStep = document.getElementById('entry-optin-step');
-  const entryOptinForm = document.getElementById('entry-optin-form');
-  const entryOptinEmail = document.getElementById('entry-optin-email');
-  const entryOptinJoin = document.getElementById('entry-optin-join');
-  const entryOptinSkip = document.getElementById('entry-optin-skip');
-  const entryOptinClose = document.getElementById('entry-optin-close');
-  const entryOptinMsg = document.getElementById('entry-optin-msg');
-  const archiveHubOptin = document.getElementById('archive-hub-optin');
-  const entryGateCard = archiveEntry && archiveEntry.querySelector('.gate-card');
   // Follow signup (Netlify Form hollowlands-follow). Kill: false, or LS intrepid_follow_signup_disabled=1
   var ENABLE_FOLLOW_SIGNUP = true;
-  // Post-unlock MailerLite permission card. Kill: false, LS intrepid_follow_signup_disabled=1, or ?optin=0
-  var ENABLE_ARCHIVE_POST_UNLOCK_OPTIN = true;
-  var LS_ARCHIVE_OPTIN_PROMPTED = 'intrepid_archive_optin_prompted_v1';
-  var LS_ARCHIVE_OPTIN_SUBMITTED = 'intrepid_archive_optin_submitted_v1';
-  var archiveOptinJoinTimer = null;
 
   function isFollowSignupEnabled() {
     if (!ENABLE_FOLLOW_SIGNUP) return false;
@@ -4006,202 +3801,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (localStorage.getItem('intrepid_follow_signup_disabled') === '1') return false;
     } catch (e) { /* ignore */ }
     return true;
-  }
-
-  function archiveOptinStoreGet(key) {
-    try {
-      var lsVal = localStorage.getItem(key);
-      if (lsVal != null) return lsVal;
-    } catch (e) { /* ignore */ }
-    try {
-      return sessionStorage.getItem(key);
-    } catch (e2) { /* ignore */ }
-    return null;
-  }
-
-  function archiveOptinStoreSet(key, val) {
-    try { localStorage.setItem(key, val); } catch (e) { /* ignore */ }
-    try { sessionStorage.setItem(key, val); } catch (e2) { /* ignore */ }
-  }
-
-  function isArchivePostUnlockOptinEnabled() {
-    if (!ENABLE_ARCHIVE_POST_UNLOCK_OPTIN) return false;
-    if (!isFollowSignupEnabled()) return false;
-    try {
-      if (new URLSearchParams(window.location.search).get('optin') === '0') return false;
-    } catch (e) { /* ignore */ }
-    return true;
-  }
-
-  function hasArchiveOptinSubmitted() {
-    if (archiveOptinStoreGet(LS_ARCHIVE_OPTIN_SUBMITTED) === '1') return true;
-    try {
-      if (localStorage.getItem('intrepid_follow_signed_up') === '1') return true;
-    } catch (e) { /* ignore */ }
-    return false;
-  }
-
-  function hasArchiveOptinPrompted() {
-    return archiveOptinStoreGet(LS_ARCHIVE_OPTIN_PROMPTED) === '1';
-  }
-
-  function markArchiveOptinPrompted() {
-    archiveOptinStoreSet(LS_ARCHIVE_OPTIN_PROMPTED, '1');
-  }
-
-  function markArchiveOptinSubmitted() {
-    archiveOptinStoreSet(LS_ARCHIVE_OPTIN_SUBMITTED, '1');
-    try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e) { /* ignore */ }
-  }
-
-  function isArchiveOptinStepVisible() {
-    return !!(entryOptinStep && !entryOptinStep.hidden);
-  }
-
-  function setOptinMsg(text, kind) {
-    if (!entryOptinMsg) return;
-    entryOptinMsg.textContent = text || '';
-    entryOptinMsg.classList.remove('is-ok', 'is-err');
-    if (kind === 'ok') entryOptinMsg.classList.add('is-ok');
-    if (kind === 'err') entryOptinMsg.classList.add('is-err');
-  }
-
-  function shouldOfferArchiveOptin() {
-    if (!isArchivePostUnlockOptinEnabled()) return false;
-    if (hasArchiveOptinSubmitted()) return false;
-    return true;
-  }
-
-  function shouldOfferArchiveOptinOnBoot() {
-    if (!shouldOfferArchiveOptin()) return false;
-    if (hasArchiveOptinPrompted()) return false;
-    if (hasDirectArchiveIntent()) return false;
-    return true;
-  }
-
-  function showArchiveLoginStep() {
-    if (archiveOptinJoinTimer) {
-      clearTimeout(archiveOptinJoinTimer);
-      archiveOptinJoinTimer = null;
-    }
-    if (entryLoginStep) entryLoginStep.hidden = false;
-    if (entryOptinStep) entryOptinStep.hidden = true;
-    if (entryGateCard) {
-      entryGateCard.classList.remove('is-optin');
-      entryGateCard.setAttribute('aria-labelledby', 'entry-title');
-    }
-  }
-
-  function showArchiveOptinStep() {
-    markArchiveOptinPrompted();
-    if (entryLoginStep) entryLoginStep.hidden = true;
-    if (entryOptinStep) entryOptinStep.hidden = false;
-    if (entryGateCard) {
-      entryGateCard.classList.add('is-optin');
-      entryGateCard.setAttribute('aria-labelledby', 'entry-optin-title');
-    }
-    setOptinMsg('', null);
-    if (entryOptinEmail) {
-      entryOptinEmail.value = '';
-      setTimeout(function() {
-        if (entryOptinEmail) entryOptinEmail.focus();
-      }, 50);
-    }
-  }
-
-  function skipArchiveOptin() {
-    enterArchiveHome();
-  }
-
-  function openArchiveOptinFromHub() {
-    showArchiveEntry({ optin: true });
-  }
-
-  function buildArchiveOptinPayload(email, botValue) {
-    return {
-      'form-name': 'hollowlands-follow',
-      'bot-field': botValue || '',
-      email: email,
-      marketing_opt_in: 'yes',
-      opt_in_at: new Date().toISOString(),
-      opt_in_source: 'archive-post-unlock'
-    };
-  }
-
-  function submitArchiveOptin(ev) {
-    if (ev) ev.preventDefault();
-    if (!entryOptinForm || !shouldOfferArchiveOptin()) {
-      skipArchiveOptin();
-      return;
-    }
-    var email = entryOptinEmail ? String(entryOptinEmail.value || '').trim() : '';
-    var botEl = entryOptinForm.querySelector('[name="bot-field"]');
-    if (!email) {
-      setOptinMsg('Enter an email to join, or continue without joining.', 'err');
-      if (entryOptinEmail) entryOptinEmail.focus();
-      return;
-    }
-    if (entryOptinJoin) entryOptinJoin.disabled = true;
-    setOptinMsg('Sending…', null);
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: encodeFormBody(buildArchiveOptinPayload(email, botEl ? botEl.value : ''))
-    }).then(function (res) {
-      if (!res.ok) throw new Error('submit-failed');
-      markArchiveOptinSubmitted();
-      setOptinMsg('Thanks — your signup was recorded. Your Archive is already open.', 'ok');
-      archiveOptinJoinTimer = setTimeout(function () {
-        archiveOptinJoinTimer = null;
-        enterArchiveHome();
-      }, 1400);
-    }).catch(function () {
-      setOptinMsg('Couldn’t send — try again, or continue without joining. Your Archive stays open.', 'err');
-    }).then(function () {
-      if (entryOptinJoin) entryOptinJoin.disabled = false;
-    });
-  }
-
-  function maybeContinueAfterUnlock() {
-    if (shouldOfferArchiveOptin()) {
-      showArchiveOptinStep();
-      return;
-    }
-    enterArchiveHome();
-  }
-
-  function renderHubOptinLink() {
-    if (!archiveHubOptin) return;
-    var showLink = isArchivePostUnlockOptinEnabled() && !hasArchiveOptinSubmitted();
-    archiveHubOptin.hidden = !showLink;
-    archiveHubOptin.setAttribute('aria-hidden', showLink ? 'false' : 'true');
-  }
-
-  function wireArchiveOptin() {
-    if (entryOptinForm) {
-      entryOptinForm.addEventListener('submit', submitArchiveOptin);
-    }
-    if (entryOptinSkip) {
-      entryOptinSkip.addEventListener('click', function () {
-        skipArchiveOptin();
-      });
-    }
-    if (entryOptinClose) {
-      entryOptinClose.addEventListener('click', function () {
-        skipArchiveOptin();
-      });
-    }
-    if (archiveHubOptin) {
-      archiveHubOptin.addEventListener('click', function () {
-        openArchiveOptinFromHub();
-      });
-    }
-    document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
-      if (!isArchiveOptinStepVisible()) return;
-      e.preventDefault();
-      skipArchiveOptin();
-    });
   }
 
   function setFollowMsg(text, kind) {
@@ -4232,7 +3831,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   function getFollowToggleLabel() {
     var guestOn = isGuestEntryEnabled();
     if (guestOn) return 'Get email updates';
-    return 'No access word? Get notified when guest access opens';
+    return 'No code? Get notified when guest access opens';
   }
 
   function wireFollowToggle() {
@@ -4287,7 +3886,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         setFollowMsg('You’re on the list. We’ll be in touch.', 'ok');
         entryFollowForm.reset();
         try { localStorage.setItem('intrepid_follow_signed_up', '1'); } catch (e2) { /* ignore */ }
-        markArchiveOptinSubmitted();
         if (entryFollowToggle) {
           entryFollowToggle.hidden = true;
           entryFollowToggle.setAttribute('aria-hidden', 'true');
@@ -4496,7 +4094,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         ? "Paths into the Hollowlands — each crafted for a different part of the journey. Your access word opens Volume 1 and the dossier. The Cartographer's Atlas is reserved for Cartographer tier and above."
         : "Backer-first window — enter your access password to open the reader and dossier. The Cartographer's Atlas remains reserved for Cartographer tier and above.";
     }
-    renderHubOptinLink();
   }
 
   function formatEntryUnlockMessage(status) {
@@ -4524,7 +4121,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
           entryAccessMsg.classList.remove('show');
           entryAccessMsg.classList.remove('is-error');
         }
-        maybeContinueAfterUnlock();
+        enterArchiveHome();
         return;
       }
       if (entryAccessMsg) {
@@ -6898,19 +6495,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       if (archiveHome) archiveHome.style.display = 'none';
       checkGate();
     } else if (shouldSkipArchiveEntry()) {
-      if (shouldOfferArchiveOptinOnBoot()) {
-        showArchiveEntry({ optin: true });
-      } else {
-        showArchiveHome();
-        renderHubPublicContentState();
-      }
+      showArchiveHome();
+      renderHubPublicContentState();
     } else {
       showArchiveEntry();
       renderGuestEntryState();
     }
     wireFollowToggle();
     wireFollowSignup();
-    wireArchiveOptin();
 
     var initParams = new URLSearchParams(window.location.search);
     if (initParams.has('reader')) {
