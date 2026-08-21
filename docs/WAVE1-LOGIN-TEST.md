@@ -1,0 +1,57 @@
+# Wave 1 login test matrix
+
+Run **before** Kickstarter bulk send. Automated first, then incognito browser on **prod**.
+
+```bash
+node --check fog.js
+node --check archive-access.js
+node --check scripts/smoke-backer-login.js
+node scripts/smoke-backer-login.js
+# optional local server:
+# npx http-server . -p 8080 --cors -c-1
+# AUDIT_BASE=http://127.0.0.1:8080 node scripts/smoke-backer-login.js
+```
+
+The smoke script executes the full code matrix **twice**, then hits live prod HTTP.
+
+## Expected access (live code)
+
+| Who | Word | Hub | Reader + PDF | Map |
+|-----|------|-----|--------------|-----|
+| Digital / Early Bird / Explorer | `scribe4` | Yes | Yes | **No** (second gate; “reader only” error) |
+| Cartographer+ | `hollowlands9` | Yes | Yes | Yes (no second code) |
+| No word / guest | — | Entry screen | Deep links bounce home | Gate |
+
+Guest entry is **OFF**. In-reader Issue 2 overlay is **ON** (`ENABLE_READER_GATE = true`) as backup if archive-access fails to load. Archive entry remains the primary gate; Issue 2 modal also appears if someone reaches the reader without backer keys.
+
+## Browser matrix (incognito each row; use `?reset` when returning to home)
+
+| # | Action | Expected |
+|---|--------|----------|
+| B1 | Open archive URL, no code | Entry screen; Unlock Archive; no Continue as guest |
+| B2 | Wrong word | Error; stay on entry |
+| B3 | Eye icon | Password visible; aria-label flips to Hide; click again hides |
+| B4 | `scribe4` (try `SCRIBE4`) | Hub. Reader + dossier open. Atlas still badged Cartographer |
+| B5 | After B4, Cartographer’s Atlas | Map **gate**. `scribe4` here → “unlocks the reader only.” Map stays closed |
+| B6 | Fresh incognito, `hollowlands9` | Hub. Atlas opens without a second code. Reader + PDF work |
+| B7 | Reload after B6 | Still unlocked (no re-prompt) |
+| B8 | Paste `/reader/intrepid-dusk-volume-1/` with no code | Redirected to archive entry |
+| B9 | Paste `/dossier/` with no code | Redirected to archive entry |
+| B10 | Bare URL only (no word) | Cannot reach map. Do **not** test or send `?key=CART-` in Wave 1 mail |
+
+## Known (do not block Wave 1 send)
+
+Page images and PDFs are statically fetchable if someone knows the path. Shared backer words are honor-system among backers. Public checkout is **not** this send. See Vol1 gate audit.
+
+**Prod vs local:** Live site was **build 217** at test time; this repo is **build 227**. Codes and guest-off match. Wave 1 mail hits prod 217, which passed the browser matrix.
+
+## Results (2026-08-18)
+
+Automated: `node scripts/smoke-backer-login.js` — PASS (matrix ×2, local HTTP + prod HTTP).
+
+Browser (prod incognito-style, two passes): B1–B9 PASS. `SCRIBE4` accepted. `scribe4` rejected on map gate with reader-only copy. `hollowlands9` opens atlas without a second word. Deep links `/reader/…` and `/dossier/` bounce home without a code. PDF Download menu works after `scribe4`. Bare URL does not open the map.
+
+
+## After send
+
+Track in Kickstarter: digital reward sent. Do not start public marketing because copy exists.

@@ -6,7 +6,8 @@
 <title>Character Dossier — Intrepid Dusk</title>
 <meta name="description" content="Faces of the Hollowlands. Explore the characters of Intrepid Dusk.">
 <meta name="robots" content="noindex,nofollow">
-<link rel="preload" as="image" href="/dossier/portraits/character_dossier_Elena.webp?v=5" fetchpriority="high">
+<style>html:not(.archive-access-granted) body { visibility: hidden; }</style>
+<script>document.documentElement.classList.add("archive-access-granted");</script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 /* ═══════════════════════════════════════════
@@ -321,11 +322,18 @@ body {
 </style>
 </head>
 <body>
-<script src="/archive-access.js?v=115"></script>
+<script src="/archive-access.js?v=230"></script>
 <script>
 (function () {
-  if (!window.IntrepidArchiveAccess || !window.IntrepidArchiveAccess.guardPublicContentRoute) return;
-  window.IntrepidArchiveAccess.guardPublicContentRoute("/");
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+    window.IntrepidArchiveAccess.refreshSession().then(function () {
+      if (!window.IntrepidArchiveAccess.hasReaderBackerAccess()) {
+        window.location.replace("/?entry=required");
+      }
+    });
+  } else {
+    window.location.replace("/?entry=required");
+  }
 })();
 </script>
 
@@ -366,12 +374,13 @@ function assetBaseName(imgPath) {
 }
 
 function thumbSrc(imgPath) {
-  return DOSSIER_BASE + 'thumbs/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
+  var base = assetBaseName(imgPath);
+  return "/api/protected-media/dossier-thumbs/" + base;
 }
 
-/* Medium WebP for detail (~640px). Absolute path avoids /dossier vs /dossier/ breakage. */
 function portraitSrc(imgPath) {
-  return DOSSIER_BASE + 'portraits/' + assetBaseName(imgPath) + '.webp?v=' + CACHE_V;
+  var base = assetBaseName(imgPath);
+  return "/api/protected-media/dossier-portraits/" + base;
 }
 
 function bindPortraitLoad(img, container) {
@@ -439,7 +448,7 @@ var CHARACTERS = [
     name: 'Orion',
     role: 'Captain of the Watch \u00b7 Titan Warrior',
     img: 'character%20dossier_Orion.png',
-    desc: 'A Titan \u2014 one of the superhuman offspring of the Nine \u2014 though his parentage remains unknown. His mother was human. Not all Titans are giants, but Orion stands seven feet tall with the strength to lift a man with one hand. He is a former imperial veteran who broke with the Dominion and now leads the Watch, a band of fighters who protect borderland villages.',
+    desc: 'A Titan \u2014 superhuman strength from blood in the line of the Nine, though not their direct offspring; his parentage remains unknown. His mother was human. Not all Titans are giants, but Orion stands seven feet tall with the strength to lift a man with one hand. He is a former imperial veteran who broke with the Dominion and now leads the Watch, a band of fighters who protect borderland villages.',
     lore: 'He is heroic in bearing \u2014 a King Arthur figure in a world that has forgotten what kings are for. Orion is a man caught between his noble instincts and the darker heritage of his bloodline. What that blood carries, and what it may one day demand, is something Orion himself does not yet know.'
   },
   {
@@ -453,7 +462,7 @@ var CHARACTERS = [
     name: 'Atrus Nul',
     role: 'Son of War \u00b7 Emperor of the Dominion',
     img: 'character%20dossier_AtrusNul.png',
-    desc: 'The greatest emperor the Hollowlands have ever known \u2014 and the most terrifying. A Titan, son of Erra, the God of War. He rules through the Rod of Dusk, a weapon forged by the Nine that grants vast power. He has been patient. He has been planning for a very long time.',
+    desc: 'The greatest emperor the Hollowlands have ever known \u2014 and the most terrifying. A Titan in the bloodline of the Nine \u2014 and of Erra, God of War \u2014 though not necessarily by direct descent. He rules through the Rod of Dusk, a weapon forged by the Nine that grants vast power. He has been patient. He has been planning for a very long time.',
     lore: 'His reach is wider than the Hollowlands. He has been building toward something for a very long time, and the pieces are nearly in place. He knows Sabella. Now they are at war.'
   },
   {
@@ -467,7 +476,7 @@ var CHARACTERS = [
     name: 'Asim',
     role: 'Winged Lion of the Tetrad',
     img: 'character%20dossier_Asim.png',
-    desc: 'A Lamassu \u2014 a winged lion from the sacred mountains near Dilmun, the eden-like paradise. Sacred creatures like Asim are only available to those the Tetrad chooses, and Asim has chosen Elena.',
+    desc: 'A Lamassu \u2014 a winged lion from the sacred mountains near Dilmun, a paradise place by the Pillars of the Earth and the Dawn Mountains. Sacred creatures like Asim are only available to those the Tetrad chooses, and Asim has chosen Elena.',
     lore: 'He is more than an animal. He is intelligent, loyal, and capable of independent action. He fights with ferocity and responds to Elena\'s emotional state with an almost human sensitivity. Asim has served before. Who he left, and why, is something he keeps to himself.'
   },
   {
