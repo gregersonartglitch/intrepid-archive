@@ -24,14 +24,10 @@
   // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
   // orb so the player can move the lantern toward a distinct hot spot — never stack
   // the diamond on the glow they just clicked.
-  // Letter-stop screen pins must keep starting proximity at the beacon
-  // BELOW the Hot band (0.65 @ maxDist 300 → need ≥ ~120px). Target ~130px —
-  // close enough to the pinhole that the diamond feels tied to the stop, not lost
-  // in deep fog (build 234; 232's ~180px felt outside the unlocked radius).
-  var KEY_OFFSET_MIN = 100;
-  var KEY_OFFSET_MAX = 140;
-  var CHIME_LANTERN_MOVE_PX = 28; // px — Hot letter requires lantern moved from enter pos
-  var LETTER_SIGIL_CLICK_PAD = 36; // px — forgiveness around the hot diamond
+  // Restored to build-226 distances (build 235) — 232–234 pins were too far into fog.
+  var KEY_OFFSET_MIN = 70;
+  var KEY_OFFSET_MAX = 110;
+  var CHIME_LANTERN_MOVE_PX = 28; // px — proximity Hot waits for a short lantern move
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
   var CHIME_ESCAPE_MS = 8000;     // safety net only (letter stops start boosted)
@@ -3191,26 +3187,25 @@
   // Place the hot/cold key away from the beacon / interaction point so the diamond
   // never stacks on the golden/amber orb the player just clicked. Shared for all
   // chime searches (journey letter stops, cartographer sites, letter recovery).
+  // Distances restored from tag build-226 (build 235).
   function placeSearchKeyOffset(loc) {
     var ll = getInteractionLatLng(loc);
     // Fixed screen pins for letter stops — random 360° offsets land on neighbor
     // amber stars (Ashal @ monastery, Maxim @ tower, hut cluster) and feel broken.
-    // Distances ~130px so lantern at beacon starts Cool/Warm (not Hot), while the
-    // diamond stays near the pinhole edge (not deep fog outside the unlocked radius).
     if (loc && map && SABELLA_MESSAGES[loc.id]) {
       var peakPt = map.latLngToContainerPoint(ll);
       var pinPt;
       if (loc.id === 'tower-nine') {
         // Beside the peak — crown storm bolts made hunt-and-peck feel broken
-        pinPt = L.point(peakPt.x + 85, peakPt.y - 100);
+        pinPt = L.point(peakPt.x + 42, peakPt.y - 40);
       } else if (loc.id === 'monastery-wind') {
-        pinPt = L.point(peakPt.x + 100, peakPt.y + 85); // away from Ashal (up-left)
+        pinPt = L.point(peakPt.x + 58, peakPt.y + 52); // away from Ashal (up-left)
       } else if (loc.id === 'sabellas-hut') {
-        pinPt = L.point(peakPt.x + 90, peakPt.y - 95);
+        pinPt = L.point(peakPt.x + 48, peakPt.y - 56);
       } else if (loc.id === 'sinn') {
-        pinPt = L.point(peakPt.x - 95, peakPt.y + 90);
+        pinPt = L.point(peakPt.x - 52, peakPt.y + 48);
       } else {
-        pinPt = L.point(peakPt.x + 95, peakPt.y + 95);
+        pinPt = L.point(peakPt.x + 50, peakPt.y + 50);
       }
       var pinLl = map.containerPointToLatLng(pinPt);
       return { keyLat: pinLl.lat, keyLng: pinLl.lng };
@@ -3308,8 +3303,8 @@
   }
 
   // Finish chime search on key diamond, beacon, or the zone between them.
-  // Letter gate: Hot (lantern) or diamond tap opens parchment; chart on dismiss.
-  // Beacon taps before Hot only nudge — do not skip the hunt (build 232).
+  // Restored build-226 finish contract (build 235): one tap on diamond/beacon/zone
+  // opens letter if needed and charts — no soft-lock where diamond only nudges.
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
     var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 16 : 0;
@@ -3331,32 +3326,24 @@
       }
     }
 
-    // Letter gate: require Hot hunt (or sigil-side tap) before charting.
-    if (isLetterGateBlockingChart(searchMode.loc)) {
-      if (!searchMode.sabellaLetterFired) {
-        // Accept the glowing diamond and a pad around it — not only an exact
-        // hitKey pixel. Clicks nearer the beacon than the sigil still nudge.
-        var onSigil = hit.hitKey ||
-          (hit.keyDist < hit.beaconDist &&
-            hit.keyDist < getKeyClickRadiusPx() + LETTER_SIGIL_CLICK_PAD);
-        if (onSigil) {
-          searchMode.lanternMoved = true;
-          maybeShowSabellaLetterOnChime(1);
-          return true;
-        }
-        nudgeLetterGateFirst();
-        return true;
-      }
-      if (!searchMode.letterGateCleared) {
-        // Letter is open — dismiss is the GO; map taps only remind.
-        nudgeLetterGateFirst();
-        return true;
-      }
-    }
-
     // Soft path (gate off): KEY/beacon grants parchment then charts.
     ensureSabellaLetterBeforeChart(searchMode.loc);
 
+    if (isLetterGateBlockingChart(searchMode.loc)) {
+      // Force parchment if Hot never fired, then chart on this same tap (no 2nd click / fade wait).
+      if (!searchMode.sabellaLetterFired) {
+        searchMode.lanternMoved = true;
+        maybeShowSabellaLetterOnChime(1);
+      }
+      sabellaMessageOnDismiss = null;
+      searchMode.letterGateCleared = true;
+      if (searchMode.letterRecovery) {
+        finishLetterRecoverySearch(searchMode.loc);
+      } else {
+        completeDiscovery(searchMode.loc);
+      }
+      return true;
+    }
     if (searchMode.letterRecovery) {
       finishLetterRecoverySearch(searchMode.loc);
     } else {
