@@ -2544,7 +2544,38 @@ body.edit-mode #frame-rim-seal { display: none !important; }
   color: #fff;
   box-shadow: 0 0 14px rgba(212,168,67,0.25), 0 2px 10px rgba(0,0,0,0.5);
 }
-/* Locked center modals (Indras Na sealed / Vol2 gate) — primary dismiss */
+/* Overlay Close — upper-right on letters, charge, guide, chime toasts (build 236) */
+.overlay-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 11px;
+  font-family: var(--font-heading);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(212,168,67,0.9);
+  background: rgba(10,12,16,0.85);
+  border: 1px solid rgba(198,141,85,0.6);
+  cursor: pointer;
+  min-width: 84px;
+  height: 34px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 6px;
+  z-index: 11;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+.overlay-close:hover,
+.overlay-close:focus-visible {
+  background: rgba(198,141,85,0.22);
+  border-color: var(--amber);
+  color: #fff;
+  outline: none;
+}
 .locked-msg-close {
   display: inline-flex;
   align-items: center;
@@ -3229,7 +3260,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 235;
+window.INTREPID_BUILD = 236;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3305,7 +3336,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="fog.js?v=235"></script>
+<script src="fog.js?v=236"></script>
 <script>
 (function() {
   'use strict';

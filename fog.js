@@ -591,7 +591,7 @@
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
       '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #chime-search-teach, #chime-warmth-hud, #guide-hint-toast, ' +
-      '#tutorial-canvas-tip, #letter-gate-nudge, ' +
+      '#tutorial-canvas-tip, #letter-gate-nudge, .overlay-close, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -1211,6 +1211,7 @@
   function showPostTutorialHint(force) {
     if (!force && !shouldShowPostTutorialHint()) return;
     if (document.getElementById('post-tutorial-hint')) return;
+    if (document.getElementById('sabella-message-popup')) return;
 
     if (!document.getElementById('tut-toast-style')) {
       var s = document.createElement('style');
@@ -1225,12 +1226,13 @@
       'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
       'background:rgba(8,10,14,0.97);' +
       'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
-      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'padding:36px 36px 22px;text-align:center;max-width:520px;width:90%;' +
       'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,141,85,0.12);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:12px;font-family:Cinzel,serif;">Cartographer\u2019s Charge</div>' +
       '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:14px;">' +
@@ -1242,10 +1244,9 @@
       '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:12px;">' +
         'On amber stars the mark hides in the fog \u2014 your lantern grows warmer as you near it. Click a second time to chart it.</div>' +
       '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:10px;">' +
-        'Sabella left letters along Elena\u2019s road (hut, monastery, tower, Sinn). When the lantern is hottest, the parchment appears \u2014 you will need them before Indras Na.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;' +
-        'font-family:EB Garamond,serif;">tap to dismiss</div>';
+        'Sabella left letters along Elena\u2019s road (hut, monastery, tower, Sinn). When the lantern is hottest, the parchment appears \u2014 you will need them before Indras Na.</div>';
     toast.addEventListener('click', function() { dismissPostTutorialHint(true); });
+    wireOverlayClose(toast, function() { dismissPostTutorialHint(true); });
     document.body.appendChild(toast);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
@@ -1767,6 +1768,35 @@
   function lockedMsgCloseHtml() {
     return '<button type="button" class="locked-msg-close" aria-label="Close">' +
       '\u2715 Close</button>';
+  }
+
+  function overlayCloseHtml() {
+    return '<button type="button" class="overlay-close" aria-label="Close">' +
+      '\u2715 Close</button>';
+  }
+
+  function wireOverlayClose(el, dismissFn) {
+    if (!el || !dismissFn) return;
+    var btn = el.querySelector('.overlay-close');
+    if (!btn) return;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      dismissFn();
+    });
+  }
+
+  // One overlay at a time — letter must not sit on Charge / teach / clue toasts.
+  function dismissTransientMapOverlays() {
+    dismissPostTutorialHint(false);
+    removePersistentToast();
+    dismissChimeSearchTeachTip();
+    dismissSabellaCluePopup(true);
+    var extra = ['chime-escape-hint', 'guide-hint-toast', 'territory-unlock-toast', 'letter-gate-nudge'];
+    for (var i = 0; i < extra.length; i++) {
+      var el = document.getElementById(extra[i]);
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
   }
 
   function wireLockedMsgDismiss(el, autoMs, onDismiss) {
@@ -3128,17 +3158,17 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
       'background:rgba(10,12,16,0.95);' +
       'border:1px solid rgba(212,168,67,0.5);border-left:4px solid rgba(212,168,67,0.9);' +
-      'border-radius:0 10px 10px 0;padding:18px 22px;width:220px;' +
+      'border-radius:0 10px 10px 0;padding:32px 22px 18px;width:220px;' +
       'font-family:"Cinzel",serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.6s ease;' +
       'box-shadow:0 8px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,168,67,0.1);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Territory Unlocked</div>' +
       '<div style="font-size:11px;color:#8a7d6b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Congratulations</div>' +
       '<div style="font-size:18px;font-weight:600;letter-spacing:1px;color:#efe7d2;margin-bottom:6px;">✦ ' + loc.name + '</div>' +
       (loc.sub ? '<div style="font-size:11px;color:#9a8f7e;font-family:EB Garamond,serif;font-style:italic;margin-bottom:12px;">' + loc.sub + '</div>' : '<div style="margin-bottom:12px;"></div>') +
-      '<div style="font-size:10px;color:#c68d55;letter-spacing:1px;">This territory is now revealed.<br>Discover its cities &amp; sites.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:10px;color:#c68d55;letter-spacing:1px;">This territory is now revealed.<br>Discover its cities &amp; sites.</div>';
     document.body.appendChild(toast);
 
     function dismissUnlock() {
@@ -3146,6 +3176,7 @@
       setTimeout(function() { toast.remove(); }, 600);
     }
     toast.addEventListener('click', dismissUnlock);
+    wireOverlayClose(toast, dismissUnlock);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });
@@ -3436,6 +3467,7 @@
   }
 
   function showChimeSearchTeachTip(loc) {
+    if (document.getElementById('sabella-message-popup')) return;
     dismissChimeSearchTeachTip();
     var firstTime = true;
     try { firstTime = localStorage.getItem(CHIME_TEACH_SEEN_LS) !== '1'; } catch (e) {}
@@ -3446,7 +3478,7 @@
     tip.style.cssText =
       'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:940;cursor:pointer;' +
       'background:rgba(8,10,14,0.94);border:1px solid rgba(212,168,67,0.5);' +
-      'border-radius:12px;padding:14px 22px;max-width:440px;width:90%;text-align:center;' +
+      'border-radius:12px;padding:36px 22px 14px;max-width:440px;width:90%;text-align:center;' +
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 8px 36px rgba(0,0,0,0.65),0 0 24px rgba(212,168,67,0.1);' +
       'opacity:0;transition:opacity 0.45s ease;';
@@ -3466,6 +3498,7 @@
         : 'Move your lantern closer until it warms, then click again to chart the mark.';
     }
     tip.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:8px;font-family:Cinzel,serif;">' +
         (letterRecovery || letterGate || hasLetter ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
@@ -3473,9 +3506,12 @@
       (loc && loc.name
         ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">' +
           (letterRecovery ? 'At ' : ((letterGate || hasLetter) ? 'Tap diamond \u00b7 ' : 'Charting ')) + loc.name + '</div>'
-        : '') +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+        : '');
     tip.addEventListener('click', function() {
+      try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e2) {}
+      dismissChimeSearchTeachTip();
+    });
+    wireOverlayClose(tip, function() {
       try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e2) {}
       dismissChimeSearchTeachTip();
     });
@@ -3576,15 +3612,19 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
       'background:rgba(10,12,16,0.95);border:1px solid rgba(212,168,67,0.45);' +
       'border-left:4px solid rgba(212,168,67,0.9);border-radius:0 10px 10px 0;' +
-      'padding:16px 20px;width:240px;font-family:Cinzel,serif;color:#efe7d2;' +
+      'padding:32px 20px 16px;width:240px;font-family:Cinzel,serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.5s ease;' +
       'box-shadow:0 8px 40px rgba(0,0,0,0.7);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Still searching?</div>' +
-      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. As it glows warmer you are closer \u2014 look for the glowing sigil, then click again to chart it.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. As it glows warmer you are closer \u2014 look for the glowing sigil, then click again to chart it.</div>';
     document.body.appendChild(toast);
     toast.addEventListener('click', function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    });
+    wireOverlayClose(toast, function() {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 500);
     });
@@ -3669,22 +3709,23 @@
       'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
       'background:rgba(8,10,14,0.97);' +
       'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
-      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'padding:36px 36px 22px;text-align:center;max-width:520px;width:90%;' +
       'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.12);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     popup.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:12px;font-family:Cinzel,serif;">Secrets \u00b7 ' + band.eyebrow + '</div>' +
       '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:12px;font-family:EB Garamond,serif;">' +
         '\u201c' + payload.text + '\u201d</div>' +
-      '<div style="font-size:12px;color:#9a8f7e;font-style:italic;margin-bottom:8px;">\u2014 ' + payload.speaker + '</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:12px;color:#9a8f7e;font-style:italic;margin-bottom:8px;">\u2014 ' + payload.speaker + '</div>';
     popup.addEventListener('click', function(e) {
       e.stopPropagation();
       dismissSabellaCluePopup(true);
     });
+    wireOverlayClose(popup, function() { dismissSabellaCluePopup(true); });
     document.body.appendChild(popup);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { popup.style.opacity = '1'; });
@@ -4026,7 +4067,7 @@
 
   function showSabellaMessagePopup(locId, letter) {
     if (document.getElementById('sabella-message-popup')) return;
-    dismissSabellaCluePopup(true);
+    dismissTransientMapOverlays();
 
     if (!document.getElementById('tut-toast-style')) {
       var s = document.createElement('style');
@@ -4040,16 +4081,17 @@
     popup.setAttribute('role', 'dialog');
     popup.setAttribute('aria-label', letter.title || 'Letter from Sabella');
     popup.style.cssText =
-      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;' +
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2100;' +
       'cursor:pointer;' +
       'background:linear-gradient(165deg,rgba(42,32,22,0.98) 0%,rgba(18,14,10,0.98) 55%,rgba(12,10,8,0.99) 100%);' +
       'border:2px solid rgba(198,141,85,0.65);border-radius:14px;' +
-      'padding:24px 36px;text-align:center;max-width:540px;width:90%;' +
+      'padding:40px 36px 24px;text-align:center;max-width:540px;width:90%;' +
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.14),inset 0 1px 0 rgba(232,210,170,0.08);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     popup.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:10px;font-family:Cinzel,serif;">Sabella\u2019s Letter</div>' +
       '<div style="font-size:15px;letter-spacing:1px;color:#c4a882;margin-bottom:14px;font-family:Cinzel,serif;">' +
@@ -4058,15 +4100,15 @@
         letter.greeting + '</div>' +
       '<div style="font-size:16px;letter-spacing:0.2px;line-height:1.65;margin-bottom:16px;text-align:left;color:#efe7d2;">' +
         letter.body + '</div>' +
-      '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;margin-bottom:8px;">\u2014 ' +
-        letter.signoff + '</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+      '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;">\u2014 ' +
+        letter.signoff + '</div>';
 
     function onLetterDismiss(e) {
       if (e) e.stopPropagation();
       dismissSabellaMessagePopup();
     }
     popup.addEventListener('click', onLetterDismiss);
+    wireOverlayClose(popup, onLetterDismiss);
     document.body.appendChild(popup);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { popup.style.opacity = '1'; });
@@ -5270,23 +5312,24 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:900;cursor:pointer;' +
       'background:rgba(10,12,16,0.94);' +
       'border:1px solid rgba(140,180,220,0.4);border-left:3px solid rgba(140,180,220,0.8);' +
-      'border-radius:0 8px 8px 0;padding:16px 18px;width:218px;' +
+      'border-radius:0 8px 8px 0;padding:32px 18px 16px;width:218px;' +
       'font-family:"EB Garamond",serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.5s ease;' +
       'box-shadow:0 6px 30px rgba(0,0,0,0.6);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;' +
         'color:#8ab4d4;margin-bottom:8px;font-family:Cinzel,serif;">&#9670; Guide</div>' +
       '<div style="font-size:14px;font-weight:600;color:#d4c89a;margin-bottom:8px;line-height:1.3;">' + title + '</div>' +
       '<div style="font-size:12px;color:#9a8f7e;line-height:1.7;margin-bottom:4px;">' + line1 + '</div>' +
-      (line2 ? '<div style="font-size:11px;color:#c68d55;line-height:1.6;">' + line2 + '</div>' : '') +
-      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;">tap to dismiss</div>';
+      (line2 ? '<div style="font-size:11px;color:#c68d55;line-height:1.6;">' + line2 + '</div>' : '');
     document.body.appendChild(toast);
     function dismiss() {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 500);
     }
     toast.addEventListener('click', dismiss);
+    wireOverlayClose(toast, dismiss);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });

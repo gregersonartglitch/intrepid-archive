@@ -857,6 +857,13 @@ assert(fogSrc.indexOf('locked-msg-close') > -1 &&
   fogSrc.indexOf('function lockedMsgCloseHtml') > -1 &&
   fogSrc.indexOf('function wireLockedMsgDismiss') > -1,
   'locked modals share prominent Close button helper');
+assert(fogSrc.indexOf('function overlayCloseHtml') > -1 &&
+  fogSrc.indexOf('function dismissTransientMapOverlays') > -1 &&
+  fogSrc.indexOf("class=\"overlay-close\"") > -1,
+  'letter and map toasts share upper-right Close; letter dismisses stacked overlays');
+assert(fogSrc.indexOf('dismissTransientMapOverlays()') > -1 &&
+  /showSabellaMessagePopup[\s\S]*?dismissTransientMapOverlays/.test(fogSrc),
+  'Sabella letter clears Charge / teach / clue overlays before showing');
 assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
   /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
   'Indras Na + Vol2 locked modals both use Close button');
