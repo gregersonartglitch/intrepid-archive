@@ -9,7 +9,7 @@ import {
   tierMeetsRequirement,
 } from "./lib/access-auth.mjs";
 
-var INTREPID_BUILD = 239;
+var INTREPID_BUILD = 240;
 var STORE_NAME = "intrepid-protected";
 
 function getAssetId(url) {

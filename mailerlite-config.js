@@ -13,13 +13,15 @@
  *   3. Paste each form's action URL below
  *      (https://assets.mailerlite.com/jsonp/{accountId}/forms/{formId}/subscribe)
  *
- * Empty URLs = fail closed. Never claim "You're on the list" without a MailerLite success payload.
+ * Empty URLs = fail closed. Never claim waitlist/list success without a MailerLite success payload.
+ * Public waitlist URL is set (form 196516110968817063). Backer form URL still empty.
  */
 (function (global) {
   'use strict';
   global.INTREPID_MAILERLITE = {
     backerActionUrl: '',
-    publicActionUrl: '',
+    /* Official Intrepid Dusk Public Waitlist embed (mlb2-45100729 / form 196516110968817063). */
+    publicActionUrl: 'https://assets.mailerlite.com/jsonp/875026/forms/196516110968817063/subscribe',
     backerSource: 'archive_backer_optin',
     publicSource: 'archive_public_waitlist',
     backerGroup: 'Intrepid Dusk Archive Opt-ins',

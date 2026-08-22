@@ -3050,13 +3050,13 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <span class="gate-corner-bl">◆</span>
     <div class="gate-cuneiform-strip">𒀭 𒂗 𒆳</div>
     <div class="gate-eyebrow">Intrepid Dusk Archive</div>
-    <div class="gate-title" id="public-title">The Hollowlands</div>
+    <div class="gate-title" id="public-title">Guest Access Waitlist</div>
     <div class="gate-rule"></div>
-    <p class="entry-optin-body" id="public-waitlist-body">The Archive will open to new readers later. Leave your email if you’d like to know when it does.</p>
+    <p class="entry-optin-body" id="public-waitlist-body">Get notified when guest access opens.</p>
     <form id="public-waitlist-form" class="entry-mail-form" action="#" method="POST" novalidate>
       <div class="entry-optin-fields">
-        <input id="public-waitlist-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for the Archive waitlist" required>
-        <button id="public-waitlist-join" class="gate-btn" type="submit">Join the waitlist</button>
+        <input id="public-waitlist-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for the guest access waitlist" required>
+        <button id="public-waitlist-join" class="gate-btn" type="submit">Notify Me</button>
       </div>
     </form>
     <p id="public-waitlist-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
@@ -3470,7 +3470,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 239;
+window.INTREPID_BUILD = 240;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3546,8 +3546,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=239"></script>
-<script src="fog.js?v=239"></script>
+<script src="mailerlite-config.js?v=240"></script>
+<script src="fog.js?v=240"></script>
 <script>
 (function() {
   'use strict';
@@ -4246,7 +4246,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var form = publicWaitlistForm;
     if (choice === 'joined') {
       if (publicWaitlistBody) {
-        publicWaitlistBody.textContent = 'You’re on the list. We’ll write when the Archive opens to new readers.';
+        publicWaitlistBody.textContent = 'You are on the waitlist! We’ll email you when guest access opens.';
       }
       if (form) form.hidden = true;
       setStepMsg(publicWaitlistMsg, '', null);
@@ -4272,7 +4272,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     setStepMsg(publicWaitlistMsg, 'Sending…', null);
     subscribeMailerLiteForm('public', email).then(function () {
       setMailingChoice('joined');
-      setStepMsg(publicWaitlistMsg, 'You’re on the list.', 'ok');
+      setStepMsg(publicWaitlistMsg, 'You are on the waitlist!', 'ok');
       renderPublicWaitlistState();
     }).catch(function () {
       setStepMsg(publicWaitlistMsg, ML_FAIL_COPY, 'err');

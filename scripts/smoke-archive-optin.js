@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive split-entrance + MailerLite opt-in smoke (build 239).
+ * Archive split-entrance + MailerLite opt-in smoke (build 240).
  * Run: node scripts/smoke-archive-optin.js
  * Exit 0 = pass, 1 = fail
  */
@@ -58,8 +58,9 @@ function run() {
   console.log('\n[entrances] backer vs public');
   assert(/id="archive-public"/.test(html), 'public waitlist screen present');
   assert(/id="archive-entry"/.test(html), 'backer entrance present');
-  assert(html.indexOf('The Archive will open to new readers later.') !== -1, 'public waitlist copy');
-  assert(html.indexOf('Join the waitlist') !== -1, 'public Join the waitlist CTA');
+  assert(html.indexOf('Guest Access Waitlist') !== -1, 'public waitlist title');
+  assert(html.indexOf('Get notified when guest access opens.') !== -1, 'public waitlist copy');
+  assert(html.indexOf('Notify Me') !== -1, 'public Notify Me CTA');
   assert(html.indexOf('Already a backer? Enter the Archive') !== -1, 'Already a backer link copy');
   assert(/href="\/backer\/"/.test(html), 'Already a backer href is /backer/');
   assert(html.indexOf('Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?') !== -1, 'backer choice question');
@@ -79,6 +80,7 @@ function run() {
 
   var loginChunk = html.slice(html.indexOf('id="entry-login-step"'), html.indexOf('id="archive-home"'));
   assert(loginChunk.indexOf('Join the waitlist') === -1, 'password step has no waitlist form');
+  assert(loginChunk.indexOf('Notify Me') === -1, 'password step has no public Notify Me CTA');
   assert(loginChunk.indexOf('name="nickname"') === -1, 'no nickname on login step');
   assert(loginChunk.indexOf('type="checkbox"') === -1, 'no consent checkbox on login step');
 
@@ -96,7 +98,8 @@ function run() {
   assert(ml.indexOf('Intrepid Dusk Archive Opt-ins') !== -1, 'backer group name documented');
   assert(ml.indexOf('Intrepid Dusk Public Waitlist') !== -1, 'public group name documented');
   assert(/backerActionUrl:\s*''/.test(ml), 'backer action URL empty until Jon pastes it');
-  assert(/publicActionUrl:\s*''/.test(ml), 'public action URL empty until Jon pastes it');
+  assert(ml.indexOf("publicActionUrl: 'https://assets.mailerlite.com/jsonp/875026/forms/196516110968817063/subscribe'") !== -1, 'public action URL is official waitlist form');
+  assert(ml.indexOf('/jsonp/875026/forms/196516110968817063/subscribe') !== -1 && ml.indexOf('backerActionUrl') < ml.indexOf('publicActionUrl'), 'public URL is on publicActionUrl only');
   assert(ml.indexOf('api token') !== -1 || ml.indexOf('API token') !== -1, 'config warns not to put API tokens here');
   assert(!/MAILERLITE_API|apiKey|Bearer [A-Za-z0-9]/.test(html), 'no MailerLite API key in index.html');
   assert(!/Bearer|MAILERLITE_API/.test(ml), 'no MailerLite API key in config');
@@ -140,6 +143,17 @@ function run() {
     assert(catchPart.indexOf("setMailingChoice('joined')") === -1, 'failure does not record joined');
   }
 
+  var publicFn = extractFunction(html, 'submitPublicWaitlist');
+  assert(!!publicFn, 'submitPublicWaitlist extracted');
+  if (publicFn) {
+    assert(publicFn.indexOf("subscribeMailerLiteForm('public'") !== -1, 'public Notify Me hits MailerLite public form');
+    assert(publicFn.indexOf('You are on the waitlist!') !== -1, 'public success copy only on then() after ML');
+    assert(publicFn.indexOf('ML_FAIL_COPY') !== -1, 'public failure uses specified copy');
+    var publicCatch = publicFn.slice(publicFn.indexOf('.catch'));
+    assert(publicCatch.indexOf('You are on the waitlist!') === -1, 'public failure does not claim waitlist success');
+    assert(publicCatch.indexOf("setMailingChoice('joined')") === -1, 'public failure does not record joined');
+  }
+
   var submitFn = extractFunction(html, 'submitEntryAccess');
   assert(!!submitFn, 'submitEntryAccess extracted');
   if (submitFn) {
@@ -163,8 +177,9 @@ function run() {
   assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
   assert(readerShell.indexOf('/backer/?entry=required') !== -1, 'reader-shell bounces to backer entrance');
   assert(dossierShell.indexOf('/backer/?entry=required') !== -1, 'dossier-shell bounces to backer entrance');
-  assert(html.indexOf('window.INTREPID_BUILD = 239') !== -1, 'INTREPID_BUILD is 239');
-  assert(html.indexOf('fog.js?v=239') !== -1, 'fog.js cache buster is 239');
+  assert(html.indexOf('window.INTREPID_BUILD = 240') !== -1, 'INTREPID_BUILD is 240');
+  assert(html.indexOf('fog.js?v=240') !== -1, 'fog.js cache buster is 240');
+  assert(html.indexOf('mailerlite-config.js?v=240') !== -1, 'mailerlite-config cache buster is 240');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
   console.log('\n[codes] not in visible HTML');
@@ -176,6 +191,7 @@ function run() {
   var sandbox = { window: {} };
   vm.runInNewContext(ml, sandbox);
   assert(sandbox.window.INTREPID_MAILERLITE.backerActionUrl === '', 'config loads with empty backer URL');
+  assert(sandbox.window.INTREPID_MAILERLITE.publicActionUrl === 'https://assets.mailerlite.com/jsonp/875026/forms/196516110968817063/subscribe', 'config loads official public waitlist URL');
   assert(sandbox.window.INTREPID_MAILERLITE.publicSource === 'archive_public_waitlist', 'public source value');
 }
 

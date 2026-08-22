@@ -76,7 +76,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-216` | Stable | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
 | `build-226` | **Current prod** | Tighter stage padding; Size slider resizes StPageFlip on ultrawide (`syncPageFlipDimensions`) |
 | `build-238` | Branch only — superseded | Post-unlock Netlify opt-in (replaced by 239 split entrances) |
-| `build-239` | Branch only — **AWAITING REVIEW** | `/backer/` vs public waitlist; MailerLite generated forms fail closed until Jon pastes URLs. Do not deploy. |
+| `build-239` | Branch only — superseded | `/backer/` vs public waitlist; both MailerLite URLs empty |
+| `build-240` | Branch only — **AWAITING REVIEW** | Public waitlist official form URL + Guest Access Waitlist copy. Backer form URL still empty. Do not deploy. Do not live-test signup. |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 

@@ -1,6 +1,6 @@
 # Archive entrances + MailerLite opt-in
 
-**Build:** 239  
+**Build:** 240  
 **Status:** AWAITING REVIEW — do not deploy  
 **PR:** continue #2 on `cursor/archive-optin-1ced`
 
@@ -17,9 +17,12 @@ Two separate doors. Kickstarter messages should link to **`/backer/`**. The bare
 
 ## B. Public — `/`
 
-“The Archive will open to new readers later. Leave your email if you’d like to know when it does.”
+Copy matches the official MailerLite embed (form `196516110968817063`):
 
-- Email + **Join the waitlist**
+- Title: **Guest Access Waitlist**
+- Body: **Get notified when guest access opens.**
+- Button: **Notify Me**
+- Success (after MailerLite `success` only): **You are on the waitlist!** / We’ll email you when guest access opens.
 - **Already a backer? Enter the Archive** → `/backer/`
 - No password field on this screen
 
@@ -51,7 +54,9 @@ This agent must not change MailerLite account settings. Create:
 3. Optional subscriber field **source** (text).
 4. Forms → Embedded → Overview → HTML → copy each `action="https://assets.mailerlite.com/jsonp/{account}/forms/{id}/subscribe"` into `mailerlite-config.js` (`backerActionUrl` / `publicActionUrl`).
 
-Until those URLs are pasted, Join always shows the failure copy. No unverified local/Netlify fallback.
+**Public waitlist URL is in.** `publicActionUrl` is the official generated-form action. `backerActionUrl` is still empty until Jon pastes the **Intrepid Dusk Archive Opt-ins** embed HTML. Public Notify Me can succeed; backer Join still fails closed.
+
+No unverified local/Netlify fallback. Do not live-test signup until Jon says so.
 
 ## Local choice state
 
@@ -64,7 +69,7 @@ Session fallback if localStorage is blocked. **Email is never stored.** Reset ac
 
 ## Restore
 
-`cp index.html.bak-preoptin-2026-08-21 index.html` still restores pre-238 entry HTML (Netlify-ignored). Prefer git revert of this branch for 239.
+`cp index.html.bak-preoptin-2026-08-21 index.html` still restores pre-238 entry HTML (Netlify-ignored). Prefer git revert of this branch for 240.
 
 ## QA
 
