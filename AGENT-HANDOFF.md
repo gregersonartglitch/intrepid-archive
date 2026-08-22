@@ -79,7 +79,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-239` | Branch only — superseded | `/backer/` vs public waitlist; both MailerLite URLs empty |
 | `build-240` | Branch only — superseded | Public waitlist official form URL + Guest Access Waitlist copy. Backer form URL empty. |
 | `build-241` | Branch only — superseded | Both official MailerLite form URLs set |
-| `build-242` | Branch only — **AWAITING REVIEW** | Public “Already a backer?” restyle (16px / 15px, higher contrast, 44px target). Do not deploy. |
+| `build-242` | Branch only — superseded | Public “Already a backer?” 16px/15px restyle |
+| `build-243` | Branch only — **AWAITING REVIEW** | Public backer link uses the gold boxed treatment at rest. Do not deploy. |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 

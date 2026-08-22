@@ -311,7 +311,7 @@ input { font-family: inherit; }
   padding: 12px 16px;
   min-height: 44px;
   min-width: 44px;
-  color: var(--bone);
+  color: var(--gold);
   font-family: var(--font-ui);
   font-size: 16px;
   font-weight: 600;
@@ -320,19 +320,23 @@ input { font-family: inherit; }
   text-align: center;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(212,168,67,0.65);
+  text-decoration-color: var(--gold);
   border-radius: 4px;
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
   cursor: pointer;
 }
 .entry-already-backer:hover {
-  color: var(--gold);
-  text-decoration-color: var(--gold);
+  color: var(--amber-glow);
+  text-decoration-color: var(--amber-glow);
+  outline-color: var(--amber-glow);
 }
 .entry-already-backer:focus-visible {
-  color: var(--gold);
-  text-decoration-color: var(--gold);
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
+  color: var(--amber-glow);
+  text-decoration-color: var(--amber-glow);
+  outline: 2px solid var(--amber-glow);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 1px rgba(232,169,106,0.35);
 }
 .entry-mail-form {
   width: 100%;
@@ -3494,7 +3498,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 242;
+window.INTREPID_BUILD = 243;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3570,8 +3574,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=242"></script>
-<script src="fog.js?v=242"></script>
+<script src="mailerlite-config.js?v=243"></script>
+<script src="fog.js?v=243"></script>
 <script>
 (function() {
   'use strict';
