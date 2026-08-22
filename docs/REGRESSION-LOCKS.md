@@ -24,6 +24,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **215** | Double congratulations | Two modals at Indras Na (Vol2 + archive complete) | Smoke: `journeyFinaleToastQueued`, `flushJourneyFinaleToastAfterVol2` | Complete Indras Na with full map — one modal, dismiss, then archive overlay |
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
 | **247** | Isolated Archive/MailerLite (217+) | Public/backer doors + official JSONP (`mlWebformSubmitted`); generated callbacks ORB-block | `scripts/smoke-archive-optin.js`; empty-email `scripts/smoke-mailerlite-jsonp.js` | `/` waitlist, `/backer/` choice→password; no real email |
+| **248** | Split mailing state + returning-backer prompt | Shared `intrepid_archive_ml_choice_v1` crossed doors; unlocked `/backer/` skipped the required choice; `?entry=` leaked | Smoke: separate public key; `shouldPromptBackerMailing` before skip-entry; no `params.has('entry')`; CRLF-normalized boot extract | `/backer/` with existing session still asks choice; `/` waitlist stays independent |
 
 ## Rollback
 

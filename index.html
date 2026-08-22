@@ -3381,7 +3381,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — isolated 217 + Archive/MailerLite opt-in (not the 218–246 git line)
-window.INTREPID_BUILD = 247;
+window.INTREPID_BUILD = 248;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script src="data.js?v=15"></script>
@@ -3458,7 +3458,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=209"></script>
-<script src="mailerlite-config.js?v=247"></script>
+<script src="mailerlite-config.js?v=248"></script>
 <script src="fog.js?v=217"></script>
 <script>
 (function() {
@@ -3801,7 +3801,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (loader) loader.classList.add('hidden');
     if (window.FogSystem && window.FogSystem.stopDrift) window.FogSystem.stopDrift();
 
-    if (shouldSkipArchiveEntry()) {
+    if (shouldPromptBackerMailing()) {
+      startBackerEntrance();
+    } else if (shouldSkipArchiveEntry()) {
       showArchiveHome();
       renderHubPublicContentState();
     } else if (isBackerEntrance() || !isArchiveMailingEnabled()) {
@@ -3952,6 +3954,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   // Official MailerLite generated forms. Kill: false, or LS intrepid_archive_mailing_disabled=1
   var ENABLE_ARCHIVE_MAILING = true;
   var LS_ML_CHOICE = 'intrepid_archive_ml_choice_v1';
+  var LS_ML_PUBLIC = 'intrepid_archive_ml_public_waitlist_v1';
   var ML_FAIL_COPY_BACKER = 'We couldn’t add you right now. You can try again or continue to the Archive.';
   var ML_FAIL_COPY_PUBLIC = 'We couldn’t add you right now. You can try again.';
 
@@ -3994,15 +3997,38 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     archiveChoiceStoreSet(LS_ML_CHOICE, v);
   }
 
+  function getPublicWaitlistState() {
+    var v = archiveChoiceStoreGet(LS_ML_PUBLIC);
+    if (v === 'joined') return v;
+    return 'not_asked';
+  }
+
+  function setPublicWaitlistState(v) {
+    if (v !== 'joined') return;
+    archiveChoiceStoreSet(LS_ML_PUBLIC, v);
+  }
+
   function isBackerEntrance() {
     var path = (window.location.pathname || '/').replace(/\/+$/, '') || '/';
     if (path === '/backer') return true;
     try {
       var params = new URLSearchParams(window.location.search);
       if (params.get('entrance') === 'backer') return true;
-      if (params.has('entry')) return true;
     } catch (e) { /* ignore */ }
     return false;
+  }
+
+  function shouldPromptBackerMailing() {
+    return isArchiveMailingEnabled() && isBackerEntrance() && getMailingChoice() === 'not_asked';
+  }
+
+  function continueAfterBackerMailing() {
+    if (shouldSkipArchiveEntry()) {
+      enterArchiveHome();
+      return;
+    }
+    showArchiveEntry({ step: 'login', instant: true });
+    renderGuestEntryState();
   }
 
   function mailerliteActionUrl(kind) {
@@ -4107,12 +4133,12 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function declineBackerMailing() {
     setMailingChoice('declined');
-    showArchiveEntry({ step: 'login', instant: true });
+    continueAfterBackerMailing();
   }
 
   function continueBackerWithoutJoining() {
     setMailingChoice('declined');
-    showArchiveEntry({ step: 'login', instant: true });
+    continueAfterBackerMailing();
   }
 
   function submitBackerMailing(ev) {
@@ -4129,7 +4155,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       setMailingChoice('joined');
       setStepMsg(entryMailMsg, 'You are subscribed!', 'ok');
       setTimeout(function () {
-        showArchiveEntry({ step: 'login', instant: true });
+        continueAfterBackerMailing();
       }, 700);
     }).catch(function () {
       setStepMsg(entryMailMsg, ML_FAIL_COPY_BACKER, 'err');
@@ -4139,9 +4165,9 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   }
 
   function renderPublicWaitlistState() {
-    var choice = getMailingChoice();
+    var state = getPublicWaitlistState();
     var form = publicWaitlistForm;
-    if (choice === 'joined') {
+    if (state === 'joined') {
       if (publicWaitlistBody) publicWaitlistBody.hidden = true;
       if (publicWaitlistSuccess) publicWaitlistSuccess.hidden = false;
       if (form) form.hidden = true;
@@ -4150,11 +4176,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     }
     if (publicWaitlistSuccess) publicWaitlistSuccess.hidden = true;
     if (publicWaitlistBody) publicWaitlistBody.hidden = false;
-    if (choice === 'declined') {
-      if (form) form.hidden = true;
-      setStepMsg(publicWaitlistMsg, '', null);
-      return;
-    }
     if (form) form.hidden = false;
   }
 
@@ -4169,7 +4190,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (publicWaitlistJoin) publicWaitlistJoin.disabled = true;
     setStepMsg(publicWaitlistMsg, 'Sending…', null);
     subscribeMailerLiteForm('public', email).then(function () {
-      setMailingChoice('joined');
+      setPublicWaitlistState('joined');
       renderPublicWaitlistState();
     }).catch(function () {
       setStepMsg(publicWaitlistMsg, ML_FAIL_COPY_PUBLIC, 'err');
@@ -4180,12 +4201,17 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 
   function startBackerEntrance() {
     hidePublicEntrance();
-    if (!isArchiveMailingEnabled() || getMailingChoice() !== 'not_asked') {
-      showArchiveEntry({ step: 'login', instant: true });
+    if (shouldPromptBackerMailing()) {
+      showArchiveEntry({ step: 'choice' });
       renderGuestEntryState();
       return;
     }
-    showArchiveEntry({ step: 'choice' });
+    if (shouldSkipArchiveEntry()) {
+      showArchiveHome();
+      renderHubPublicContentState();
+      return;
+    }
+    showArchiveEntry({ step: 'login', instant: true });
     renderGuestEntryState();
   }
 
@@ -6733,6 +6759,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     if (archiveEntry) archiveEntry.style.display = 'none';
     if (archiveHome) archiveHome.style.display = 'none';
     checkGate();
+  } else if (shouldPromptBackerMailing()) {
+    startBackerEntrance();
   } else if (shouldSkipArchiveEntry()) {
     showArchiveHome();
     renderHubPublicContentState();

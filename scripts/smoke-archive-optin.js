@@ -31,6 +31,10 @@ function assert(cond, msg) {
   else fail(msg);
 }
 
+function normalizeNewlines(s) {
+  return String(s || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+}
+
 function extractFunction(src, name) {
   var needle = 'function ' + name + '(';
   var start = src.indexOf(needle);
@@ -49,11 +53,11 @@ function extractFunction(src, name) {
 }
 
 function run() {
-  var html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  var ml = fs.readFileSync(path.join(ROOT, 'mailerlite-config.js'), 'utf8');
-  var redirects = fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8');
-  var toml = fs.readFileSync(path.join(ROOT, 'netlify.toml'), 'utf8');
-  var access = fs.readFileSync(path.join(ROOT, 'archive-access.js'), 'utf8');
+  var html = normalizeNewlines(fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8'));
+  var ml = normalizeNewlines(fs.readFileSync(path.join(ROOT, 'mailerlite-config.js'), 'utf8'));
+  var redirects = normalizeNewlines(fs.readFileSync(path.join(ROOT, '_redirects'), 'utf8'));
+  var toml = normalizeNewlines(fs.readFileSync(path.join(ROOT, 'netlify.toml'), 'utf8'));
+  var access = normalizeNewlines(fs.readFileSync(path.join(ROOT, 'archive-access.js'), 'utf8'));
 
   console.log('\n[entrances] backer vs public');
   assert(/id="archive-public"/.test(html), 'public waitlist screen present');
@@ -147,14 +151,16 @@ function run() {
   if (noFn) {
     assert(noFn.indexOf('subscribeMailerLiteForm') === -1, 'No thanks makes no MailerLite request');
     assert(noFn.indexOf("setMailingChoice('declined')") !== -1, 'No thanks records declined');
-    assert(noFn.indexOf("showArchiveEntry({ step: 'login'") !== -1, 'No thanks goes to password immediately');
+    assert(noFn.indexOf('setPublicWaitlistState') === -1, 'No thanks does not write public waitlist state');
+    assert(noFn.indexOf('continueAfterBackerMailing()') !== -1, 'No thanks continues via shared after-choice helper');
   }
 
   var skipFn = extractFunction(html, 'continueBackerWithoutJoining');
   assert(!!skipFn, 'continueBackerWithoutJoining extracted');
   if (skipFn) {
     assert(skipFn.indexOf('subscribeMailerLiteForm') === -1, 'Continue Without Email posts nothing');
-    assert(skipFn.indexOf("showArchiveEntry({ step: 'login'") !== -1, 'Continue Without Email goes to password');
+    assert(skipFn.indexOf('setPublicWaitlistState') === -1, 'Continue Without Email does not write public waitlist state');
+    assert(skipFn.indexOf('continueAfterBackerMailing()') !== -1, 'Continue Without Email continues via shared after-choice helper');
   }
 
   var joinFn = extractFunction(html, 'submitBackerMailing');
@@ -164,6 +170,7 @@ function run() {
     assert(joinFn.indexOf('You are subscribed!') !== -1, 'success copy only on then() after ML');
     assert(joinFn.indexOf('ML_FAIL_COPY_BACKER') !== -1, 'backer failure uses Archive continue copy');
     assert(joinFn.indexOf("setMailingChoice('joined')") !== -1, 'joined only after ML then()');
+    assert(joinFn.indexOf('setPublicWaitlistState') === -1, 'backer join does not write public waitlist state');
     var catchPart = joinFn.slice(joinFn.indexOf('.catch'));
     assert(catchPart.indexOf('You are subscribed!') === -1, 'failure does not claim joined');
     assert(catchPart.indexOf("setMailingChoice('joined')") === -1, 'failure does not record joined');
@@ -176,10 +183,13 @@ function run() {
     assert(publicFn.indexOf('renderPublicWaitlistState') !== -1, 'public success reveal only on then() after ML');
     assert(publicFn.indexOf('ML_FAIL_COPY_PUBLIC') !== -1, 'public failure uses guest waitlist copy');
     assert(publicFn.indexOf('continue to the Archive') === -1, 'public failure does not offer Archive access');
+    assert(publicFn.indexOf("setPublicWaitlistState('joined')") !== -1, 'public success writes public waitlist state only');
+    assert(publicFn.indexOf('setMailingChoice') === -1, 'public Notify Me does not write backer choice');
     var publicCatch = publicFn.slice(publicFn.indexOf('.catch'));
     assert(publicCatch.indexOf('You’re on the waitlist!') === -1, 'public failure does not claim waitlist success');
     assert(publicCatch.indexOf('renderPublicWaitlistState') === -1, 'public failure does not reveal success block');
-    assert(publicCatch.indexOf("setMailingChoice('joined')") === -1, 'public failure does not record joined');
+    assert(publicCatch.indexOf("setPublicWaitlistState('joined')") === -1, 'public failure does not record public joined');
+    assert(publicCatch.indexOf("setMailingChoice('joined')") === -1, 'public failure does not record backer joined');
   }
 
   var submitFn = extractFunction(html, 'submitEntryAccess');
@@ -191,15 +201,54 @@ function run() {
     assert(submitFn.indexOf('.then(') === -1, '217 client submitArchiveCode stays synchronous');
   }
 
-  console.log('\n[state] choice only, no stored email, reset does not clear');
+  console.log('\n[state] independent backer/public keys, no stored email, reset does not clear');
   var setChoice = extractFunction(html, 'setMailingChoice');
   assert(!!setChoice, 'setMailingChoice extracted');
   if (setChoice) {
-    assert(setChoice.indexOf('email') === -1, 'choice setter does not store email');
-    assert(setChoice.indexOf('joined') !== -1 && setChoice.indexOf('declined') !== -1, 'choice is joined or declined');
+    assert(setChoice.indexOf('email') === -1, 'backer choice setter does not store email');
+    assert(setChoice.indexOf('LS_ML_CHOICE') !== -1, 'backer setter writes backer key only');
+    assert(setChoice.indexOf('LS_ML_PUBLIC') === -1, 'backer setter does not write public key');
+    assert(setChoice.indexOf('joined') !== -1 && setChoice.indexOf('declined') !== -1, 'backer choice is joined or declined');
   }
-  assert(html.indexOf("intrepid_archive_ml_choice_v1") !== -1, 'local choice key');
-  assert(access.indexOf('intrepid_archive_ml_choice_v1') === -1, 'resetArchiveAccess keys do not include mailing choice');
+  var setPublic = extractFunction(html, 'setPublicWaitlistState');
+  assert(!!setPublic, 'setPublicWaitlistState extracted');
+  if (setPublic) {
+    assert(setPublic.indexOf('email') === -1, 'public setter does not store email');
+    assert(setPublic.indexOf('LS_ML_PUBLIC') !== -1, 'public setter writes public key only');
+    assert(setPublic.indexOf('LS_ML_CHOICE') === -1, 'public setter does not write backer key');
+  }
+  var renderPublic = extractFunction(html, 'renderPublicWaitlistState');
+  assert(!!renderPublic, 'renderPublicWaitlistState extracted');
+  if (renderPublic) {
+    assert(renderPublic.indexOf('getPublicWaitlistState()') !== -1, 'public screen reads public waitlist state');
+    assert(renderPublic.indexOf('getMailingChoice()') === -1, 'public screen does not read backer choice');
+    assert(renderPublic.indexOf("=== 'declined'") === -1, 'public screen is not hidden by backer declined');
+  }
+  var afterFn = extractFunction(html, 'continueAfterBackerMailing');
+  assert(!!afterFn, 'continueAfterBackerMailing extracted');
+  if (afterFn) {
+    assert(afterFn.indexOf('shouldSkipArchiveEntry()') !== -1, 'already-unlocked backers skip password after choice');
+    assert(afterFn.indexOf('enterArchiveHome()') !== -1, 'already-unlocked backers continue into the hub');
+    assert(afterFn.indexOf("showArchiveEntry({ step: 'login'") !== -1, 'locked backers still reach password after choice');
+  }
+  var promptFn = extractFunction(html, 'shouldPromptBackerMailing');
+  assert(!!promptFn, 'shouldPromptBackerMailing extracted');
+  if (promptFn) {
+    assert(promptFn.indexOf('isBackerEntrance()') !== -1, 'prompt is backer-entrance only');
+    assert(promptFn.indexOf("getMailingChoice() === 'not_asked'") !== -1, 'prompt uses backer choice only');
+    assert(promptFn.indexOf('getPublicWaitlistState') === -1, 'public waitlist join does not skip backer choice');
+  }
+  var backerEnt = extractFunction(html, 'isBackerEntrance');
+  assert(!!backerEnt, 'isBackerEntrance extracted');
+  if (backerEnt) {
+    assert(backerEnt.indexOf("path === '/backer'") !== -1, 'path /backer is a backer entrance');
+    assert(backerEnt.indexOf("params.get('entrance') === 'backer'") !== -1, 'query entrance=backer is a backer entrance');
+    assert(backerEnt.indexOf("params.has('entry')") === -1, 'later-build ?entry= is not a backer entrance');
+  }
+  assert(html.indexOf("intrepid_archive_ml_choice_v1") !== -1, 'backer choice key retained');
+  assert(html.indexOf("intrepid_archive_ml_public_waitlist_v1") !== -1, 'separate public waitlist key');
+  assert(access.indexOf('intrepid_archive_ml_choice_v1') === -1, 'resetArchiveAccess keys do not include backer mailing choice');
+  assert(access.indexOf('intrepid_archive_ml_public_waitlist_v1') === -1, 'resetArchiveAccess keys do not include public waitlist state');
   assert(access.indexOf('scribe4') !== -1 && access.indexOf('hollowlands9') !== -1, '217 client codes remain');
   assert(access.indexOf('ENABLE_GUEST_ENTRY = false') !== -1, 'guest entry remains off');
 
@@ -209,18 +258,26 @@ function run() {
   assert(toml.indexOf('to = "/.netlify/functions/access-login"') === -1, 'no access-login rewrite');
   assert(toml.indexOf('to = "/.netlify/functions/reader-shell"') === -1, 'no reader-shell rewrite');
   assert(toml.indexOf('to = "/.netlify/functions/dossier-shell"') === -1, 'no dossier-shell rewrite');
-  assert(html.indexOf('window.INTREPID_BUILD = 247') !== -1, 'INTREPID_BUILD is 247 (217 + isolated opt-in)');
+  assert(html.indexOf('window.INTREPID_BUILD = 248') !== -1, 'INTREPID_BUILD is 248 (217 + isolated opt-in corrections)');
   assert(html.indexOf('fog.js?v=217') !== -1, 'fog.js cache buster stays 217');
   assert(html.indexOf('archive-access.js?v=209') !== -1, 'archive-access cache buster stays 209');
-  assert(html.indexOf('mailerlite-config.js?v=247') !== -1, 'mailerlite-config cache buster is 247');
+  assert(html.indexOf('mailerlite-config.js?v=248') !== -1, 'mailerlite-config cache buster is 248');
   assert(html.indexOf('refreshSession') === -1, 'no later session refresh boot');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
-  var bootFn = html.slice(html.indexOf('if (hasDirectArchiveIntent()) {\n    hidePublicEntrance();'), html.indexOf('wireArchiveEntrances();\n'));
+  var initAt = html.indexOf('INIT');
+  var bootStart = html.indexOf('if (hasDirectArchiveIntent()) {', initAt);
+  var bootEnd = html.indexOf('wireArchiveEntrances();', bootStart);
+  var bootFn = bootStart >= 0 && bootEnd > bootStart ? html.slice(bootStart, bootEnd) : '';
+  var crlfBoot = bootFn.replace(/\n/g, '\r\n');
+  var crlfExtracted = normalizeNewlines(crlfBoot);
   assert(bootFn.indexOf('checkGate()') !== -1, 'direct map/scan/key still skip mailing');
-  assert(bootFn.indexOf('isBackerEntrance()') !== -1, 'backer path starts backer entrance');
+  assert(bootFn.indexOf('shouldPromptBackerMailing()') !== -1, 'unlocked backers can still be asked the required choice');
+  assert(bootFn.indexOf('shouldPromptBackerMailing()') < bootFn.indexOf('shouldSkipArchiveEntry()'), 'required backer choice is checked before skip-entry');
   assert(bootFn.indexOf('showPublicWaitlist()') !== -1, 'public path shows waitlist');
   assert(bootFn.indexOf('isArchiveMailingEnabled()') !== -1, 'kill switch can restore password-on-/');
+  assert(crlfExtracted.indexOf('shouldPromptBackerMailing()') !== -1, 'boot extract still finds prompt after CRLF normalize');
+  assert(crlfExtracted.indexOf('shouldSkipArchiveEntry()') !== -1, 'boot extract still finds skip-entry after CRLF normalize');
 
   console.log('\n[codes] not in visible HTML');
   var visible = html.replace(/<script[\s\S]*?<\/script>/gi, '');
