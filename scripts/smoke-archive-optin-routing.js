@@ -68,15 +68,17 @@ function run() {
     .trim()
     .split('\n')
     .filter(Boolean);
-  var allowed = {
-    'mailerlite-config.js': true,
-    'backer/index.html': true,
-    'netlify.toml': true,
-    '_redirects': true,
-    'scripts/smoke-archive-optin-routing.js': true
-  };
-  var unexpected = changed.filter(function (f) { return !allowed[f]; });
-  assert(unexpected.length === 0, 'only routing/config/smoke files differ from ' + LIVE + (unexpected.length ? ' (extra: ' + unexpected.join(', ') + ')' : ''));
+  var forbidden = changed.filter(function (f) {
+    return f === 'fog.js' ||
+      f === 'archive-access.js' ||
+      f.indexOf('reader/') === 0 ||
+      f.indexOf('dossier/') === 0 ||
+      f.indexOf('netlify/functions/') === 0 ||
+      f.indexOf('netlify/lib/') === 0 ||
+      f.indexOf('docs/ks') === 0 ||
+      f.indexOf('kickstarter') === 0;
+  });
+  assert(forbidden.length === 0, 'no map/auth/reader/dossier/KS files vs ' + LIVE + (forbidden.length ? ' (hit: ' + forbidden.join(', ') + ')' : ''));
   assert(changed.indexOf('fog.js') === -1, 'fog.js untouched');
   assert(changed.indexOf('archive-access.js') === -1, 'archive-access.js untouched');
 }

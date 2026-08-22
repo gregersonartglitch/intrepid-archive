@@ -23,6 +23,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **214** | Sabella letter soft-lock | Secrets 3/4; charted stop (e.g. Monastery) letter never opens | Smoke: `maybeRecoverSabellaLetter` → `forceShowSabellaLetter`; Guide Me force-show; `recoverMissingSabellaLetter` | `?reset` → play to 3/4 letters, skip one on first chart, tap marker → parchment opens |
 | **215** | Double congratulations | Two modals at Indras Na (Vol2 + archive complete) | Smoke: `journeyFinaleToastQueued`, `flushJourneyFinaleToastAfterVol2` | Complete Indras Na with full map — one modal, dismiss, then archive overlay |
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
+| **247** | Isolated Archive/MailerLite (217+) | Public/backer doors + official JSONP (`mlWebformSubmitted`); generated callbacks ORB-block | `scripts/smoke-archive-optin.js`; empty-email `scripts/smoke-mailerlite-jsonp.js` | `/` waitlist, `/backer/` choice→password; no real email |
 
 ## Rollback
 
