@@ -390,6 +390,34 @@ input { font-family: inherit; }
   font-style: italic;
   line-height: 1.55;
 }
+.public-waitlist-success {
+  margin: 0 auto 18px;
+  max-width: 340px;
+  text-align: center;
+}
+.public-waitlist-success[hidden] {
+  display: none !important;
+}
+.public-waitlist-success-title {
+  margin: 0 0 10px;
+  color: var(--bone);
+  font-family: var(--font-ui);
+  font-size: 22px;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.2px;
+  line-height: 1.35;
+}
+.public-waitlist-success-body {
+  margin: 0;
+  color: var(--bone);
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 400;
+  font-style: normal;
+  letter-spacing: 0.1px;
+  line-height: 1.55;
+}
 .entry-optin-fields {
   display: flex;
   flex-direction: column;
@@ -2356,6 +2384,8 @@ body.edit-mode .mk-dot-wrap > * {
   .gate-card.is-optin { padding: 48px 22px 28px; }
   .entry-optin-close { top: 8px; right: 8px; min-width: 78px; height: 32px; }
   .entry-optin-body { font-size: 13px; }
+  .public-waitlist-success-title { font-size: 20px; }
+  .public-waitlist-success-body { font-size: 16px; }
   .entry-already-backer {
     font-size: 15px;
     padding: 14px 16px;
@@ -3081,6 +3111,10 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     <div class="gate-title" id="public-title">Guest Access Waitlist</div>
     <div class="gate-rule"></div>
     <p class="entry-optin-body" id="public-waitlist-body">Get notified when guest access opens.</p>
+    <div id="public-waitlist-success" class="public-waitlist-success" hidden role="status" aria-live="polite">
+      <p class="public-waitlist-success-title">You’re on the waitlist!</p>
+      <p class="public-waitlist-success-body">We’ll email you when guest access opens.</p>
+    </div>
     <form id="public-waitlist-form" class="entry-mail-form" action="#" method="POST" novalidate>
       <div class="entry-optin-fields">
         <input id="public-waitlist-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for the guest access waitlist" required>
@@ -3498,7 +3532,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 244;
+window.INTREPID_BUILD = 245;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3574,8 +3608,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=244"></script>
-<script src="fog.js?v=244"></script>
+<script src="mailerlite-config.js?v=245"></script>
+<script src="fog.js?v=245"></script>
 <script>
 (function() {
   'use strict';
@@ -4080,6 +4114,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   const publicWaitlistJoin = document.getElementById('public-waitlist-join');
   const publicWaitlistMsg = document.getElementById('public-waitlist-msg');
   const publicWaitlistBody = document.getElementById('public-waitlist-body');
+  const publicWaitlistSuccess = document.getElementById('public-waitlist-success');
   const entryGateCard = archiveEntry && archiveEntry.querySelector('.gate-card');
   // Official MailerLite generated forms. Kill: false, or LS intrepid_archive_mailing_disabled=1
   var ENABLE_ARCHIVE_MAILING = true;
@@ -4273,13 +4308,14 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     var choice = getMailingChoice();
     var form = publicWaitlistForm;
     if (choice === 'joined') {
-      if (publicWaitlistBody) {
-        publicWaitlistBody.textContent = 'You are on the waitlist! We’ll email you when guest access opens.';
-      }
+      if (publicWaitlistBody) publicWaitlistBody.hidden = true;
+      if (publicWaitlistSuccess) publicWaitlistSuccess.hidden = false;
       if (form) form.hidden = true;
       setStepMsg(publicWaitlistMsg, '', null);
       return;
     }
+    if (publicWaitlistSuccess) publicWaitlistSuccess.hidden = true;
+    if (publicWaitlistBody) publicWaitlistBody.hidden = false;
     if (choice === 'declined') {
       if (form) form.hidden = true;
       setStepMsg(publicWaitlistMsg, '', null);
@@ -4300,7 +4336,6 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     setStepMsg(publicWaitlistMsg, 'Sending…', null);
     subscribeMailerLiteForm('public', email).then(function () {
       setMailingChoice('joined');
-      setStepMsg(publicWaitlistMsg, 'You are on the waitlist!', 'ok');
       renderPublicWaitlistState();
     }).catch(function () {
       setStepMsg(publicWaitlistMsg, ML_FAIL_COPY, 'err');

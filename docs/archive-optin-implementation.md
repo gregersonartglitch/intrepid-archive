@@ -1,6 +1,6 @@
 # Archive entrances + MailerLite opt-in
 
-**Build:** 244  
+**Build:** 245  
 **Status:** AWAITING REVIEW — do not deploy  
 **PR:** continue #2 on `cursor/archive-optin-1ced`
 
@@ -22,7 +22,7 @@ Copy matches the official MailerLite embed (form `196516110968817063`):
 - Title: **Guest Access Waitlist**
 - Body: **Get notified when guest access opens.**
 - Button: **Notify Me**
-- Success (after MailerLite `success` only): **You are on the waitlist!** / We’ll email you when guest access opens.
+- Success (after MailerLite `success` only): heading **You’re on the waitlist!** + body **We’ll email you when guest access opens.** (sans, bone, 18px / 16px)
 - **Already a backer? Enter the Archive** → `/backer/` (16px desktop / 15px mobile, gold boxed outline at rest, 44px tap target)
 - No password field on this screen
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive split-entrance + MailerLite opt-in smoke (build 244).
+ * Archive split-entrance + MailerLite opt-in smoke (build 245).
  * Run: node scripts/smoke-archive-optin.js
  * Exit 0 = pass, 1 = fail
  */
@@ -60,6 +60,13 @@ function run() {
   assert(/id="archive-entry"/.test(html), 'backer entrance present');
   assert(html.indexOf('Guest Access Waitlist') !== -1, 'public waitlist title');
   assert(html.indexOf('Get notified when guest access opens.') !== -1, 'public waitlist copy');
+  assert(html.indexOf('You’re on the waitlist!') !== -1, 'public success heading');
+  assert(html.indexOf('We’ll email you when guest access opens.') !== -1, 'public success body');
+  var successCss = html.slice(html.indexOf('.public-waitlist-success-title'), html.indexOf('.entry-optin-fields'));
+  assert(successCss.indexOf('font-family: var(--font-ui)') !== -1, 'success uses sans-serif UI font');
+  assert(successCss.indexOf('font-style: italic') === -1, 'success is not italic');
+  assert(successCss.indexOf('color: var(--bone)') !== -1, 'success uses high-contrast bone');
+  assert(successCss.indexOf('font-size: 18px') !== -1, 'success body is 18px on desktop');
   assert(html.indexOf('Notify Me') !== -1, 'public Notify Me CTA');
   assert(html.indexOf('Already a backer? Enter the Archive') !== -1, 'Already a backer link copy');
   assert(/href="\/backer\/"/.test(html), 'Already a backer href is /backer/');
@@ -71,6 +78,7 @@ function run() {
   assert(alreadyCss.indexOf('outline: 2px solid var(--gold)') !== -1, 'Already a backer shows the gold boxed outline at rest');
   var mobileCss = html.slice(html.indexOf('@media (max-width: 767px)'), html.indexOf('VIP WELCOME'));
   assert(mobileCss.indexOf('.entry-already-backer') !== -1 && mobileCss.indexOf('font-size: 15px') !== -1, 'Already a backer is at least 15px on mobile');
+  assert(mobileCss.indexOf('.public-waitlist-success-body') !== -1 && mobileCss.indexOf('font-size: 16px') !== -1, 'success body is at least 16px on mobile');
   assert(html.indexOf('Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?') !== -1, 'backer choice question');
   assert(html.indexOf('Your choice does not affect access to your rewards.') !== -1, 'choice does not affect rewards');
   assert(html.indexOf('Yes, keep me updated') !== -1, 'Yes button');
@@ -161,10 +169,11 @@ function run() {
   assert(!!publicFn, 'submitPublicWaitlist extracted');
   if (publicFn) {
     assert(publicFn.indexOf("subscribeMailerLiteForm('public'") !== -1, 'public Notify Me hits MailerLite public form');
-    assert(publicFn.indexOf('You are on the waitlist!') !== -1, 'public success copy only on then() after ML');
+    assert(publicFn.indexOf('renderPublicWaitlistState') !== -1, 'public success reveal only on then() after ML');
     assert(publicFn.indexOf('ML_FAIL_COPY') !== -1, 'public failure uses specified copy');
     var publicCatch = publicFn.slice(publicFn.indexOf('.catch'));
-    assert(publicCatch.indexOf('You are on the waitlist!') === -1, 'public failure does not claim waitlist success');
+    assert(publicCatch.indexOf('You’re on the waitlist!') === -1, 'public failure does not claim waitlist success');
+    assert(publicCatch.indexOf('renderPublicWaitlistState') === -1, 'public failure does not reveal success block');
     assert(publicCatch.indexOf("setMailingChoice('joined')") === -1, 'public failure does not record joined');
   }
 
@@ -191,9 +200,9 @@ function run() {
   assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
   assert(readerShell.indexOf('/backer/?entry=required') !== -1, 'reader-shell bounces to backer entrance');
   assert(dossierShell.indexOf('/backer/?entry=required') !== -1, 'dossier-shell bounces to backer entrance');
-  assert(html.indexOf('window.INTREPID_BUILD = 244') !== -1, 'INTREPID_BUILD is 244');
-  assert(html.indexOf('fog.js?v=244') !== -1, 'fog.js cache buster is 244');
-  assert(html.indexOf('mailerlite-config.js?v=244') !== -1, 'mailerlite-config cache buster is 244');
+  assert(html.indexOf('window.INTREPID_BUILD = 245') !== -1, 'INTREPID_BUILD is 245');
+  assert(html.indexOf('fog.js?v=245') !== -1, 'fog.js cache buster is 245');
+  assert(html.indexOf('mailerlite-config.js?v=245') !== -1, 'mailerlite-config cache buster is 245');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
   console.log('\n[codes] not in visible HTML');
