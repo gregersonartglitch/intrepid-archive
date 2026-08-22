@@ -40,6 +40,21 @@
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
+# Isolated Archive opt-in: SPA rewrite so /backer/ stays in the URL on Netlify.
+# Local static hosts fall through to backer/index.html (redirects to /?entrance=backer).
+# Isolated opt-in only: do not add later Wave-1 session or media-shell rewrites.
+[[redirects]]
+  from = "/backer"
+  to = "/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/backer/"
+  to = "/index.html"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

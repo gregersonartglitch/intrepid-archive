@@ -4,6 +4,10 @@
 # The destination stays editable after print — critical per spec.
 # ═══════════════════════════════════════════════════════════
 
+# Backer entrance (KS reward messages). force so this wins over backer/index.html on Netlify.
+/backer    /index.html  200!
+/backer/   /index.html  200!
+
 # Volume 1 Scan Codes — one per region/chapter
 # Elena's journey through the Hollowlands
 /sigil/threshold      /?scan=hollowlands-south    302
