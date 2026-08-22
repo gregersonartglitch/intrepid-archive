@@ -38,6 +38,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **239** | Split backer/public mailing | Password mixed with waitlist; Netlify claimed as MailerLite | `scripts/smoke-archive-optin.js`: `/backer/` choice vs `/` waitlist; No thanks no ML; fail closed | `/backer/` No thanks → password; `/` has no password; Join fails closed until ML URLs |
 | **240** | Public waitlist official form | Public Join had no MailerLite action URL; waitlist copy drifted from Jon’s form | `smoke-archive-optin.js`: official `publicActionUrl` form `196516110968817063`; Guest Access Waitlist / Notify Me | `/` shows Guest Access Waitlist; do not live-test signup |
 | **241** | Backer official form | Backer Join had no MailerLite action URL | `smoke-archive-optin.js`: official `backerActionUrl` form `196515214173144716`; URLs stay separate; Subscribe and Continue | `/backer/` Yes → Subscribe and Continue; do not live-test signup |
+| **242** | Public backer link hard to see | 11px / 62% bone “Already a backer?” | `smoke-archive-optin.js`: 16px desktop, 15px mobile, 44px min-height, bone + gold focus ring | `/` waitlist: link readable, full-text target, focus ring visible |
 
 ## Rollback
 

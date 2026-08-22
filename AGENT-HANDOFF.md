@@ -78,7 +78,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-238` | Branch only — superseded | Post-unlock Netlify opt-in (replaced by 239 split entrances) |
 | `build-239` | Branch only — superseded | `/backer/` vs public waitlist; both MailerLite URLs empty |
 | `build-240` | Branch only — superseded | Public waitlist official form URL + Guest Access Waitlist copy. Backer form URL empty. |
-| `build-241` | Branch only — **AWAITING REVIEW** | Both official MailerLite form URLs set (backer `196515214173144716`, public `196516110968817063`). Do not deploy. Do not live-test signup. |
+| `build-241` | Branch only — superseded | Both official MailerLite form URLs set |
+| `build-242` | Branch only — **AWAITING REVIEW** | Public “Already a backer?” restyle (16px / 15px, higher contrast, 44px target). Do not deploy. |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 

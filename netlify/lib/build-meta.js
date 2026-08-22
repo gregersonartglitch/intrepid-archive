@@ -1,7 +1,7 @@
 "use strict";
 
 /** Keep in sync with index.html INTREPID_BUILD on deploy-worthy changes. */
-var INTREPID_BUILD = 241;
+var INTREPID_BUILD = 242;
 
 var COMMIT_SHA =
   (typeof process !== "undefined" &&

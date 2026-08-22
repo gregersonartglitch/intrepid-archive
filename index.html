@@ -302,19 +302,36 @@ input { font-family: inherit; }
   max-width: 280px;
 }
 .entry-already-backer {
-  display: inline-block;
-  margin-top: 22px;
-  color: rgba(191,178,153,0.62);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 18px;
+  padding: 12px 16px;
+  min-height: 44px;
+  min-width: 44px;
+  color: var(--bone);
   font-family: var(--font-ui);
-  font-size: 11px;
-  letter-spacing: 0.4px;
-  text-decoration: none;
-}
-.entry-already-backer:hover,
-.entry-already-backer:focus-visible {
-  color: rgba(198,141,85,0.88);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  line-height: 1.35;
+  text-align: center;
   text-decoration: underline;
-  outline: none;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(212,168,67,0.65);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.entry-already-backer:hover {
+  color: var(--gold);
+  text-decoration-color: var(--gold);
+}
+.entry-already-backer:focus-visible {
+  color: var(--gold);
+  text-decoration-color: var(--gold);
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
 }
 .entry-mail-form {
   width: 100%;
@@ -2334,6 +2351,12 @@ body.edit-mode .mk-dot-wrap > * {
   .gate-card.is-optin { padding: 48px 22px 28px; }
   .entry-optin-close { top: 8px; right: 8px; min-width: 78px; height: 32px; }
   .entry-optin-body { font-size: 13px; }
+  .entry-already-backer {
+    font-size: 15px;
+    padding: 14px 16px;
+    min-height: 48px;
+    width: 100%;
+  }
   .landing-card { padding: 42px 26px 34px; }
   .landing-actions { grid-template-columns: 1fr; }
   .landing-subtitle { font-size: 16px; }
@@ -3470,7 +3493,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 241;
+window.INTREPID_BUILD = 242;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3546,8 +3569,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=241"></script>
-<script src="fog.js?v=241"></script>
+<script src="mailerlite-config.js?v=242"></script>
+<script src="fog.js?v=242"></script>
 <script>
 (function() {
   'use strict';

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive split-entrance + MailerLite opt-in smoke (build 241).
+ * Archive split-entrance + MailerLite opt-in smoke (build 242).
  * Run: node scripts/smoke-archive-optin.js
  * Exit 0 = pass, 1 = fail
  */
@@ -63,6 +63,13 @@ function run() {
   assert(html.indexOf('Notify Me') !== -1, 'public Notify Me CTA');
   assert(html.indexOf('Already a backer? Enter the Archive') !== -1, 'Already a backer link copy');
   assert(/href="\/backer\/"/.test(html), 'Already a backer href is /backer/');
+  var alreadyCss = html.slice(html.indexOf('.entry-already-backer {'), html.indexOf('.entry-mail-form'));
+  assert(alreadyCss.indexOf('font-size: 16px') !== -1, 'Already a backer is 16px on desktop');
+  assert(alreadyCss.indexOf('min-height: 44px') !== -1, 'Already a backer has 44px tap target');
+  assert(alreadyCss.indexOf('color: var(--bone)') !== -1, 'Already a backer uses high-contrast bone');
+  assert(alreadyCss.indexOf('outline: 2px solid var(--gold)') !== -1, 'Already a backer keeps visible focus ring');
+  var mobileCss = html.slice(html.indexOf('@media (max-width: 767px)'), html.indexOf('VIP WELCOME'));
+  assert(mobileCss.indexOf('.entry-already-backer') !== -1 && mobileCss.indexOf('font-size: 15px') !== -1, 'Already a backer is at least 15px on mobile');
   assert(html.indexOf('Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?') !== -1, 'backer choice question');
   assert(html.indexOf('Your choice does not affect access to your rewards.') !== -1, 'choice does not affect rewards');
   assert(html.indexOf('Yes, keep me updated') !== -1, 'Yes button');
@@ -181,9 +188,9 @@ function run() {
   assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
   assert(readerShell.indexOf('/backer/?entry=required') !== -1, 'reader-shell bounces to backer entrance');
   assert(dossierShell.indexOf('/backer/?entry=required') !== -1, 'dossier-shell bounces to backer entrance');
-  assert(html.indexOf('window.INTREPID_BUILD = 241') !== -1, 'INTREPID_BUILD is 241');
-  assert(html.indexOf('fog.js?v=241') !== -1, 'fog.js cache buster is 241');
-  assert(html.indexOf('mailerlite-config.js?v=241') !== -1, 'mailerlite-config cache buster is 241');
+  assert(html.indexOf('window.INTREPID_BUILD = 242') !== -1, 'INTREPID_BUILD is 242');
+  assert(html.indexOf('fog.js?v=242') !== -1, 'fog.js cache buster is 242');
+  assert(html.indexOf('mailerlite-config.js?v=242') !== -1, 'mailerlite-config cache buster is 242');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
   console.log('\n[codes] not in visible HTML');
