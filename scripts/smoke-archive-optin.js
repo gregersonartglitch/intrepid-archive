@@ -66,6 +66,7 @@ function run() {
   var alreadyCss = html.slice(html.indexOf('.entry-already-backer {'), html.indexOf('.entry-mail-form'));
   assert(alreadyCss.indexOf('font-size: 16px') !== -1, 'Already a backer is 16px on desktop');
   assert(alreadyCss.indexOf('min-height: 44px') !== -1, 'Already a backer has 44px tap target');
+  assert(alreadyCss.indexOf('width: 100%') !== -1, 'Already a backer uses full text-row target');
   assert(alreadyCss.indexOf('color: var(--bone)') !== -1, 'Already a backer uses high-contrast bone');
   assert(alreadyCss.indexOf('outline: 2px solid var(--gold)') !== -1, 'Already a backer keeps visible focus ring');
   var mobileCss = html.slice(html.indexOf('@media (max-width: 767px)'), html.indexOf('VIP WELCOME'));
