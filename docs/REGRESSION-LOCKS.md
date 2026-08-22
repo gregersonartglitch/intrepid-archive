@@ -40,6 +40,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **241** | Backer official form | Backer Join had no MailerLite action URL | `smoke-archive-optin.js`: official `backerActionUrl` form `196515214173144716`; URLs stay separate; Subscribe and Continue | `/backer/` Yes → Subscribe and Continue; do not live-test signup |
 | **242** | Public backer link hard to see | 11px / 62% bone “Already a backer?” | `smoke-archive-optin.js`: 16px desktop, 15px mobile, 44px min-height | `/` waitlist: link readable, full-text target |
 | **243** | Backer link preferred gold box | Resting state was bone; gold box only on keyboard focus | `smoke-archive-optin.js`: gold color + gold outline at rest | `/` waitlist: link shows gold boxed treatment without needing focus |
+| **244** | Public waitlist JSONP fail | Custom `intrepidMlCb` callback returned JSON; browser ORB-blocked the script | `scripts/smoke-mailerlite-jsonp.js`: page callback must wrap as `mlWebformSubmitted(`; custom name stays unusable | Empty-email probe returns `text/javascript`; do not live-test a real address |
 
 ## Rollback
 

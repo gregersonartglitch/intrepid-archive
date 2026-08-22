@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive split-entrance + MailerLite opt-in smoke (build 243).
+ * Archive split-entrance + MailerLite opt-in smoke (build 244).
  * Run: node scripts/smoke-archive-optin.js
  * Exit 0 = pass, 1 = fail
  */
@@ -122,6 +122,8 @@ function run() {
     assert(subFn.indexOf("reject(new Error('not-configured'))") !== -1, 'empty form URL fails closed');
     assert(subFn.indexOf('isMailerLiteSuccessPayload') !== -1, 'success requires MailerLite payload');
     assert(subFn.indexOf("fetch('/')") === -1, 'does not POST to Netlify Forms');
+    assert(subFn.indexOf("cbName = 'mlWebformSubmitted'") !== -1, 'JSONP callback is MailerLite mlWebformSubmitted');
+    assert(subFn.indexOf('intrepidMlCb') === -1, 'generated intrepidMlCb callback removed');
   }
 
   var successFn = extractFunction(html, 'isMailerLiteSuccessPayload');
@@ -189,9 +191,9 @@ function run() {
   assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
   assert(readerShell.indexOf('/backer/?entry=required') !== -1, 'reader-shell bounces to backer entrance');
   assert(dossierShell.indexOf('/backer/?entry=required') !== -1, 'dossier-shell bounces to backer entrance');
-  assert(html.indexOf('window.INTREPID_BUILD = 243') !== -1, 'INTREPID_BUILD is 243');
-  assert(html.indexOf('fog.js?v=243') !== -1, 'fog.js cache buster is 243');
-  assert(html.indexOf('mailerlite-config.js?v=243') !== -1, 'mailerlite-config cache buster is 243');
+  assert(html.indexOf('window.INTREPID_BUILD = 244') !== -1, 'INTREPID_BUILD is 244');
+  assert(html.indexOf('fog.js?v=244') !== -1, 'fog.js cache buster is 244');
+  assert(html.indexOf('mailerlite-config.js?v=244') !== -1, 'mailerlite-config cache buster is 244');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
   console.log('\n[codes] not in visible HTML');

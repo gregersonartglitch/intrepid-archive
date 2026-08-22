@@ -1,6 +1,6 @@
 # Archive entrances + MailerLite opt-in
 
-**Build:** 243  
+**Build:** 244  
 **Status:** AWAITING REVIEW — do not deploy  
 **PR:** continue #2 on `cursor/archive-optin-1ced`
 
