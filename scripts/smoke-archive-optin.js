@@ -253,15 +253,18 @@ function run() {
   assert(access.indexOf('ENABLE_GUEST_ENTRY = false') !== -1, 'guest entry remains off');
 
   console.log('\n[routing + 217 isolation]');
-  assert(/\/backer\s+\/index.html\s+200!/.test(redirects) || /from = "\/backer"/.test(toml), '/backer rewrite present');
-  assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
+  assert(/\/backer\s+\/\?entrance=backer\s+302!/.test(redirects), '/backer 302 to /?entrance=backer');
+  assert(/\/backer\/\s+\/\?entrance=backer\s+302!/.test(redirects), '/backer/ 302 to /?entrance=backer');
+  assert(!/\/backer\s+\/index.html\s+200!/.test(redirects), 'no 200 rewrite that keeps /backer/ in the URL');
+  assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rule');
+  assert(toml.indexOf('to = "/?entrance=backer"') !== -1, 'netlify.toml redirects to entrance query');
   assert(toml.indexOf('to = "/.netlify/functions/access-login"') === -1, 'no access-login rewrite');
   assert(toml.indexOf('to = "/.netlify/functions/reader-shell"') === -1, 'no reader-shell rewrite');
   assert(toml.indexOf('to = "/.netlify/functions/dossier-shell"') === -1, 'no dossier-shell rewrite');
-  assert(html.indexOf('window.INTREPID_BUILD = 248') !== -1, 'INTREPID_BUILD is 248 (217 + isolated opt-in corrections)');
+  assert(html.indexOf('window.INTREPID_BUILD = 249') !== -1, 'INTREPID_BUILD is 249 (248 + /backer 302)');
   assert(html.indexOf('fog.js?v=217') !== -1, 'fog.js cache buster stays 217');
   assert(html.indexOf('archive-access.js?v=209') !== -1, 'archive-access cache buster stays 209');
-  assert(html.indexOf('mailerlite-config.js?v=248') !== -1, 'mailerlite-config cache buster is 248');
+  assert(html.indexOf('mailerlite-config.js?v=249') !== -1, 'mailerlite-config cache buster is 249');
   assert(html.indexOf('refreshSession') === -1, 'no later session refresh boot');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 

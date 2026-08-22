@@ -25,6 +25,7 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **215** | West pan wall | Could not pan west when zoomed out (Moon Court / Kur) | *(manual)* `updateMapMaxBounds()` in `index.html` | Zoom out, pan west — Moon Queen / western edge reachable |
 | **247** | Isolated Archive/MailerLite (217+) | Public/backer doors + official JSONP (`mlWebformSubmitted`); generated callbacks ORB-block | `scripts/smoke-archive-optin.js`; empty-email `scripts/smoke-mailerlite-jsonp.js` | `/` waitlist, `/backer/` choice→password; no real email |
 | **248** | Split mailing state + returning-backer prompt | Shared `intrepid_archive_ml_choice_v1` crossed doors; unlocked `/backer/` skipped the required choice; `?entry=` leaked | Smoke: separate public key; `shouldPromptBackerMailing` before skip-entry; no `params.has('entry')`; CRLF-normalized boot extract | `/backer/` with existing session still asks choice; `/` waitlist stays independent |
+| **249** | `/backer/` 200 rewrite broke relative scripts | Browser stayed on `/backer/`; `archive-access.js` / `fog.js` 404'd; access-word submit never bound | Smoke: `_redirects` + `netlify.toml` 302 to `/?entrance=backer`; no `/index.html` 200! | `/backer/` 302 → `/?entrance=backer`; scripts 200; `scribe4` / `hollowlands9` unlock |
 
 ## Rollback
 

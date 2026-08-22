@@ -4,9 +4,10 @@
 # The destination stays editable after print — critical per spec.
 # ═══════════════════════════════════════════════════════════
 
-# Backer entrance (KS reward messages). force so this wins over backer/index.html on Netlify.
-/backer    /index.html  200!
-/backer/   /index.html  200!
+# Backer entrance (KS reward messages). 302 so the browser URL becomes /?entrance=backer
+# and relative scripts resolve at site root (build 249). force over backer/index.html.
+/backer    /?entrance=backer  302!
+/backer/   /?entrance=backer  302!
 
 # Volume 1 Scan Codes — one per region/chapter
 # Elena's journey through the Hollowlands

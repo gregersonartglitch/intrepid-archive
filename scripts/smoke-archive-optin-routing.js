@@ -50,10 +50,13 @@ function run() {
   assert(sandbox.window.INTREPID_MAILERLITE.backerActionUrl !== sandbox.window.INTREPID_MAILERLITE.publicActionUrl, 'backer and public URLs stay separate');
 
   console.log('\n[routing]');
-  assert(/\/backer\s+\/index.html\s+200!/.test(redirects), '_redirects /backer rewrite');
-  assert(/\/backer\/\s+\/index.html\s+200!/.test(redirects), '_redirects /backer/ rewrite');
-  assert(toml.indexOf('from = "/backer"') !== -1, 'netlify.toml /backer rewrite');
-  assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
+  assert(/\/backer\s+\/\?entrance=backer\s+302!/.test(redirects), '_redirects /backer 302 to entrance');
+  assert(/\/backer\/\s+\/\?entrance=backer\s+302!/.test(redirects), '_redirects /backer/ 302 to entrance');
+  assert(!/\/backer\s+\/index.html\s+200!/.test(redirects), '_redirects no longer 200-rewrites /backer');
+  assert(toml.indexOf('from = "/backer"') !== -1, 'netlify.toml /backer rule');
+  assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rule');
+  assert(toml.indexOf('to = "/?entrance=backer"') !== -1, 'netlify.toml /backer 302 target');
+  assert(/status = 302/.test(toml) && toml.indexOf('to = "/index.html"') === -1, 'netlify.toml backer status is 302 not 200');
   assert(backer.indexOf("params.set('entrance', 'backer')") !== -1, 'static /backer/ sets entrance=backer');
   assert(backer.indexOf('href="/?entrance=backer"') !== -1, 'static fallback link');
 
