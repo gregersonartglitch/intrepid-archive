@@ -75,6 +75,15 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-215` | Stable | Sabella letter recovery (Secrets 3/4), sequenced finale congrats, zoom-aware west pan |
 | `build-216` | Stable | Reader display size +/− (85–125%), ultrawide default fit boost, persisted preference |
 | `build-226` | **Current prod** | Tighter stage padding; Size slider resizes StPageFlip on ultrawide (`syncPageFlipDimensions`) |
+| `build-238` | Branch only — superseded | Post-unlock Netlify opt-in (replaced by 239 split entrances) |
+| `build-239` | Branch only — superseded | `/backer/` vs public waitlist; both MailerLite URLs empty |
+| `build-240` | Branch only — superseded | Public waitlist official form URL + Guest Access Waitlist copy. Backer form URL empty. |
+| `build-241` | Branch only — superseded | Both official MailerLite form URLs set |
+| `build-242` | Branch only — superseded | Public “Already a backer?” 16px/15px restyle |
+| `build-243` | Branch only — superseded | Public backer link uses the gold boxed treatment at rest |
+| `build-244` | Branch only — superseded | MailerLite JSONP callback is `mlWebformSubmitted` |
+| `build-245` | Branch only — superseded | Public waitlist success: You’re on the waitlist! + body |
+| `build-246` | Branch only — **AWAITING REVIEW** | Public fail copy no longer offers Archive access. Do not deploy. |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 
@@ -92,7 +101,7 @@ Console on live: `[Intrepid Map] build 59`
 
 ## Auth Tiers
 
-**Entry screen** (`#archive-entry`) is the first visit gate: backers enter an access word. **Guest entry is OFF** until mid–late August (`ENABLE_GUEST_ENTRY = false` in `archive-access.js`) — entry shows follow/updates signup instead of Continue as guest. **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read localStorage and do not re-prompt.
+**Entry screen:** Kickstarter backers use **`/backer/`** (choice, then access word). The bare Archive URL is a public waitlist with no password. Guest entry stays OFF (`ENABLE_GUEST_ENTRY = false`). **Archive home** (`#archive-home`) shows the tile grid with no password field. Codes are entered once — map and reader gates read the server session and do not re-prompt.
 
 | Tier | Password | Access | localStorage keys |
 |------|----------|--------|-------------------|

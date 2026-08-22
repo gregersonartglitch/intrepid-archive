@@ -822,12 +822,30 @@ assert(fogSrc.indexOf('function placeSearchKeyOffset') > -1 &&
   fogSrc.indexOf('KEY_OFFSET_MIN') > -1 &&
   fogSrc.indexOf('placeSearchKeyOffset(loc)') > -1,
   'chime key is offset from beacon for all search enters (shared helper)');
+assert(fogSrc.indexOf('TUTORIAL_INSTANT_STEPS') > -1,
+  'tutorial instant-step list still documented');
+assert(/TUTORIAL_INSTANT_IDS[\s\S]*?crossing-pool[\s\S]*?dawn-spear/.test(fogSrc) &&
+  /useInstant = isTutorial && !!TUTORIAL_INSTANT_IDS\[loc\.id\]/.test(fogSrc),
+  'tutorial instant discover is by location id (hut never instant via step race)');
+assert(fogSrc.indexOf("TUTORIAL_INSTANT_IDS[loc.id]") > -1 &&
+  fogSrc.indexOf("TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep)") === -1,
+  'discoverLocation no longer gates instant reveal on tutorialStep index');
 assert(fogSrc.indexOf('function ensureSabellaLetterBeforeChart') > -1 &&
   fogSrc.indexOf('ensureSabellaLetterBeforeChart(searchMode.loc)') > -1,
   'KEY_CLICK grants Sabella letter before charting (cannot skip Hot)');
 assert(fogSrc.indexOf('maybeShowSabellaLetterOnChime(proximity)') > -1 &&
   fogSrc.indexOf('ensureSabellaLetterBeforeChart') > -1,
   'Sabella letters fire on chime Hot band or KEY_CLICK (not auto at beacon center)');
+assert(fogSrc.indexOf('CHIME_LANTERN_MOVE_PX') > -1 &&
+  fogSrc.indexOf('lanternMoved') > -1 &&
+  /maybeShowSabellaLetterOnChime[\s\S]*?lanternMoved/.test(fogSrc),
+  'Hot letter requires lantern moved off enter position (no first-frame auto-Hot)');
+assert(fogSrc.indexOf('peakPt.x + 48') > -1 && fogSrc.indexOf('peakPt.y - 56') > -1,
+  'Sabella hut key pin restored to build-226 distance');
+assert(fogSrc.indexOf('peakPt.x + 42') > -1 && fogSrc.indexOf('peakPt.y - 40') > -1,
+  'Tower of Nine key pin restored to build-226 distance');
+assert(/Force parchment if Hot never fired, then chart on this same tap/.test(fogSrc),
+  'letter-gate finish charts on diamond/beacon tap (build-226 contract, no soft-lock nudge)');
 assert(/glowSearching[\s\S]*?phase === 'searching'/.test(fogSrc),
   'golden glow suppressed while journey stop is in chime search');
 assert(fogSrc.indexOf('function isSabellaLetterUiBlocked') > -1 &&
@@ -839,6 +857,22 @@ assert(fogSrc.indexOf('locked-msg-close') > -1 &&
   fogSrc.indexOf('function lockedMsgCloseHtml') > -1 &&
   fogSrc.indexOf('function wireLockedMsgDismiss') > -1,
   'locked modals share prominent Close button helper');
+assert(fogSrc.indexOf('function overlayCloseHtml') > -1 &&
+  fogSrc.indexOf('function dismissTransientMapOverlays') > -1 &&
+  fogSrc.indexOf("class=\"overlay-close\"") > -1,
+  'letter and map toasts share upper-right Close; letter dismisses stacked overlays');
+assert(fogSrc.indexOf('dismissTransientMapOverlays()') > -1 &&
+  /showSabellaMessagePopup[\s\S]*?dismissTransientMapOverlays/.test(fogSrc),
+  'Sabella letter clears Charge / teach / clue overlays before showing');
+assert(fogSrc.indexOf('function followFogCanvasToPane') > -1 &&
+  fogSrc.indexOf('fogFollowPan') > -1,
+  'fog canvas CSS-follows map pane during pan (no one-frame snap)');
+var indexSrc = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+assert(indexSrc.indexOf('maxBoundsViscosity: 0.35') > -1,
+  'map edge viscosity is soft (not 1.0 hard snap)');
+assert(indexSrc.indexOf('map.options.maxBounds = bounds') > -1 &&
+  indexSrc.indexOf('map.setMaxBounds(') === -1,
+  'updateMapMaxBounds does not call setMaxBounds (avoids panInside snap)');
 assert(fogSrc.indexOf('lockedMsgCloseHtml()') > -1 &&
   /showLockedMessage[\s\S]*?lockedMsgCloseHtml\(\)[\s\S]*?showVol2LockedMessage[\s\S]*?lockedMsgCloseHtml\(\)/.test(fogSrc),
   'Indras Na + Vol2 locked modals both use Close button');

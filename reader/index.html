@@ -36,6 +36,7 @@
   <p>Place <code>intrepid-dusk-volume-1-reader-upload.zip</code> in the project root and run <code>integrate-reader.ps1</code>.</p>
   <p><a href="/">Return to archive home</a></p>
 </div>
+<script src="/archive-access.js?v=230"></script>
 <script>
 (function() {
   'use strict';
@@ -45,21 +46,34 @@
     document.getElementById('deploy-msg').hidden = false;
   }
 
-  fetch(READER_PATH + 'index.html', { method: 'GET', cache: 'no-store' })
-    .then(function(res) {
-      if (res.ok) {
-        window.location.replace(READER_PATH);
+  function openReader() {
+    window.location.replace(READER_PATH);
+  }
+
+  if (window.IntrepidArchiveAccess && window.IntrepidArchiveAccess.refreshSession) {
+    window.IntrepidArchiveAccess.refreshSession().then(function() {
+      if (!window.IntrepidArchiveAccess.hasReaderBackerAccess()) {
+        window.location.replace('/backer/?entry=required');
         return;
       }
-      showDeployError();
-    })
-    .catch(showDeployError);
+      fetch(READER_PATH, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin' })
+        .then(function(res) {
+          if (res.ok) {
+            openReader();
+            return;
+          }
+          showDeployError();
+        })
+        .catch(showDeployError);
+    });
+    return;
+  }
+  window.location.replace('/backer/?entry=required');
 })();
 </script>
 <noscript>
   <div class="panel">
     <p>JavaScript is required to open the Volume 1 reader.</p>
-    <p><a href="/reader/intrepid-dusk-volume-1/">Open reader directly</a></p>
     <p><a href="/">Return to archive home</a></p>
   </div>
 </noscript>

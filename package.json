@@ -1,0 +1,23 @@
+{
+  "name": "intrepid-archive",
+  "private": true,
+  "description": "Intrepid Dusk archive — static site + Netlify Functions (Wave 1 gate)",
+  "scripts": {
+    "check:access-auth": "node scripts/test-access-auth-unit.js",
+    "generate:asset-manifest": "node scripts/generate-protected-asset-manifest.js",
+    "prepare:protected-assets": "node scripts/prepare-protected-assets-local.js",
+    "upload:protected-assets": "node scripts/upload-protected-assets-to-blobs.js",
+    "smoke:backer-login": "node scripts/smoke-backer-login.js",
+    "smoke:reader-deeplink": "node scripts/smoke-reader-deeplink.js",
+    "smoke:server-gate": "node scripts/smoke-server-gate.js",
+    "smoke:chime-hut": "node scripts/smoke-chime-hut-search.js",
+    "test:gate": "npm run check:access-auth && npm run smoke:backer-login && npm run smoke:server-gate"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^8.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.38.1",
+    "playwright": "^1.51.0"
+  }
+}

@@ -3,8 +3,27 @@
 
 [functions]
   node_bundler = "esbuild"
+  included_files = [
+    "reader/intrepid-dusk-volume-1/index.html",
+    "dossier/index.html",
+    "netlify/lib/asset-allowlist.json"
+  ]
 
-# index.html is the shell — no long-lived browser cache (build 125 header fix)
+[functions."protected-media"]
+  included_files = ["netlify/lib/asset-allowlist.json", "protected-assets/**"]
+
+[functions."reader-shell"]
+  included_files = ["reader/intrepid-dusk-volume-1/index.html"]
+
+[functions."dossier-shell"]
+  included_files = ["dossier/index.html"]
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Cache-Control = "no-store"
+    X-Content-Type-Options = "nosniff"
+
 [[headers]]
   for = "/"
   [headers.values]
@@ -17,30 +36,83 @@
     Cache-Control = "no-cache, no-store, must-revalidate"
     Pragma = "no-cache"
 
-# Reader page art — long-lived immutable cache. Bust via ?v=PAGE_ASSET_VERSION
-# (or content-hash). Do NOT apply this to spike.js / index.html / CSS.
 [[headers]]
-  for = "/reader/intrepid-dusk-volume-1/assets/pages/*"
+  for = "/reader/intrepid-dusk-volume-1/assets/pages/cover-hardcover.webp"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
 
 [[headers]]
-  for = "/reader/*/assets/pages/*"
+  for = "/api/protected-media/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-# Dossier WebP thumbs/portraits — long cache; bust via ?v=CACHE_V in dossier/index.html
-[[headers]]
-  for = "/dossier/thumbs/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/dossier/portraits/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "private, no-store"
+    Vary = "Cookie"
 
 [[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  from = "/backer"
+  to = "/index.html"
   status = 200
+  force = true
+
+[[redirects]]
+  from = "/backer/"
+  to = "/index.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/access/login"
+  to = "/.netlify/functions/access-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/access/logout"
+  to = "/.netlify/functions/access-logout"
+  status = 200
+
+[[redirects]]
+  from = "/api/access/session"
+  to = "/.netlify/functions/access-session"
+  status = 200
+
+[[redirects]]
+  from = "/api/build-info"
+  to = "/.netlify/functions/build-info"
+  status = 200
+
+# /api/protected-media/* served by netlify/edge-functions/protected-media.js (streams large PDFs)
+
+[[redirects]]
+  from = "/reader/intrepid-dusk-volume-1"
+  to = "/.netlify/functions/reader-shell"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reader/intrepid-dusk-volume-1/"
+  to = "/.netlify/functions/reader-shell"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/reader/intrepid-dusk-volume-1/index.html"
+  to = "/.netlify/functions/reader-shell"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/dossier"
+  to = "/.netlify/functions/dossier-shell"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/dossier/"
+  to = "/.netlify/functions/dossier-shell"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/dossier/index.html"
+  to = "/.netlify/functions/dossier-shell"
+  status = 200
+  force = true

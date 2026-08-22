@@ -18,13 +18,13 @@ Stripe Checkout is the only path that already captures email (paid unlock). Mail
 
 ## Notify list (name + email when public)
 
-**Shipped (build 196):** Netlify Form `hollowlands-follow` on the archive entry screen.
+**Shipped (build 196, replaced 239):** Netlify Form `hollowlands-follow` was the first notify path. **Build 239** splits `/backer/` vs public waitlist and submits to **official MailerLite generated forms** (fail closed until Jon pastes action URLs). See [`docs/archive-optin-implementation.md`](archive-optin-implementation.md).
 
 - Fields: **preferred nickname** + **email** + **explicit marketing opt-in** (unchecked by default, required to submit)
-- Stored with submission: `marketing_opt_in=yes`, `opt_in_at` (ISO), `opt_in_source=archive-entry-follow`
-- Copy: “Or follow for updates” / Get updates
+- Stored with submission: `marketing_opt_in=yes`, `opt_in_at` (ISO), `opt_in_source` (`archive-entry-follow` on guest notify; `archive-post-unlock` on the backer newsletter card)
+- Copy: guest “No access word? Get notified…”; post-unlock “Stay connected with Intrepid Dusk” / Join the email list
 - Submissions: Netlify dashboard → **Forms** → `hollowlands-follow`
-- MailerLite path: export CSV → import only rows with `marketing_opt_in=yes` (or enable MailerLite double opt-in confirmation on that group)
+- MailerLite path: export CSV → import only rows with `marketing_opt_in=yes`; put `archive-post-unlock` into group **Intrepid Dusk — Archive Opt-ins** (no API keys in the browser). See [`docs/archive-optin-implementation.md`](archive-optin-implementation.md).
 - Kill switch: `ENABLE_FOLLOW_SIGNUP = false` in `index.html`, or `localStorage.setItem('intrepid_follow_signup_disabled','1')`
 - Not a hard gate — codes stay primary; guest remains separate
 

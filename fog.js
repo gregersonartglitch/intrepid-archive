@@ -24,8 +24,10 @@
   // Hot/cold sigil offset from beacon center (map units). Must clear the golden/amber
   // orb so the player can move the lantern toward a distinct hot spot — never stack
   // the diamond on the glow they just clicked.
+  // Restored to build-226 distances (build 235) — 232–234 pins were too far into fog.
   var KEY_OFFSET_MIN = 70;
   var KEY_OFFSET_MAX = 110;
+  var CHIME_LANTERN_MOVE_PX = 28; // px — proximity Hot waits for a short lantern move
   var PINHOLE_SCALE = 0.2;   // fraction of full reveal radius for pinhole
   var HINT_DELAY = 2500;     // ms before key pulse strengthens (was 5000)
   var CHIME_ESCAPE_MS = 8000;     // safety net only (letter stops start boosted)
@@ -185,7 +187,27 @@
   // Map perf runtime state (see ENABLE_MAP_PERF block above)
   var driftRAF = null;
   var lastDriftDrawMs = 0;
-  var fogDrawScheduled = false;
+  var fogFollowPan = false;
+  var fogFollowOrigin = null;
+
+  function getMapPanePos() {
+    if (!map || typeof L === 'undefined' || !L.DomUtil) return { x: 0, y: 0 };
+    var panes = map.getPanes && map.getPanes();
+    if (!panes || !panes.mapPane) return { x: 0, y: 0 };
+    return L.DomUtil.getPosition(panes.mapPane) || { x: 0, y: 0 };
+  }
+
+  function resetFogCanvasTransform() {
+    if (fogCanvas) fogCanvas.style.transform = '';
+    fogFollowOrigin = getMapPanePos();
+  }
+
+  function followFogCanvasToPane() {
+    if (!fogCanvas || !fogFollowOrigin) return;
+    var pos = getMapPanePos();
+    fogCanvas.style.transform =
+      'translate(' + (pos.x - fogFollowOrigin.x) + 'px,' + (pos.y - fogFollowOrigin.y) + 'px)';
+  }
   var mapPerfVisBound = false;
   var fogWaveClearProgress = 0; // also set by finale wave; declared early for needsFullRateDraw
   var guideTarget = null; // { lat, lng, endTime } — also assigned in GUIDE ME section
@@ -335,7 +357,8 @@
     var freq = 300 + proximity * 600;
 
     if (now - lastPingTime > interval) {
-      playPing(freq, 0.08 + proximity * 0.1, 0.04 + proximity * 0.08);
+      // Audible over ambient bed — quiet enough not to startle, loud enough to hunt by.
+      playPing(freq, 0.1 + proximity * 0.12, 0.07 + proximity * 0.12);
       lastPingTime = now;
     }
   }
@@ -528,7 +551,7 @@
     // Create fog canvas on the map container (must not live in a 0×0 Leaflet pane)
     fogCanvas = document.createElement('canvas');
     fogCanvas.className = 'fog-canvas';
-    fogCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:450;pointer-events:none;';
+    fogCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:450;pointer-events:none;will-change:transform;';
     map.getContainer().appendChild(fogCanvas);
     fogCtx = fogCanvas.getContext('2d');
 
@@ -536,9 +559,30 @@
     setupClickHandler();
     setupSpotlightTracking();
 
-    // Redraw on map events; detach lantern when pan moves search zone off-screen
-    map.on('move', syncSpotlightAttachment);
-    map.on('move zoom viewreset resize zoomend', scheduleFogDraw);
+    // Redraw on map events; during pan, CSS-follow the map pane so fog does not
+    // lag a frame behind the image overlay (that lag reads as snapping).
+    map.on('movestart', function() {
+      if (map._animatingZoom) return;
+      fogFollowPan = true;
+      fogFollowOrigin = getMapPanePos();
+    });
+    map.on('move', function() {
+      syncSpotlightAttachment();
+      if (needsFullRateDraw() || map._animatingZoom) {
+        scheduleFogDraw();
+        return;
+      }
+      if (fogFollowPan) {
+        followFogCanvasToPane();
+        return;
+      }
+      scheduleFogDraw();
+    });
+    map.on('moveend zoomend viewreset resize', function() {
+      fogFollowPan = false;
+      resetFogCanvasTransform();
+      scheduleFogDraw();
+    });
     window.addEventListener('resize', scheduleFogDraw);
     draw();
 
@@ -588,7 +632,7 @@
       '#medallion-hotspots, .medallion-hot, ' +
       '#fog-reset-btn, #fog-guide-btn, #ambient-toggle, .journey-fab, .hdr-v1-btn, .hdr-home-btn, ' +
       '#sabella-clue-popup, #sabella-message-popup, #post-tutorial-hint, #chime-escape-hint, #chime-search-teach, #chime-warmth-hud, #guide-hint-toast, ' +
-      '#tutorial-canvas-tip, #letter-gate-nudge, ' +
+      '#tutorial-canvas-tip, #letter-gate-nudge, .overlay-close, ' +
       '.panel-close, #welcome, #landing, #gate, #journey-toast, #coord-unlock, #finale-overlay, ' +
       '.zctl-btn, .landing-action, .welcome-btn, .gate-card, .jt-btn, .finale-action, #gate-btn, ' +
       '#gate-eye, #gate-pw, #coord-toggle, #coord-submit, #coord-input';
@@ -884,7 +928,16 @@
     { msg: 'The archive is yours, Cartographer. Explore freely.', action: 'auto', display: 'toast' }
   ];
 
-  // Which tutorial steps use instant reveal (no spotlight search)
+  // Which tutorial discoveries skip spotlight search (Crossing Pool + Dawn Spear only).
+  // MUST be by location id — not tutorialStep index. Golden-glow clicks call
+  // discoverLocation without the tutorialHintLoc gate; if step is still 2 when
+  // Sabella's Hut is the next path stop, a step-based check wrongly instant-reveals
+  // the hut and skips the entire chime hunt (build 233).
+  var TUTORIAL_INSTANT_IDS = {
+    'crossing-pool': true,
+    'dawn-spear': true
+  };
+  // Legacy step list kept for smoke/docs; discoverLocation uses TUTORIAL_INSTANT_IDS.
   var TUTORIAL_INSTANT_STEPS = [0, 1, 2];
   // Step that waits for card close (doesn't advance on discover)
   var TUTORIAL_CARD_STEP = 1;
@@ -1199,6 +1252,7 @@
   function showPostTutorialHint(force) {
     if (!force && !shouldShowPostTutorialHint()) return;
     if (document.getElementById('post-tutorial-hint')) return;
+    if (document.getElementById('sabella-message-popup')) return;
 
     if (!document.getElementById('tut-toast-style')) {
       var s = document.createElement('style');
@@ -1213,12 +1267,13 @@
       'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
       'background:rgba(8,10,14,0.97);' +
       'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
-      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'padding:36px 36px 22px;text-align:center;max-width:520px;width:90%;' +
       'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,141,85,0.12);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:12px;font-family:Cinzel,serif;">Cartographer\u2019s Charge</div>' +
       '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:14px;">' +
@@ -1230,10 +1285,9 @@
       '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:12px;">' +
         'On amber stars the mark hides in the fog \u2014 your lantern grows warmer as you near it. Click a second time to chart it.</div>' +
       '<div style="font-size:12px;color:#c4a882;line-height:1.55;margin-top:10px;">' +
-        'Sabella left letters along Elena\u2019s road (hut, monastery, tower, Sinn). When the lantern is hottest, the parchment appears \u2014 you will need them before Indras Na.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;' +
-        'font-family:EB Garamond,serif;">tap to dismiss</div>';
+        'Sabella left letters along Elena\u2019s road (hut, monastery, tower, Sinn). When the lantern is hottest, the parchment appears \u2014 you will need them before Indras Na.</div>';
     toast.addEventListener('click', function() { dismissPostTutorialHint(true); });
+    wireOverlayClose(toast, function() { dismissPostTutorialHint(true); });
     document.body.appendChild(toast);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
@@ -1755,6 +1809,35 @@
   function lockedMsgCloseHtml() {
     return '<button type="button" class="locked-msg-close" aria-label="Close">' +
       '\u2715 Close</button>';
+  }
+
+  function overlayCloseHtml() {
+    return '<button type="button" class="overlay-close" aria-label="Close">' +
+      '\u2715 Close</button>';
+  }
+
+  function wireOverlayClose(el, dismissFn) {
+    if (!el || !dismissFn) return;
+    var btn = el.querySelector('.overlay-close');
+    if (!btn) return;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (e.preventDefault) e.preventDefault();
+      dismissFn();
+    });
+  }
+
+  // One overlay at a time — letter must not sit on Charge / teach / clue toasts.
+  function dismissTransientMapOverlays() {
+    dismissPostTutorialHint(false);
+    removePersistentToast();
+    dismissChimeSearchTeachTip();
+    dismissSabellaCluePopup(true);
+    var extra = ['chime-escape-hint', 'guide-hint-toast', 'territory-unlock-toast', 'letter-gate-nudge'];
+    for (var i = 0; i < extra.length; i++) {
+      var el = document.getElementById(extra[i]);
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
   }
 
   function wireLockedMsgDismiss(el, autoMs, onDismiss) {
@@ -2360,6 +2443,7 @@
      ════════════════════════════════════════════════ */
   function draw() {
     if (!map || !fogCtx) return;
+    resetFogCanvasTransform();
 
     var size = syncFogCanvasSize();
     var w = size.w;
@@ -3004,9 +3088,10 @@
       return;
     }
 
-    // Tutorial: instant reveal for steps 0-2, spotlight search for step 3+
+    // Tutorial: instant reveal only for Crossing Pool + Dawn Spear (by id).
+    // Sabella's Hut and later journey stops always use chime search.
     var isTutorial = tutorialStep < TUTORIAL_STEPS;
-    var useInstant = isTutorial && TUTORIAL_INSTANT_STEPS.indexOf(tutorialStep) > -1;
+    var useInstant = isTutorial && !!TUTORIAL_INSTANT_IDS[loc.id];
 
     if (useInstant) {
       instantDiscover(loc);
@@ -3115,17 +3200,17 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
       'background:rgba(10,12,16,0.95);' +
       'border:1px solid rgba(212,168,67,0.5);border-left:4px solid rgba(212,168,67,0.9);' +
-      'border-radius:0 10px 10px 0;padding:18px 22px;width:220px;' +
+      'border-radius:0 10px 10px 0;padding:32px 22px 18px;width:220px;' +
       'font-family:"Cinzel",serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.6s ease;' +
       'box-shadow:0 8px 40px rgba(0,0,0,0.7), 0 0 30px rgba(212,168,67,0.1);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Territory Unlocked</div>' +
       '<div style="font-size:11px;color:#8a7d6b;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Congratulations</div>' +
       '<div style="font-size:18px;font-weight:600;letter-spacing:1px;color:#efe7d2;margin-bottom:6px;">✦ ' + loc.name + '</div>' +
       (loc.sub ? '<div style="font-size:11px;color:#9a8f7e;font-family:EB Garamond,serif;font-style:italic;margin-bottom:12px;">' + loc.sub + '</div>' : '<div style="margin-bottom:12px;"></div>') +
-      '<div style="font-size:10px;color:#c68d55;letter-spacing:1px;">This territory is now revealed.<br>Discover its cities &amp; sites.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:14px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:10px;color:#c68d55;letter-spacing:1px;">This territory is now revealed.<br>Discover its cities &amp; sites.</div>';
     document.body.appendChild(toast);
 
     function dismissUnlock() {
@@ -3133,6 +3218,7 @@
       setTimeout(function() { toast.remove(); }, 600);
     }
     toast.addEventListener('click', dismissUnlock);
+    wireOverlayClose(toast, dismissUnlock);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });
@@ -3174,6 +3260,7 @@
   // Place the hot/cold key away from the beacon / interaction point so the diamond
   // never stacks on the golden/amber orb the player just clicked. Shared for all
   // chime searches (journey letter stops, cartographer sites, letter recovery).
+  // Distances restored from tag build-226 (build 235).
   function placeSearchKeyOffset(loc) {
     var ll = getInteractionLatLng(loc);
     // Fixed screen pins for letter stops — random 360° offsets land on neighbor
@@ -3289,7 +3376,8 @@
   }
 
   // Finish chime search on key diamond, beacon, or the zone between them.
-  // Letter gate: one tap opens the letter (if needed) and charts immediately.
+  // Restored build-226 finish contract (build 235): one tap on diamond/beacon/zone
+  // opens letter if needed and charts — no soft-lock where diamond only nudges.
   function tryFinishChimeSearchAt(x, y, e) {
     if (!searchMode || !map) return false;
     var touchPad = (e && e.type && String(e.type).indexOf('touch') === 0) ? 16 : 0;
@@ -3303,6 +3391,13 @@
 
     // Pin lantern to this tap so Hot/letter logic matches where they clicked.
     spotlightPos = { x: x, y: y };
+    if (searchMode.startSpotlight) {
+      var moveDx = x - searchMode.startSpotlight.x;
+      var moveDy = y - searchMode.startSpotlight.y;
+      if (Math.sqrt(moveDx * moveDx + moveDy * moveDy) >= CHIME_LANTERN_MOVE_PX) {
+        searchMode.lanternMoved = true;
+      }
+    }
 
     // Soft path (gate off): KEY/beacon grants parchment then charts.
     ensureSabellaLetterBeforeChart(searchMode.loc);
@@ -3310,6 +3405,7 @@
     if (isLetterGateBlockingChart(searchMode.loc)) {
       // Force parchment if Hot never fired, then chart on this same tap (no 2nd click / fade wait).
       if (!searchMode.sabellaLetterFired) {
+        searchMode.lanternMoved = true;
         maybeShowSabellaLetterOnChime(1);
       }
       sabellaMessageOnDismiss = null;
@@ -3361,11 +3457,15 @@
     var beaconLl = getInteractionLatLng(loc);
     var pt = map.latLngToContainerPoint(beaconLl);
     spotlightPos = { x: pt.x, y: pt.y };
+    searchMode.startSpotlight = { x: pt.x, y: pt.y };
+    searchMode.lanternMoved = false;
 
     if (map) map.getContainer().classList.add('chime-search-active');
     setChimeSearchLabelFocus(loc.id);
     showChimeSearchTeachTip(loc);
     ensureChimeWarmthHud();
+    ensureAudio();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     // Letters fire when lantern crosses Hot near the offset sigil (or on KEY_CLICK
     // via ensureSabellaLetterBeforeChart) — do not auto-grant Hot at beacon center.
@@ -3409,6 +3509,7 @@
   }
 
   function showChimeSearchTeachTip(loc) {
+    if (document.getElementById('sabella-message-popup')) return;
     dismissChimeSearchTeachTip();
     var firstTime = true;
     try { firstTime = localStorage.getItem(CHIME_TEACH_SEEN_LS) !== '1'; } catch (e) {}
@@ -3419,7 +3520,7 @@
     tip.style.cssText =
       'position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:940;cursor:pointer;' +
       'background:rgba(8,10,14,0.94);border:1px solid rgba(212,168,67,0.5);' +
-      'border-radius:12px;padding:14px 22px;max-width:440px;width:90%;text-align:center;' +
+      'border-radius:12px;padding:36px 22px 14px;max-width:440px;width:90%;text-align:center;' +
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 8px 36px rgba(0,0,0,0.65),0 0 24px rgba(212,168,67,0.1);' +
       'opacity:0;transition:opacity 0.45s ease;';
@@ -3439,6 +3540,7 @@
         : 'Move your lantern closer until it warms, then click again to chart the mark.';
     }
     tip.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:8px;font-family:Cinzel,serif;">' +
         (letterRecovery || letterGate || hasLetter ? 'Sabella\u2019s letter' : 'Search the fog') + '</div>' +
@@ -3446,9 +3548,12 @@
       (loc && loc.name
         ? '<div style="font-size:11px;color:#9a8f7e;margin-top:8px;">' +
           (letterRecovery ? 'At ' : ((letterGate || hasLetter) ? 'Tap diamond \u00b7 ' : 'Charting ')) + loc.name + '</div>'
-        : '') +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+        : '');
     tip.addEventListener('click', function() {
+      try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e2) {}
+      dismissChimeSearchTeachTip();
+    });
+    wireOverlayClose(tip, function() {
       try { localStorage.setItem(CHIME_TEACH_SEEN_LS, '1'); } catch (e2) {}
       dismissChimeSearchTeachTip();
     });
@@ -3549,15 +3654,19 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:950;cursor:pointer;' +
       'background:rgba(10,12,16,0.95);border:1px solid rgba(212,168,67,0.45);' +
       'border-left:4px solid rgba(212,168,67,0.9);border-radius:0 10px 10px 0;' +
-      'padding:16px 20px;width:240px;font-family:Cinzel,serif;color:#efe7d2;' +
+      'padding:32px 20px 16px;width:240px;font-family:Cinzel,serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.5s ease;' +
       'box-shadow:0 8px 40px rgba(0,0,0,0.7);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;margin-bottom:8px;">Still searching?</div>' +
-      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. As it glows warmer you are closer \u2014 look for the glowing sigil, then click again to chart it.</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:13px;line-height:1.55;color:#efe7d2;">Move your lantern slowly. As it glows warmer you are closer \u2014 look for the glowing sigil, then click again to chart it.</div>';
     document.body.appendChild(toast);
     toast.addEventListener('click', function() {
+      toast.style.opacity = '0';
+      setTimeout(function() { toast.remove(); }, 500);
+    });
+    wireOverlayClose(toast, function() {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 500);
     });
@@ -3642,22 +3751,23 @@
       'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;cursor:pointer;' +
       'background:rgba(8,10,14,0.97);' +
       'border:2px solid rgba(198,141,85,0.6);border-radius:14px;' +
-      'padding:22px 36px;text-align:center;max-width:520px;width:90%;' +
+      'padding:36px 36px 22px;text-align:center;max-width:520px;width:90%;' +
       'font-family:"Montserrat","Segoe UI",sans-serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.12);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     popup.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:12px;font-family:Cinzel,serif;">Secrets \u00b7 ' + band.eyebrow + '</div>' +
       '<div style="font-size:18px;letter-spacing:0.3px;line-height:1.6;margin-bottom:12px;font-family:EB Garamond,serif;">' +
         '\u201c' + payload.text + '\u201d</div>' +
-      '<div style="font-size:12px;color:#9a8f7e;font-style:italic;margin-bottom:8px;">\u2014 ' + payload.speaker + '</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;font-family:EB Garamond,serif;">tap to dismiss</div>';
+      '<div style="font-size:12px;color:#9a8f7e;font-style:italic;margin-bottom:8px;">\u2014 ' + payload.speaker + '</div>';
     popup.addEventListener('click', function(e) {
       e.stopPropagation();
       dismissSabellaCluePopup(true);
     });
+    wireOverlayClose(popup, function() { dismissSabellaCluePopup(true); });
     document.body.appendChild(popup);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { popup.style.opacity = '1'; });
@@ -3926,6 +4036,9 @@
     var locId = searchMode.locId;
     if (!SABELLA_MESSAGES[locId] || !hasUnseenSabellaMessage(locId)) return;
     if (searchMode.sabellaLetterFired) return;
+    // First-visit hunt: require lantern moved off enter position so a Cool start
+    // cannot auto-fire Hot on the first draw frame (build 232).
+    if (!searchMode.letterRecovery && !searchMode.lanternMoved && proximity < 0.999) return;
     if (proximity < getSabellaLetterHotThreshold()) return;
 
     searchMode.sabellaLetterFired = true;
@@ -3996,7 +4109,7 @@
 
   function showSabellaMessagePopup(locId, letter) {
     if (document.getElementById('sabella-message-popup')) return;
-    dismissSabellaCluePopup(true);
+    dismissTransientMapOverlays();
 
     if (!document.getElementById('tut-toast-style')) {
       var s = document.createElement('style');
@@ -4010,16 +4123,17 @@
     popup.setAttribute('role', 'dialog');
     popup.setAttribute('aria-label', letter.title || 'Letter from Sabella');
     popup.style.cssText =
-      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2000;' +
+      'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:2100;' +
       'cursor:pointer;' +
       'background:linear-gradient(165deg,rgba(42,32,22,0.98) 0%,rgba(18,14,10,0.98) 55%,rgba(12,10,8,0.99) 100%);' +
       'border:2px solid rgba(198,141,85,0.65);border-radius:14px;' +
-      'padding:24px 36px;text-align:center;max-width:540px;width:90%;' +
+      'padding:40px 36px 24px;text-align:center;max-width:540px;width:90%;' +
       'font-family:"EB Garamond",Georgia,serif;color:#efe7d2;' +
       'box-shadow:0 12px 60px rgba(0,0,0,0.85),0 0 40px rgba(198,168,67,0.14),inset 0 1px 0 rgba(232,210,170,0.08);' +
       'animation:tutBorderPulse 2s ease-in-out infinite;' +
       'opacity:0;transition:opacity 0.5s ease;';
     popup.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#d4a843;' +
         'margin-bottom:10px;font-family:Cinzel,serif;">Sabella\u2019s Letter</div>' +
       '<div style="font-size:15px;letter-spacing:1px;color:#c4a882;margin-bottom:14px;font-family:Cinzel,serif;">' +
@@ -4028,15 +4142,15 @@
         letter.greeting + '</div>' +
       '<div style="font-size:16px;letter-spacing:0.2px;line-height:1.65;margin-bottom:16px;text-align:left;color:#efe7d2;">' +
         letter.body + '</div>' +
-      '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;margin-bottom:8px;">\u2014 ' +
-        letter.signoff + '</div>' +
-      '<div style="font-size:9px;color:#5a5045;margin-top:10px;font-style:italic;">tap to dismiss</div>';
+      '<div style="font-size:13px;color:#9a8f7e;font-style:italic;text-align:right;">\u2014 ' +
+        letter.signoff + '</div>';
 
     function onLetterDismiss(e) {
       if (e) e.stopPropagation();
       dismissSabellaMessagePopup();
     }
     popup.addEventListener('click', onLetterDismiss);
+    wireOverlayClose(popup, onLetterDismiss);
     document.body.appendChild(popup);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { popup.style.opacity = '1'; });
@@ -4214,6 +4328,13 @@
       return;
     }
     spotlightPos = { x: x, y: y };
+    if (searchMode.startSpotlight && !searchMode.lanternMoved) {
+      var mdx = x - searchMode.startSpotlight.x;
+      var mdy = y - searchMode.startSpotlight.y;
+      if (Math.sqrt(mdx * mdx + mdy * mdy) >= CHIME_LANTERN_MOVE_PX) {
+        searchMode.lanternMoved = true;
+      }
+    }
   }
 
   // Mouse/touch tracking for spotlight (search mode only)
@@ -5233,23 +5354,24 @@
       'position:fixed;left:20px;top:50%;transform:translateY(-50%);z-index:900;cursor:pointer;' +
       'background:rgba(10,12,16,0.94);' +
       'border:1px solid rgba(140,180,220,0.4);border-left:3px solid rgba(140,180,220,0.8);' +
-      'border-radius:0 8px 8px 0;padding:16px 18px;width:218px;' +
+      'border-radius:0 8px 8px 0;padding:32px 18px 16px;width:218px;' +
       'font-family:"EB Garamond",serif;color:#efe7d2;' +
       'opacity:0;transition:opacity 0.5s ease;' +
       'box-shadow:0 6px 30px rgba(0,0,0,0.6);';
     toast.innerHTML =
+      overlayCloseHtml() +
       '<div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;' +
         'color:#8ab4d4;margin-bottom:8px;font-family:Cinzel,serif;">&#9670; Guide</div>' +
       '<div style="font-size:14px;font-weight:600;color:#d4c89a;margin-bottom:8px;line-height:1.3;">' + title + '</div>' +
       '<div style="font-size:12px;color:#9a8f7e;line-height:1.7;margin-bottom:4px;">' + line1 + '</div>' +
-      (line2 ? '<div style="font-size:11px;color:#c68d55;line-height:1.6;">' + line2 + '</div>' : '') +
-      '<div style="font-size:9px;color:#5a5045;margin-top:12px;font-style:italic;">tap to dismiss</div>';
+      (line2 ? '<div style="font-size:11px;color:#c68d55;line-height:1.6;">' + line2 + '</div>' : '');
     document.body.appendChild(toast);
     function dismiss() {
       toast.style.opacity = '0';
       setTimeout(function() { toast.remove(); }, 500);
     }
     toast.addEventListener('click', dismiss);
+    wireOverlayClose(toast, dismiss);
     requestAnimationFrame(function() {
       requestAnimationFrame(function() { toast.style.opacity = '1'; });
     });

@@ -55,6 +55,25 @@ Dev server: `npx http-server . -p 8080 --cors -c-1` → `http://localhost:8080`
 | L3 | Complete Indras Na with full map | Vol2 congrats first; archive overlay **after** Close |
 | L4 | Zoom out, pan west toward Sinn / Kur | No hard wall at western edge |
 
+## Archive entrances (build 239)
+
+```bash
+node scripts/smoke-archive-optin.js
+```
+
+| Step | Action | Expected |
+|------|--------|----------|
+| O1 | Open `/backer/` incognito | Choice card, no password yet |
+| O2 | **No thanks** | Password immediately; no MailerLite/network email POST |
+| O3 | **Yes** → email → Join | Password after MailerLite success; or failure copy if forms not configured |
+| O4 | **Continue without joining** | Password; no list POST |
+| O5 | Wrong word | Still invalid |
+| O6 | `scribe4` / `hollowlands9` | Reader+dossier vs atlas — gates unchanged |
+| O7 | Open `/` | Waitlist, no password; **Already a backer?** → `/backer/` |
+| O8 | Phone-width | Choice and waitlist labels readable |
+
+MailerLite Join cannot pass until Jon pastes official form action URLs into `mailerlite-config.js`.
+
 ## Agent rule
 
 After fog.js journey/gate/chime changes: run **both** commands above; browser-verify the manual table before claiming done.
