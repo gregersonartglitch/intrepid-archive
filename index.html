@@ -3083,16 +3083,16 @@ body.edit-mode #frame-rim-seal { display: none !important; }
     </div>
     <div id="entry-mail-step" class="entry-mail-step" hidden>
       <div class="gate-eyebrow">Intrepid Dusk Archive</div>
-      <div class="gate-title" id="entry-mail-title">Stay connected</div>
+      <div class="gate-title" id="entry-mail-title">Intrepid Dusk Archive</div>
       <div class="gate-rule"></div>
-      <p class="entry-optin-body">Joining the list is how we get permission to email you. You can continue without joining.</p>
+      <p class="entry-optin-body">Get occasional Archive news by email. (Optional)</p>
       <form id="entry-mail-form" class="entry-mail-form" action="#" method="POST" novalidate>
         <div class="entry-optin-fields">
           <input id="entry-mail-email" class="gate-input" type="email" name="email" placeholder="EMAIL" autocomplete="email" maxlength="120" aria-label="Email for Intrepid Dusk updates" required>
-          <button id="entry-mail-join" class="gate-btn" type="submit">Join the email list</button>
+          <button id="entry-mail-join" class="gate-btn" type="submit">Subscribe and Continue</button>
         </div>
       </form>
-      <button type="button" id="entry-mail-skip" class="entry-optin-skip">Continue without joining</button>
+      <button type="button" id="entry-mail-skip" class="entry-optin-skip">Continue Without Email</button>
       <p id="entry-mail-msg" class="entry-follow-msg" role="status" aria-live="polite"></p>
     </div>
     <div id="entry-login-step" class="entry-login-step" hidden>
@@ -3470,7 +3470,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 240;
+window.INTREPID_BUILD = 241;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3546,8 +3546,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=240"></script>
-<script src="fog.js?v=240"></script>
+<script src="mailerlite-config.js?v=241"></script>
+<script src="fog.js?v=241"></script>
 <script>
 (function() {
   'use strict';
@@ -4230,7 +4230,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
     setStepMsg(entryMailMsg, 'Sending…', null);
     subscribeMailerLiteForm('backer', email).then(function () {
       setMailingChoice('joined');
-      setStepMsg(entryMailMsg, 'You’re on the list.', 'ok');
+      setStepMsg(entryMailMsg, 'You are subscribed!', 'ok');
       setTimeout(function () {
         showArchiveEntry({ step: 'login', instant: true });
       }, 700);

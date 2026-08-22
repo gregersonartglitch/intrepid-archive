@@ -36,7 +36,8 @@ Agents: do **not** mark a bug fix done without steps 2–4. Jon should never be 
 | **237** | Map drag snap / jank | Pan felt like it hitch-snapped in the oval | Smoke: fog pane-follow on movestart; maxBoundsViscosity 0.35; setMaxBounds not panInside on zoomend | Drag map: fog stays glued; no post-drag jump |
 | **238** | Archive opt-in vs login | Email signup blocking unlock, or skip posting to Netlify | *(superseded by 239 split entrances)* | — |
 | **239** | Split backer/public mailing | Password mixed with waitlist; Netlify claimed as MailerLite | `scripts/smoke-archive-optin.js`: `/backer/` choice vs `/` waitlist; No thanks no ML; fail closed | `/backer/` No thanks → password; `/` has no password; Join fails closed until ML URLs |
-| **240** | Public waitlist official form | Public Join had no MailerLite action URL; waitlist copy drifted from Jon’s form | `smoke-archive-optin.js`: official `publicActionUrl` form `196516110968817063`; empty `backerActionUrl`; Guest Access Waitlist / Notify Me | `/` shows Guest Access Waitlist; do not live-test signup; `/backer/` Join still fails closed |
+| **240** | Public waitlist official form | Public Join had no MailerLite action URL; waitlist copy drifted from Jon’s form | `smoke-archive-optin.js`: official `publicActionUrl` form `196516110968817063`; Guest Access Waitlist / Notify Me | `/` shows Guest Access Waitlist; do not live-test signup |
+| **241** | Backer official form | Backer Join had no MailerLite action URL | `smoke-archive-optin.js`: official `backerActionUrl` form `196515214173144716`; URLs stay separate; Subscribe and Continue | `/backer/` Yes → Subscribe and Continue; do not live-test signup |
 
 ## Rollback
 

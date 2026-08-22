@@ -1,6 +1,6 @@
 # Archive entrances + MailerLite opt-in
 
-**Build:** 240  
+**Build:** 241  
 **Status:** AWAITING REVIEW — do not deploy  
 **PR:** continue #2 on `cursor/archive-optin-1ced`
 
@@ -11,8 +11,8 @@ Two separate doors. Kickstarter messages should link to **`/backer/`**. The bare
 1. Required choice: “Would you like occasional updates about Intrepid Dusk, new releases, and what comes next?”
 2. Supporting line: “Your choice does not affect access to your rewards.”
 3. **No thanks** → access-word screen immediately. No network request. Records `declined`.
-4. **Yes, keep me updated** → email field only (no nickname, no checkbox). **Join the email list** or **Continue without joining**.
-5. Join is consent. Continue without joining → password, records `declined`, posts nothing.
+4. **Yes, keep me updated** → email field only (no nickname, no checkbox). **Subscribe and Continue** or **Continue Without Email**.
+5. Subscribe is consent. Continue Without Email → password, records `declined`, posts nothing.
 6. Password screen primary button: **Enter the Archive** (Latin at rest). Eye toggle unchanged.
 
 ## B. Public — `/`
@@ -37,24 +37,22 @@ Official generated-form action URLs in `mailerlite-config.js`. **Not** Netlify F
 | Backer Join | Intrepid Dusk Archive Opt-ins | `archive_backer_optin` |
 | Public waitlist | Intrepid Dusk Public Waitlist | `archive_public_waitlist` |
 
-Success copy **You’re on the list** only after MailerLite JSONP payload `success`. Empty action URLs fail closed:
+Success copy (**You are subscribed!** on `/backer/`, **You are on the waitlist!** on `/`) only after MailerLite JSONP payload `success`. Empty action URLs fail closed:
 
 > We couldn’t add you right now. You can try again or continue to the Archive.
 
 Reward access is never blocked.
 
-### Blocker — Jon must create these before Join can succeed
+### Official forms (pasted by Jon)
 
-This agent must not change MailerLite account settings. Create:
+This agent must not change MailerLite account settings. Both generated-form action URLs are now in `mailerlite-config.js`.
 
-1. Subscriber groups (single opt-in for this version):
-   - **Intrepid Dusk Archive Opt-ins**
-   - **Intrepid Dusk Public Waitlist**
-2. One **Embedded form** assigned to each group.
-3. Optional subscriber field **source** (text).
-4. Forms → Embedded → Overview → HTML → copy each `action="https://assets.mailerlite.com/jsonp/{account}/forms/{id}/subscribe"` into `mailerlite-config.js` (`backerActionUrl` / `publicActionUrl`).
+**Both official form URLs are in.**
 
-**Public waitlist URL is in.** `publicActionUrl` is the official generated-form action. `backerActionUrl` is still empty until Jon pastes the **Intrepid Dusk Archive Opt-ins** embed HTML. Public Notify Me can succeed; backer Join still fails closed.
+| Config key | Form | Action URL |
+|------------|------|------------|
+| `backerActionUrl` | Archive Opt-ins `196515214173144716` | `https://assets.mailerlite.com/jsonp/875026/forms/196515214173144716/subscribe` |
+| `publicActionUrl` | Public Waitlist `196516110968817063` | `https://assets.mailerlite.com/jsonp/875026/forms/196516110968817063/subscribe` |
 
 No unverified local/Netlify fallback. Do not live-test signup until Jon says so.
 
@@ -69,7 +67,7 @@ Session fallback if localStorage is blocked. **Email is never stored.** Reset ac
 
 ## Restore
 
-`cp index.html.bak-preoptin-2026-08-21 index.html` still restores pre-238 entry HTML (Netlify-ignored). Prefer git revert of this branch for 240.
+`cp index.html.bak-preoptin-2026-08-21 index.html` still restores pre-238 entry HTML (Netlify-ignored). Prefer git revert of this branch for 241.
 
 ## QA
 
