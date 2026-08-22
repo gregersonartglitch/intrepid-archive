@@ -3532,7 +3532,7 @@ body.edit-mode #frame-rim-seal { display: none !important; }
 
 <script>
 // Build stamp — bump on every deploy-worthy change; keep in sync with fog.js?v= cache buster
-window.INTREPID_BUILD = 245;
+window.INTREPID_BUILD = 246;
 console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 </script>
 <script>
@@ -3608,8 +3608,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
 })();
 </script>
 <script src="archive-access.js?v=230"></script>
-<script src="mailerlite-config.js?v=245"></script>
-<script src="fog.js?v=245"></script>
+<script src="mailerlite-config.js?v=246"></script>
+<script src="fog.js?v=246"></script>
 <script>
 (function() {
   'use strict';
@@ -4119,7 +4119,8 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
   // Official MailerLite generated forms. Kill: false, or LS intrepid_archive_mailing_disabled=1
   var ENABLE_ARCHIVE_MAILING = true;
   var LS_ML_CHOICE = 'intrepid_archive_ml_choice_v1';
-  var ML_FAIL_COPY = 'We couldn’t add you right now. You can try again or continue to the Archive.';
+  var ML_FAIL_COPY_BACKER = 'We couldn’t add you right now. You can try again or continue to the Archive.';
+  var ML_FAIL_COPY_PUBLIC = 'We couldn’t add you right now. You can try again.';
 
   function mailerliteConfig() {
     return window.INTREPID_MAILERLITE || {};
@@ -4298,7 +4299,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
         showArchiveEntry({ step: 'login', instant: true });
       }, 700);
     }).catch(function () {
-      setStepMsg(entryMailMsg, ML_FAIL_COPY, 'err');
+      setStepMsg(entryMailMsg, ML_FAIL_COPY_BACKER, 'err');
     }).then(function () {
       if (entryMailJoin) entryMailJoin.disabled = false;
     });
@@ -4338,7 +4339,7 @@ console.log('[Intrepid Map] build', window.INTREPID_BUILD);
       setMailingChoice('joined');
       renderPublicWaitlistState();
     }).catch(function () {
-      setStepMsg(publicWaitlistMsg, ML_FAIL_COPY, 'err');
+      setStepMsg(publicWaitlistMsg, ML_FAIL_COPY_PUBLIC, 'err');
     }).then(function () {
       if (publicWaitlistJoin) publicWaitlistJoin.disabled = false;
     });

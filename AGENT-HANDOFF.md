@@ -82,7 +82,8 @@ If `origin` is wrong: `git remote set-url origin <correct-url>`. Separate ops re
 | `build-242` | Branch only — superseded | Public “Already a backer?” 16px/15px restyle |
 | `build-243` | Branch only — superseded | Public backer link uses the gold boxed treatment at rest |
 | `build-244` | Branch only — superseded | MailerLite JSONP callback is `mlWebformSubmitted` |
-| `build-245` | Branch only — **AWAITING REVIEW** | Public waitlist success: You’re on the waitlist! + body. Do not deploy. |
+| `build-245` | Branch only — superseded | Public waitlist success: You’re on the waitlist! + body |
+| `build-246` | Branch only — **AWAITING REVIEW** | Public fail copy no longer offers Archive access. Do not deploy. |
 
 **Regression discipline:** every bug fix → smoke assertion + row in [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) before deploy. See ship protocol there.
 

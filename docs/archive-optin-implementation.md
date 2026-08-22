@@ -1,6 +1,6 @@
 # Archive entrances + MailerLite opt-in
 
-**Build:** 245  
+**Build:** 246  
 **Status:** AWAITING REVIEW — do not deploy  
 **PR:** continue #2 on `cursor/archive-optin-1ced`
 
@@ -37,9 +37,10 @@ Official generated-form action URLs in `mailerlite-config.js`. **Not** Netlify F
 | Backer Join | Intrepid Dusk Archive Opt-ins | `archive_backer_optin` |
 | Public waitlist | Intrepid Dusk Public Waitlist | `archive_public_waitlist` |
 
-Success copy (**You are subscribed!** on `/backer/`, **You are on the waitlist!** on `/`) only after MailerLite JSONP payload `success`. Empty action URLs fail closed:
+Success copy (**You are subscribed!** on `/backer/`, **You’re on the waitlist!** on `/`) only after MailerLite JSONP payload `success`. Fail closed:
 
-> We couldn’t add you right now. You can try again or continue to the Archive.
+> Backer: We couldn’t add you right now. You can try again or continue to the Archive.  
+> Public: We couldn’t add you right now. You can try again.
 
 Reward access is never blocked.
 

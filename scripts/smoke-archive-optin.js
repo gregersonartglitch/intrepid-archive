@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Archive split-entrance + MailerLite opt-in smoke (build 245).
+ * Archive split-entrance + MailerLite opt-in smoke (build 246).
  * Run: node scripts/smoke-archive-optin.js
  * Exit 0 = pass, 1 = fail
  */
@@ -61,6 +61,8 @@ function run() {
   assert(html.indexOf('Guest Access Waitlist') !== -1, 'public waitlist title');
   assert(html.indexOf('Get notified when guest access opens.') !== -1, 'public waitlist copy');
   assert(html.indexOf('You’re on the waitlist!') !== -1, 'public success heading');
+  assert(html.indexOf("var ML_FAIL_COPY_PUBLIC = 'We couldn’t add you right now. You can try again.';") !== -1, 'public fail copy has no Archive offer');
+  assert(html.indexOf('ML_FAIL_COPY_BACKER') !== -1 && html.indexOf('continue to the Archive') !== -1, 'backer fail copy still offers Archive continue');
   assert(html.indexOf('We’ll email you when guest access opens.') !== -1, 'public success body');
   var successCss = html.slice(html.indexOf('.public-waitlist-success-title'), html.indexOf('.entry-optin-fields'));
   assert(successCss.indexOf('font-family: var(--font-ui)') !== -1, 'success uses sans-serif UI font');
@@ -158,7 +160,7 @@ function run() {
   if (joinFn) {
     assert(joinFn.indexOf("subscribeMailerLiteForm('backer'") !== -1, 'backer Join hits MailerLite backer form');
     assert(joinFn.indexOf('You are subscribed!') !== -1, 'success copy only on then() after ML');
-    assert(joinFn.indexOf('ML_FAIL_COPY') !== -1, 'failure uses specified copy');
+    assert(joinFn.indexOf('ML_FAIL_COPY_BACKER') !== -1, 'backer failure uses Archive continue copy');
     assert(joinFn.indexOf("setMailingChoice('joined')") !== -1, 'joined only after ML then()');
     var catchPart = joinFn.slice(joinFn.indexOf('.catch'));
     assert(catchPart.indexOf('You are subscribed!') === -1, 'failure does not claim joined');
@@ -170,7 +172,8 @@ function run() {
   if (publicFn) {
     assert(publicFn.indexOf("subscribeMailerLiteForm('public'") !== -1, 'public Notify Me hits MailerLite public form');
     assert(publicFn.indexOf('renderPublicWaitlistState') !== -1, 'public success reveal only on then() after ML');
-    assert(publicFn.indexOf('ML_FAIL_COPY') !== -1, 'public failure uses specified copy');
+    assert(publicFn.indexOf('ML_FAIL_COPY_PUBLIC') !== -1, 'public failure uses guest waitlist copy');
+    assert(publicFn.indexOf('continue to the Archive') === -1, 'public failure does not offer Archive access');
     var publicCatch = publicFn.slice(publicFn.indexOf('.catch'));
     assert(publicCatch.indexOf('You’re on the waitlist!') === -1, 'public failure does not claim waitlist success');
     assert(publicCatch.indexOf('renderPublicWaitlistState') === -1, 'public failure does not reveal success block');
@@ -200,9 +203,9 @@ function run() {
   assert(toml.indexOf('from = "/backer/"') !== -1, 'netlify.toml /backer/ rewrite');
   assert(readerShell.indexOf('/backer/?entry=required') !== -1, 'reader-shell bounces to backer entrance');
   assert(dossierShell.indexOf('/backer/?entry=required') !== -1, 'dossier-shell bounces to backer entrance');
-  assert(html.indexOf('window.INTREPID_BUILD = 245') !== -1, 'INTREPID_BUILD is 245');
-  assert(html.indexOf('fog.js?v=245') !== -1, 'fog.js cache buster is 245');
-  assert(html.indexOf('mailerlite-config.js?v=245') !== -1, 'mailerlite-config cache buster is 245');
+  assert(html.indexOf('window.INTREPID_BUILD = 246') !== -1, 'INTREPID_BUILD is 246');
+  assert(html.indexOf('fog.js?v=246') !== -1, 'fog.js cache buster is 246');
+  assert(html.indexOf('mailerlite-config.js?v=246') !== -1, 'mailerlite-config cache buster is 246');
   assert(fs.existsSync(path.join(ROOT, 'backer/index.html')), 'backer/index.html exists for static hosts');
 
   console.log('\n[codes] not in visible HTML');
