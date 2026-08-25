@@ -1046,14 +1046,14 @@
       "properties": {
         "region_id": "isle-of-dawn",
         "name": "The Isle of Dawn",
-        "subtitle": "Where Morning Is Manufactured",
+        "subtitle": "Sacred Isle — Some Say Haunted",
         "volume": 2,
         "claimable": false,
         "veil_style": "horizon",
         "lore_ids": [
           "isle-of-dawn"
         ],
-        "horizon_text": "The Isle of Dawn — beyond the Veil — awaits Volume 2. It drifts on a calendar the cartographers have not yet deciphered."
+        "horizon_text": "The Isle of Dawn — sacred, some say haunted — awaits Volume 2 beyond the Veil. It drifts on a calendar the cartographers have not yet deciphered."
       },
       "geometry": {
         "type": "Polygon",

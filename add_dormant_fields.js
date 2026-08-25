@@ -69,7 +69,7 @@ const epithets = {
   'kur-border': 'The Underworld\'s Edge',
   
   // New regions/areas
-  'isle-of-dawn': 'The Eastern Isle',
+  'isle-of-dawn': 'The Sacred Eastern Isle',
   'hope-rebellands': 'The Defiant Lands',
   'dragons-tail': 'The Serpent\'s Wake',
   'sinn': 'The Moon City',

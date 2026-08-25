@@ -689,12 +689,12 @@ window.LOCATIONS = [
   {
     id: 'isle-of-dawn',
     name: 'Isle of Dawn',
-    sub: 'Far Eastern Refuge',
+    sub: 'Sacred Eastern Isle',
     type: 'region',
     lat: 5486,
     lng: 6996,
-    desc: 'A distant island visible only at sunrise, bearing pre-splitting ruins built for bodies shaped differently than ours. No two maps place it in the same position.',
-    lore: '"The Isle of Dawn is where morning is manufactured. The sun does not rise; it is released, each day, from a cage on the island\'s highest peak."',
+    desc: 'A sacred isle visible only at sunrise, some say haunted, bearing pre-splitting ruins built for bodies shaped differently than ours. Pilgrims name it holy; sailors who return name it otherwise. No two maps place it in the same position.',
+    lore: '"The Isle of Dawn is where morning is manufactured. The sun does not rise; it is released, each day, from a cage on the island\'s highest peak. Leave an offering. Do not stay for dusk."',
     journeyStep: null,
     volume1: false
   },
