@@ -46,7 +46,7 @@ whether to use WSL (Part A) or an existing Docker setup, and which steps you can
 |------|-------|-----------------|
 | Hermes | Runs natively on Windows (bundled Python 3.14.7) | A Windows program isn't something Paperclip in WSL can call reliably. **Use OpenCode → Ollama for the Local agent**; trying the Hermes adapter is optional. |
 | Node 24.15.0, Claude Code 2.1.236 | Installed on Windows | WSL needs its own copies — still do A4 and A5 |
-| Ollama | Running on Windows. Models: `qwen3.8:27b` and `qwen3.8:27b-64k` (both 17.7 GB, Q4_K_M, tool use supported), `gemma4:12b` (7.6 GB), `gemma4:latest` (8B), `nomic-embed-text`. Not yet reachable from Ubuntu | Do A2, then re-check from Ubuntu. Use `qwen3.8:27b` for the Local agent; run A3's measurement on `qwen3.8:27b-64k` before relying on 64k context |
+| Ollama | Running on Windows. Models: `qwen3.8:27b` and `qwen3.8:27b-64k` (both 17.7 GB, Q4_K_M, tool use supported), `gemma4:12b` (7.6 GB), `gemma4:latest` (8B), `nomic-embed-text`. **Reachable from Ubuntu after A2** (mirrored networking; no `OLLAMA_HOST` change needed) | A2 done. Use `qwen3.8:27b` for the Local agent; run A3's measurement on `qwen3.8:27b-64k` before relying on 64k context |
 | WSL 2.6.3 | **Ubuntu, WSL version 2** (confirmed with `wsl -l -v`; "Stopped" just means not running yet) | **Skip A1 — start at A2.** A4's commands are safe to run even if some tools are already in Ubuntu |
 | Docker | Not found | Use the WSL route below |
 | Codex CLI | Not installed | Installed inside WSL in A5 |
