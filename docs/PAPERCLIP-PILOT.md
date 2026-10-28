@@ -78,15 +78,23 @@ Then in PowerShell: `wsl --shutdown`, and reopen Ubuntu.
 
 ### A3. Give the local models room
 
-The 5090's 32 GB fits Qwen 27B with a large context window. In Windows **Settings → System → About →
-Advanced system settings → Environment Variables**, add user variables:
+Agent harnesses send long instructions, and Ollama's default context window cuts them off. How much
+context fits in the 5090's 32 GB depends on the exact model, its quantization and the cache settings,
+so **measure before going big**. In Windows **Settings → System → About → Advanced system settings →
+Environment Variables**, add user variables:
 
 | Variable | Value | Why |
 |----------|-------|-----|
-| `OLLAMA_CONTEXT_LENGTH` | `65536` | Agent harnesses send long instructions; the default window cuts them off |
-| `OLLAMA_MAX_LOADED_MODELS` | `1` | Keeps Qwen and Gemma from fighting over VRAM at that context size |
+| `OLLAMA_CONTEXT_LENGTH` | `32768` to start | Enough for agent instructions; raise only after the test below |
+| `OLLAMA_MAX_LOADED_MODELS` | `1` | Keeps Qwen and Gemma from fighting over VRAM |
 
-Quit Ollama/Hermes from the tray and start it again. Then check from **Ubuntu**:
+Quit Ollama/Hermes from the tray and start it again. **Measure:** run `ollama run qwen3.8:27b "hi"`, then
+`ollama ps` in another window. The `PROCESSOR` column must say **100% GPU**. If it shows any CPU share,
+lower the context; if it's 100% GPU with room to spare in `nvidia-smi`, you can try `65536`, optionally
+with `OLLAMA_FLASH_ATTENTION=1` and `OLLAMA_KV_CACHE_TYPE=q8_0` (roughly halves the context's memory),
+and measure again.
+
+Then check from **Ubuntu**:
 
 ```bash
 curl -s localhost:11434/api/tags | head -c 300   # should list your models
