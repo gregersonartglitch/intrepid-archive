@@ -14,7 +14,7 @@ If it fails, we know exactly where, before building anything ourselves.
 | Code and draft PRs | GitHub, as today |
 | Phone access | Tailscale (free) — phase 2 |
 
-Why WSL rather than native Windows: Paperclip doesn't document Windows support, and its agent CLIs,
+Why WSL rather than native Windows: Paperclip's docs cover running under WSL2, and its agent CLIs,
 Python and git all behave best on Linux. WSL is a real Linux on the same machine, and it can still
 reach Ollama on Windows.
 
@@ -88,11 +88,19 @@ Environment Variables**, add user variables:
 | `OLLAMA_CONTEXT_LENGTH` | `32768` to start | Enough for agent instructions; raise only after the test below |
 | `OLLAMA_MAX_LOADED_MODELS` | `1` | Keeps Qwen and Gemma from fighting over VRAM |
 
-Quit Ollama/Hermes from the tray and start it again. **Measure:** run `ollama run qwen3.8:27b "hi"`, then
-`ollama ps` in another window. The `PROCESSOR` column must say **100% GPU**. If it shows any CPU share,
-lower the context; if it's 100% GPU with room to spare in `nvidia-smi`, you can try `65536`, optionally
-with `OLLAMA_FLASH_ATTENTION=1` and `OLLAMA_KV_CACHE_TYPE=q8_0` (roughly halves the context's memory),
-and measure again.
+Quit Ollama/Hermes from the tray and start it again, then **measure** — a short prompt doesn't prove
+much, because memory use grows as the context fills:
+
+1. Watch memory in one window: `nvidia-smi --query-gpu=memory.used,memory.total --format=csv -l 5`
+2. In another, load the model and fill most of the window with a long prompt (e.g. paste `fog.js`
+   and ask for a summary): `ollama run qwen3.8:27b`
+3. `ollama ps` must show **100% GPU**, and `memory.used` should stay **at least ~3 GB below 32 GB**
+   with your normal Windows apps open (the desktop and browser use VRAM too).
+4. **Long-run check:** give the Local agent one real task in Check 0 and let it run 20–30 minutes.
+   Pass if it finishes without Ollama falling back to CPU, out-of-memory errors or a big slowdown.
+
+Only if all of that passes with headroom, try `65536` — optionally with `OLLAMA_FLASH_ATTENTION=1` and
+`OLLAMA_KV_CACHE_TYPE=q8_0`, which roughly halves the context's memory — and repeat the measurement.
 
 Then check from **Ubuntu**:
 
@@ -196,7 +204,7 @@ Run them in order. Note pass/fail and anything odd; that's what decides the next
 | 1 | **Direction carries through** | In the project chat or on the lead's task: "Focus on map labels today; leave the reader alone." Then let the next worker run | The next task picked and the PR touch labels, not `reader/` |
 | 2 | **Recovery** | While a worker runs, stop Paperclip (`Ctrl-c` in tmux) or `wsl --shutdown`; restart | The task comes back as retry-able or resumes — not stuck "in progress" forever |
 | 3 | **Limits stop work** | Set Builder's cap very low (or limit runs) and let it work | Builder pauses at the cap and you get a warning first |
-| 4 | **Collaborator scope** | Phase 2 below: make a second, private project and invite a test account (a second email of yours) to Intrepid only | The test account sees Intrepid and **cannot** see the other project |
+| 4 | **Collaborator scope and steering** | Phase 2 below: make a second, private project and invite a test account (a second email of yours) to Intrepid only. From the test account, give a direction ("next, fix the Dragon's Tail label") | The test account sees Intrepid and **cannot** see the other project, and its direction reaches the next worker just like yours does in Check 1 |
 | 5 | **Hands-off block** | Approve a morning batch of 3–5 tasks, then leave it alone 09:00–15:00 | Draft PRs or clear questions at the end; you didn't have to fix the system itself |
 
 ### Phase 2 — phone and collaborator (for Check 4)
@@ -212,11 +220,12 @@ Run them in order. Note pass/fail and anything odd; that's what decides the next
 
 ## Afterwards
 
-- **Passes 0, 1, 2 and 5** → adopt it. Make Paperclip a service that starts with the PC, add the other
-  projects, invite your real collaborator.
+- **Passes 0, 1, 2, 4 and 5** → adopt it. Make Paperclip a service that starts with the PC, add the other
+  projects, invite your real collaborator. (Check 4 is required because the collaborator will steer work.)
 - **Fails 0 or 2** → stop; that's the foundation. Bring the notes back and we'll decide between fixing it
-  upstream, Agent Orchestrator, or a small custom layer.
-- **Only 1, 3 or 4 fall short** → usually fixable with configuration or a small add-on; bring the notes back.
+  upstream or another tool.
+- **Only 1, 3 or 4 fall short** → often fixable with configuration or a small add-on; bring the notes back.
+  If the collaborator ends up only reviewing PRs, Herdr Projects becomes worth piloting in the same WSL setup.
 
 To undo everything: `wsl --unregister Ubuntu` removes the Linux side completely; delete `.wslconfig`
 and the two Ollama variables to restore Windows as it was.
