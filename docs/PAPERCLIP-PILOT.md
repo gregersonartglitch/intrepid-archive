@@ -51,6 +51,25 @@ whether to use WSL (Part A) or an existing Docker setup, and which steps you can
 | Docker | Not found | Use the WSL route below |
 | Codex CLI | Not installed | Installed inside WSL in A5 |
 
+### Inside Ubuntu (read-only)
+
+Starts Ubuntu but installs and changes nothing. Open **Ubuntu** from the Start menu and paste:
+
+```bash
+grep PRETTY /etc/os-release; uname -r; nproc; free -g | head -2; df -h ~ | tail -1
+for c in node npm pnpm python3 git gh tmux curl claude codex opencode; do printf "%-9s %s\n" "$c" "$(command -v $c || echo 'not found')"; done
+node -v 2>/dev/null; python3 --version 2>/dev/null
+gh auth status 2>&1 | head -3
+curl -s -m 3 localhost:11434/api/tags | head -c 300 || echo "Ollama not reachable from WSL"
+grep -A2 -i '\[boot\]' /etc/wsl.conf 2>/dev/null
+```
+
+And in PowerShell, whether A2 is already done: `Get-Content $env:USERPROFILE\.wslconfig`
+
+**Watch the paths.** WSL can see Windows programs, so `node` or `claude` may show up under `/mnt/c/...`.
+Those are the **Windows** copies; they don't count. A4 and A5 still need Linux copies (paths like
+`/usr/bin/...` or `~/.nvm/...`).
+
 What the answers mean in general:
 
 | Finding | Then |
