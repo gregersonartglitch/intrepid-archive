@@ -213,7 +213,8 @@ that. One project, one lead, two workers, and **you** approve anything structura
 
 4. **Instructions for every agent** (paste into each agent's instructions or the project's):
    - Follow `AGENTS.md` in the repo root.
-   - One task, one branch, deliver a **draft PR**. Never deploy, tag or push to `feature/cuneiform-buttons`.
+   - One task, one branch, deliver a **draft PR**. Preview deploys only — never production, tags or
+     pushes to `feature/cuneiform-buttons`. Put the preview URL in the PR for visual changes.
    - Every task must state **"Done when"** checks before work starts; it isn't done until they pass.
    - **Ask the board (Jon) instead of guessing** when: lore text, a visual judgment, more than 5 files,
      protected files, or the same task failed twice. Then move to the next task — don't wait.
@@ -223,7 +224,13 @@ that. One project, one lead, two workers, and **you** approve anything structura
    one or two runs at a time.
 7. **Budgets:** set agent and project caps. On subscriptions, Paperclip may not see dollar costs — Check 3
    tests whether the caps actually stop anything. Until it passes, the heartbeat schedule is your real limit.
-8. **Review stage:** require Lead's review (a different model from the author) plus your approval before
+8. **Netlify connector:** agents may make **preview** deploys (`AGENTS.md` rule 3) but never
+   production. In **Connectors → Netlify for the organization → ⋯**, give access only to the agents
+   that need it (Vance and Builder, not Local), and set any action that publishes, restores, rolls
+   back or locks a deploy, or changes site settings, environment variables or domains, to **require
+   your approval**. Paperclip's connector permissions are the lock; `AGENTS.md` is only the instruction.
+   Leave **Stripe** unconnected — no agent needs payment access.
+9. **Review stage:** require Lead's review (a different model from the author) plus your approval before
    a task counts as done.
 
 ---

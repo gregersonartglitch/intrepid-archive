@@ -25,15 +25,21 @@ Vanilla HTML/CSS/JS with Leaflet — no build step, no framework.
 ## Hard rules for unattended runs
 
 1. **One task, one branch.** Change only what the task asks. No drive-by refactors or reformatting.
-2. **Never deploy, tag or touch the base branch.** No `netlify deploy`, no `git tag`, no pushes to
+2. **Never touch production, tags or the base branch.** No `netlify deploy --prod`, no
+   `netlify api restoreSiteDeploy` or any other publish, lock, rollback or restore call, no Netlify
+   site settings, environment variables, domains or DNS, no `git tag`, no pushes to
    `feature/cuneiform-buttons`. Work on your own branch and deliver a **draft PR**; a human ships.
-3. **Don't touch the build stamp.** `INTREPID_BUILD` and the `fog.js?v=` cache-buster in `index.html`
+3. **Preview deploys are welcome.** For any visual or interactive change, publish a draft deploy
+   from your branch, e.g. `netlify deploy --dir . --alias <your-branch-name>` (never `--prod`), and
+   put the preview URL in the PR with exactly what to click and look at. Previews never replace the
+   live site.
+4. **Don't touch the build stamp.** `INTREPID_BUILD` and the `fog.js?v=` cache-buster in `index.html`
    are bumped by a human at ship time.
-4. **Don't edit** `netlify.toml`, `_redirects`, `.netlify/`, `netlify/functions/` or `AGENTS.md`
+5. **Don't edit** `netlify.toml`, `_redirects`, `.netlify/`, `netlify/functions/` or `AGENTS.md`
    unless the task explicitly says to.
-5. **No large binaries.** Don't add or re-export images, PDFs or audio unless the task asks.
-6. **Never write access codes, passwords or keys** into code comments, docs, PR text or logs.
-7. **When in doubt, stop.** If the task is ambiguous or needs a visual, lore or product judgment,
+6. **No large binaries.** Don't add or re-export images, PDFs or audio unless the task asks.
+7. **Never write access codes, passwords or keys** into code comments, docs, PR text or logs.
+8. **When in doubt, stop.** If the task is ambiguous or needs a visual, lore or product judgment,
    make no changes and ask. A clear question beats a wrong PR.
 
 ## Project rules (from `.cursor/rules/`)
