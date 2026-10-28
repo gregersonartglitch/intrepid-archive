@@ -3,7 +3,3 @@
 
 # npm (Stripe SDK for Netlify functions)
 node_modules/
-
-# Agent dispatcher — local config and run state
-agents/config.json
-agents/.state/

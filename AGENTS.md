@@ -1,7 +1,7 @@
 # AGENTS.md — rules for every coding agent in this repo
 
-Read this before changing anything. It applies to every agent — Claude, Kimi, Qwen, Gemma, Codex,
-Copilot, Cursor — whether a person is watching or the dispatcher in `agents/` is running you unattended.
+Read this before changing anything. It applies to every agent — Claude, Codex, Kimi, Qwen, Gemma,
+Copilot, Cursor — whether a person is watching or an orchestrator is running you unattended.
 
 Deeper context: [`AGENT-HANDOFF.md`](AGENT-HANDOFF.md) (repos, deploy, auth tiers),
 [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) (ship protocol),
@@ -24,17 +24,17 @@ Vanilla HTML/CSS/JS with Leaflet — no build step, no framework.
 
 ## Hard rules for unattended runs
 
-1. **One issue, one branch.** Change only what the issue asks. No drive-by refactors or reformatting.
-2. **Never deploy, push, tag or switch branches.** No `netlify deploy`, no `git push`, no `git tag`.
-   The dispatcher pushes your branch and opens a draft PR; a human ships.
+1. **One task, one branch.** Change only what the task asks. No drive-by refactors or reformatting.
+2. **Never deploy, tag or touch the base branch.** No `netlify deploy`, no `git tag`, no pushes to
+   `feature/cuneiform-buttons`. Work on your own branch and deliver a **draft PR**; a human ships.
 3. **Don't touch the build stamp.** `INTREPID_BUILD` and the `fog.js?v=` cache-buster in `index.html`
    are bumped by a human at ship time.
-4. **Don't edit** `netlify.toml`, `_redirects`, `.netlify/`, `netlify/functions/`, `agents/` or
-   `AGENTS.md` unless the issue explicitly says to. The dispatcher refuses PRs that change protected paths.
-5. **No large binaries.** Don't add or re-export images, PDFs or audio unless the issue asks.
+4. **Don't edit** `netlify.toml`, `_redirects`, `.netlify/`, `netlify/functions/` or `AGENTS.md`
+   unless the task explicitly says to.
+5. **No large binaries.** Don't add or re-export images, PDFs or audio unless the task asks.
 6. **Never write access codes, passwords or keys** into code comments, docs, PR text or logs.
-7. **When in doubt, stop.** If the issue is ambiguous or needs a visual, lore or product judgment,
-   make no changes and say what you need under "Blocked". A clear question beats a wrong PR.
+7. **When in doubt, stop.** If the task is ambiguous or needs a visual, lore or product judgment,
+   make no changes and ask. A clear question beats a wrong PR.
 
 ## Project rules (from `.cursor/rules/`)
 
@@ -59,7 +59,7 @@ Vanilla HTML/CSS/JS with Leaflet — no build step, no framework.
 - Never cross tier keys; the cartographer gate only accepts `intrepid_cartographer_unlocked === 'granted'`.
 
 ### Lore
-- Never change existing `desc` / `lore` text in `data.js` without an explicit instruction in the issue.
+- Never change existing `desc` / `lore` text in `data.js` without an explicit instruction in the task.
 - New lore follows `lore/writing-style.md`: archaeological-footnote voice, quiet melancholy,
   1–3 sentence quotes, raise questions rather than answer them.
 
@@ -78,8 +78,3 @@ node scripts/smoke-journey-flow.js     # journey / gate / chime changes — must
 `scripts/audit-checks.mjs` needs a local server (`npx http-server . -p 8080 --cors -c-1`); run it
 when you touch loading, gates or the reader. You can't see the page, so for any visual change list
 exactly what a human should check in the browser.
-
-## Where work comes from
-
-GitHub issues labeled `agent:ready` (approved by a human). `size:small` routes to the local model.
-Daily notes live in the open `Agent log YYYY-MM-DD` issue. See `agents/README.md`.
