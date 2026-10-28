@@ -4,3 +4,8 @@ dossier/_thumb_sizes.txt
 
 # Local scratch — never publish
 .tmp/
+
+# Agent pipeline — repo tooling, not site content
+agents/
+AGENTS.md
+CLAUDE.md
