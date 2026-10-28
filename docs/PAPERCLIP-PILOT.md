@@ -50,6 +50,7 @@ whether to use WSL (Part A) or an existing Docker setup, and which steps you can
 | WSL 2.6.3 | **Ubuntu, WSL version 2** (confirmed with `wsl -l -v`; "Stopped" just means not running yet) | **Skip A1 — start at A2.** A4's commands are safe to run even if some tools are already in Ubuntu |
 | Docker | Not found | Use the WSL route below |
 | Codex CLI | Not installed | Installed inside WSL in A5 |
+| Inside Ubuntu (24.04, 24 cores, 31 GB RAM, 953 GB free) | python3 3.12, git, tmux, curl present; `systemd=true`. **Missing:** node (only Windows npm/pnpm under `/mnt/c`), gh, claude, codex, opencode. Ollama reachability not yet known | A4 shrinks to gh + Node; A5 as written; re-check Ollama after A2 |
 
 ### Inside Ubuntu (read-only)
 
@@ -60,7 +61,7 @@ grep PRETTY /etc/os-release; uname -r; nproc; free -g | head -2; df -h ~ | tail 
 for c in node npm pnpm python3 git gh tmux curl claude codex opencode; do printf "%-9s %s\n" "$c" "$(command -v $c || echo 'not found')"; done
 node -v 2>/dev/null; python3 --version 2>/dev/null
 gh auth status 2>&1 | head -3
-curl -s -m 3 localhost:11434/api/tags | head -c 300 || echo "Ollama not reachable from WSL"
+curl -sf -m 3 localhost:11434/api/tags >/tmp/ollama.json && head -c 300 /tmp/ollama.json || echo "Ollama not reachable from WSL"
 grep -A2 -i '\[boot\]' /etc/wsl.conf 2>/dev/null
 ```
 
@@ -143,12 +144,15 @@ If that fails, Ollama isn't listening beyond Windows: also set `OLLAMA_HOST` = `
 ### A4. Tools inside Ubuntu
 
 ```bash
-sudo apt update && sudo apt install -y git python3 python3-venv tmux gh
+sudo apt update && sudo apt install -y gh python3-venv
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 source ~/.bashrc
 nvm install 24 && corepack enable
-node -v   # needs 24.11 or newer
+node -v               # needs 24.11 or newer
+command -v node npm   # both must be under ~/.nvm — not /mnt/c (those are the Windows copies)
 ```
+
+(On the Omen, python3, git, tmux and curl are already in Ubuntu; this adds only what's missing.)
 
 ### A5. Sign in the agents on your subscriptions
 
