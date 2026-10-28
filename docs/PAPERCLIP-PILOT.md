@@ -47,7 +47,7 @@ whether to use WSL (Part A) or an existing Docker setup, and which steps you can
 | Hermes | Runs natively on Windows (bundled Python 3.14.7) | A Windows program isn't something Paperclip in WSL can call reliably. **Use OpenCode → Ollama for the Local agent**; trying the Hermes adapter is optional. |
 | Node 24.15.0, Claude Code 2.1.236 | Installed on Windows | WSL needs its own copies — still do A4 and A5 |
 | Ollama | Program present; server and model names not tested | Do the checks in A3 |
-| WSL 2.6.3 | Installed; listing distros returned "access denied" | Run `wsl -l -v` yourself in a normal (not admin) PowerShell. Ubuntu listed with VERSION 2 → skip A1. Nothing listed → do A1 |
+| WSL 2.6.3 | **Ubuntu, WSL version 2** (confirmed with `wsl -l -v`; "Stopped" just means not running yet) | **Skip A1 — start at A2.** A4's commands are safe to run even if some tools are already in Ubuntu |
 | Docker | Not found | Use the WSL route below |
 | Codex CLI | Not installed | Installed inside WSL in A5 |
 
