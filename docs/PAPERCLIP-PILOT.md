@@ -40,7 +40,18 @@ whether to use WSL (Part A) or an existing Docker setup, and which steps you can
 "--- Dev tools";      foreach ($c in "node","git","gh","python","claude","codex","tailscale") { $p = Get-Command $c -ErrorAction SilentlyContinue; "{0,-10} {1}" -f $c, ($(if ($p) { $p.Source } else { "not found" })) }
 ```
 
-What the answers mean:
+### Results on the Omen (read-only check, Oct 28)
+
+| Item | Found | Means for setup |
+|------|-------|-----------------|
+| Hermes | Runs natively on Windows (bundled Python 3.14.7) | A Windows program isn't something Paperclip in WSL can call reliably. **Use OpenCode → Ollama for the Local agent**; trying the Hermes adapter is optional. |
+| Node 24.15.0, Claude Code 2.1.236 | Installed on Windows | WSL needs its own copies — still do A4 and A5 |
+| Ollama | Program present; server and model names not tested | Do the checks in A3 |
+| WSL 2.6.3 | Installed; listing distros returned "access denied" | Run `wsl -l -v` yourself in a normal (not admin) PowerShell. Ubuntu listed with VERSION 2 → skip A1. Nothing listed → do A1 |
+| Docker | Not found | Use the WSL route below |
+| Codex CLI | Not installed | Installed inside WSL in A5 |
+
+What the answers mean in general:
 
 | Finding | Then |
 |---------|------|
@@ -171,11 +182,11 @@ that. One project, one lead, two workers, and **you** approve anything structura
    |-------|---------|-----|
    | Lead | Claude Code (subscription) | Morning plan, breaking work into tasks, final review |
    | Builder | Codex (ChatGPT subscription) | Most coding tasks |
-   | Local | Hermes adapter → Qwen 3.8 27B | Small fixes, running checks, summaries |
+   | Local | OpenCode → Ollama → Qwen 3.8 27B | Small fixes, running checks, summaries |
 
-   For **Local**: try the Hermes adapter first. If it can't reach your Hermes setup from WSL, use the
-   OpenCode adapter pointed at Ollama (`http://localhost:11434`, model `qwen3.8:27b`) instead — same
-   model, different harness.
+   For **Local**: use the OpenCode adapter pointed at Ollama on Windows (`http://localhost:11434`,
+   model name exactly as `ollama list` shows it). Hermes runs natively on Windows, so Paperclip in WSL
+   can't count on calling it; the Hermes adapter is an optional extra test, not part of the pilot.
 
 4. **Instructions for every agent** (paste into each agent's instructions or the project's):
    - Follow `AGENTS.md` in the repo root.
@@ -220,11 +231,13 @@ Run them in order. Note pass/fail and anything odd; that's what decides the next
 
 ## Afterwards
 
-- **Passes 0, 1, 2, 4 and 5** → adopt it. Make Paperclip a service that starts with the PC, add the other
-  projects, invite your real collaborator. (Check 4 is required because the collaborator will steer work.)
+- **Passes all six checks** → adopt it. Make Paperclip a service that starts with the PC, add the other
+  projects, invite your real collaborator. All six are required: Check 3 because unattended hours must
+  not drain your subscriptions, Check 4 because the collaborator will steer work.
 - **Fails 0 or 2** → stop; that's the foundation. Bring the notes back and we'll decide between fixing it
   upstream or another tool.
-- **Only 1, 3 or 4 fall short** → often fixable with configuration or a small add-on; bring the notes back.
+- **1, 3 or 4 fall short** → don't adopt yet. These are often fixable with configuration or a small
+  add-on; bring the notes back.
   If the collaborator ends up only reviewing PRs, Herdr Projects becomes worth piloting in the same WSL setup.
 
 To undo everything: `wsl --unregister Ubuntu` removes the Linux side completely; delete `.wslconfig`
