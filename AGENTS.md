@@ -84,3 +84,21 @@ node scripts/smoke-journey-flow.js     # journey / gate / chime changes — must
 `scripts/audit-checks.mjs` needs a local server (`npx http-server . -p 8080 --cors -c-1`); run it
 when you touch loading, gates or the reader. You can't see the page, so for any visual change list
 exactly what a human should check in the browser.
+
+## Show, don't tell: how every task ends
+
+Jon judges work by what he can see, not by what you say. Finish every task with this report, on the
+task and in the PR description. Keep it short enough to read on a phone.
+
+1. **Show it.** The proof, first:
+   - a preview link (rule 3) with the exact URL params and clicks, or
+   - before/after screenshots or a short screen capture attached to the task, or
+   - real numbers measured before and after (load time, file size, test output), or
+   - for writing and docs, the best 5–10 lines quoted directly.
+2. **What changed:** 1–3 bullets, plain words.
+3. **Why it was worth it:** the problem it solves, and who notices the difference.
+4. **What it cost:** run time and tokens used (from the run page).
+5. **Check it in 2 minutes:** the steps Jon takes to see it himself.
+6. **Your call:** recommend merge, revise or drop, and say why.
+
+If you can't show something, say so plainly. Never claim a result you didn't see or measure.
