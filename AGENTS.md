@@ -3,6 +3,9 @@
 Read this before changing anything. It applies to every agent — Claude, Codex, Kimi, Qwen, Gemma,
 Copilot, Cursor — whether a person is watching or an orchestrator is running you unattended.
 
+Agent setup (Paperclip agents, projects, routing, known fixes): `PAPERCLIP.md` in the private
+`gregersonartglitch/studio-baton` repo.
+
 Deeper context: [`AGENT-HANDOFF.md`](AGENT-HANDOFF.md) (repos, deploy, auth tiers),
 [`docs/REGRESSION-LOCKS.md`](docs/REGRESSION-LOCKS.md) (ship protocol),
 [`docs/QA-SMOKE-CHECKLIST.md`](docs/QA-SMOKE-CHECKLIST.md), and `lore/` for anything story-facing.
