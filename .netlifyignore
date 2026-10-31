@@ -4,3 +4,7 @@ dossier/_thumb_sizes.txt
 
 # Local scratch — never publish
 .tmp/
+
+# Agent instructions — repo tooling, not site content
+AGENTS.md
+CLAUDE.md
